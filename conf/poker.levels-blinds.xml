@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<levels xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="levels.xsd" poker_engine_version="1.3.5">
+  <level small="10" big="20"/>
+  <level small="15" big="30"/>
+  <level small="20" big="40"/>
+  <level small="25" big="50"/>
+  <level small="30" big="60"/>
+  <level small="30" big="80"/>
+  <level small="50" big="100"/>
+  <level small="60" big="120"/>
+  <level small="75" big="150"/>
+  <level small="90" big="180"/>
+  <level small="105" big="210"/>
+  <level small="125" big="250"/>
+  <level small="150" big="300"/>
+  <level small="175" big="350"/>
+  <level small="200" big="400"/>
+  <level small="225" big="450"/>
+  <level small="250" big="500"/>
+</levels>
