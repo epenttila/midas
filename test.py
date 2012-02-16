@@ -1,6 +1,7 @@
 import random
 import sys
 from simplebots import FoldBot, CallBot, RaiseBot, RandomBot
+from bot import Bot
 from pokerengine.pokergame import PokerGameServer
 
 games = int(sys.argv[1])
@@ -10,7 +11,7 @@ game.verbose = 0
 game.setVariant('holdem')
 game.setBettingStructure('level-001')
 
-actors = [RandomBot(), CallBot()]
+actors = [Bot(), CallBot()]
 wins = {}
 loss = {}
 
@@ -22,6 +23,7 @@ hand = 1
 
 for i in range(games):
     game.reset()
+    game.setMaxPlayers(2)
     
     for serial in range(len(actors)):
         game.addPlayer(serial)
