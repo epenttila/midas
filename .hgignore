@@ -1,2 +1,10 @@
 syntax: glob
 *.pyc
+*.sdf
+*.suo
+*.opensdf
+*.vcxproj.user
+Debug
+Release
+*.vcxproj.filters
+ipch
