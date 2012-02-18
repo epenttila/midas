@@ -2,6 +2,7 @@
 #define _SCL_SECURE_NO_WARNINGS
 #define BOOST_DISABLE_ASSERTS
 #include <array>
+#include <cassert>
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/multi_array.hpp>

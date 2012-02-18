@@ -31,14 +31,13 @@ void kuhn_game::train(const int iterations)
     const int num_buckets = 3; // J, Q, K
     const int num_states = int(states_.size());
     solver_.reset(new solver_t(num_states, num_buckets));
-    std::mt19937 engine;
-    //engine.seed(1);
+    std::mt19937_64 engine;
+    engine.seed(1);
     std::uniform_int_distribution<int> distribution(0, 2);
-    auto generator = std::bind(distribution, engine);
-    //boost::timer::cpu_timer timer;
+    auto generator = std::bind(distribution, engine, std::placeholders::_1);
+    const int num_shuffle_swaps = 2;
     std::array<int, 2> cards;
     std::array<double, 2> reach = {1.0, 1.0};
-
     std::array<int, num_buckets> deck;
 
     for (int i = 0; i < num_buckets; ++i)
@@ -56,15 +55,14 @@ void kuhn_game::train(const int iterations)
             ii = i;
         }
 
-        std::random_shuffle(deck.begin(), deck.end(), generator);
-        cards[0] = deck[0];
-        cards[1] = deck[1];
-        //print [p_hole, o_hole]
-        //print_states(root, 0, [p_hole, o_hole])
-        solver_->update(*states_[0], cards, reach);
-    }
+        for (auto i = deck.size() - 1; i >= deck.size() - num_shuffle_swaps; --i)
+            std::swap(deck[i], deck[generator(int(i + 1))]);
 
-    //print_states(root, 0, [p_hole, o_hole])
+        cards[0] = deck[deck.size() - 1];
+        cards[1] = deck[deck.size() - 2];
+
+        solver_->update(*states_[0], cards, reach, cards[0] > cards[1] ? 1 : -1);
+    }
 }
 
 void kuhn_game::print_strategy()
@@ -79,7 +77,7 @@ void kuhn_game::print_strategy()
         for (int j = 0; j < solver_->get_num_buckets(); ++j)
         {
             std::array<double, 2> p;
-            solver_->get_average_strategy(*states_[i], j, &p[0]);
+            solver_->get_average_strategy(*states_[i], j, p);
             line += (boost::format(" %f") % p[kuhn_state::BET]).str();
         }
 

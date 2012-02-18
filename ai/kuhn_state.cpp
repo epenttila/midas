@@ -10,6 +10,7 @@ kuhn_state::kuhn_state(kuhn_state* parent, const int action, const int win_amoun
     , win_amount_(win_amount)
     , terminal_(parent != nullptr && (parent->action_ == action || parent->action_ == BET && action == PASS))
 {
+    children_.assign(nullptr);
 }
 
 int kuhn_state::get_actions() const
@@ -37,7 +38,6 @@ kuhn_state* kuhn_state::act(const int action)
     if (terminal_)
         return nullptr;
 
-    children_.resize(ACTIONS);
     kuhn_state* next = children_[action];
 
     if (next == nullptr)
@@ -54,17 +54,17 @@ kuhn_state* kuhn_state::get_child(const int action) const
     return children_[action];
 }
 
-double kuhn_state::get_terminal_ev(const std::array<int, 2>& cards) const
+double kuhn_state::get_terminal_ev(const int result) const
 {
-    if (!terminal_)
-        throw std::runtime_error("not a terminal");
+    assert(terminal_);
 
     if (parent_->action_ == action_) // PASS-PASS, BET-BET
-        return cards[0] > cards[1] ? win_amount_ : -win_amount_;
+        return result * win_amount_;
     else if (parent_->action_ == BET && action_ == PASS)
-        return (win_amount_ - 1) * (player_ == 0 ? 1 : -1);
+        return player_ == 0 ? win_amount_ - 1 : 1 - win_amount_;
 
-    throw std::runtime_error("invalid terminal");
+    assert(false);
+    return 0;
 }
 
 void kuhn_state::set_id(const int id)
