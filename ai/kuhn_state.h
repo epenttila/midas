@@ -11,7 +11,6 @@ public:
     };
 
     kuhn_state(kuhn_state* parent, const int action, const int win_amount);
-    int get_actions() const;
     int get_id() const;
     int get_player() const;
     bool is_terminal() const;
@@ -19,6 +18,8 @@ public:
     kuhn_state* get_child(const int action) const;
     double get_terminal_ev(const int result) const;
     void set_id(const int id);
+    const kuhn_state* get_parent() const;
+    int get_action() const;
 
 private:
     int id_;

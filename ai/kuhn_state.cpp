@@ -13,11 +13,6 @@ kuhn_state::kuhn_state(kuhn_state* parent, const int action, const int win_amoun
     children_.assign(nullptr);
 }
 
-int kuhn_state::get_actions() const
-{
-    return ACTIONS;
-}
-
 int kuhn_state::get_id() const
 {
     return id_;
@@ -70,4 +65,14 @@ double kuhn_state::get_terminal_ev(const int result) const
 void kuhn_state::set_id(const int id)
 {
     id_ = id;
+}
+
+const kuhn_state* kuhn_state::get_parent() const
+{
+    return parent_;
+}
+
+int kuhn_state::get_action() const
+{
+    return action_;
 }

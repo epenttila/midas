@@ -18,7 +18,7 @@ void kuhn_game::generate_states()
         state->set_id(id++);
         states_.push_back(state);
 
-        for (int i = state->get_actions() - 1; i >= 0; --i)
+        for (int i = kuhn_state::ACTIONS - 1; i >= 0; --i)
         {
             if (kuhn_state* next = state->act(i))
                 stack.push_back(next);
@@ -72,7 +72,12 @@ void kuhn_game::print_strategy()
         if (states_[i]->is_terminal())
             continue;
 
-        std::string line = (boost::format("id=%s,p=%s") % i % states_[i]->get_player()).str();
+        std::string line;
+
+        for (const kuhn_state* s = states_[i]; s != nullptr && s->get_action() != -1; s = s->get_parent())
+            line = (s->get_action() == kuhn_state::BET ? 'b' : 'p') + line;
+
+        line += '\t';
 
         for (int j = 0; j < solver_->get_num_buckets(); ++j)
         {
