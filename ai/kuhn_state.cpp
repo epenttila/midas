@@ -1,14 +1,27 @@
 #include "common.h"
 #include "kuhn_state.h"
 
-kuhn_state::kuhn_state(kuhn_state* parent, const int action, const int win_amount)
+kuhn_state::kuhn_state()
     : id_(0)
+    , parent_(nullptr)
+    , action_(-1)
+    , player_(0)
+    , win_amount_(1) // ante
+    , terminal_(false)
+    , num_actions_(ACTIONS)
+{
+    children_.assign(nullptr);
+}
+
+kuhn_state::kuhn_state(kuhn_state* parent, const int action, const int id)
+    : id_(id)
     , parent_(parent)
     , children_()
     , action_(action)
     , player_(parent == nullptr ? 0 : 1 - parent->player_)
-    , win_amount_(win_amount)
+    , win_amount_(parent->get_action() == BET ? parent->win_amount_ + 1 : parent->win_amount_)
     , terminal_(parent != nullptr && (parent->action_ == action || parent->action_ == BET && action == PASS))
+    , num_actions_(terminal_ ? 0 : ACTIONS)
 {
     children_.assign(nullptr);
 }
@@ -28,20 +41,14 @@ bool kuhn_state::is_terminal() const
     return terminal_;
 }
 
-kuhn_state* kuhn_state::act(const int action)
+kuhn_state* kuhn_state::act(const int action, const int id)
 {
     if (terminal_)
         return nullptr;
 
-    kuhn_state* next = children_[action];
-
-    if (next == nullptr)
-    {
-        next = new kuhn_state(this, action, action_ == BET ? win_amount_ + 1 : win_amount_);
-        children_[action] = next;
-    }
-
-    return next;
+    assert(children_[action] == nullptr);
+    children_[action] = new kuhn_state(this, action, id);
+    return children_[action];
 }
 
 kuhn_state* kuhn_state::get_child(const int action) const
@@ -49,7 +56,7 @@ kuhn_state* kuhn_state::get_child(const int action) const
     return children_[action];
 }
 
-double kuhn_state::get_terminal_ev(const int result) const
+int kuhn_state::get_terminal_ev(const int result) const
 {
     assert(terminal_);
 
@@ -62,11 +69,6 @@ double kuhn_state::get_terminal_ev(const int result) const
     return 0;
 }
 
-void kuhn_state::set_id(const int id)
-{
-    id_ = id;
-}
-
 const kuhn_state* kuhn_state::get_parent() const
 {
     return parent_;
@@ -75,4 +77,14 @@ const kuhn_state* kuhn_state::get_parent() const
 int kuhn_state::get_action() const
 {
     return action_;
+}
+
+int kuhn_state::get_num_actions() const
+{
+    return num_actions_;
+}
+
+int kuhn_state::get_round() const
+{
+    return 0;
 }

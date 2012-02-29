@@ -1,56 +1,34 @@
 #include "common.h"
 #include "kuhn_game.h"
 
-kuhn_game::kuhn_game()
+void kuhn_game::solve(const int iterations)
 {
-    generate_states();
-}
-
-void kuhn_game::generate_states()
-{
-    int id = 0;
-    std::vector<kuhn_state*> stack(1, new kuhn_state(nullptr, -1, 1));
-
-    while (!stack.empty())
-    {
-        kuhn_state* state = stack.back();
-        stack.pop_back();
-        state->set_id(id++);
-        states_.push_back(state);
-
-        for (int i = kuhn_state::ACTIONS - 1; i >= 0; --i)
-        {
-            if (kuhn_state* next = state->act(i))
-                stack.push_back(next);
-        }
-    }
-}
-
-void kuhn_game::train(const int iterations)
-{
-    const int num_buckets = 3; // J, Q, K
-    const int num_states = int(states_.size());
-    solver_.reset(new solver_t(num_states, num_buckets));
+    const int num_cards = 3;
+    const std::array<int, 1> num_buckets = {num_cards}; // J, Q, K
+    solver_.reset(new solver_t(states_, num_buckets));
     std::mt19937_64 engine;
     engine.seed(1);
     std::uniform_int_distribution<int> distribution(0, 2);
     auto generator = std::bind(distribution, engine, std::placeholders::_1);
     const int num_shuffle_swaps = 2;
-    std::array<int, 2> cards;
+    solver_t::bucket_t cards = {};
     std::array<double, 2> reach = {1.0, 1.0};
-    std::array<int, num_buckets> deck;
+    std::array<int, num_cards> deck;
 
-    for (int i = 0; i < num_buckets; ++i)
+    for (int i = 0; i < num_cards; ++i)
         deck[i] = i;
 
     std::clock_t t = std::clock();
+    std::array<double, 2> acfr;
 
     for (int i = 0, ii = 0; i < iterations; ++i)
     {
         if (i > 0 && i % 1000000 == 0)
         {
             std::clock_t tt = std::clock();
-            std::cout << boost::format("%d (%f i/s)\n") % i % ((i - ii) / (double(tt - t) / CLOCKS_PER_SEC));
+            acfr[0] = solver_->get_accumulated_regret(0) / i;
+            acfr[1] = solver_->get_accumulated_regret(1) / i;
+            std::cout << boost::format("%d (%f i/s) regret: (%.10f, %.10f)\n") % i % ((i - ii) / (double(tt - t) / CLOCKS_PER_SEC)) % acfr[0] % acfr[1];
             t = tt;
             ii = i;
         }
@@ -58,14 +36,14 @@ void kuhn_game::train(const int iterations)
         for (auto i = deck.size() - 1; i >= deck.size() - num_shuffle_swaps; --i)
             std::swap(deck[i], deck[generator(int(i + 1))]);
 
-        cards[0] = deck[deck.size() - 1];
-        cards[1] = deck[deck.size() - 2];
+        cards[0][0] = deck[deck.size() - 1];
+        cards[1][0] = deck[deck.size() - 2];
 
         solver_->update(*states_[0], cards, reach, cards[0] > cards[1] ? 1 : -1);
     }
 }
 
-void kuhn_game::print_strategy()
+std::ostream& kuhn_game::print(std::ostream& os) const
 {
     for (int i = 0; i < states_.size(); ++i)
     {
@@ -79,13 +57,25 @@ void kuhn_game::print_strategy()
 
         line += '\t';
 
-        for (int j = 0; j < solver_->get_num_buckets(); ++j)
+        for (int j = 0; j < solver_->get_bucket_count(states_[i]->get_round()); ++j)
         {
             std::array<double, 2> p;
             solver_->get_average_strategy(*states_[i], j, p);
             line += (boost::format(" %f") % p[kuhn_state::BET]).str();
         }
 
-        std::cout << line << "\n";
+        os << line << "\n";
     }
+
+    return os;
+}
+
+void kuhn_game::save(std::ostream& os) const
+{
+    solver_->save(os);
+}
+
+void kuhn_game::load(std::istream& is)
+{
+    solver_->load(is);
 }

@@ -1,17 +1,31 @@
 #pragma once
 
-template<class game_state, int num_actions>
+namespace detail
+{
+    static const double epsilon = 1e-7;
+}
+
+template<class game_state, int num_actions, int num_rounds>
 class cfr_solver : private boost::noncopyable
 {
 public:
-    cfr_solver(const int num_states, const int num_buckets)
-        : num_states_(num_states)
-        , num_buckets_(num_buckets)
-        , regrets_(new value[num_states_])
-        , strategy_(new value[num_states_])
+    typedef std::array<int, num_rounds> bucket_count_t;
+    typedef std::array<std::array<int, num_rounds>, 2> bucket_t;
+
+    cfr_solver(const std::vector<game_state*>& states, const bucket_count_t& bucket_counts)
+        : bucket_counts_(bucket_counts)
+        , regrets_(new value[states.size()])
+        , strategy_(new value[states.size()])
+        , states_(states)
     {
-        for (int i = 0; i < num_states; ++i)
+        accumulated_regret_.assign(0);
+
+        for (int i = 0; i < states.size(); ++i)
         {
+            if (states[i]->is_terminal())
+                continue;
+
+            const int num_buckets = bucket_counts[states[i]->get_round()];
             regrets_[i] = new double[num_buckets][num_actions];
             strategy_[i] = new double[num_buckets][num_actions];
 
@@ -28,7 +42,7 @@ public:
 
     ~cfr_solver()
     {
-        for (int i = 0; i < num_states_; ++i)
+        for (int i = 0; i < states_.size(); ++i)
         {
             delete[] regrets_[i];
             delete[] strategy_[i];
@@ -38,22 +52,36 @@ public:
         delete[] strategy_;
     }
 
-    double update(const game_state& state, const std::array<int, 2>& buckets, const std::array<double, 2>& reach_probabilities,
+    double update(const game_state& state, const bucket_t& buckets, std::array<double, 2>& reach,
         const int result)
     {
-        const int current_player = state.get_player();
+        const int player = state.get_player();
+        const int bucket = buckets[player][state.get_round()];
         std::array<double, num_actions> action_probabilities;
-        get_regret_strategy(state, buckets[current_player], action_probabilities);
-        double total_ev = 0.0;
+
+        get_regret_strategy(state, bucket, action_probabilities);
+
+        if (reach[player] > detail::epsilon)
+        {
+            for (int i = 0; i < num_actions; ++i)
+            {
+                assert(state.get_child(i) || action_probabilities[i] == 0);
+
+                // update average strategy
+                strategy_[state.get_id()][bucket][i] += reach[player] * action_probabilities[i];
+            }
+        }
+
+        double total_ev = 0;
         std::array<double, num_actions> action_ev;
 
         for (int i = 0; i < num_actions; ++i)
         {
-            // update average strategy
-            strategy_[state.get_id()][buckets[current_player]][i] += reach_probabilities[current_player] * action_probabilities[i];
-
             // handle next state
-            game_state* next = state.get_child(i);
+            const game_state* next = state.get_child(i);
+
+            if (!next)
+                continue; // impossible action
 
             if (next->is_terminal())
             {
@@ -61,29 +89,35 @@ public:
             }
             else
             {
-                std::array<double, 2> new_reach;
-                new_reach[current_player] = reach_probabilities[current_player] * action_probabilities[i];
-                new_reach[1 - current_player] = reach_probabilities[1 - current_player];
+                const double old_reach = reach[player];
+                reach[player] *= action_probabilities[i];
 
-                if (new_reach[0] > 0 || new_reach[1] > 0)
-                    action_ev[i] = update(*next, buckets, new_reach, result);
+                if (reach[0] >= detail::epsilon || reach[1] >= detail::epsilon)
+                    action_ev[i] = update(*next, buckets, reach, result);
                 else
                     action_ev[i] = 0;
+
+                reach[player] = old_reach;
             }
 
             total_ev += action_probabilities[i] * action_ev[i];
         }
 
         // update regrets
-        for (int i = 0; i < num_actions; ++i)
+        if (reach[1 - player] > detail::epsilon)
         {
-             // counterfactual regret
-            double delta_regret = (action_ev[i] - total_ev) * reach_probabilities[1 - current_player];
+            auto& regrets = regrets_[state.get_id()][bucket];
+    
+            for (int i = 0; i < num_actions; ++i)
+            {
+                if (!state.get_child(i))
+                    continue;
 
-            if (current_player == 1)
-                delta_regret = -delta_regret; // invert sign for P2
-
-            regrets_[state.get_id()][buckets[current_player]][i] += delta_regret;
+                // counterfactual regret
+                const double delta_regret = (action_ev[i] - total_ev) * reach[1 - player];
+                regrets[i] += player == 0 ? delta_regret : -delta_regret; // invert sign for P2
+                accumulated_regret_[player] += std::max(0.0, delta_regret);
+            }
         }
 
         return total_ev;
@@ -92,48 +126,108 @@ public:
     void get_regret_strategy(const game_state& state, const int bucket, std::array<double, num_actions>& out)
     {
         const auto& bucket_regret = regrets_[state.get_id()][bucket];
-        const double default = 1.0 / num_actions;
         double bucket_sum = 0;
 
         for (int i = 0; i < num_actions; ++i)
-            bucket_sum += std::max(0.0, bucket_regret[i]);
-
-        for (int i = 0; i < num_actions; ++i)
         {
-            if (bucket_sum > 0.0)
-                out[i] = std::max(0.0, bucket_regret[i]) / bucket_sum;
-            else
-                out[i] = default;
+            assert(state.get_child(i) || bucket_regret[i] < detail::epsilon);
+
+            if (bucket_regret[i] > detail::epsilon)
+                bucket_sum += bucket_regret[i];
+        }
+
+        if (bucket_sum > detail::epsilon)
+        {
+            for (int i = 0; i < num_actions; ++i)
+                out[i] = bucket_regret[i] > detail::epsilon ? bucket_regret[i] / bucket_sum : 0;
+        }
+        else
+        {
+            for (int i = 0; i < num_actions; ++i)
+                out[i] = state.get_child(i) ? 1.0 / state.get_num_actions() : 0.0;
         }
     }
 
-    void get_average_strategy(const game_state& state, const int bucket, std::array<double, num_actions>& out)
+    void get_average_strategy(const game_state& state, const int bucket, std::array<double, num_actions>& out) const
     {
         const auto& bucket_strategy = strategy_[state.get_id()][bucket];
-        const double default = 1.0 / num_actions;
         double bucket_sum = 0;
 
         for (int i = 0; i < num_actions; ++i)
-            bucket_sum += bucket_strategy[i];
-
-        for (int i = 0; i < num_actions; ++i)
         {
-            if (bucket_sum > 0.0)
+            assert(state.get_child(i) || bucket_strategy[i] < detail::epsilon);
+            bucket_sum += bucket_strategy[i];
+        }
+
+        if (bucket_sum > detail::epsilon)
+        {
+            for (int i = 0; i < num_actions; ++i)
                 out[i] = bucket_strategy[i] / bucket_sum;
-            else
-                out[i] = default;
+        }
+        else
+        {
+            for (int i = 0; i < num_actions; ++i)
+                out[i] = state.get_child(i) ? 1.0 / state.get_num_actions() : 0.0;
         }
     }
 
-    int get_num_buckets() const
+    int get_bucket_count(const int round) const
     {
-        return num_buckets_;
+        return bucket_counts_[round];
+    }
+
+    double get_accumulated_regret(const int player) const
+    {
+        return accumulated_regret_[player];
+    }
+
+    void save(std::ostream& os) const
+    {
+        os.write(reinterpret_cast<const char*>(&accumulated_regret_[0]), sizeof(double));
+        os.write(reinterpret_cast<const char*>(&accumulated_regret_[1]), sizeof(double));
+
+        for (int i = 0; i < states_.size(); ++i)
+        {
+            if (states_[i]->is_terminal())
+                continue;
+
+            for (int j = 0; j < bucket_counts_[states_[i]->get_round()]; ++j)
+            {
+                for (int k = 0; k < num_actions; ++k)
+                {
+                    os.write(reinterpret_cast<char*>(&regrets_[i][j][k]), sizeof(double));
+                    os.write(reinterpret_cast<char*>(&strategy_[i][j][k]), sizeof(double));
+                }
+            }
+        }
+    }
+
+    void load(std::istream& is)
+    {
+        is.read(reinterpret_cast<char*>(&accumulated_regret_[0]), sizeof(double));
+        is.read(reinterpret_cast<char*>(&accumulated_regret_[1]), sizeof(double));
+
+        for (int i = 0; i < states_.size(); ++i)
+        {
+            if (states_[i]->is_terminal())
+                continue;
+
+            for (int j = 0; j < bucket_counts_[states_[i]->get_round()]; ++j)
+            {
+                for (int k = 0; k < num_actions; ++k)
+                {
+                    is.read(reinterpret_cast<char*>(&regrets_[i][j][k]), sizeof(double));
+                    is.read(reinterpret_cast<char*>(&strategy_[i][j][k]), sizeof(double));
+                }
+            }
+        }
     }
 
 private:
-    const int num_states_;
-    const int num_buckets_;
+    const std::vector<game_state*> states_;
+    const bucket_count_t bucket_counts_;
     typedef double (*value)[num_actions];
     value* regrets_;
     value* strategy_;
+    std::array<double, 2> accumulated_regret_;
 };
