@@ -3,7 +3,7 @@
 
 namespace
 {
-    static const std::array<int, 2> INITIAL_POT = {1, 2};
+    static const std::array<int, 2> INITIAL_POT = {{1, 2}};
 }
 
 holdem_state::holdem_state()
@@ -57,7 +57,7 @@ holdem_state* holdem_state::act(const int action, const int id)
     else if (action_ == CALL && action == CALL && parent_ && round_ == parent_->round_)
         ++new_round; // check-check (or call-check preflop)
 
-    std::array<int, 2> new_pot = {pot_[0], pot_[1]};
+    std::array<int, 2> new_pot = {{pot_[0], pot_[1]}};
 
     if (action == CALL)
         new_pot[player_] = new_pot[1 - player_];

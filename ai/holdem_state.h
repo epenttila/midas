@@ -8,7 +8,7 @@ public:
         FOLD,
         CALL,
         RAISE,
-        ACTIONS,
+        ACTIONS
     };
 
     enum holdem_round

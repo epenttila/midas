@@ -5,7 +5,7 @@
 
 namespace
 {
-    static const holdem_game::solver_t::bucket_count_t BUCKET_COUNTS = {3, 9, 9, 9};
+    static const holdem_game::solver_t::bucket_count_t BUCKET_COUNTS = {{3, 9, 9, 9}};
 }
 
 holdem_game::holdem_game()
@@ -26,7 +26,7 @@ void holdem_game::solve(const int iterations)
 
     std::array<int, 52> deck;
 
-    for (int i = 0; i < deck.size(); ++i)
+    for (std::size_t i = 0; i < deck.size(); ++i)
         deck[i] = i;
 
     const double start_time = omp_get_wtime();
@@ -67,7 +67,7 @@ void holdem_game::solve(const int iterations)
                 buckets[k][holdem_state::RIVER] = a.get_river_bucket(hand[k][0], hand[k][1], hand[k][2], hand[k][3], hand[k][4], hand[k][5], hand[k][6]);
             }
 
-            std::array<double, 2> reach = {1.0, 1.0};
+            std::array<double, 2> reach = {{1.0, 1.0}};
             solver_->update(*states_[0], buckets, reach, result);
 
 #pragma omp atomic
@@ -93,7 +93,7 @@ void holdem_game::solve(const int iterations)
 
 std::ostream& holdem_game::print(std::ostream& os) const
 {
-    for (int i = 0; i < states_.size(); ++i)
+    for (std::size_t i = 0; i < states_.size(); ++i)
     {
         if (states_[i]->is_terminal())
             continue;
@@ -107,7 +107,7 @@ std::ostream& holdem_game::print(std::ostream& os) const
             std::array<double, holdem_state::ACTIONS> p;
             solver_->get_average_strategy(*states_[i], j, p);
 
-            for (int k = 0; k < p.size(); ++k)
+            for (std::size_t k = 0; k < p.size(); ++k)
                 os << "," << p[k];
 
             os << "\n";

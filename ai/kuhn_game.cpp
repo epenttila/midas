@@ -4,13 +4,13 @@
 void kuhn_game::solve(const int iterations)
 {
     const int num_cards = 3;
-    const std::array<int, 1> num_buckets = {num_cards}; // J, Q, K
+    const std::array<int, 1> num_buckets = {{num_cards}}; // J, Q, K
     solver_.reset(new solver_t(states_, num_buckets));
     std::mt19937_64 engine;
     engine.seed(1);
     const int num_shuffle_swaps = 2;
-    solver_t::bucket_t cards = {};
-    std::array<double, 2> reach = {1.0, 1.0};
+    solver_t::bucket_t cards = {{}};
+    std::array<double, 2> reach = {{1.0, 1.0}};
     std::array<int, num_cards> deck;
 
     for (int i = 0; i < num_cards; ++i)
@@ -42,7 +42,7 @@ void kuhn_game::solve(const int iterations)
 
 std::ostream& kuhn_game::print(std::ostream& os) const
 {
-    for (int i = 0; i < states_.size(); ++i)
+    for (std::size_t i = 0; i < states_.size(); ++i)
     {
         if (states_[i]->is_terminal())
             continue;

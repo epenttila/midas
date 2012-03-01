@@ -20,7 +20,7 @@ kuhn_state::kuhn_state(kuhn_state* parent, const int action, const int id)
     , action_(action)
     , player_(parent == nullptr ? 0 : 1 - parent->player_)
     , win_amount_(parent->get_action() == BET ? parent->win_amount_ + 1 : parent->win_amount_)
-    , terminal_(parent != nullptr && (parent->action_ == action || parent->action_ == BET && action == PASS))
+    , terminal_(parent != nullptr && (parent->action_ == action || (parent->action_ == BET && action == PASS)))
     , num_actions_(terminal_ ? 0 : ACTIONS)
 {
     children_.fill(nullptr);

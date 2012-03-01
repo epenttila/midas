@@ -7,7 +7,7 @@ public:
     {
         PASS = 0,
         BET = 1,
-        ACTIONS,
+        ACTIONS
     };
 
     kuhn_state();

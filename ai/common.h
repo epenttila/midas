@@ -1,4 +1,6 @@
+#ifdef _MSC_VER
 #pragma warning(push, 3)
+#endif
 #define _SCL_SECURE_NO_WARNINGS
 #define BOOST_DISABLE_ASSERTS
 #include <array>
@@ -14,7 +16,9 @@
 #include <random>
 #include <tuple>
 #include <unordered_map>
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 
 template<class T, class F>
 void partial_shuffle(T& container, int shuffle_count, F& rand)

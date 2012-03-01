@@ -45,7 +45,7 @@ int evaluator::get_hand_value(const int c0, const int c1, const int c2, const in
 
 double evaluator::enumerate_preflop(const int c0, const int c1) const
 {
-    std::array<bool, 52> used = {};
+    std::array<bool, 52> used = {{}};
     used[c0] = true;
     used[c1] = true;
     int count = 0;
@@ -157,7 +157,7 @@ double evaluator::simulate(const std::array<int, 2>& h1, const std::array<int, p
         {
             partial_shuffle(deck, 7 - public_count, engine);
 
-            std::array<int, 2> h2 = {deck[deck.size() - 1], deck[deck.size() - 2]};
+            std::array<int, 2> h2 = {{deck[deck.size() - 1], deck[deck.size() - 2]}};
             std::array<int, 5> b;
 
             std::copy(board.begin(), board.end(), b.begin());
@@ -178,42 +178,42 @@ double evaluator::simulate(const std::array<int, 2>& h1, const std::array<int, p
 
 double evaluator::simulate_preflop(const int c0, const int c1, const int iterations) const
 {
-    const std::array<int, 2> hand = {c0, c1};
+    const std::array<int, 2> hand = {{c0, c1}};
     return simulate<0>(hand, std::array<int, 0>(), iterations);
 }
 
 double evaluator::simulate_flop(const int c0, const int c1, const int b0, const int b1, const int b2, const int iterations) const
 {
-    const std::array<int, 2> hand = {c0, c1};
-    const std::array<int, 3> board = {b0, b1, b2};
+    const std::array<int, 2> hand = {{c0, c1}};
+    const std::array<int, 3> board = {{b0, b1, b2}};
     return simulate<3>(hand, board, iterations);
 }
 
 double evaluator::simulate_turn(const int c0, const int c1, const int b0, const int b1, const int b2, const int b3, const int iterations) const
 {
-    const std::array<int, 2> hand = {c0, c1};
-    const std::array<int, 4> board = {b0, b1, b2, b3};
+    const std::array<int, 2> hand = {{c0, c1}};
+    const std::array<int, 4> board = {{b0, b1, b2, b3}};
     return simulate<4>(hand, board, iterations);
 }
 
 double evaluator::simulate_river(const int c0, const int c1, const int b0, const int b1, const int b2, const int b3, const int b4, const int iterations) const
 {
-    const std::array<int, 2> hand = {c0, c1};
-    const std::array<int, 5> board = {b0, b1, b2, b3, b4};
+    const std::array<int, 2> hand = {{c0, c1}};
+    const std::array<int, 5> board = {{b0, b1, b2, b3, b4}};
     return simulate<5>(hand, board, iterations);
 }
 
-const int evaluator::get_rank(int card)
+int evaluator::get_rank(int card)
 {
     return card / 4;
 }
 
-const int evaluator::get_suit(int card)
+int evaluator::get_suit(int card)
 {
     return card % 4;
 }
 
-const int evaluator::get_hand(int rank, int suit)
+int evaluator::get_hand(int rank, int suit)
 {
     return rank * 4 + suit;
 }

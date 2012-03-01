@@ -13,14 +13,14 @@ public:
     typedef std::array<std::array<int, num_rounds>, 2> bucket_t;
 
     cfr_solver(const std::vector<game_state*>& states, const bucket_count_t& bucket_counts)
-        : bucket_counts_(bucket_counts)
+        : states_(states)
+        , bucket_counts_(bucket_counts)
         , regrets_(new value[states.size()])
         , strategy_(new value[states.size()])
-        , states_(states)
     {
         accumulated_regret_.fill(0);
 
-        for (int i = 0; i < states.size(); ++i)
+        for (std::size_t i = 0; i < states.size(); ++i)
         {
             if (states[i]->is_terminal())
                 continue;
@@ -42,7 +42,7 @@ public:
 
     ~cfr_solver()
     {
-        for (int i = 0; i < states_.size(); ++i)
+        for (std::size_t i = 0; i < states_.size(); ++i)
         {
             delete[] regrets_[i];
             delete[] strategy_[i];
@@ -192,7 +192,7 @@ public:
         os.write(reinterpret_cast<const char*>(&accumulated_regret_[0]), sizeof(double));
         os.write(reinterpret_cast<const char*>(&accumulated_regret_[1]), sizeof(double));
 
-        for (int i = 0; i < states_.size(); ++i)
+        for (std::size_t i = 0; i < states_.size(); ++i)
         {
             if (states_[i]->is_terminal())
                 continue;
@@ -213,7 +213,7 @@ public:
         is.read(reinterpret_cast<char*>(&accumulated_regret_[0]), sizeof(double));
         is.read(reinterpret_cast<char*>(&accumulated_regret_[1]), sizeof(double));
 
-        for (int i = 0; i < states_.size(); ++i)
+        for (std::size_t i = 0; i < states_.size(); ++i)
         {
             if (states_[i]->is_terminal())
                 continue;
