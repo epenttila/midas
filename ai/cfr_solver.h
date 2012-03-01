@@ -52,10 +52,10 @@ public:
         delete[] strategy_;
     }
 
-    double update(const game_state& state, const bucket_t& buckets, std::array<double, 2>& reach,
-        const int result)
+    double update(const game_state& state, const bucket_t& buckets, std::array<double, 2>& reach, const int result)
     {
         const int player = state.get_player();
+        const int opponent = player ^ 1;
         const int bucket = buckets[player][state.get_round()];
         std::array<double, num_actions> action_probabilities;
 
@@ -63,17 +63,21 @@ public:
 
         if (reach[player] > detail::epsilon)
         {
+            auto& strategy = strategy_[state.get_id()][bucket];
+
             for (int i = 0; i < num_actions; ++i)
             {
                 assert(state.get_child(i) || action_probabilities[i] == 0);
 
                 // update average strategy
-                strategy_[state.get_id()][bucket][i] += reach[player] * action_probabilities[i];
+                if (action_probabilities[i] > detail::epsilon)
+                    strategy[i] += reach[player] * action_probabilities[i];
             }
         }
 
         double total_ev = 0;
         std::array<double, num_actions> action_ev;
+        const double old_reach = reach[player];
 
         for (int i = 0; i < num_actions; ++i)
         {
@@ -89,34 +93,36 @@ public:
             }
             else
             {
-                const double old_reach = reach[player];
-                reach[player] *= action_probabilities[i];
+                reach[player] = old_reach * action_probabilities[i];
 
                 if (reach[0] >= detail::epsilon || reach[1] >= detail::epsilon)
                     action_ev[i] = update(*next, buckets, reach, result);
                 else
                     action_ev[i] = 0;
-
-                reach[player] = old_reach;
             }
 
             total_ev += action_probabilities[i] * action_ev[i];
         }
 
+        reach[player] = old_reach;
+
         // update regrets
-        if (reach[1 - player] > detail::epsilon)
+        if (reach[opponent] > detail::epsilon)
         {
             auto& regrets = regrets_[state.get_id()][bucket];
-    
+
             for (int i = 0; i < num_actions; ++i)
             {
                 if (!state.get_child(i))
                     continue;
 
                 // counterfactual regret
-                const double delta_regret = (action_ev[i] - total_ev) * reach[1 - player];
+                const double delta_regret = (action_ev[i] - total_ev) * reach[opponent];
+
                 regrets[i] += player == 0 ? delta_regret : -delta_regret; // invert sign for P2
-                accumulated_regret_[player] += std::max(0.0, delta_regret);
+
+                if (delta_regret > detail::epsilon)
+                    accumulated_regret_[player] += delta_regret;
             }
         }
 
@@ -130,7 +136,7 @@ public:
 
         for (int i = 0; i < num_actions; ++i)
         {
-            assert(state.get_child(i) || bucket_regret[i] < detail::epsilon);
+            assert(state.get_child(i) || bucket_regret[i] <= detail::epsilon);
 
             if (bucket_regret[i] > detail::epsilon)
                 bucket_sum += bucket_regret[i];
@@ -155,7 +161,7 @@ public:
 
         for (int i = 0; i < num_actions; ++i)
         {
-            assert(state.get_child(i) || bucket_strategy[i] < detail::epsilon);
+            assert(state.get_child(i) || bucket_strategy[i] <= detail::epsilon);
             bucket_sum += bucket_strategy[i];
         }
 
