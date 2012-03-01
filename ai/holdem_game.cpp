@@ -35,14 +35,12 @@ void holdem_game::solve(const int iterations)
 
 #pragma omp parallel
     {
-        std::mt19937 engine;
-        engine.seed(rd());
-        auto generator = std::bind(distribution, engine, std::placeholders::_1);
+        std::mt19937 engine(rd());
 
 #pragma omp for firstprivate(deck, time)
         for (int i = 0; i < iterations; ++i)
         {
-            partial_shuffle(deck, num_cards_dealt, generator);
+            partial_shuffle(deck, num_cards_dealt, engine);
 
             std::array<std::array<int, 7>, 2> hand;
             hand[0][0] = deck[deck.size() - 1];

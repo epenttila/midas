@@ -18,7 +18,7 @@ public:
         , strategy_(new value[states.size()])
         , states_(states)
     {
-        accumulated_regret_.assign(0);
+        accumulated_regret_.fill(0);
 
         for (int i = 0; i < states.size(); ++i)
         {

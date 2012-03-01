@@ -147,17 +147,15 @@ double evaluator::simulate(const std::array<int, 2>& h1, const std::array<int, p
     int tie = 0;
 
     std::random_device rnd;
-    std::uniform_int_distribution<int> distribution;
 
 //#pragma omp parallel firstprivate(deck) reduction(+ : win) reduction(+ : tie)
     {
         std::mt19937 engine(rnd() + omp_get_thread_num());
-        auto gen = std::bind(distribution, engine, std::placeholders::_1);
 
 //#pragma omp for
         for (int i = 0; i < iterations; ++i)
         {
-            partial_shuffle(deck, 7 - public_count, gen);
+            partial_shuffle(deck, 7 - public_count, engine);
 
             std::array<int, 2> h2 = {deck[deck.size() - 1], deck[deck.size() - 2]};
             std::array<int, 5> b;

@@ -10,7 +10,7 @@ kuhn_state::kuhn_state()
     , terminal_(false)
     , num_actions_(ACTIONS)
 {
-    children_.assign(nullptr);
+    children_.fill(nullptr);
 }
 
 kuhn_state::kuhn_state(kuhn_state* parent, const int action, const int id)
@@ -23,7 +23,7 @@ kuhn_state::kuhn_state(kuhn_state* parent, const int action, const int id)
     , terminal_(parent != nullptr && (parent->action_ == action || parent->action_ == BET && action == PASS))
     , num_actions_(terminal_ ? 0 : ACTIONS)
 {
-    children_.assign(nullptr);
+    children_.fill(nullptr);
 }
 
 int kuhn_state::get_id() const

@@ -8,8 +8,6 @@ void kuhn_game::solve(const int iterations)
     solver_.reset(new solver_t(states_, num_buckets));
     std::mt19937_64 engine;
     engine.seed(1);
-    std::uniform_int_distribution<int> distribution(0, 2);
-    auto generator = std::bind(distribution, engine, std::placeholders::_1);
     const int num_shuffle_swaps = 2;
     solver_t::bucket_t cards = {};
     std::array<double, 2> reach = {1.0, 1.0};
@@ -33,8 +31,7 @@ void kuhn_game::solve(const int iterations)
             ii = i;
         }
 
-        for (auto i = deck.size() - 1; i >= deck.size() - num_shuffle_swaps; --i)
-            std::swap(deck[i], deck[generator(int(i + 1))]);
+        partial_shuffle(deck, num_shuffle_swaps, engine);
 
         cards[0][0] = deck[deck.size() - 1];
         cards[1][0] = deck[deck.size() - 2];

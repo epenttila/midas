@@ -16,7 +16,7 @@ holdem_state::holdem_state()
     , raises_(1) // blind counts as raise
     , num_actions_(ACTIONS) // sb has all actions
 {
-    children_.assign(nullptr);
+    children_.fill(nullptr);
 }
 
 holdem_state::holdem_state(const holdem_state* parent, const int action, const int id, const int player,
@@ -30,7 +30,7 @@ holdem_state::holdem_state(const holdem_state* parent, const int action, const i
     , raises_(raises)
     , num_actions_(num_actions)
 {
-    children_.assign(nullptr);
+    children_.fill(nullptr);
 }
 
 holdem_state* holdem_state::act(const int action, const int id)
