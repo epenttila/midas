@@ -23,7 +23,7 @@
 template<class T, class F>
 void partial_shuffle(T& container, int shuffle_count, F& rand)
 {
-    typedef typename std::uniform_int_distribution<int> distr_t;
+    typedef typename std::uniform_int_distribution<std::size_t> distr_t;
     typedef typename distr_t::param_type param_t;
 
     distr_t d;

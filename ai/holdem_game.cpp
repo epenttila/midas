@@ -27,7 +27,7 @@ void holdem_game::solve(const int iterations)
     std::array<int, 52> deck;
 
     for (std::size_t i = 0; i < deck.size(); ++i)
-        deck[i] = i;
+        deck[i] = int(i);
 
     const double start_time = omp_get_wtime();
     double time = start_time;
