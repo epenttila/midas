@@ -9,6 +9,7 @@
 #include <boost/format.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/multi_array.hpp>
+#include <boost/program_options.hpp>
 #include <cassert>
 #include <cctype>
 #include <fstream>

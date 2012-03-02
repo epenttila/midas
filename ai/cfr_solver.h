@@ -105,7 +105,7 @@ public:
 
         const double start_time = omp_get_wtime();
         double time = start_time;
-        int iteration = 0; //iterations_;
+        int iteration = 0;
 
 #pragma omp parallel
         {
@@ -132,14 +132,15 @@ public:
                     acfr[1] = get_accumulated_regret(1) / (iteration + total_iterations_);
                     const int ips = int(iteration / (t - start_time));
                     std::cout
-                        << "iteration: " << iteration << " (" << ips << " i/s)"
-                        << " regret: " << acfr[0] << ", " << acfr[1] << "\n";
+                        << iteration << " (" << ips << " i/s)" << " ACFR: " << acfr[0] << ", " << acfr[1] << "\n";
                     time = t;
                 }
             }
         }
 
-        total_iterations_ += iteration;
+        std::cout << "Time elapsed: " << omp_get_wtime() - start_time << " s\n";
+
+        total_iterations_ += iterations;
     }
 
 private:

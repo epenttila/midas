@@ -15,10 +15,16 @@ if(OPENMP_FOUND)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
-find_package(Boost)
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_MULTITHREADED ON)
+set(Boost_USE_STATIC_RUNTIME OFF)
+
+find_package(Boost COMPONENTS program_options)
 
 if(Boost_FOUND)
 	include_directories(${Boost_INCLUDE_DIRS})
 endif()
+
+add_definitions(-DBOOST_ALL_NO_LIB)
 
 add_subdirectory(ai)
