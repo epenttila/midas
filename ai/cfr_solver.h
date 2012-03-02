@@ -170,7 +170,7 @@ private:
         }
 
         double total_ev = 0;
-        std::array<double, num_actions> action_ev;
+        std::array<double, num_actions> action_ev = {{}};
         const double old_reach = reach[player];
 
         for (int i = 0; i < num_actions; ++i)
@@ -191,8 +191,6 @@ private:
 
                 if (reach[0] >= detail::epsilon || reach[1] >= detail::epsilon)
                     action_ev[i] = update(*next, buckets, reach, result);
-                else
-                    action_ev[i] = 0;
             }
 
             total_ev += action_probabilities[i] * action_ev[i];
