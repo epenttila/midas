@@ -13,7 +13,7 @@ public:
     enum kuhn_round
     {
         FIRST,
-        ROUNDS,
+        ROUNDS
     };
 
     kuhn_state();

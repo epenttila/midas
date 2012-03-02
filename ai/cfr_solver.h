@@ -34,6 +34,7 @@ public:
 
     cfr_solver(const bucket_count_t& bucket_counts)
         : root_(new game_state)
+        , evaluator_()
         , abstraction_(bucket_counts)
         , total_iterations_(0)
     {
@@ -48,7 +49,7 @@ public:
 
             if (!s->is_terminal())
             {
-                assert(s->get_id() == states_.size());
+                assert(s->get_id() == int(states_.size()));
                 states_.push_back(s);
             }
 
