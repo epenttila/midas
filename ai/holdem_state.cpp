@@ -14,32 +14,43 @@ holdem_state::holdem_state()
     , pot_(INITIAL_POT)
     , round_(PREFLOP)
     , raises_(1) // blind counts as raise
-    , num_actions_(ACTIONS) // sb has all actions
+    , child_count_(0) // sb has all actions
 {
     children_.fill(nullptr);
+
+    int id = id_ + 1;
+
+    for (int i = 0; i < ACTIONS; ++i)
+        create_child(i, &id);
 }
 
-holdem_state::holdem_state(const holdem_state* parent, const int action, const int id, const int player,
-    const std::array<int, 2>& pot, const int round, const int raises, const int num_actions)
-    : id_(id)
+holdem_state::holdem_state(const holdem_state* parent, const int action, const int player,
+    const std::array<int, 2>& pot, const int round, const int raises, int* id)
+    : id_(id ? (*id)++ : -1)
     , parent_(parent)
     , action_(action)
     , player_(player)
     , pot_(pot)
     , round_(round)
     , raises_(raises)
-    , num_actions_(num_actions)
+    , child_count_(0)
 {
     children_.fill(nullptr);
+
+    for (int i = 0; i < ACTIONS; ++i)
+        create_child(i, id);
 }
 
-holdem_state* holdem_state::act(const int action, const int id)
+void holdem_state::create_child(const int action, int* id)
 {
     if (is_terminal())
-        return nullptr;
+        return;
 
     if (action == RAISE && raises_ == 4)
-        return nullptr;
+        return;
+
+    if (action == FOLD && parent_ && parent_->action_ == CALL)
+        return;
 
     assert(action_ != FOLD); // parent should be terminal if it was preceeded by folding
 
@@ -76,22 +87,12 @@ holdem_state* holdem_state::act(const int action, const int id)
     else if (action == RAISE)
         ++new_raises;
 
-    int new_num_actions = 0;
-
-    if (!new_terminal)
-    {
-        if (new_raises == 4)
-            new_num_actions = ACTIONS - 1; // capped
-        else
-            new_num_actions = ACTIONS;
-    }
-
     assert(children_[action] == nullptr);
 
-    children_[action] = new holdem_state(this, action, new_terminal ? -1 : id, new_player, new_pot, new_round,
-        new_raises, new_num_actions);
+    children_[action] = new holdem_state(this, action, new_player, new_pot, new_round, new_raises,
+        new_terminal ? nullptr : id);
 
-    return children_[action];
+    ++child_count_;
 }
 
 int holdem_state::get_terminal_ev(const int result) const
@@ -143,7 +144,18 @@ int holdem_state::get_player() const
     return player_;
 }
 
-int holdem_state::get_num_actions() const
+int holdem_state::get_child_count() const
 {
-    return num_actions_;
+    return child_count_;
+}
+
+std::ostream& operator<<(std::ostream& os, const holdem_state& state)
+{
+    const char c[2][holdem_state::ACTIONS] = {{'f', 'c', 'r'}, {'F', 'C', 'R'}};
+    std::string line;
+
+    for (const holdem_state* s = &state; s->get_parent() != nullptr; s = s->get_parent())
+        line = c[s->get_parent()->get_player()][s->get_action()] + line;
+
+    return (os << state.get_id() << ":" << line);
 }

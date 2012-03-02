@@ -1,16 +1,16 @@
 #include "common.h"
-#include "evaluator.h"
+#include "holdem_evaluator.h"
 
-const int evaluator::RANKS = 32487834;
+const int holdem_evaluator::RANKS = 32487834;
 
-evaluator::evaluator()
+holdem_evaluator::holdem_evaluator()
     : ranks_(new int[RANKS])
 {
     std::ifstream f("ranks.dat", std::ios_base::binary);
     f.read(reinterpret_cast<char*>(&ranks_[0]), sizeof(ranks_[0]) * RANKS);
 }
 
-int evaluator::get_hand_value(const int c0, const int c1, const int c2, const int c3, const int c4) const
+int holdem_evaluator::get_hand_value(const int c0, const int c1, const int c2, const int c3, const int c4) const
 {
     int p = ranks_[53 + c0 + 1];
     p = ranks_[p + c1 + 1];
@@ -20,7 +20,7 @@ int evaluator::get_hand_value(const int c0, const int c1, const int c2, const in
     return ranks_[p];
 }
 
-int evaluator::get_hand_value(const int c0, const int c1, const int c2, const int c3, const int c4, const int c5) const
+int holdem_evaluator::get_hand_value(const int c0, const int c1, const int c2, const int c3, const int c4, const int c5) const
 {
     int p = ranks_[53 + c0 + 1];
     p = ranks_[p + c1 + 1];
@@ -31,7 +31,7 @@ int evaluator::get_hand_value(const int c0, const int c1, const int c2, const in
     return ranks_[p];
 }
 
-int evaluator::get_hand_value(const int c0, const int c1, const int c2, const int c3, const int c4, const int c5,
+int holdem_evaluator::get_hand_value(const int c0, const int c1, const int c2, const int c3, const int c4, const int c5,
     const int c6) const
 {
     int p = ranks_[53 + c0 + 1];
@@ -43,7 +43,7 @@ int evaluator::get_hand_value(const int c0, const int c1, const int c2, const in
     return ranks_[p + c6 + 1];
 }
 
-double evaluator::enumerate_preflop(const int c0, const int c1) const
+double holdem_evaluator::enumerate_preflop(const int c0, const int c1) const
 {
     std::array<bool, 52> used = {{}};
     used[c0] = true;
@@ -133,7 +133,7 @@ double evaluator::enumerate_preflop(const int c0, const int c1) const
 }
 
 template<int public_count>
-double evaluator::simulate(const std::array<int, 2>& h1, const std::array<int, public_count>& board, const int iterations) const
+double holdem_evaluator::simulate(const std::array<int, 2>& h1, const std::array<int, public_count>& board, const int iterations) const
 {
     std::array<int, 52 - public_count - 2> deck;
 
@@ -176,44 +176,44 @@ double evaluator::simulate(const std::array<int, 2>& h1, const std::array<int, p
     return (win + 0.5 * tie) / iterations;
 }
 
-double evaluator::simulate_preflop(const int c0, const int c1, const int iterations) const
+double holdem_evaluator::simulate_preflop(const int c0, const int c1, const int iterations) const
 {
     const std::array<int, 2> hand = {{c0, c1}};
     return simulate<0>(hand, std::array<int, 0>(), iterations);
 }
 
-double evaluator::simulate_flop(const int c0, const int c1, const int b0, const int b1, const int b2, const int iterations) const
+double holdem_evaluator::simulate_flop(const int c0, const int c1, const int b0, const int b1, const int b2, const int iterations) const
 {
     const std::array<int, 2> hand = {{c0, c1}};
     const std::array<int, 3> board = {{b0, b1, b2}};
     return simulate<3>(hand, board, iterations);
 }
 
-double evaluator::simulate_turn(const int c0, const int c1, const int b0, const int b1, const int b2, const int b3, const int iterations) const
+double holdem_evaluator::simulate_turn(const int c0, const int c1, const int b0, const int b1, const int b2, const int b3, const int iterations) const
 {
     const std::array<int, 2> hand = {{c0, c1}};
     const std::array<int, 4> board = {{b0, b1, b2, b3}};
     return simulate<4>(hand, board, iterations);
 }
 
-double evaluator::simulate_river(const int c0, const int c1, const int b0, const int b1, const int b2, const int b3, const int b4, const int iterations) const
+double holdem_evaluator::simulate_river(const int c0, const int c1, const int b0, const int b1, const int b2, const int b3, const int b4, const int iterations) const
 {
     const std::array<int, 2> hand = {{c0, c1}};
     const std::array<int, 5> board = {{b0, b1, b2, b3, b4}};
     return simulate<5>(hand, board, iterations);
 }
 
-int evaluator::get_rank(int card)
+int holdem_evaluator::get_rank(int card)
 {
     return card / 4;
 }
 
-int evaluator::get_suit(int card)
+int holdem_evaluator::get_suit(int card)
 {
     return card % 4;
 }
 
-int evaluator::get_hand(int rank, int suit)
+int holdem_evaluator::get_hand(int rank, int suit)
 {
     return rank * 4 + suit;
 }

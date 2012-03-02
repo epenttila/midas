@@ -1,12 +1,12 @@
 #pragma once
 
-class evaluator
+class holdem_evaluator
 {
 public:
     enum { CLUB, DIAMOND, HEART, SPADE };
     typedef std::array<int, 7> hand_t;
 
-    evaluator();
+    holdem_evaluator();
     int get_hand_value(int c0, int c1, int c2, int c3, int c4) const;
     int get_hand_value(int c0, int c1, int c2, int c3, int c4, int c5) const;
     int get_hand_value(int c0, int c1, int c2, int c3, int c4, int c5, int c6) const;

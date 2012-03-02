@@ -10,6 +10,7 @@
 #include <boost/functional/hash.hpp>
 #include <boost/multi_array.hpp>
 #include <cassert>
+#include <cctype>
 #include <fstream>
 #include <iostream>
 #include <omp.h>

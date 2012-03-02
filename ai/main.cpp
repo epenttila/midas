@@ -1,4 +1,5 @@
 #include "common.h"
+#include "cfr_solver.h"
 #include "kuhn_game.h"
 #include "holdem_game.h"
 
@@ -9,30 +10,36 @@ int main(int argc, char* argv[])
 
     const std::string name = argv[1];
     const int iterations = std::atoi(argv[2]);
-    std::unique_ptr<game_base> game;
+    std::unique_ptr<solver_base> solver;
 
     if (name == "kuhn")
-        game.reset(new kuhn_game);
+    {
+        const std::array<int, 1> bucket_counts = {{1}};
+        solver.reset(new cfr_solver<kuhn_game>(bucket_counts));
+    }
     else if (name == "holdem")
-        game.reset(new holdem_game);
+    {
+        const std::array<int, holdem_state::ROUNDS> bucket_counts = {{3, 9, 9, 9}};
+        solver.reset(new cfr_solver<holdem_game>(bucket_counts));
+    }
 
     {
         std::ifstream f("state.dat");
 
         if (f)
-            game->load(f);
+            solver->load_state(f);
     }
 
-    game->solve(iterations);
+    solver->solve(iterations);
 
     {
-        std::ofstream f("log.txt");
-        f << *game;
+        std::ofstream f("strategy.txt");
+        f << *solver;
     }
 
     {
         std::ofstream f("state.dat");
-        game->save(f);
+        solver->save_state(f);
     }
 
     return 0;

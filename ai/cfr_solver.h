@@ -5,27 +5,73 @@ namespace detail
     static const double epsilon = 1e-7;
 }
 
-template<class game_state, int num_actions, int num_rounds>
-class cfr_solver : private boost::noncopyable
+class solver_base
+{
+    friend std::ostream& operator<<(std::ostream& o, const solver_base& solver);
+
+public:
+    virtual void solve(const int iterations) = 0;
+    virtual void save_state(std::ostream&) const = 0;
+    virtual void load_state(std::istream&) = 0;
+    //virtual void save_strategy(std::ostream&) const = 0;
+    virtual std::ostream& print(std::ostream&) const = 0;
+};
+
+inline std::ostream& operator<<(std::ostream& o, const solver_base& solver)
+{
+    return solver.print(o);
+}
+
+template<class game, int num_actions = game::state_t::ACTIONS, int num_rounds = game::state_t::ROUNDS>
+class cfr_solver : public solver_base, private boost::noncopyable
 {
 public:
-    typedef std::array<int, num_rounds> bucket_count_t;
-    typedef std::array<std::array<int, num_rounds>, 2> bucket_t;
+    typedef typename game::state_t game_state;
+    typedef typename game::bucket_t bucket_t;
+    typedef typename game::evaluator_t evaluator_t;
+    typedef typename game::abstraction_t abstraction_t;
+    typedef typename std::array<int, num_rounds> bucket_count_t;
 
-    cfr_solver(const std::vector<game_state*>& states, const bucket_count_t& bucket_counts)
-        : states_(states)
-        , bucket_counts_(bucket_counts)
-        , regrets_(new value[states.size()])
-        , strategy_(new value[states.size()])
+    cfr_solver(const bucket_count_t& bucket_counts)
+        : root_(new game_state)
+        , abstraction_(bucket_counts)
+        , total_iterations_(0)
     {
         accumulated_regret_.fill(0);
 
-        for (std::size_t i = 0; i < states.size(); ++i)
+        std::vector<const game_state*> stack(1, root_.get());
+
+        while (!stack.empty())
         {
-            if (states[i]->is_terminal())
+            const game_state* s = stack.back();
+            stack.pop_back();
+
+            if (!s->is_terminal())
+            {
+                assert(s->get_id() == states_.size());
+                states_.push_back(s);
+            }
+
+            for (int i = num_actions - 1; i >= 0; --i)
+            {
+                if (const game_state* child = s->get_child(i))
+                    stack.push_back(child);
+            }
+        }
+
+        assert(states_.size() > 1); // invalid game tree
+        assert(root_->get_child_count() > 0);
+
+        regrets_ = new value[states_.size()];
+        strategy_ = new value[states_.size()];
+
+        for (std::size_t i = 0; i < states_.size(); ++i)
+        {
+            if (states_[i]->is_terminal())
                 continue;
 
-            const int num_buckets = bucket_counts[states[i]->get_round()];
+            const int num_buckets = abstraction_.get_bucket_count(states_[i]->get_round());
+            assert(num_buckets > 0);
             regrets_[i] = new double[num_buckets][num_actions];
             strategy_[i] = new double[num_buckets][num_actions];
 
@@ -52,12 +98,58 @@ public:
         delete[] strategy_;
     }
 
+    virtual void solve(const int iterations)
+    {
+        std::random_device rd;
+
+        const double start_time = omp_get_wtime();
+        double time = start_time;
+        int iteration = 0; //iterations_;
+
+#pragma omp parallel
+        {
+            game g;
+
+#pragma omp for
+            for (int i = 0; i < iterations; ++i)
+            {
+                bucket_t buckets;
+                const int result = g.play(evaluator_, abstraction_, &buckets);
+
+                std::array<double, 2> reach = {{1.0, 1.0}};
+                update(*states_[0], buckets, reach, result);
+
+#pragma omp atomic
+                ++iteration;
+
+                const double t = omp_get_wtime();
+
+                if (iteration == iterations || (omp_get_thread_num() == 0 && t - time >= 1))
+                {
+                    std::array<double, 2> acfr;
+                    acfr[0] = get_accumulated_regret(0) / (iteration + total_iterations_);
+                    acfr[1] = get_accumulated_regret(1) / (iteration + total_iterations_);
+                    const int ips = int(iteration / (t - start_time));
+                    std::cout
+                        << "iteration: " << iteration << " (" << ips << " i/s)"
+                        << " regret: " << acfr[0] << ", " << acfr[1] << "\n";
+                    time = t;
+                }
+            }
+        }
+
+        total_iterations_ += iteration;
+    }
+
+private:
     double update(const game_state& state, const bucket_t& buckets, std::array<double, 2>& reach, const int result)
     {
         const int player = state.get_player();
         const int opponent = player ^ 1;
         const int bucket = buckets[player][state.get_round()];
         std::array<double, num_actions> action_probabilities;
+
+        assert(bucket >= 0 && bucket < abstraction_.get_bucket_count(state.get_round()));
 
         get_regret_strategy(state, bucket, action_probabilities);
 
@@ -150,7 +242,7 @@ public:
         else
         {
             for (int i = 0; i < num_actions; ++i)
-                out[i] = state.get_child(i) ? 1.0 / state.get_num_actions() : 0.0;
+                out[i] = state.get_child(i) ? 1.0 / state.get_child_count() : 0.0;
         }
     }
 
@@ -162,6 +254,7 @@ public:
         for (int i = 0; i < num_actions; ++i)
         {
             assert(state.get_child(i) || bucket_strategy[i] <= detail::epsilon);
+            assert(bucket_strategy[i] >= 0);
             bucket_sum += bucket_strategy[i];
         }
 
@@ -173,13 +266,8 @@ public:
         else
         {
             for (int i = 0; i < num_actions; ++i)
-                out[i] = state.get_child(i) ? 1.0 / state.get_num_actions() : 0.0;
+                out[i] = state.get_child(i) ? 1.0 / state.get_child_count() : 0.0;
         }
-    }
-
-    int get_bucket_count(const int round) const
-    {
-        return bucket_counts_[round];
     }
 
     double get_accumulated_regret(const int player) const
@@ -187,8 +275,9 @@ public:
         return accumulated_regret_[player];
     }
 
-    void save(std::ostream& os) const
+    void save_state(std::ostream& os) const
     {
+        os.write(reinterpret_cast<const char*>(&total_iterations_), sizeof(int));
         os.write(reinterpret_cast<const char*>(&accumulated_regret_[0]), sizeof(double));
         os.write(reinterpret_cast<const char*>(&accumulated_regret_[1]), sizeof(double));
 
@@ -197,7 +286,7 @@ public:
             if (states_[i]->is_terminal())
                 continue;
 
-            for (int j = 0; j < bucket_counts_[states_[i]->get_round()]; ++j)
+            for (int j = 0; j < abstraction_.get_bucket_count(states_[i]->get_round()); ++j)
             {
                 for (int k = 0; k < num_actions; ++k)
                 {
@@ -208,8 +297,9 @@ public:
         }
     }
 
-    void load(std::istream& is)
+    void load_state(std::istream& is)
     {
+        is.read(reinterpret_cast<char*>(&total_iterations_), sizeof(int));
         is.read(reinterpret_cast<char*>(&accumulated_regret_[0]), sizeof(double));
         is.read(reinterpret_cast<char*>(&accumulated_regret_[1]), sizeof(double));
 
@@ -218,7 +308,7 @@ public:
             if (states_[i]->is_terminal())
                 continue;
 
-            for (int j = 0; j < bucket_counts_[states_[i]->get_round()]; ++j)
+            for (int j = 0; j < abstraction_.get_bucket_count(states_[i]->get_round()); ++j)
             {
                 for (int k = 0; k < num_actions; ++k)
                 {
@@ -229,11 +319,44 @@ public:
         }
     }
 
+    std::ostream& print(std::ostream& os) const
+    {
+        os << "total iterations: " << total_iterations_ << "\n";
+        os << "internal states: " << states_.size() << "\n";
+        os << "accumulated regret: " << accumulated_regret_[0] << ", " << accumulated_regret_[1] << "\n";
+
+        for (std::size_t i = 0; i < states_.size(); ++i)
+        {
+            if (states_[i]->is_terminal())
+                continue;
+
+            std::string line;
+
+            for (int j = 0; j < abstraction_.get_bucket_count(states_[i]->get_round()); ++j)
+            {
+                os << *states_[i] << "," << j;
+
+                std::array<double, num_actions> p;
+                get_average_strategy(*states_[i], j, p);
+
+                for (std::size_t k = 0; k < p.size(); ++k)
+                    os << "," << std::fixed << p[k];
+
+                os << "\n";
+            }
+        }
+
+        return os;
+    }
+
 private:
-    const std::vector<game_state*> states_;
-    const bucket_count_t bucket_counts_;
+    std::vector<const game_state*> states_;
     typedef double (*value)[num_actions];
     value* regrets_;
     value* strategy_;
     std::array<double, 2> accumulated_regret_;
+    std::unique_ptr<game_state> root_;
+    const evaluator_t evaluator_;
+    const abstraction_t abstraction_;
+    int total_iterations_;
 };
