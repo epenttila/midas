@@ -49,7 +49,7 @@ void holdem_state::create_child(const int action, int* id)
     if (action == RAISE && raises_ == 4)
         return;
 
-    if (action == FOLD && parent_ && parent_->action_ == CALL)
+    if (action == FOLD && action_ == CALL)
         return;
 
     assert(action_ != FOLD); // parent should be terminal if it was preceeded by folding

@@ -101,8 +101,6 @@ public:
 
     virtual void solve(const int iterations)
     {
-        std::random_device rd;
-
         const double start_time = omp_get_wtime();
         double time = start_time;
         int iteration = 0;
