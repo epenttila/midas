@@ -27,4 +27,4 @@ endif()
 
 add_definitions(-DBOOST_ALL_NO_LIB)
 
-add_subdirectory(ai)
+add_subdirectory(cfr)

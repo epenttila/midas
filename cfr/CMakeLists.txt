@@ -23,6 +23,6 @@ set(HEADERS
     kuhn_state.h
 )
 
-add_executable(ai ${SOURCES} ${HEADERS})
+add_executable(cfr ${SOURCES} ${HEADERS})
 file(INSTALL ranks.dat DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-target_link_libraries(ai ${Boost_LIBRARIES})
+target_link_libraries(cfr ${Boost_LIBRARIES})
