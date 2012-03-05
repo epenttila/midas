@@ -207,9 +207,12 @@ private:
                     continue;
 
                 // counterfactual regret
-                const double delta_regret = (action_ev[i] - total_ev) * reach[opponent];
+                double delta_regret = (action_ev[i] - total_ev) * reach[opponent];
 
-                regrets[i] += player == 0 ? delta_regret : -delta_regret; // invert sign for P2
+                if (player == 1)
+                    delta_regret = -delta_regret; // invert sign for P2
+
+                regrets[i] += delta_regret;
 
                 if (delta_regret > detail::epsilon)
                     accumulated_regret_[player] += delta_regret;
