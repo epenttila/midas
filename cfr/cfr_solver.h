@@ -1,5 +1,11 @@
 #pragma once
 
+#include <ostream>
+#include <boost/noncopyable.hpp>
+#include <array>
+#include <vector>
+#include <omp.h>
+
 namespace detail
 {
     static const double epsilon = 1e-7;

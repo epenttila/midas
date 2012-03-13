@@ -1,5 +1,8 @@
 #pragma once
 
+#include <boost/noncopyable.hpp>
+#include <array>
+
 class holdem_state : private boost::noncopyable
 {
 public:

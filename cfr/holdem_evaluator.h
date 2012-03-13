@@ -1,28 +1,31 @@
 #pragma once
 
-class holdem_evaluator
+#include <boost/noncopyable.hpp>
+#include <array>
+#include "twoplustwo_evaluator.h"
+
+struct result
+{
+    double ehs;
+    double ehs2;
+};
+
+class holdem_evaluator : private boost::noncopyable
 {
 public:
-    enum { CLUB, DIAMOND, HEART, SPADE };
-    typedef std::array<int, 7> hand_t;
-
     holdem_evaluator();
     int get_hand_value(int c0, int c1, int c2, int c3, int c4) const;
     int get_hand_value(int c0, int c1, int c2, int c3, int c4, int c5) const;
     int get_hand_value(int c0, int c1, int c2, int c3, int c4, int c5, int c6) const;
-    static int get_rank(int card);
-    static int get_suit(int card);
-    static int get_hand(int rank, int suit);
-    double enumerate_preflop(int c0, int c1) const;
-    double simulate_preflop(int c0, int c1, int iterations) const;
-    double simulate_flop(int c0, int c1, int b0, int b1, int b2, int iterations) const;
-    double simulate_turn(int c0, int c1, int b0, int b1, int b2, int b3, int iterations) const;
-    double simulate_river(int c0, int c1, int b0, int b1, int b2, int b3, int b4, int iterations) const;
-
-    template<int public_count>
-    double simulate(const std::array<int, 2>& h1, const std::array<int, public_count>& board, const int iterations) const;
+    const result enumerate_preflop(const int c0, const int c1) const;
+    const result enumerate_flop(const int c0, const int c1, const int b0, const int b1, const int b2) const;
+    const result enumerate_turn(const int c0, const int c1, const int b0, const int b1, const int b2, const int b3) const;
+    double enumerate_river(const int c0, const int c1, const int b0, const int b1, const int b2, const int b3, const int b4) const;
+    const result simulate_preflop(const int c0, const int c1, const int iterations) const;
+    const result simulate_flop(const int c0, const int c1, const int b0, const int b1, const int b2, const int iterations) const;
+    const result simulate_turn(const int c0, const int c1, const int b0, const int b1, const int b2, const int b3, const int iterations) const;
+    const result simulate_river(const int c0, const int c1, const int b0, const int b1, const int b2, const int b3, const int b4, const int iterations) const;
 
 private:
-    static const int RANKS;
-    std::unique_ptr<int[]> ranks_;
+    const twoplustwo_evaluator evaluator_;
 };

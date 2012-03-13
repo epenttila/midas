@@ -1,18 +1,15 @@
-#include "common.h"
 #include "holdem_abstraction.h"
-#include "holdem_evaluator.h"
+#include "card.h"
 
-const int holdem_abstraction::ITERATIONS = 10000;
-
-holdem_abstraction::holdem_abstraction(const std::array<int, 4>&)
-    : evaluator_(new holdem_evaluator)
+holdem_abstraction::holdem_abstraction(const bucket_type&)
+    : evaluator_(new evaluator)
 {
 }
 
 int holdem_abstraction::get_preflop_bucket(const int c0, const int c1) const
 {
-    const std::pair<int, int> ranks = std::minmax(holdem_evaluator::get_rank(c0), holdem_evaluator::get_rank(c1));
-    const int suits[2] = {holdem_evaluator::get_suit(c0), holdem_evaluator::get_suit(c1)};
+    const std::pair<int, int> ranks = std::minmax(get_rank(c0), get_rank(c1));
+    const int suits[2] = {get_suit(c0), get_suit(c1)};
 
     if (ranks.first == ranks.second)
         return 0;
@@ -43,4 +40,13 @@ int holdem_abstraction::get_bucket_count(int round) const
         return 3;
     else
         return 9;
+}
+
+void holdem_abstraction::get_buckets(const int c0, const int c1, const int b0, const int b1, const int b2, const int b3,
+    const int b4, bucket_type* buckets) const
+{
+    (*buckets)[holdem_state::PREFLOP] = get_preflop_bucket(c0, c1);
+    (*buckets)[holdem_state::FLOP] = get_flop_bucket(c0, c1, b0, b1, b2);
+    (*buckets)[holdem_state::TURN] = get_turn_bucket(c0, c1, b0, b1, b2, b3);
+    (*buckets)[holdem_state::RIVER] = get_river_bucket(c0, c1, b0, b1, b2, b3, b4);
 }

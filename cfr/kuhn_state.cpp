@@ -1,5 +1,6 @@
-#include "common.h"
 #include "kuhn_state.h"
+#include <cassert>
+#include <string>
 
 namespace
 {

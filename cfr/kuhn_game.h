@@ -1,5 +1,6 @@
 #pragma once
 
+#include <random>
 #include "kuhn_state.h"
 #include "kuhn_evaluator.h"
 #include "kuhn_abstraction.h"

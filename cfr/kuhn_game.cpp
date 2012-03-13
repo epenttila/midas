@@ -1,5 +1,5 @@
-#include "common.h"
 #include "kuhn_game.h"
+#include "partial_shuffle.h"
 
 kuhn_game::kuhn_game()
 {

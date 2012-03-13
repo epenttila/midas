@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 class kuhn_abstraction
 {
 public:

@@ -1,7 +1,16 @@
-#include "common.h"
+#ifdef _MSC_VER
+#pragma warning(push, 3)
+#endif
+#include <boost/program_options.hpp>
+#include <iostream>
+#include <fstream>
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 #include "cfr_solver.h"
 #include "kuhn_game.h"
 #include "holdem_game.h"
+#include "holdem_abstraction.h"
 
 int main(int argc, char* argv[])
 {
@@ -11,6 +20,7 @@ int main(int argc, char* argv[])
     std::string strategy_file;
     std::string game;
     int iterations = 0;
+    std::string abstraction;
 
     po::options_description desc("Options");
     desc.add_options()
@@ -19,6 +29,7 @@ int main(int argc, char* argv[])
         ("strategy-file", po::value<std::string>(&strategy_file), "strategy file")
         ("game", po::value<std::string>(&game)->default_value("kuhn"), "game type")
         ("iterations", po::value<int>(&iterations)->default_value(1000000), "number of iterations")
+        ("abstraction", po::value<std::string>(&abstraction)->default_value("default"), "abstraction type")
         ;
 
     po::variables_map vm;
@@ -34,6 +45,7 @@ int main(int argc, char* argv[])
     std::unique_ptr<solver_base> solver;
 
     std::cout << "Creating solver for game: " << game << "\n";
+    std::cout << "Using abstraction: " << abstraction << "\n";
 
     if (game == "kuhn")
     {
