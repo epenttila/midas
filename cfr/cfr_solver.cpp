@@ -2,6 +2,7 @@
 #include <cassert>
 #include <iostream>
 #include <omp.h>
+#include <boost/format.hpp>
 
 namespace
 {
@@ -89,7 +90,7 @@ void cfr_solver<T>::solve(const int iterations)
     {
         T g;
 
-#pragma omp for
+#pragma omp for schedule(dynamic)
         for (int i = 0; i < iterations; ++i)
         {
             bucket_t buckets;
@@ -105,18 +106,20 @@ void cfr_solver<T>::solve(const int iterations)
 
             if (iteration == iterations || (omp_get_thread_num() == 0 && t - time >= 1))
             {
+                const double duration = t - start_time;
+                const int hour = int(duration / 3600);
+                const int minute = int(duration / 60 - hour * 60);
+                const int second = int(duration - minute * 60 - hour * 3600);
+                const int ips = int(iteration / duration);
                 std::array<double, 2> acfr;
                 acfr[0] = get_accumulated_regret(0) / (iteration + total_iterations_);
                 acfr[1] = get_accumulated_regret(1) / (iteration + total_iterations_);
-                const int ips = int(iteration / (t - start_time));
-                std::cout
-                    << iteration << " (" << ips << " i/s)" << " ACFR: " << acfr[0] << ", " << acfr[1] << "\n";
+                std::cout << boost::format("%02d:%02d:%02d: %d (%d i/s) ACFR: %f, %f\n") %
+                    hour % minute % second % iteration % ips % acfr[0] % acfr[1];
                 time = t;
             }
         }
     }
-
-    std::cout << "Time elapsed: " << omp_get_wtime() - start_time << " s\n";
 
     total_iterations_ += iterations;
 }
