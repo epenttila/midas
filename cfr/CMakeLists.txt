@@ -1,4 +1,5 @@
 set(CFR_SOURCES
+    cfr_solver.cpp
     holdem_abstraction.cpp
     holdem_evaluator.cpp
     holdem_flop_lut.cpp
