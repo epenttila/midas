@@ -1,4 +1,5 @@
 #include "holdem_game.h"
+#include <numeric>
 #include "holdem_abstraction.h"
 #include "partial_shuffle.h"
 
@@ -7,8 +8,7 @@ holdem_game::holdem_game()
     std::random_device rd;
     engine_.seed(rd());
 
-    for (std::size_t i = 0; i < deck_.size(); ++i)
-        deck_[i] = int(i);
+    std::iota(deck_.begin(), deck_.end(), 0);
 }
 
 int holdem_game::play(const evaluator_t& eval, const abstraction_t& abs, bucket_t* buckets)

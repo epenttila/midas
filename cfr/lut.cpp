@@ -1,6 +1,7 @@
 #include <random>
 #include <iostream>
 #include <fstream>
+#include <numeric>
 #include "holdem_preflop_lut.h"
 #include "holdem_flop_lut.h"
 #include "holdem_evaluator.h"
@@ -15,8 +16,7 @@ namespace
         holdem_evaluator e;
         std::array<int, 52> deck;
 
-        for (int i = 0; i < 52; ++i)
-            deck[i] = i;
+        std::iota(deck.begin(), deck.end(), 0);
 
 #pragma omp parallel firstprivate(deck)
         {
