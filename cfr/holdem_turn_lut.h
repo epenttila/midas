@@ -43,13 +43,13 @@ public:
     typedef std::pair<float, float> data_type;
 
     holdem_turn_lut();
-    holdem_turn_lut(std::istream& is);
+    holdem_turn_lut(std::istream&& is);
     void save(std::ostream& os) const;
     const data_type& get(int c0, int c1, int b0, int b1, int b2, int b3) const;
+    int get_key(int c0, int c1, int b0, int b1, int b2, int b3) const;
 
 private:
     void init();
-    int get_key(int c0, int c1, int b0, int b1, int b2, int b3) const;
 
     mutable std::vector<data_type> data_;
     std::array<std::array<int, 13>, 3> rank_indexes_;

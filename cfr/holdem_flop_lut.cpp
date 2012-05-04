@@ -27,7 +27,6 @@ namespace
 }
 
 holdem_flop_lut::holdem_flop_lut()
-    : data_(SIZE, data_type())
 {
     init();
 
@@ -90,14 +89,17 @@ holdem_flop_lut::holdem_flop_lut()
     }
 }
 
-holdem_flop_lut::holdem_flop_lut(std::istream& is)
-    : data_(SIZE, data_type())
+holdem_flop_lut::holdem_flop_lut(std::istream&& is)
 {
     if (!is)
         throw std::runtime_error("bad istream");
 
     init();
+
     is.read(reinterpret_cast<char*>(&data_[0]), sizeof(data_type) * data_.size());
+
+    if (!is)
+        throw std::runtime_error("read failed");
 }
 
 void holdem_flop_lut::save(std::ostream& os) const

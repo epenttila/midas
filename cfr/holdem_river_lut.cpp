@@ -117,13 +117,16 @@ holdem_river_lut::holdem_river_lut()
     }
 }
 
-holdem_river_lut::holdem_river_lut(std::istream& is)
+holdem_river_lut::holdem_river_lut(std::istream&& is)
 {
     if (!is)
         throw std::runtime_error("bad istream");
 
     init();
     is.read(reinterpret_cast<char*>(&data_[0]), sizeof(data_type) * data_.size());
+
+    if (!is)
+        throw std::runtime_error("read failed");
 }
 
 void holdem_river_lut::save(std::ostream& os) const

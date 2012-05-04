@@ -52,12 +52,15 @@ holdem_preflop_lut::holdem_preflop_lut()
     }
 }
 
-holdem_preflop_lut::holdem_preflop_lut(std::istream& is)
+holdem_preflop_lut::holdem_preflop_lut(std::istream&& is)
 {
     if (!is)
         throw std::runtime_error("bad istream");
 
     is.read(reinterpret_cast<char*>(&data_), sizeof(data_));
+
+    if (!is)
+        throw std::runtime_error("read failed");
 }
 
 void holdem_preflop_lut::save(std::ostream& os) const

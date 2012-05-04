@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
             {
                 holdem_flop_lut lut;
                 std::ofstream f("holdem_flop_lut.dat", std::ios::binary);
-                //lut.save(f);
+                lut.save(f);
             }
             break;
         case 2:
@@ -98,29 +98,25 @@ int main(int argc, char* argv[])
         {
         case 0:
             {
-                std::ifstream f("holdem_preflop_lut.dat", std::ios::binary);
-                const holdem_preflop_lut lut(f);
+                const holdem_preflop_lut lut(std::ifstream("holdem_preflop_lut.dat", std::ios::binary));
                 //test_flop(lut);
             }
             break;
         case 1:
             {
-                std::ifstream f("holdem_flop_lut.dat", std::ios::binary);
-                const holdem_flop_lut lut(f);
+                const holdem_flop_lut lut(std::ifstream("holdem_flop_lut.dat", std::ios::binary));
                 //test_flop(lut);
             }
             break;
         case 2:
             {
-                std::ifstream f("holdem_turn_lut.dat", std::ios::binary);
-                const holdem_turn_lut lut(f);
+                const holdem_turn_lut lut(std::ifstream("holdem_turn_lut.dat", std::ios::binary));
                 //test_turn(lut);
             }
             break;
         case 3:
             {
-                std::ifstream f("holdem_river_lut.dat", std::ios::binary);
-                const holdem_river_lut lut(f);
+                const holdem_river_lut lut(std::ifstream("holdem_river_lut.dat", std::ios::binary));
                 test_river(lut);
             }
             break;
