@@ -75,13 +75,16 @@ def callback(id, type, *args):
         print '%s is sitting out' % names[args[0]]
 
 
-#random.seed(1)
-
 strats = sys.argv[1:3]
 hands = int(sys.argv[3])
 bankroll = 100000000
 
 game = PokerGameServer('poker.%s.xml', ['conf'])
+game.shuffler = random.Random()
+
+if len(sys.argv) >= 4:
+    game.shuffler.seed(sys.argv[4])
+
 game.registerCallback(callback)
 game.setVariant('holdem')
 game.setBettingStructure('10-20-limit')
@@ -139,7 +142,7 @@ for serial in game.serialsAll():
     print '%s: net %f BB, wr %f mb/h' % (names[serial], net, wr)
 
 plt.plot(points)
-plt.xlabel('hand')
+plt.xlabel('Hand')
 plt.ylabel('BB')
 plt.title(names[0] + ' vs. ' + names[1])
-plt.savefig('graph.pdf')
+plt.savefig('%s-vs-%s.pdf' % (names[0], names[1]))

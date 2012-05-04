@@ -15,23 +15,23 @@ class CallBot(Actor):
 
 
 class RaiseBot(Actor):
-    def act(self, game, serial):
-        if game.canRaise(serial):
-            game.callNraise(serial, 1)
+    def act(self):
+        if self.game.canRaise(self.serial):
+            self.game.callNraise(self.serial, 1)
         else:
-            game.call(serial)
+            self.game.call(self.serial)
 
 
 class RandomBot(Actor):
-    def act(self, game, serial):
-        action = random.randint(1 if game.canCheck(serial) else 0, 2 if game.canRaise(serial) else 1)
+    def act(self):
+        action = random.randint(1 if self.game.canCheck(self.serial) else 0, 2 if self.game.canRaise(self.serial) else 1)
         if action == 0:
-            game.fold(serial)
+            self.game.fold(self.serial)
         elif action == 1:
-            game.call(serial)
+            self.game.call(self.serial)
         elif action == 2:
-            limits = game.betLimits(serial)
-            game.callNraise(serial, random.randint(limits[0], limits[1]))
+            limits = self.game.betLimits(self.serial)
+            self.game.callNraise(self.serial, random.randint(limits[0], limits[1]))
 
 
 class Human(Actor):
