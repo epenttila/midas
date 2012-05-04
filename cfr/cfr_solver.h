@@ -33,9 +33,8 @@ public:
     typedef typename T::bucket_t bucket_t;
     typedef typename T::evaluator_t evaluator_t;
     typedef typename T::abstraction_t abstraction_t;
-    typedef typename std::array<int, ROUNDS> bucket_count_t;
 
-    cfr_solver(const bucket_count_t& bucket_counts);
+    cfr_solver(const std::string& bucket_configuration);
     ~cfr_solver();
     virtual void solve(const int iterations);
 

@@ -10,10 +10,10 @@ namespace
 }
 
 template<class T>
-cfr_solver<T>::cfr_solver(const bucket_count_t& bucket_counts)
+cfr_solver<T>::cfr_solver(const std::string& bucket_configuration)
     : root_(new game_state)
     , evaluator_()
-    , abstraction_(bucket_counts)
+    , abstraction_(bucket_configuration)
     , total_iterations_(0)
 {
     accumulated_regret_.fill(0);
@@ -85,7 +85,6 @@ void cfr_solver<T>::solve(const int iterations)
     double time = start_time;
     int iteration = 0;
 
-    /// @todo benchmark schedule(dynamic)
 #pragma omp parallel
     {
         T g;

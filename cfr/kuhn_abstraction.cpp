@@ -1,6 +1,6 @@
 #include "kuhn_abstraction.h"
 
-kuhn_abstraction::kuhn_abstraction(const std::array<int, 1>&)
+kuhn_abstraction::kuhn_abstraction(const std::string&)
 {
 }
 
