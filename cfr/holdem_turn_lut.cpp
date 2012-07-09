@@ -326,7 +326,7 @@ void holdem_turn_lut::init()
                 case SUIT_AABB:
                 case SUIT_ABAB:
                 case SUIT_ABBA:
-                    offset += 9;
+                    offset += 9; // PP, PS, PO, SP, SS, SO, OP, OS, OO
                     break;
                 case SUIT_ABCD:
                     offset += 1; // OO
