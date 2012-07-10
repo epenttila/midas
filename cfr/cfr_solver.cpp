@@ -9,9 +9,9 @@ namespace
     static const double EPSILON = 1e-7;
 }
 
-template<class T>
-cfr_solver<T>::cfr_solver(const std::string& bucket_configuration)
-    : root_(new game_state)
+template<class T, class U>
+cfr_solver<T, U>::cfr_solver(const std::string& bucket_configuration, const int stack_size)
+    : root_(new game_state(stack_size))
     , evaluator_()
     , abstraction_(bucket_configuration)
     , total_iterations_(0)
@@ -37,6 +37,8 @@ cfr_solver<T>::cfr_solver(const std::string& bucket_configuration)
                 stack.push_back(child);
         }
     }
+
+    std::cout << states_.size() << " game states\n";
 
     assert(states_.size() > 1); // invalid game tree
     assert(root_->get_child_count() > 0);
@@ -65,8 +67,8 @@ cfr_solver<T>::cfr_solver(const std::string& bucket_configuration)
     }
 }
 
-template<class T>
-cfr_solver<T>::~cfr_solver()
+template<class T, class U>
+cfr_solver<T, U>::~cfr_solver()
 {
     for (std::size_t i = 0; i < states_.size(); ++i)
     {
@@ -78,8 +80,8 @@ cfr_solver<T>::~cfr_solver()
     delete[] strategy_;
 }
 
-template<class T>
-void cfr_solver<T>::solve(const int iterations)
+template<class T, class U>
+void cfr_solver<T, U>::solve(const int iterations)
 {
     const double start_time = omp_get_wtime();
     double time = start_time;
@@ -123,8 +125,8 @@ void cfr_solver<T>::solve(const int iterations)
     total_iterations_ += iterations;
 }
 
-template<class T>
-double cfr_solver<T>::update(const game_state& state, const bucket_t& buckets, std::array<double, 2>& reach, const int result)
+template<class T, class U>
+double cfr_solver<T, U>::update(const game_state& state, const bucket_t& buckets, std::array<double, 2>& reach, const int result)
 {
     const int player = state.get_player();
     const int opponent = player ^ 1;
@@ -204,8 +206,8 @@ double cfr_solver<T>::update(const game_state& state, const bucket_t& buckets, s
     return total_ev;
 }
 
-template<class T>
-void cfr_solver<T>::get_regret_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out)
+template<class T, class U>
+void cfr_solver<T, U>::get_regret_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out)
 {
     const auto& bucket_regret = regrets_[state.get_id()][bucket];
     double bucket_sum = 0;
@@ -230,8 +232,8 @@ void cfr_solver<T>::get_regret_strategy(const game_state& state, const int bucke
     }
 }
 
-template<class T>
-void cfr_solver<T>::get_average_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out) const
+template<class T, class U>
+void cfr_solver<T, U>::get_average_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out) const
 {
     const auto& bucket_strategy = strategy_[state.get_id()][bucket];
     double bucket_sum = 0;
@@ -255,14 +257,14 @@ void cfr_solver<T>::get_average_strategy(const game_state& state, const int buck
     }
 }
 
-template<class T>
-double cfr_solver<T>::get_accumulated_regret(const int player) const
+template<class T, class U>
+double cfr_solver<T, U>::get_accumulated_regret(const int player) const
 {
     return accumulated_regret_[player];
 }
 
-template<class T>
-void cfr_solver<T>::save_state(std::ostream& os) const
+template<class T, class U>
+void cfr_solver<T, U>::save_state(std::ostream& os) const
 {
     os.write(reinterpret_cast<const char*>(&total_iterations_), sizeof(int));
     os.write(reinterpret_cast<const char*>(&accumulated_regret_[0]), sizeof(double));
@@ -284,8 +286,8 @@ void cfr_solver<T>::save_state(std::ostream& os) const
     }
 }
 
-template<class T>
-void cfr_solver<T>::load_state(std::istream& is)
+template<class T, class U>
+void cfr_solver<T, U>::load_state(std::istream& is)
 {
     is.read(reinterpret_cast<char*>(&total_iterations_), sizeof(int));
     is.read(reinterpret_cast<char*>(&accumulated_regret_[0]), sizeof(double));
@@ -307,8 +309,8 @@ void cfr_solver<T>::load_state(std::istream& is)
     }
 }
 
-template<class T>
-std::ostream& cfr_solver<T>::print(std::ostream& os) const
+template<class T, class U>
+std::ostream& cfr_solver<T, U>::print(std::ostream& os) const
 {
     os << "total iterations: " << total_iterations_ << "\n";
     os << "internal states: " << states_.size() << "\n";
@@ -340,6 +342,10 @@ std::ostream& cfr_solver<T>::print(std::ostream& os) const
 
 #include "holdem_game.h"
 #include "kuhn_game.h"
+#include "holdem_state.h"
+#include "kuhn_state.h"
+#include "nl_holdem_state.h"
 
-template class cfr_solver<holdem_game>;
-template class cfr_solver<kuhn_game>;
+template class cfr_solver<holdem_game, holdem_state>;
+template class cfr_solver<kuhn_game, kuhn_state>;
+template class cfr_solver<holdem_game, nl_holdem_state>;

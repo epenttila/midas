@@ -11,6 +11,9 @@
 #include "kuhn_game.h"
 #include "holdem_game.h"
 #include "holdem_abstraction.h"
+#include "kuhn_state.h"
+#include "holdem_state.h"
+#include "nl_holdem_state.h"
 
 int main(int argc, char* argv[])
 {
@@ -21,6 +24,7 @@ int main(int argc, char* argv[])
     std::string game;
     int iterations = 0;
     std::string abstraction;
+    int stack_size;
 
     po::options_description desc("Options");
     desc.add_options()
@@ -30,6 +34,7 @@ int main(int argc, char* argv[])
         ("game", po::value<std::string>(&game)->default_value("kuhn"), "game type")
         ("iterations", po::value<int>(&iterations)->default_value(1000000), "number of iterations")
         ("abstraction", po::value<std::string>(&abstraction)->default_value("default"), "abstraction type")
+        ("stack-size", po::value<int>(&stack_size)->default_value(200), "stack size in small blinds")
         ;
 
     po::variables_map vm;
@@ -49,11 +54,15 @@ int main(int argc, char* argv[])
 
     if (game == "kuhn")
     {
-        solver.reset(new cfr_solver<kuhn_game>(abstraction));
+        solver.reset(new cfr_solver<kuhn_game, kuhn_state>(abstraction, stack_size));
     }
     else if (game == "holdem")
     {
-        solver.reset(new cfr_solver<holdem_game>(abstraction));
+        solver.reset(new cfr_solver<holdem_game, holdem_state>(abstraction, stack_size));
+    }
+    else if (game == "nlhe")
+    {
+        solver.reset(new cfr_solver<holdem_game, nl_holdem_state>(abstraction, stack_size));
     }
     else
     {

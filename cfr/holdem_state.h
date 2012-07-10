@@ -14,16 +14,7 @@ public:
         ACTIONS
     };
 
-    enum holdem_round
-    {
-        PREFLOP,
-        FLOP,
-        TURN,
-        RIVER,
-        ROUNDS
-    };
-
-    holdem_state();
+    holdem_state(int);
     int get_action() const;
     int get_round() const;
     const holdem_state* get_parent() const;

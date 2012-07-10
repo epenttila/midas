@@ -1,19 +1,20 @@
 #include "holdem_state.h"
 #include <cassert>
 #include <string>
+#include "holdem_game.h"
 
 namespace
 {
     static const std::array<int, 2> INITIAL_POT = {{1, 2}};
 }
 
-holdem_state::holdem_state()
+holdem_state::holdem_state(int)
     : id_(0)
     , parent_(nullptr)
     , action_(-1)
     , player_(0)
     , pot_(INITIAL_POT)
-    , round_(PREFLOP)
+    , round_(holdem_game::PREFLOP)
     , raises_(1) // blind counts as raise
     , child_count_(0) // sb has all actions
 {
@@ -59,7 +60,7 @@ void holdem_state::create_child(const int action, int* id)
 
     if (action == FOLD)
         new_terminal = true; // folding always terminates
-    else if (action == CALL && round_ == RIVER && parent_->round_ == RIVER)
+    else if (action == CALL && round_ == holdem_game::RIVER && parent_->round_ == holdem_game::RIVER)
         new_terminal = true; // river check or call is terminal
 
     int new_round = round_;
@@ -74,7 +75,7 @@ void holdem_state::create_child(const int action, int* id)
     if (action == CALL)
         new_pot[player_] = new_pot[1 - player_];
     else if (action == RAISE)
-        new_pot[player_] = new_pot[1 - player_] + ((round_ <= FLOP) ? 2 : 4);
+        new_pot[player_] = new_pot[1 - player_] + ((round_ <= holdem_game::FLOP) ? 2 : 4);
 
     int new_player = 1 - player_;
 

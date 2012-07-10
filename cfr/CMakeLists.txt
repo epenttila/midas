@@ -13,6 +13,7 @@ set(CFR_SOURCES
     kuhn_game.cpp
     kuhn_state.cpp
     main.cpp
+	nl_holdem_state.cpp
     twoplustwo_evaluator.cpp
 )
 

@@ -11,6 +11,7 @@
 #include "compare_and_swap.h"
 #include "choose.h"
 #include "k_means.h"
+#include "holdem_game.h"
 
 namespace
 {
@@ -229,23 +230,23 @@ holdem_abstraction::holdem_abstraction(const std::string& bucket_configuration)
         ++round;
     }
 
-    if (bucket_cfgs_[holdem_state::PREFLOP].size < 169)
+    if (bucket_cfgs_[holdem_game::PREFLOP].size < 169)
     {
         preflop_ehs2_percentiles_ = get_percentiles(get_preflop_frequencies(preflop_lut_),
-            bucket_cfgs_[holdem_state::PREFLOP].size);
+            bucket_cfgs_[holdem_game::PREFLOP].size);
     }
 
     std::cout << "flop percentiles\n";
 
-    flop_ehs2_percentiles_ = get_percentiles(get_flop_frequencies(flop_lut_), bucket_cfgs_[holdem_state::FLOP].size);
+    flop_ehs2_percentiles_ = get_percentiles(get_flop_frequencies(flop_lut_), bucket_cfgs_[holdem_game::FLOP].size);
 
     std::cout << "turn percentiles\n";
 
-    turn_ehs2_percentiles_ = get_percentiles(get_turn_frequencies(turn_lut_), bucket_cfgs_[holdem_state::TURN].size);
+    turn_ehs2_percentiles_ = get_percentiles(get_turn_frequencies(turn_lut_), bucket_cfgs_[holdem_game::TURN].size);
 
     std::cout << "river percentiles\n";
 
-    river_ehs_percentiles_ = get_percentiles(get_river_frequencies(river_lut_), bucket_cfgs_[holdem_state::RIVER].size);
+    river_ehs_percentiles_ = get_percentiles(get_river_frequencies(river_lut_), bucket_cfgs_[holdem_game::RIVER].size);
 
 #if 0
     std::cout << "flops\n";
@@ -334,22 +335,22 @@ holdem_abstraction::holdem_abstraction(const std::string& bucket_configuration)
 
 int holdem_abstraction::get_bucket_count(const int round) const
 {
-    int size = bucket_cfgs_[holdem_state::PREFLOP].size;
+    int size = bucket_cfgs_[holdem_game::PREFLOP].size;
 
-    if (round == holdem_state::PREFLOP)
+    if (round == holdem_game::PREFLOP)
         return size;
 
-    size *= bucket_cfgs_[holdem_state::FLOP].size;
+    size *= bucket_cfgs_[holdem_game::FLOP].size;
 
-    if (round == holdem_state::FLOP)
+    if (round == holdem_game::FLOP)
         return size;
 
-    size *= bucket_cfgs_[holdem_state::TURN].size;
+    size *= bucket_cfgs_[holdem_game::TURN].size;
 
-    if (round == holdem_state::TURN)
+    if (round == holdem_game::TURN)
         return size;
 
-    size *= bucket_cfgs_[holdem_state::RIVER].size;
+    size *= bucket_cfgs_[holdem_game::RIVER].size;
     return size;
 }
 
@@ -359,13 +360,13 @@ void holdem_abstraction::get_buckets(const int c0, const int c1, const int b0, c
     const int preflop_bucket = get_preflop_bucket(c0, c1);
 
     const int private_flop_bucket = get_private_flop_bucket(c0, c1, b0, b1, b2);
-    const int flop_bucket = preflop_bucket * bucket_cfgs_[holdem_state::PREFLOP].size + private_flop_bucket;
+    const int flop_bucket = preflop_bucket * bucket_cfgs_[holdem_game::PREFLOP].size + private_flop_bucket;
 
     const int private_turn_bucket = get_private_turn_bucket(c0, c1, b0, b1, b2, b3);
-    const int turn_bucket = flop_bucket * bucket_cfgs_[holdem_state::FLOP].size + private_turn_bucket;
+    const int turn_bucket = flop_bucket * bucket_cfgs_[holdem_game::FLOP].size + private_turn_bucket;
 
     const int private_river_bucket = get_private_river_bucket(c0, c1, b0, b1, b2, b3, b4);
-    const int river_bucket = turn_bucket * bucket_cfgs_[holdem_state::TURN].size + private_river_bucket;
+    const int river_bucket = turn_bucket * bucket_cfgs_[holdem_game::TURN].size + private_river_bucket;
 
 #if 0
     {
@@ -383,15 +384,15 @@ void holdem_abstraction::get_buckets(const int c0, const int c1, const int b0, c
 #endif
 
 
-    (*buckets)[holdem_state::PREFLOP] = preflop_bucket;
-    (*buckets)[holdem_state::FLOP] = flop_bucket;
-    (*buckets)[holdem_state::TURN] = turn_bucket;
-    (*buckets)[holdem_state::RIVER] = river_bucket;
+    (*buckets)[holdem_game::PREFLOP] = preflop_bucket;
+    (*buckets)[holdem_game::FLOP] = flop_bucket;
+    (*buckets)[holdem_game::TURN] = turn_bucket;
+    (*buckets)[holdem_game::RIVER] = river_bucket;
 }
 
 int holdem_abstraction::get_preflop_bucket(const int c0, const int c1) const
 {
-    if (bucket_cfgs_[holdem_state::PREFLOP].size < 169)
+    if (bucket_cfgs_[holdem_game::PREFLOP].size < 169)
         return get_percentile_bucket(preflop_lut_.get(c0, c1).second, preflop_ehs2_percentiles_);
     else
         return preflop_lut_.get_key(c0, c1);

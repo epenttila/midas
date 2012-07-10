@@ -1,6 +1,5 @@
 #pragma once
 
-#include "holdem_state.h"
 #include "holdem_evaluator.h"
 #include "holdem_flop_lut.h"
 #include "holdem_turn_lut.h"
@@ -10,7 +9,7 @@
 class holdem_abstraction
 {
 public:
-    typedef std::array<int, holdem_state::ROUNDS> bucket_type;
+    typedef std::array<int, 4> bucket_type;
     typedef holdem_evaluator evaluator;
 
     holdem_abstraction(const std::string& bucket_configuration);
@@ -39,5 +38,5 @@ private:
     std::vector<float> turn_ehs2_percentiles_;
     std::vector<float> river_ehs_percentiles_;
     std::vector<int> public_flop_buckets_;
-    std::array<bucket_cfg, holdem_state::ROUNDS> bucket_cfgs_;
+    std::array<bucket_cfg, 4> bucket_cfgs_;
 };

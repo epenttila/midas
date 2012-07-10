@@ -1,16 +1,20 @@
 #pragma once
 
 #include <random>
-#include "kuhn_state.h"
 #include "kuhn_evaluator.h"
 #include "kuhn_abstraction.h"
 
 class kuhn_game
 {
 public:
-    typedef kuhn_state state_t;
-    typedef std::array<int, state_t::ROUNDS> bucket_count_t;
-    typedef std::array<std::array<int, state_t::ROUNDS>, 2> bucket_t;
+    enum kuhn_round
+    {
+        FIRST,
+        ROUNDS
+    };
+
+    typedef std::array<int, ROUNDS> bucket_count_t;
+    typedef std::array<std::array<int, ROUNDS>, 2> bucket_t;
     typedef kuhn_evaluator evaluator_t;
     typedef kuhn_abstraction abstraction_t;
 

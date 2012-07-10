@@ -22,19 +22,19 @@ inline std::ostream& operator<<(std::ostream& o, const solver_base& solver)
     return solver.print(o);
 }
 
-template<class T>
+template<class T, class U>
 class cfr_solver : public solver_base, private boost::noncopyable
 {
 public:
-    static const int ACTIONS = T::state_t::ACTIONS;
-    static const int ROUNDS = T::state_t::ROUNDS;
+    static const int ACTIONS = U::ACTIONS;
+    static const int ROUNDS = T::ROUNDS;
 
-    typedef typename T::state_t game_state;
+    typedef typename U game_state;
     typedef typename T::bucket_t bucket_t;
     typedef typename T::evaluator_t evaluator_t;
     typedef typename T::abstraction_t abstraction_t;
 
-    cfr_solver(const std::string& bucket_configuration);
+    cfr_solver(const std::string& bucket_configuration, int stack_size);
     ~cfr_solver();
     virtual void solve(const int iterations);
 

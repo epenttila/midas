@@ -13,13 +13,7 @@ public:
         ACTIONS
     };
 
-    enum kuhn_round
-    {
-        FIRST,
-        ROUNDS
-    };
-
-    kuhn_state();
+    kuhn_state(int);
     int get_id() const;
     int get_player() const;
     bool is_terminal() const;
