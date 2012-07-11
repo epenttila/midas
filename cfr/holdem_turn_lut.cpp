@@ -5,6 +5,7 @@
 #include "holdem_evaluator.h"
 #include "compare_and_swap.h"
 #include "card.h"
+#include "holdem_loops.h"
 
 namespace
 {
@@ -52,58 +53,35 @@ holdem_turn_lut::holdem_turn_lut()
     int iteration = 0;
     int keys = 0;
 
-#pragma omp parallel for schedule(dynamic)
-    for (int i = 0; i < 49; ++i)
-    {
-        for (int j = i + 1; j < 50; ++j)
+    parallel_for_each_turn([&](int a, int b, int i, int j, int k, int l) {
+        const auto key = get_key(a, b, i, j, k, l);
+
+        if (!generated[key])
         {
-            for (int k = j + 1; k < 51; ++k)
-            {
-                for (int l = k + 1; l < 52; ++l)
-                {
-                    for (int a = 0; a < 51; ++a)
-                    {
-                        if (a == i || a == j || a == k || a == l)
-                            continue;
-
-                        for (int b = a + 1; b < 52; ++b)
-                        {
-                            if (b == i || b == j || b == k || b == l)
-                                continue;
-
-                            const auto key = get_key(a, b, i, j, k, l);
-
-                            if (!generated[key])
-                            {
-                                generated[key] = true;
-                                const result r = e.enumerate_turn(a, b, i, j, k, l);
-                                data_[key] = std::make_pair(float(r.ehs), float(r.ehs2));
+            generated[key] = true;
+            const result r = e.enumerate_turn(a, b, i, j, k, l);
+            data_[key] = std::make_pair(float(r.ehs), float(r.ehs2));
 #pragma omp atomic
-                                ++keys;
-                            }
-
-#pragma omp atomic
-                            ++iteration;
-
-                            const double t = omp_get_wtime();
-
-                            if (iteration == 305377800 || (omp_get_thread_num() == 0 && t - time >= 1))
-                            {
-                                const double duration = t - start_time;
-                                const int hour = int(duration / 3600);
-                                const int minute = int(duration / 60 - hour * 60);
-                                const int second = int(duration - minute * 60 - hour * 3600);
-                                const int ips = int(iteration / duration);
-                                std::cout << boost::format("%02d:%02d:%02d: %d/%d (%d i/s)\n") %
-                                    hour % minute % second % keys % iteration % ips;
-                                time = t;
-                            }
-                        }
-                    }
-                }
-            }
+            ++keys;
         }
-    }
+
+#pragma omp atomic
+        ++iteration;
+
+        const double t = omp_get_wtime();
+
+        if (iteration == 305377800 || (omp_get_thread_num() == 0 && t - time >= 1))
+        {
+            const double duration = t - start_time;
+            const int hour = int(duration / 3600);
+            const int minute = int(duration / 60 - hour * 60);
+            const int second = int(duration - minute * 60 - hour * 3600);
+            const int ips = int(iteration / duration);
+            std::cout << boost::format("%02d:%02d:%02d: %d/%d (%d i/s)\n") %
+                hour % minute % second % keys % iteration % ips;
+            time = t;
+        }
+    });
 }
 
 holdem_turn_lut::holdem_turn_lut(std::istream&& is)

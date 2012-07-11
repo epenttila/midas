@@ -12,6 +12,7 @@
 #include "choose.h"
 #include "k_means.h"
 #include "holdem_game.h"
+#include "holdem_loops.h"
 
 namespace
 {
@@ -38,29 +39,9 @@ namespace
         {
             frequency_map thread_frequencies;
 
-#pragma omp for schedule(dynamic)
-            for (int i = 0; i < 52; ++i)
-            {
-                for (int j = i + 1; j < 52; ++j)
-                {
-                    for (int k = j + 1; k < 52; ++k)
-                    {
-                        for (int a = 0; a < 52; ++a)
-                        {
-                            if (a == i || a == j || a == k)
-                                continue;
-
-                            for (int b = a + 1; b < 52; ++b)
-                            {
-                                if (b == i || b == j || b == k)
-                                    continue;
-
-                                ++thread_frequencies[lut.get(a, b, i, j, k).second]; // ehs2
-                            }
-                        }
-                    }
-                }
-            }
+            parallel_for_each_flop([&](int a, int b, int i, int j, int k) {
+                ++thread_frequencies[lut.get(a, b, i, j, k).second];
+            });
 
 #pragma omp critical
             {
@@ -80,32 +61,9 @@ namespace
         {
             frequency_map thread_frequencies;
 
-#pragma omp for schedule(dynamic)
-            for (int i = 0; i < 52; ++i)
-            {
-                for (int j = i + 1; j < 52; ++j)
-                {
-                    for (int k = j + 1; k < 52; ++k)
-                    {
-                        for (int l = k + 1; l < 52; ++l)
-                        {
-                            for (int a = 0; a < 52; ++a)
-                            {
-                                if (a == i || a == j || a == k || a == l)
-                                    continue;
-
-                                for (int b = a + 1; b < 52; ++b)
-                                {
-                                    if (b == i || b == j || b == k || b == l)
-                                        continue;
-
-                                    ++thread_frequencies[lut.get(a, b, i, j, k, l).second]; // ehs2
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            parallel_for_each_turn([&](int a, int b, int i, int j, int k, int l) {
+                ++thread_frequencies[lut.get(a, b, i, j, k, l).second];
+            });
 
 #pragma omp critical
             {
@@ -125,35 +83,9 @@ namespace
         {
             frequency_map thread_frequencies;
 
-#pragma omp for schedule(dynamic)
-            for (int i = 0; i < 52; ++i)
-            {
-                for (int j = i + 1; j < 52; ++j)
-                {
-                    for (int k = j + 1; k < 52; ++k)
-                    {
-                        for (int l = k + 1; l < 52; ++l)
-                        {
-                            for (int m = l + 1; m < 52; ++m)
-                            {
-                                for (int a = 0; a < 52; ++a)
-                                {
-                                    if (a == i || a == j || a == k || a == l || a == m)
-                                        continue;
-
-                                    for (int b = a + 1; b < 52; ++b)
-                                    {
-                                        if (b == i || b == j || b == k || b == l || b == m)
-                                            continue;
-
-                                        ++thread_frequencies[lut.get(a, b, i, j, k, l, m)];
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            parallel_for_each_river([&](int a, int b, int i, int j, int k, int l, int m) {
+                ++thread_frequencies[lut.get(a, b, i, j, k, l, m)];
+            });
 
 #pragma omp critical
             {
