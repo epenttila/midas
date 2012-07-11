@@ -6,6 +6,7 @@
 #include <numeric>
 #include <string>
 #include <boost/tokenizer.hpp>
+#include <unordered_map>
 #include "card.h"
 #include "holdem_preflop_lut.h"
 #include "compare_and_swap.h"
@@ -17,6 +18,7 @@
 namespace
 {
     typedef std::map<float, int> frequency_map;
+    typedef std::unordered_map<float, int> unordered_frequency_map;
 
     const frequency_map get_preflop_frequencies(const holdem_preflop_lut& lut)
     {
@@ -33,11 +35,11 @@ namespace
 
     const frequency_map get_flop_frequencies(const holdem_flop_lut& lut)
     {
-        frequency_map frequencies;
+        unordered_frequency_map frequencies;
 
 #pragma omp parallel
         {
-            frequency_map thread_frequencies;
+            unordered_frequency_map thread_frequencies;
 
             parallel_for_each_flop([&](int a, int b, int i, int j, int k) {
                 ++thread_frequencies[lut.get(a, b, i, j, k).second];
@@ -50,16 +52,16 @@ namespace
             }
         }
 
-        return frequencies;
+        return frequency_map(frequencies.begin(), frequencies.end());
     }
 
     const frequency_map get_turn_frequencies(const holdem_turn_lut& lut)
     {
-        frequency_map frequencies;
+        unordered_frequency_map frequencies;
 
 #pragma omp parallel
         {
-            frequency_map thread_frequencies;
+            unordered_frequency_map thread_frequencies;
 
             parallel_for_each_turn([&](int a, int b, int i, int j, int k, int l) {
                 ++thread_frequencies[lut.get(a, b, i, j, k, l).second];
@@ -72,16 +74,16 @@ namespace
             }
         }
 
-        return frequencies;
+        return frequency_map(frequencies.begin(), frequencies.end());
     }
 
     const frequency_map get_river_frequencies(const holdem_river_lut& lut)
     {
-        frequency_map frequencies;
+        unordered_frequency_map frequencies;
 
 #pragma omp parallel
         {
-            frequency_map thread_frequencies;
+            unordered_frequency_map thread_frequencies;
 
             parallel_for_each_river([&](int a, int b, int i, int j, int k, int l, int m) {
                 ++thread_frequencies[lut.get(a, b, i, j, k, l, m)];
@@ -94,7 +96,7 @@ namespace
             }
         }
 
-        return frequencies;
+        return frequency_map(frequencies.begin(), frequencies.end());
     }
 
     const std::vector<float> get_percentiles(const frequency_map& frequencies, const int bucket_count)
