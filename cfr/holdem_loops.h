@@ -3,7 +3,7 @@
 template<class T>
 void parallel_for_each_flop(const T& f)
 {
-#pragma omp parallel for schedule(dynamic)
+#pragma omp for schedule(dynamic)
     for (int b0 = 0; b0 < 52; ++b0)
     {
         for (int b1 = b0 + 1; b1 < 52; ++b1)
@@ -31,7 +31,7 @@ void parallel_for_each_flop(const T& f)
 template<class T>
 void parallel_for_each_turn(const T& f)
 {
-#pragma omp parallel for schedule(dynamic)
+#pragma omp for schedule(dynamic)
     for (int b0 = 0; b0 < 52; ++b0)
     {
         for (int b1 = b0 + 1; b1 < 52; ++b1)
@@ -62,7 +62,7 @@ void parallel_for_each_turn(const T& f)
 template<class T>
 void parallel_for_each_river(const T& f)
 {
-#pragma omp parallel for schedule(dynamic)
+#pragma omp for schedule(dynamic)
     for (int b0 = 0; b0 < 52; ++b0)
     {
         for (int b1 = b0 + 1; b1 < 52; ++b1)

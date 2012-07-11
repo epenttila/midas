@@ -39,35 +39,38 @@ holdem_flop_lut::holdem_flop_lut()
     int iteration = 0;
     int keys = 0;
 
-    parallel_for_each_flop([&](int a, int b, int i, int j, int k) { 
-        const auto key = get_key(a, b, i, j, k);
+#pragma omp parallel
+    {
+        parallel_for_each_flop([&](int a, int b, int i, int j, int k) { 
+            const auto key = get_key(a, b, i, j, k);
 
-        if (!generated[key])
-        {
-            generated[key] = true;
-            const result r = e.enumerate_flop(a, b, i, j, k);
-            data_[key] = std::make_pair(float(r.ehs), float(r.ehs2));
+            if (!generated[key])
+            {
+                generated[key] = true;
+                const result r = e.enumerate_flop(a, b, i, j, k);
+                data_[key] = std::make_pair(float(r.ehs), float(r.ehs2));
 #pragma omp atomic
-            ++keys;
-        }
+                ++keys;
+            }
 
 #pragma omp atomic
-        ++iteration;
+            ++iteration;
 
-        const double t = omp_get_wtime();
+            const double t = omp_get_wtime();
 
-        if (iteration == 25989600 || (omp_get_thread_num() == 0 && t - time >= 1))
-        {
-            const double duration = t - start_time;
-            const int hour = int(duration / 3600);
-            const int minute = int(duration / 60 - hour * 60);
-            const int second = int(duration - minute * 60 - hour * 3600);
-            const int ips = int(iteration / duration);
-            std::cout << boost::format("%02d:%02d:%02d: %d/%d (%d i/s)\n") %
-                hour % minute % second % keys % iteration % ips;
-            time = t;
-        }
-    });
+            if (iteration == 25989600 || (omp_get_thread_num() == 0 && t - time >= 1))
+            {
+                const double duration = t - start_time;
+                const int hour = int(duration / 3600);
+                const int minute = int(duration / 60 - hour * 60);
+                const int second = int(duration - minute * 60 - hour * 3600);
+                const int ips = int(iteration / duration);
+                std::cout << boost::format("%02d:%02d:%02d: %d/%d (%d i/s)\n") %
+                    hour % minute % second % keys % iteration % ips;
+                time = t;
+            }
+        });
+    }
 }
 
 holdem_flop_lut::holdem_flop_lut(std::istream&& is)

@@ -62,34 +62,37 @@ holdem_river_lut::holdem_river_lut()
     unsigned int iteration = 0;
     int keys = 0;
 
-    parallel_for_each_river([&](int a, int b, int i, int j, int k, int l, int m) {
-        const auto key = get_key(a, b, i, j, k, l, m);
+#pragma omp parallel
+    {
+        parallel_for_each_river([&](int a, int b, int i, int j, int k, int l, int m) {
+            const auto key = get_key(a, b, i, j, k, l, m);
 
-        if (!generated[key])
-        {
-            generated[key] = true;
-            data_[key] = holdem_river_lut::data_type(e.enumerate_river(a, b, i, j, k, l, m));
+            if (!generated[key])
+            {
+                generated[key] = true;
+                data_[key] = holdem_river_lut::data_type(e.enumerate_river(a, b, i, j, k, l, m));
 #pragma omp atomic
-            ++keys;
-        }
+                ++keys;
+            }
 
 #pragma omp atomic
-        ++iteration;
+            ++iteration;
 
-        const double t = omp_get_wtime();
+            const double t = omp_get_wtime();
 
-        if (iteration == 2809475760 || (omp_get_thread_num() == 0 && t - time >= 1))
-        {
-            const double duration = t - start_time;
-            const int hour = int(duration / 3600);
-            const int minute = int(duration / 60 - hour * 60);
-            const int second = int(duration - minute * 60 - hour * 3600);
-            const int ips = int(iteration / duration);
-            std::cout << boost::format("%02d:%02d:%02d: %d/%d (%d i/s)\n") %
-                hour % minute % second % keys % iteration % ips;
-            time = t;
-        }
-    });
+            if (iteration == 2809475760 || (omp_get_thread_num() == 0 && t - time >= 1))
+            {
+                const double duration = t - start_time;
+                const int hour = int(duration / 3600);
+                const int minute = int(duration / 60 - hour * 60);
+                const int second = int(duration - minute * 60 - hour * 3600);
+                const int ips = int(iteration / duration);
+                std::cout << boost::format("%02d:%02d:%02d: %d/%d (%d i/s)\n") %
+                    hour % minute % second % keys % iteration % ips;
+                time = t;
+            }
+        });
+    }
 }
 
 holdem_river_lut::holdem_river_lut(std::istream&& is)
