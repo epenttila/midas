@@ -19,14 +19,19 @@ public:
 private:
     struct bucket_cfg
     {
-        enum { PERFECT_RECALL } type;
-        int size;
+        bucket_cfg();
+        int hs2;
+        int pub;
+        bool forget_hs2;
+        bool forget_pub;
     };
 
     int get_preflop_bucket(int c0, int c1) const;
     int get_private_flop_bucket(int c0, int c1, int b0, int b1, int b2) const;
     int get_private_turn_bucket(int c0, int c1, int b0, int b1, int b2, int b3) const;
     int get_private_river_bucket(int c0, int c1, int b0, int b1, int b2, int b3, int b4) const;
+
+    int get_public_flop_bucket(int b0, int b1, int b2) const;
 
     const std::unique_ptr<evaluator> evaluator_;
     holdem_preflop_lut preflop_lut_;

@@ -96,7 +96,6 @@ const std::vector<int> k_means(const std::vector<T>& points, const int k, const 
 
 #pragma omp critical
         {
-            std::cout << omp_get_thread_num() << " converged after " << iters << ", dist: " << distance_sum << ", best: " << min_distance_sum << "\n";
             if (distance_sum < min_distance_sum)
             {
                 min_distance_sum = distance_sum;
