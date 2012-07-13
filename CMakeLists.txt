@@ -27,4 +27,8 @@ endif()
 
 add_definitions(-DBOOST_ALL_NO_LIB)
 
+set(QT_USE_QTMAIN ON)
+find_package(Qt4 REQUIRED)
+include(${QT_USE_FILE})
+
 add_subdirectory(cfr)

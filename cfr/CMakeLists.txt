@@ -33,3 +33,17 @@ target_link_libraries(cfr ${Boost_LIBRARIES})
 add_executable(lut ${LUT_SOURCES})
 
 file(INSTALL ranks.dat DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+set(gui_SOURCES
+    gui.cpp
+    gui_main.cpp
+)
+
+set(gui_HEADERS
+    gui.h
+)
+
+qt4_wrap_cpp(gui_HEADERS_MOC ${gui_HEADERS})
+
+add_executable(gui WIN32 ${gui_SOURCES} ${gui_HEADERS_MOC})
+target_link_libraries(gui ${QT_LIBRARIES})
