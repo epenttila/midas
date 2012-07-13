@@ -250,41 +250,21 @@ holdem_abstraction::holdem_abstraction(const std::string& bucket_configuration)
         {
             std::vector<std::vector<double>> thread_flops = flops;
 
-#pragma omp for schedule(dynamic)
-            for (int i = 0; i < 52; ++i)
-            {
-                for (int j = i + 1; j < 52; ++j)
+            parallel_for_each_flop([&](int a, int b, int i, int j, int k) {
+                const auto flop_key = choose(k, 3) + choose(j, 2) + choose(i, 1);
+
+                for (int l = 0; l < 52; ++l)
                 {
-                    for (int k = j + 1; k < 52; ++k)
-                    {
-                        const auto flop_key = choose(k, 3) + choose(j, 2) + choose(i, 1);
+                    if (l == i || l == j || l == k || l == a || l == b)
+                        continue;
 
-                        for (int l = 0; l < 52; ++l)
-                        {
-                            if (l == i || l == j || l == k)
-                                continue;
-
-                            for (int a = 0; a < 52; ++a)
-                            {
-                                if (a == i || a == j || a == k || a == l)
-                                    continue;
-
-                                for (int b = a + 1; b < 52; ++b)
-                                {
-                                    if (b == i || b == j || b == k || b == l)
-                                        continue;
-
-                                    const int flop_bucket =
-                                        get_percentile_bucket(flop_lut_.get(a, b, i, j, k).second, flop_percentiles);
-                                    const int turn_bucket =
-                                        get_percentile_bucket(turn_lut_.get(a, b, i, j, k, l).second, turn_percentiles);
-                                    ++thread_flops[flop_key][flop_bucket * kmeans_buckets + turn_bucket];
-                                }
-                            }
-                        }
-                    }
+                    const int flop_bucket =
+                        get_percentile_bucket(flop_lut_.get(a, b, i, j, k).second, flop_percentiles);
+                    const int turn_bucket =
+                        get_percentile_bucket(turn_lut_.get(a, b, i, j, k, l).second, turn_percentiles);
+                    ++thread_flops[flop_key][flop_bucket * kmeans_buckets + turn_bucket];
                 }
-            }
+            });
 
 #pragma omp critical
             {
