@@ -10,7 +10,6 @@ public:
     {
         FOLD,
         CALL,
-        RAISE_MIN,
         RAISE_HALFPOT,
         RAISE_75POT,
         RAISE_POT,

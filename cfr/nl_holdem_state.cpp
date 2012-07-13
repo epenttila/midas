@@ -48,12 +48,9 @@ void nl_holdem_state::create_child(const int action, int* id)
     if (is_terminal())
         return;
 
-    if (action == RAISE_MIN)
-        return; /// @todo support only one minraise per player per round?
-
     const bool opponent_allin = pot_[1 - player_] == stack_size_;
 
-    if ((action >= RAISE_MIN && action <= RAISE_MAX) && opponent_allin)
+    if ((action >= RAISE_HALFPOT && action <= RAISE_MAX) && opponent_allin)
         return;
 
     if (action == FOLD && action_ == CALL) // check -> fold
@@ -72,7 +69,7 @@ void nl_holdem_state::create_child(const int action, int* id)
 
     int new_round = round_;
 
-    if ((action_ >= RAISE_MIN && action <= RAISE_MAX) && action == CALL)
+    if ((action_ >= RAISE_HALFPOT && action <= RAISE_MAX) && action == CALL)
         ++new_round; // raise-call
     else if (action_ == CALL && action == CALL && parent_ && round_ == parent_->round_)
         ++new_round; // check-check (or call-check preflop)
@@ -81,7 +78,15 @@ void nl_holdem_state::create_child(const int action, int* id)
 
     const int to_call = pot_[1 - player_] - pot_[player_];
     const int in_pot = pot_[1 - player_] + pot_[player_] - to_call;
-    const int min_raise = to_call == 0 ? 2 : 2 * to_call;
+    const int min_raise = (action_ == -1 ? 3 : (to_call == 0 ? 2 : 2 * to_call));
+
+    assert(pot_[1 - player_] == stack_size_
+        || action_ == -1
+        || action_ == FOLD
+        || action_ == CALL
+        || (action_ == RAISE_HALFPOT && 2 * to_call == in_pot)
+        || action_ == RAISE_75POT // don't check bet size due to rounding errors
+        || (action_ == RAISE_POT && to_call == in_pot));
 
     switch (action)
     {
@@ -89,9 +94,6 @@ void nl_holdem_state::create_child(const int action, int* id)
         break;
     case CALL:
         new_pot[player_] = new_pot[1 - player_];
-        break;
-    case RAISE_MIN:
-        new_pot[player_] = new_pot[player_] + min_raise;
         break;
     case RAISE_MAX:
         new_pot[player_] = stack_size_;
@@ -108,10 +110,10 @@ void nl_holdem_state::create_child(const int action, int* id)
             default: assert(false); factor = 1.0;
             }
 
-            const int bet = int(factor * (3 * to_call + in_pot));
+            const int bet = int(to_call + (2 * to_call + in_pot) * factor);
 
-            if (bet <= min_raise)
-                return; // combine all actions which are essentially CALL or RAISE_MIN
+            if (bet < min_raise)
+                return; // combine all actions which are essentially CALL
 
             if (new_pot[player_] + bet > stack_size_)
                 return; // combine all actions which are essentially RAISE_MAX
@@ -191,7 +193,7 @@ int nl_holdem_state::get_child_count() const
 
 std::ostream& operator<<(std::ostream& os, const nl_holdem_state& state)
 {
-    static const char actions[nl_holdem_state::ACTIONS] = {'f', 'c', 'm', 'h', 'q', 'p', 'a'};
+    static const char actions[nl_holdem_state::ACTIONS] = {'f', 'c', 'h', 'q', 'p', 'a'};
     std::string line;
 
     for (const nl_holdem_state* s = &state; s->get_parent() != nullptr; s = s->get_parent())
