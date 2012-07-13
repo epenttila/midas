@@ -1,6 +1,6 @@
 #include "holdem_evaluator.h"
 #include <random>
-#include "partial_shuffle.h"
+#include "util/partial_shuffle.h"
 
 namespace
 {

@@ -7,13 +7,13 @@
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
-#include "cfr_solver.h"
-#include "kuhn_game.h"
-#include "holdem_game.h"
-#include "holdem_abstraction.h"
-#include "kuhn_state.h"
-#include "holdem_state.h"
-#include "nl_holdem_state.h"
+#include "cfrlib/cfr_solver.h"
+#include "cfrlib/kuhn_game.h"
+#include "cfrlib/holdem_game.h"
+#include "cfrlib/holdem_abstraction.h"
+#include "cfrlib/kuhn_state.h"
+#include "cfrlib/holdem_state.h"
+#include "cfrlib/nl_holdem_state.h"
 
 int main(int argc, char* argv[])
 {

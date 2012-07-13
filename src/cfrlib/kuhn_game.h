@@ -1,7 +1,7 @@
 #pragma once
 
 #include <random>
-#include "kuhn_evaluator.h"
+#include "evallib/kuhn_evaluator.h"
 #include "kuhn_abstraction.h"
 
 class kuhn_game

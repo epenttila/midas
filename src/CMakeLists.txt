@@ -1,0 +1,6 @@
+add_subdirectory(cfr)
+add_subdirectory(cfrlib)
+add_subdirectory(evallib)
+add_subdirectory(gui)
+add_subdirectory(lut)
+add_subdirectory(lutlib)

@@ -2,10 +2,10 @@
 #include <omp.h>
 #include <iostream>
 #include <boost/format.hpp>
-#include "holdem_evaluator.h"
-#include "compare_and_swap.h"
-#include "card.h"
-#include "holdem_loops.h"
+#include "evallib/holdem_evaluator.h"
+#include "util/compare_and_swap.h"
+#include "util/card.h"
+#include "util/holdem_loops.h"
 
 namespace
 {

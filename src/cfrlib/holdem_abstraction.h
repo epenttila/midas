@@ -1,10 +1,10 @@
 #pragma once
 
-#include "holdem_evaluator.h"
-#include "holdem_flop_lut.h"
-#include "holdem_turn_lut.h"
-#include "holdem_river_lut.h"
-#include "holdem_preflop_lut.h"
+#include "evallib/holdem_evaluator.h"
+#include "lutlib/holdem_flop_lut.h"
+#include "lutlib/holdem_turn_lut.h"
+#include "lutlib/holdem_river_lut.h"
+#include "lutlib/holdem_preflop_lut.h"
 
 class holdem_abstraction
 {

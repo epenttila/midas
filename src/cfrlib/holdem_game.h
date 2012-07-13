@@ -1,7 +1,7 @@
 #pragma once
 
 #include <random>
-#include "holdem_evaluator.h"
+#include "evallib/holdem_evaluator.h"
 #include "holdem_abstraction.h"
 
 class holdem_game

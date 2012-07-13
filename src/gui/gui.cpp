@@ -5,7 +5,7 @@
 
 #include "gui.h"
 #include <array>
-#include "card.h"
+#include "util/card.h"
 
 namespace
 {

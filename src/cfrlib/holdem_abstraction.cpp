@@ -7,13 +7,13 @@
 #include <string>
 #include <boost/tokenizer.hpp>
 #include <unordered_map>
-#include "card.h"
-#include "holdem_preflop_lut.h"
-#include "compare_and_swap.h"
-#include "choose.h"
-#include "k_means.h"
+#include "util/card.h"
+#include "lutlib/holdem_preflop_lut.h"
+#include "util/compare_and_swap.h"
+#include "util/choose.h"
+#include "util/k_means.h"
 #include "holdem_game.h"
-#include "holdem_loops.h"
+#include "util/holdem_loops.h"
 
 namespace
 {

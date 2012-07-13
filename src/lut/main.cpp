@@ -2,12 +2,12 @@
 #include <iostream>
 #include <fstream>
 #include <numeric>
-#include "holdem_preflop_lut.h"
-#include "holdem_flop_lut.h"
-#include "holdem_evaluator.h"
-#include "holdem_turn_lut.h"
-#include "holdem_river_lut.h"
-#include "partial_shuffle.h"
+#include "lutlib/holdem_preflop_lut.h"
+#include "lutlib/holdem_flop_lut.h"
+#include "evallib/holdem_evaluator.h"
+#include "lutlib/holdem_turn_lut.h"
+#include "lutlib/holdem_river_lut.h"
+#include "util/partial_shuffle.h"
 
 namespace
 {

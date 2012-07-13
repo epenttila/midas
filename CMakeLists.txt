@@ -31,4 +31,6 @@ set(QT_USE_QTMAIN ON)
 find_package(Qt4 REQUIRED)
 include(${QT_USE_FILE})
 
-add_subdirectory(cfr)
+include_directories(${hyperbot_SOURCE_DIR}/src)
+
+add_subdirectory(src)

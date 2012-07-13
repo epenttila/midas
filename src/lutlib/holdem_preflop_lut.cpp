@@ -3,8 +3,8 @@
 #include <omp.h>
 #include <iostream>
 #include <boost/format.hpp>
-#include "holdem_evaluator.h"
-#include "card.h"
+#include "evallib/holdem_evaluator.h"
+#include "util/card.h"
 
 holdem_preflop_lut::holdem_preflop_lut()
 {

@@ -1,7 +1,7 @@
 #include "holdem_game.h"
 #include <numeric>
 #include "holdem_abstraction.h"
-#include "partial_shuffle.h"
+#include "util/partial_shuffle.h"
 
 holdem_game::holdem_game()
 {
