@@ -7,5 +7,3 @@ set(evallib_SOURCES
 )
 
 add_library(evallib ${evallib_SOURCES})
-
-file(COPY ranks.dat DESTINATION ${CMAKE_BINARY_DIR})
