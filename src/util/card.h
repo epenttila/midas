@@ -19,6 +19,9 @@ inline int get_card(const int rank, const int suit)
 
 inline const std::string get_card_string(const int card)
 {
+    if (card < 0 || card >= 52)
+        return "?";
+
     std::string s(2, 0);
 
     switch (get_rank(card))
