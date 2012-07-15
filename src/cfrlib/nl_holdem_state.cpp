@@ -6,6 +6,13 @@
 namespace
 {
     static const std::array<int, 2> INITIAL_POT = {{1, 2}};
+
+    int soft_translate(const double b1, const double b, const double b2)
+    {
+        const double s1 = (b1 / b - b1 / b2) / (1 - b1 / b2);
+        const double s2 = (b / b2 - b1 / b2) / (1 - b1 / b2);
+        return (rand() / RAND_MAX) < (s1 / (s1 + s2)) ? 0 : 1;
+    }
 }
 
 nl_holdem_state::nl_holdem_state(const int stack_size)
@@ -203,4 +210,31 @@ std::ostream& operator<<(std::ostream& os, const nl_holdem_state& state)
     }
 
     return (os << state.get_id() << ":" << line);
+}
+
+const nl_holdem_state* nl_holdem_state::call() const
+{
+    return children_[CALL];
+}
+
+const nl_holdem_state* nl_holdem_state::raise(const double fraction) const
+{
+    const double halfpot = 0.5 / 1.5;
+    const double qpot = 0.75 / 1.75;
+    const double pot = 1 / 2.0;
+
+    int action;
+
+    if (fraction <= halfpot)
+        action = RAISE_HALFPOT;
+    else if (fraction <= qpot)
+        action = soft_translate(halfpot, fraction, qpot) == 0 ? RAISE_HALFPOT : RAISE_75POT;
+    else if (fraction <= pot)
+        action = soft_translate(qpot, fraction, pot) == 0 ? RAISE_75POT : RAISE_POT;
+    else if (fraction <= 1)
+        action = RAISE_POT;
+    else
+        action = RAISE_MAX;
+
+    return children_[action];
 }

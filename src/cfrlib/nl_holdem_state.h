@@ -27,6 +27,8 @@ public:
     int get_player() const;
     int get_terminal_ev(int result) const;
     int get_child_count() const;
+    const nl_holdem_state* call() const;
+    const nl_holdem_state* raise(double fraction) const;
 
 private:
     nl_holdem_state(const nl_holdem_state* parent, int action, int player, const std::array<int, 2>& pot, int round,
