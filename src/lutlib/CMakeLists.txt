@@ -8,8 +8,3 @@ set(lutlib_SOURCES
 )
 
 add_library(lutlib ${lutlib_SOURCES})
-
-file(COPY holdem_flop_lut.dat DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY holdem_preflop_lut.dat DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY holdem_river_lut.dat DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY holdem_turn_lut.dat DESTINATION ${CMAKE_BINARY_DIR})

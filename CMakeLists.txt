@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(hyperbot)
+project(midas)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Werror -pedantic -Wall -Wextra")
@@ -31,6 +31,6 @@ set(QT_USE_QTMAIN ON)
 find_package(Qt4 REQUIRED)
 include(${QT_USE_FILE})
 
-include_directories(${hyperbot_SOURCE_DIR}/src)
+include_directories(${PROJECT_SOURCE_DIR}/src)
 
 add_subdirectory(src)
