@@ -34,7 +34,7 @@ public:
     typedef typename T::evaluator_t evaluator_t;
     typedef typename T::abstraction_t abstraction_t;
 
-    cfr_solver(const std::string& bucket_configuration, int stack_size);
+    cfr_solver(abstraction_t abstraction, int stack_size);
     ~cfr_solver();
     virtual void solve(const int iterations);
 

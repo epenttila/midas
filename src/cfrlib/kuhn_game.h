@@ -2,7 +2,7 @@
 
 #include <random>
 #include "evallib/kuhn_evaluator.h"
-#include "kuhn_abstraction.h"
+#include "abslib/kuhn_abstraction.h"
 
 class kuhn_game
 {

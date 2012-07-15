@@ -10,10 +10,10 @@ namespace
 }
 
 template<class T, class U>
-cfr_solver<T, U>::cfr_solver(const std::string& bucket_configuration, const int stack_size)
+cfr_solver<T, U>::cfr_solver(abstraction_t abstraction, const int stack_size)
     : root_(new game_state(stack_size))
     , evaluator_()
-    , abstraction_(bucket_configuration)
+    , abstraction_(std::move(abstraction))
     , total_iterations_(0)
 {
     accumulated_regret_.fill(0);

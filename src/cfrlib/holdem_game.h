@@ -2,7 +2,7 @@
 
 #include <random>
 #include "evallib/holdem_evaluator.h"
-#include "holdem_abstraction.h"
+#include "abslib/holdem_abstraction.h"
 
 class holdem_game
 {

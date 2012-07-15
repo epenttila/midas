@@ -10,7 +10,7 @@
 #include "cfrlib/cfr_solver.h"
 #include "cfrlib/kuhn_game.h"
 #include "cfrlib/holdem_game.h"
-#include "cfrlib/holdem_abstraction.h"
+#include "abslib/holdem_abstraction.h"
 #include "cfrlib/kuhn_state.h"
 #include "cfrlib/holdem_state.h"
 #include "cfrlib/nl_holdem_state.h"
@@ -52,17 +52,21 @@ int main(int argc, char* argv[])
     std::cout << "Creating solver for game: " << game << "\n";
     std::cout << "Using abstraction: " << abstraction << "\n";
 
+    std::ifstream abs_file(abstraction, std::ios::binary);
+
     if (game == "kuhn")
     {
-        solver.reset(new cfr_solver<kuhn_game, kuhn_state>(abstraction, stack_size));
+        solver.reset(new cfr_solver<kuhn_game, kuhn_state>(kuhn_abstraction(), stack_size));
     }
     else if (game == "holdem")
     {
-        solver.reset(new cfr_solver<holdem_game, holdem_state>(abstraction, stack_size));
+        solver.reset(new cfr_solver<holdem_game, holdem_state>(abs_file ? holdem_abstraction(std::move(abs_file)) :
+            holdem_abstraction(abstraction), stack_size));
     }
     else if (game == "nlhe")
     {
-        solver.reset(new cfr_solver<holdem_game, nl_holdem_state>(abstraction, stack_size));
+        solver.reset(new cfr_solver<holdem_game, nl_holdem_state>(abs_file ? holdem_abstraction(std::move(abs_file)) :
+            holdem_abstraction(abstraction), stack_size));
     }
     else
     {
