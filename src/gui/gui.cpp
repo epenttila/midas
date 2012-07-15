@@ -6,7 +6,7 @@
 #include <array>
 #include <fstream>
 #include <sstream>
-#include "cfrlib/holdem_abstraction.h"
+#include "abslib/holdem_abstraction.h"
 #include "site_stars.h"
 #include "util/card.h"
 #include "cfrlib/holdem_game.h"
