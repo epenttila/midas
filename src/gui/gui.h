@@ -5,6 +5,9 @@
 #pragma warning(pop)
 
 class QTextEdit;
+class holdem_abstraction;
+class nl_holdem_state;
+class site_stars;
 
 class Gui : public QWidget
 {
@@ -12,10 +15,17 @@ class Gui : public QWidget
 
 public:
     Gui();
+    ~Gui();
 
 public slots:
     void buttonClicked();
+    void timerTimeout();
 
 private:
     QTextEdit* text_;
+    std::unique_ptr<holdem_abstraction> abstraction_;
+    std::unique_ptr<nl_holdem_state> root_state_;
+    const nl_holdem_state* current_state_;
+    QTimer* timer_;
+    std::unique_ptr<site_stars> site_;
 };

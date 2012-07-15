@@ -1,158 +1,111 @@
 #pragma warning(push, 3)
 #include <QtGui>
-#include <Windows.h>
 #pragma warning(pop)
 
 #include "gui.h"
 #include <array>
+#include <fstream>
+#include <sstream>
+#include "cfrlib/holdem_abstraction.h"
+#include "site_stars.h"
 #include "util/card.h"
-
-namespace
-{
-    int read_column(const QImage& image, const int x, const int top, const int bottom, const QRgb& color)
-    {
-        int bitmap = 0;
-
-        for (int y = top; y < bottom; ++y)
-        {
-            const int bit = image.pixel(x, y) == color;
-            bitmap |= bit << (y - top);
-        }
-
-        return bitmap;
-    }
-
-    double get_stack_size(const QImage& image, const QRect& rect)
-    {
-        const QRgb color = qRgb(192, 192, 192);
-        std::string s;
-
-        for (int x = rect.left(); x < rect.right(); )
-        {
-            char c = 0;
-
-            switch (read_column(image, x, rect.top(), rect.top() + rect.height(), color))
-            {
-            case 0x7f8: c = '0'; x += 6; break;
-            case 0x030: c = '1'; x += 4; break;
-            case 0xc08: c = '2'; x += 6; break;
-            case 0x408: c = '3'; x += 6; break;
-            case 0x300: c = '4'; x += 6; break;
-            case 0x470: c = '5'; x += 6; break;
-            case 0x7f0: c = '6'; x += 6; break;
-            case 0x004: c = '7'; x += 6; break;
-            case 0x7b8: c = '8'; x += 6; break;
-            case 0x478:
-                {
-                    switch (read_column(image, ++x, rect.top(), rect.top() + rect.height(), color))
-                    {
-                    case 0xcfc: c = '9'; x += 6; break;
-                    }
-                }
-                break;
-            case 0xc00: c = '.'; x += 2; break;
-            }
-
-            if (c)
-                s += c;
-            else
-                ++x;
-        }
-
-        return std::atof(s.c_str());
-    }
-
-    int get_dealer(const QImage& image, const QPoint& point)
-    {
-        return (image.pixel(point) == qRgb(162, 97, 33)) ? 1 : 0;
-    }
-
-    std::string get_board_card(const QImage& image, const QRect& rect)
-    {
-        const std::array<QRgb, 4> colors = {{
-            qRgb(41, 133, 10), // clubs
-            qRgb(10, 10, 238), // diamonds
-            qRgb(202, 18, 18), // hearts
-            qRgb(2, 2, 2), // spades
-        }};
-        std::string s;
-
-        for (int x = rect.left(); x < rect.right(); ++x)
-        {
-            for (int suit = 0; suit < 4; ++suit)
-            {
-                const QRgb& color = colors[suit];
-                int rank = -1;
-
-                switch (read_column(image, x, rect.top(), rect.top() + rect.height(), color))
-                {
-                case 0x1000: rank = 0; break; // 2
-                case 0x0400: rank = 1; break; // 3
-                case 0x0100: rank = 2; break; // 4
-                case 0x0040: rank = 3; break; // 5
-                case 0x00e0: rank = 4; break; // 6
-                case 0x000f: rank = 5; break; // 7
-                case 0x0300:
-                    {
-                        switch (read_column(image, ++x, rect.top(), rect.top() + rect.height(), color))
-                        {
-                        case 0x0f88: rank = 6; break; // 8
-                        case 0x0f00: rank = 9; break; // J
-                        }
-                    }
-                    break;
-                case 0x0010: rank = 7; break; // 9
-                case 0x1ffe: rank = 8; break; // 10
-                case 0x0180: rank = 10; break; // Q
-                case 0x1803: rank = 11; break; // K
-                case 0x1800: rank = 12; break; // A
-                }
-
-                if (rank != -1)
-                    return get_card_string(get_card(rank, suit));
-            }
-        }
-
-        return "?";
-    }
-}
+#include "cfrlib/holdem_game.h"
+#include "cfrlib/nl_holdem_state.h"
 
 Gui::Gui()
+    : root_state_(new nl_holdem_state(50))
+    , current_state_(root_state_.get())
+    , site_(new site_stars)
 {
     text_ = new QTextEdit(this);
+    text_->setReadOnly(true);
 
-    QTimer* timer = new QTimer(this);
-    connect(timer, SIGNAL(timeout()), SLOT(buttonClicked()));
-    timer->start(1000);
+    QPushButton* button = new QPushButton("Start", this);
+    button->setCheckable(true);
+
+    connect(button, SIGNAL(clicked()), SLOT(buttonClicked()));
+
+    timer_ = new QTimer(this);
+    connect(timer_, SIGNAL(timeout()), SLOT(timerTimeout()));
 
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->addWidget(text_);
+    layout->addWidget(button);
 
     setLayout(layout);
+
+    std::string abstraction_filename = QFileDialog::getOpenFileName(this).toStdString();
+    abstraction_.reset(new holdem_abstraction(std::ifstream(abstraction_filename, std::ios::binary)));
+}
+
+Gui::~Gui()
+{
 }
 
 void Gui::buttonClicked()
 {
-    HWND hwnd = ::FindWindow("PokerStarsTableFrameClass", nullptr);
+    if (!timer_->isActive())
+        timer_->start(100);
+    else
+        timer_->stop();
+}
 
-    if (!hwnd)
+void Gui::timerTimeout()
+{
+    if (!site_->update())
         return;
 
-    auto test = QPixmap::grabWindow(hwnd).toImage();
+    if (site_->is_new_hand())
+        current_state_ = root_state_.get();
 
-    if (test.isNull())
-        return;
+    if (current_state_)
+    {
+        switch (site_->get_action())
+        {
+        case site_stars::CALL:
+            current_state_ = current_state_->call();
+            break;
+        case site_stars::RAISE:
+            current_state_ = current_state_->raise(site_->get_raise_fraction());
+            break;
+        }
+    }
 
-    double stack = get_stack_size(test, QRect(36, 273, 91, 15));
-    double stack2 = get_stack_size(test, QRect(671, 273, 91, 15));
-    int dealer = get_dealer(test, QPoint(645, 269));
-    std::string b = get_board_card(test, QRect(268, 157, 50, 13)) + " "
-        + get_board_card(test, QRect(322, 157, 50, 13)) + " "
-        + get_board_card(test, QRect(376, 157, 50, 13)) + " | "
-        + get_board_card(test, QRect(430, 157, 50, 13)) + " "
-        + get_board_card(test, QRect(484, 157, 50, 13));
-    //double left_bet = QRect(128, 235, 100, 10);
-    //double right_bet = QRect(534, 235, 136, 10);
-    text_->setText(QString("stack1: %1\nstack2: %2\ndealer: %3\nb: %4").arg(stack).arg(stack2).arg(dealer).arg(b.c_str()));
-    test.save("test.png");
+    std::stringstream ss;
+
+    if (current_state_)
+        ss << *current_state_;
+
+    auto hole = site_->get_hole_cards();
+    const int c0 = hole.first;
+    const int c1 = hole.second;
+
+    std::array<int, 5> board;
+    site_->get_board_cards(board);
+    const int b0 = board[0];
+    const int b1 = board[1];
+    const int b2 = board[2];
+    const int b3 = board[3];
+    const int b4 = board[4];
+    int bucket;
+
+    switch (site_->get_round())
+    {
+    case holdem_game::PREFLOP:
+        bucket = abstraction_->get_bucket(c0, c1);
+        break;
+    case holdem_game::FLOP:
+        bucket = abstraction_->get_bucket(c0, c1, b0, b1, b2);
+        break;
+    case holdem_game::TURN:
+        bucket = abstraction_->get_bucket(c0, c1, b0, b1, b2, b3);
+        break;
+    case holdem_game::RIVER:
+        bucket = abstraction_->get_bucket(c0, c1, b0, b1, b2, b3, b4);
+        break;
+    default:
+        bucket = -1;
+    }
+
+    text_->setText(QString("state: %1\nbucket: %2\n").arg(ss.str().c_str()).arg(bucket));
 }
