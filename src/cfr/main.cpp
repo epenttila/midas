@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
     std::string state_file;
     std::string strategy_file;
     std::string game;
-    int iterations = 0;
+    int iterations;
     std::string abstraction;
     int stack_size;
 
@@ -31,17 +31,17 @@ int main(int argc, char* argv[])
         ("help", "produce help message")
         ("state-file", po::value<std::string>(&state_file), "state file")
         ("strategy-file", po::value<std::string>(&strategy_file), "strategy file")
-        ("game", po::value<std::string>(&game)->default_value("kuhn"), "game type")
-        ("iterations", po::value<int>(&iterations)->default_value(1000000), "number of iterations")
-        ("abstraction", po::value<std::string>(&abstraction)->default_value("default"), "abstraction type")
-        ("stack-size", po::value<int>(&stack_size)->default_value(200), "stack size in small blinds")
+        ("game", po::value<std::string>(&game), "game type")
+        ("iterations", po::value<int>(&iterations), "number of iterations")
+        ("abstraction", po::value<std::string>(&abstraction), "abstraction type")
+        ("stack-size", po::value<int>(&stack_size), "stack size in small blinds")
         ;
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
-    if (vm.count("help"))
+    if (vm.empty() || vm.count("help"))
     {
         std::cout << desc << "\n";
         return 1;
