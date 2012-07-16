@@ -122,7 +122,7 @@ void nl_holdem_state::create_child(const int action, int* id)
             if (bet < min_raise)
                 return; // combine all actions which are essentially CALL
 
-            if (new_pot[player_] + bet > stack_size_)
+            if (new_pot[player_] + bet >= stack_size_)
                 return; // combine all actions which are essentially RAISE_MAX
 
             new_pot[player_] = new_pot[player_] + bet;
