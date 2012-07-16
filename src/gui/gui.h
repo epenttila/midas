@@ -8,6 +8,7 @@ class QTextEdit;
 class holdem_abstraction;
 class nl_holdem_state;
 class site_stars;
+class strategy;
 
 class Gui : public QWidget
 {
@@ -28,4 +29,5 @@ private:
     const nl_holdem_state* current_state_;
     QTimer* timer_;
     std::unique_ptr<site_stars> site_;
+    std::unique_ptr<strategy> strategy_;
 };

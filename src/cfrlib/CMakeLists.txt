@@ -7,6 +7,7 @@ set(cfrlib_SOURCES
     kuhn_game.cpp
     kuhn_state.cpp
     nl_holdem_state.cpp
+    strategy.cpp
 )
 
 add_library(cfrlib ${cfrlib_SOURCES})

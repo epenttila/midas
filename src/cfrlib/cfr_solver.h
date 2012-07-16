@@ -5,6 +5,8 @@
 #include <array>
 #include <vector>
 
+class strategy;
+
 class solver_base
 {
     friend std::ostream& operator<<(std::ostream& o, const solver_base& solver);
@@ -14,13 +16,8 @@ public:
     virtual void save_state(std::ostream&) const = 0;
     virtual void load_state(std::istream&) = 0;
     //virtual void save_strategy(std::ostream&) const = 0;
-    virtual std::ostream& print(std::ostream&) const = 0;
+    virtual std::unique_ptr<strategy> create_strategy() const = 0;
 };
-
-inline std::ostream& operator<<(std::ostream& o, const solver_base& solver)
-{
-    return solver.print(o);
-}
 
 template<class T, class U>
 class cfr_solver : public solver_base, private boost::noncopyable
@@ -37,6 +34,7 @@ public:
     cfr_solver(abstraction_t abstraction, int stack_size);
     ~cfr_solver();
     virtual void solve(const int iterations);
+    std::unique_ptr<strategy> create_strategy() const;
 
 private:
     double update(const game_state& state, const bucket_t& buckets, std::array<double, 2>& reach, const int result);
@@ -45,7 +43,6 @@ private:
     double get_accumulated_regret(const int player) const;
     void save_state(std::ostream& os) const;
     void load_state(std::istream& is);
-    std::ostream& print(std::ostream& os) const;
 
     std::vector<const game_state*> states_;
     typedef double (*value)[ACTIONS];

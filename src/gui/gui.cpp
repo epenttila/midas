@@ -6,11 +6,13 @@
 #include <array>
 #include <fstream>
 #include <sstream>
+#include <boost/lexical_cast.hpp>
 #include "abslib/holdem_abstraction.h"
 #include "site_stars.h"
 #include "util/card.h"
 #include "cfrlib/holdem_game.h"
 #include "cfrlib/nl_holdem_state.h"
+#include "cfrlib/strategy.h"
 
 Gui::Gui()
     : root_state_(new nl_holdem_state(50))
@@ -36,6 +38,9 @@ Gui::Gui()
 
     std::string abstraction_filename = QFileDialog::getOpenFileName(this).toStdString();
     abstraction_.reset(new holdem_abstraction(std::ifstream(abstraction_filename, std::ios::binary)));
+
+    std::string str_filename = QFileDialog::getOpenFileName(this).toStdString();
+    strategy_.reset(new strategy(std::ifstream(str_filename, std::ios::binary)));
 }
 
 Gui::~Gui()
@@ -107,5 +112,28 @@ void Gui::timerTimeout()
         bucket = -1;
     }
 
-    text_->setText(QString("state: %1\nbucket: %2\n").arg(ss.str().c_str()).arg(bucket));
+    std::string s;
+
+    if (current_state_)
+    {
+        s += "FOLD: " + boost::lexical_cast<std::string>(strategy_->get(current_state_->get_id(), nl_holdem_state::FOLD, bucket)) + "\n";
+        s += "CALL: " + boost::lexical_cast<std::string>(strategy_->get(current_state_->get_id(), nl_holdem_state::CALL, bucket)) + "\n";
+        s += "RAISE_HALFPOT: " + boost::lexical_cast<std::string>(strategy_->get(current_state_->get_id(), nl_holdem_state::RAISE_HALFPOT, bucket)) + "\n";
+        s += "RAISE_75POT: " + boost::lexical_cast<std::string>(strategy_->get(current_state_->get_id(), nl_holdem_state::RAISE_75POT, bucket)) + "\n";
+        s += "RAISE_POT: " + boost::lexical_cast<std::string>(strategy_->get(current_state_->get_id(), nl_holdem_state::RAISE_POT, bucket)) + "\n";
+        s += "RAISE_MAX: " + boost::lexical_cast<std::string>(strategy_->get(current_state_->get_id(), nl_holdem_state::RAISE_MAX, bucket)) + "\n";
+        s += "\n";
+
+        switch (strategy_->get_action(current_state_->get_id(), bucket))
+        {
+        case nl_holdem_state::FOLD: s += "FOLD\n"; break;
+        case nl_holdem_state::CALL: s += "CALL\n"; break;
+        case nl_holdem_state::RAISE_HALFPOT: s += "RAISE_HALFPOT\n"; break;
+        case nl_holdem_state::RAISE_75POT: s += "RAISE_75POT\n"; break;
+        case nl_holdem_state::RAISE_POT: s += "RAISE_POT\n"; break;
+        case nl_holdem_state::RAISE_MAX: s += "RAISE_MAX\n"; break;
+        }
+    }
+
+    text_->setText(QString("state: %1\nbucket: %2\n\n%3").arg(ss.str().c_str()).arg(bucket).arg(s.c_str()));
 }

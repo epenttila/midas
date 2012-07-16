@@ -14,6 +14,7 @@
 #include "cfrlib/kuhn_state.h"
 #include "cfrlib/holdem_state.h"
 #include "cfrlib/nl_holdem_state.h"
+#include "cfrlib/strategy.h"
 
 int main(int argc, char* argv[])
 {
@@ -65,6 +66,7 @@ int main(int argc, char* argv[])
     }
     else if (game == "nlhe")
     {
+        std::cout << "Using stack size: " << stack_size << "\n";
         solver.reset(new cfr_solver<holdem_game, nl_holdem_state>(abs_file ? holdem_abstraction(std::move(abs_file)) :
             holdem_abstraction(abstraction), stack_size));
     }
@@ -89,15 +91,15 @@ int main(int argc, char* argv[])
     solver->solve(iterations);
 
     if (strategy_file.empty())
-        strategy_file = game + "-strategy.txt";
+        strategy_file = game + ".str";
 
     std::cout << "Saving strategy to: " << strategy_file << "\n";
-    std::ofstream f(strategy_file);
-    f << *solver;
+    std::ofstream f(strategy_file, std::ios::binary);
+    solver->create_strategy()->save(f);
 
     if (!state_file.empty())
     {
-        std::ofstream f(state_file);
+        std::ofstream f(state_file, std::ios::binary);
 
         if (f)
         {

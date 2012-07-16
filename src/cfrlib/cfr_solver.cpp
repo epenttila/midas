@@ -3,6 +3,7 @@
 #include <iostream>
 #include <omp.h>
 #include <boost/format.hpp>
+#include "strategy.h"
 
 namespace
 {
@@ -310,34 +311,31 @@ void cfr_solver<T, U>::load_state(std::istream& is)
 }
 
 template<class T, class U>
-std::ostream& cfr_solver<T, U>::print(std::ostream& os) const
+std::unique_ptr<strategy> cfr_solver<T, U>::create_strategy() const
 {
-    os << "total iterations: " << total_iterations_ << "\n";
-    os << "internal states: " << states_.size() << "\n";
-    os << "accumulated regret: " << accumulated_regret_[0] << ", " << accumulated_regret_[1] << "\n";
+    std::unique_ptr<strategy> s(new strategy(states_.size(), ACTIONS));
 
     for (std::size_t i = 0; i < states_.size(); ++i)
     {
         if (states_[i]->is_terminal())
             continue;
 
-        std::string line;
+        const int buckets = abstraction_.get_bucket_count(states_[i]->get_round());
 
-        for (int j = 0; j < abstraction_.get_bucket_count(states_[i]->get_round()); ++j)
+        for (int j = 0; j < buckets; ++j)
         {
-            os << *states_[i] << "," << j;
-
             std::array<double, ACTIONS> p;
             get_average_strategy(*states_[i], j, p);
 
             for (std::size_t k = 0; k < p.size(); ++k)
-                os << "," << std::fixed << p[k];
-
-            os << "\n";
+            {
+                s->set_buckets(i, int(k), buckets);
+                s->set(i, int(k), j, p[k]);
+            }
         }
     }
 
-    return os;
+    return s;
 }
 
 #include "holdem_game.h"
