@@ -13,6 +13,7 @@
 #include "util/choose.h"
 #include "util/k_means.h"
 #include "util/holdem_loops.h"
+#include "util/binary_io.h"
 
 namespace
 {
@@ -492,27 +493,22 @@ int holdem_abstraction::get_public_flop_bucket(int b0, int b1, int b2) const
 
 void holdem_abstraction::save(std::ostream& os) const
 {
-    os.write(reinterpret_cast<const char*>(&bucket_cfgs_[0]), sizeof(bucket_cfg) * bucket_cfgs_.size());
-    os.write(reinterpret_cast<const char*>(&preflop_ehs2_percentiles_[0]), sizeof(float) * preflop_ehs2_percentiles_.size());
-    os.write(reinterpret_cast<const char*>(&flop_ehs2_percentiles_[0]), sizeof(float) * flop_ehs2_percentiles_.size());
-    os.write(reinterpret_cast<const char*>(&turn_ehs2_percentiles_[0]), sizeof(float) * turn_ehs2_percentiles_.size());
-    os.write(reinterpret_cast<const char*>(&river_ehs_percentiles_[0]), sizeof(float) * river_ehs_percentiles_.size());
-    os.write(reinterpret_cast<const char*>(&public_flop_buckets_[0]), sizeof(int) * public_flop_buckets_.size());
+    binary_write(os, bucket_cfgs_);
+    binary_write(os, preflop_ehs2_percentiles_);
+    binary_write(os, flop_ehs2_percentiles_);
+    binary_write(os, turn_ehs2_percentiles_);
+    binary_write(os, river_ehs_percentiles_);
+    binary_write(os, public_flop_buckets_);
 }
 
 void holdem_abstraction::load(std::istream& is)
 {
-    is.read(reinterpret_cast<char*>(&bucket_cfgs_[0]), sizeof(bucket_cfg) * bucket_cfgs_.size());
-    preflop_ehs2_percentiles_.resize(bucket_cfgs_[PREFLOP].hs2);
-    is.read(reinterpret_cast<char*>(&preflop_ehs2_percentiles_[0]), sizeof(float) * preflop_ehs2_percentiles_.size());
-    flop_ehs2_percentiles_.resize(bucket_cfgs_[FLOP].hs2);
-    is.read(reinterpret_cast<char*>(&flop_ehs2_percentiles_[0]), sizeof(float) * flop_ehs2_percentiles_.size());
-    turn_ehs2_percentiles_.resize(bucket_cfgs_[TURN].hs2);
-    is.read(reinterpret_cast<char*>(&turn_ehs2_percentiles_[0]), sizeof(float) * turn_ehs2_percentiles_.size());
-    river_ehs_percentiles_.resize(bucket_cfgs_[RIVER].hs2);
-    is.read(reinterpret_cast<char*>(&river_ehs_percentiles_[0]), sizeof(float) * river_ehs_percentiles_.size());
-    public_flop_buckets_.resize(bucket_cfgs_[FLOP].pub);
-    is.read(reinterpret_cast<char*>(&public_flop_buckets_[0]), sizeof(int) * public_flop_buckets_.size());
+    binary_read(is, bucket_cfgs_);
+    binary_read(is, preflop_ehs2_percentiles_);
+    binary_read(is, flop_ehs2_percentiles_);
+    binary_read(is, turn_ehs2_percentiles_);
+    binary_read(is, river_ehs_percentiles_);
+    binary_read(is, public_flop_buckets_);
 }
 
 void holdem_abstraction::init()

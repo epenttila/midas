@@ -1,4 +1,5 @@
 #include "strategy.h"
+#include "util/binary_io.h"
 
 strategy::strategy(std::size_t states, int actions)
     : data_(states * actions)
@@ -65,28 +66,19 @@ int strategy::get_action(std::size_t state_id, int bucket) const
 
 void strategy::save(std::ostream& os) const
 {
-    os.write(reinterpret_cast<const char*>(&states_), sizeof(states_));
-    os.write(reinterpret_cast<const char*>(&actions_), sizeof(actions_));
+    binary_write(os, states_);
+    binary_write(os, actions_);
 
     for (std::size_t i = 0; i < data_.size(); ++i)
-    {
-        const std::size_t size = data_[i].size();
-        os.write(reinterpret_cast<const char*>(&size), sizeof(size));
-        os.write(reinterpret_cast<const char*>(&data_[i][0]), sizeof(data_[i][0]) * data_[i].size());
-    }
+        binary_write(os, data_[i]);
 }
 
 void strategy::load(std::istream& is)
 {
-    is.read(reinterpret_cast<char*>(&states_), sizeof(states_));
-    is.read(reinterpret_cast<char*>(&actions_), sizeof(actions_));
+    binary_read(is, states_);
+    binary_read(is, actions_);
     data_.resize(states_ * actions_);
 
     for (std::size_t i = 0; i < data_.size(); ++i)
-    {
-        std::size_t size;
-        is.read(reinterpret_cast<char*>(&size), sizeof(size));
-        data_[i].resize(size);
-        is.read(reinterpret_cast<char*>(&data_[i][0]), sizeof(data_[i][0]) * data_[i].size());
-    }
+        binary_read(is, data_[i]);
 }

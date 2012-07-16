@@ -4,6 +4,7 @@
 #include <omp.h>
 #include <boost/format.hpp>
 #include "strategy.h"
+#include "util/binary_io.h"
 
 namespace
 {
@@ -267,9 +268,9 @@ double cfr_solver<T, U>::get_accumulated_regret(const int player) const
 template<class T, class U>
 void cfr_solver<T, U>::save_state(std::ostream& os) const
 {
-    os.write(reinterpret_cast<const char*>(&total_iterations_), sizeof(int));
-    os.write(reinterpret_cast<const char*>(&accumulated_regret_[0]), sizeof(double));
-    os.write(reinterpret_cast<const char*>(&accumulated_regret_[1]), sizeof(double));
+    binary_write(os, total_iterations_);
+    binary_write(os, accumulated_regret_[0]);
+    binary_write(os, accumulated_regret_[1]);
 
     for (std::size_t i = 0; i < states_.size(); ++i)
     {
@@ -280,8 +281,8 @@ void cfr_solver<T, U>::save_state(std::ostream& os) const
         {
             for (int k = 0; k < ACTIONS; ++k)
             {
-                os.write(reinterpret_cast<char*>(&regrets_[i][j][k]), sizeof(double));
-                os.write(reinterpret_cast<char*>(&strategy_[i][j][k]), sizeof(double));
+                binary_write(os, regrets_[i][j][k]);
+                binary_write(os, strategy_[i][j][k]);
             }
         }
     }
@@ -290,9 +291,9 @@ void cfr_solver<T, U>::save_state(std::ostream& os) const
 template<class T, class U>
 void cfr_solver<T, U>::load_state(std::istream& is)
 {
-    is.read(reinterpret_cast<char*>(&total_iterations_), sizeof(int));
-    is.read(reinterpret_cast<char*>(&accumulated_regret_[0]), sizeof(double));
-    is.read(reinterpret_cast<char*>(&accumulated_regret_[1]), sizeof(double));
+    binary_read(is, total_iterations_);
+    binary_read(is, accumulated_regret_[0]);
+    binary_read(is, accumulated_regret_[1]);
 
     for (std::size_t i = 0; i < states_.size(); ++i)
     {
@@ -303,8 +304,8 @@ void cfr_solver<T, U>::load_state(std::istream& is)
         {
             for (int k = 0; k < ACTIONS; ++k)
             {
-                is.read(reinterpret_cast<char*>(&regrets_[i][j][k]), sizeof(double));
-                is.read(reinterpret_cast<char*>(&strategy_[i][j][k]), sizeof(double));
+                binary_read(is, regrets_[i][j][k]);
+                binary_read(is, strategy_[i][j][k]);
             }
         }
     }
