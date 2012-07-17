@@ -13,6 +13,11 @@ namespace
         const double s2 = (b / b2 - b1 / b2) / (1 - b1 / b2);
         return (rand() / RAND_MAX) < (s1 / (s1 + s2)) ? 0 : 1;
     }
+
+    bool is_raise(int action)
+    {
+        return action > nl_holdem_state::CALL && action < nl_holdem_state::ACTIONS;
+    }
 }
 
 nl_holdem_state::nl_holdem_state(const int stack_size)
@@ -57,7 +62,7 @@ void nl_holdem_state::create_child(const int action, int* id)
 
     const bool opponent_allin = pot_[1 - player_] == stack_size_;
 
-    if ((action >= RAISE_HALFPOT && action <= RAISE_MAX) && opponent_allin)
+    if (is_raise(action) && opponent_allin)
         return;
 
     if (action == FOLD && action_ == CALL) // check -> fold
@@ -76,7 +81,7 @@ void nl_holdem_state::create_child(const int action, int* id)
 
     int new_round = round_;
 
-    if ((action_ >= RAISE_HALFPOT && action <= RAISE_MAX) && action == CALL)
+    if (is_raise(action) && action == CALL)
         ++new_round; // raise-call
     else if (action_ == CALL && action == CALL && parent_ && round_ == parent_->round_)
         ++new_round; // check-check (or call-check preflop)
