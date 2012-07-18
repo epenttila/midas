@@ -3,7 +3,7 @@
 #include <iostream>
 #include <boost/format.hpp>
 #include "evallib/holdem_evaluator.h"
-#include "util/compare_and_swap.h"
+#include "util/sort.h"
 #include "util/card.h"
 #include "util/holdem_loops.h"
 
@@ -101,9 +101,7 @@ int holdem_flop_lut::get_key(const int c0, const int c1, const int b0, const int
     const int board_cards = 3;
     std::array<int, board_cards> board = {{b0, b1, b2}};
 
-    compare_and_swap(board[1], board[2]);
-    compare_and_swap(board[0], board[2]);
-    compare_and_swap(board[0], board[1]);
+    sort(board);
 
     const std::array<int, board_cards> board_ranks = {{get_rank(board[0]), get_rank(board[1]), get_rank(board[2])}};
     const std::array<int, board_cards> board_suits = {{get_suit(board[0]), get_suit(board[1]), get_suit(board[2])}};
@@ -133,7 +131,7 @@ int holdem_flop_lut::get_key(const int c0, const int c1, const int b0, const int
 
     // hole
     std::array<int, 2> hole = {{c0, c1}};
-    compare_and_swap(hole[0], hole[1]);
+    sort(hole);
 
     const std::array<int, 2> hole_ranks = {{get_rank(hole[0]), get_rank(hole[1])}};
     const std::array<int, 2> hole_iso_suits = {{suit_map[get_suit(hole[0])], suit_map[get_suit(hole[1])]}};

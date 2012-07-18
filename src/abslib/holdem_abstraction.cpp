@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include "util/card.h"
 #include "lutlib/holdem_preflop_lut.h"
-#include "util/compare_and_swap.h"
+#include "util/sort.h"
 #include "util/choose.h"
 #include "util/k_means.h"
 #include "util/holdem_loops.h"
@@ -477,10 +477,7 @@ int holdem_abstraction::get_public_flop_bucket(int b0, int b1, int b2) const
     if (bucket_cfgs_[FLOP].pub > 1)
     {
         std::array<int, 3> flop = {{b0, b1, b2}};
-        /// @todo sort_board
-        compare_and_swap(flop[1], flop[2]);
-        compare_and_swap(flop[0], flop[2]);
-        compare_and_swap(flop[0], flop[1]);
+        sort(flop);
 
         const auto flop_key = choose(flop[2], 3) + choose(flop[1], 2) + choose(flop[0], 1);
         return public_flop_buckets_[flop_key];
