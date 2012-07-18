@@ -94,8 +94,7 @@ int main(int argc, char* argv[])
         strategy_file = game + ".str";
 
     std::cout << "Saving strategy to: " << strategy_file << "\n";
-    std::ofstream f(strategy_file, std::ios::binary);
-    solver->create_strategy()->save(f);
+    solver->save_strategy(strategy_file);
 
     if (!state_file.empty())
     {

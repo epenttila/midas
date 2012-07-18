@@ -1,49 +1,26 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include "strategy.h"
-#include "util/binary_io.h"
+#include <cstdio>
+#include <cstdint>
 
-strategy::strategy(std::size_t states, int actions)
-    : data_(states * actions)
-    , states_(states)
+strategy::strategy(const std::string& filename, std::size_t states, int actions)
+    : states_(states)
     , actions_(actions)
     , engine_(std::random_device()())
+    , positions_(states)
+    , file_(fopen(filename.c_str(), "rb"), fclose)
 {
-}
-
-strategy::strategy(std::istream&& is)
-    : engine_(std::random_device()())
-{
-    if (!is)
-        throw std::runtime_error("bad istream");
-
-    load(is);
-
-    if (!is)
-        throw std::runtime_error("read failed");
-}
-
-int strategy::get_actions() const
-{
-    return actions_;
-}
-
-void strategy::set(std::size_t state_id, int action, int bucket, double probability)
-{
-    data_[state_id * actions_ + action][bucket] = probability;
-}
-
-void strategy::set_buckets(std::size_t state_id, int action, int buckets)
-{
-    data_[state_id * actions_ + action].resize(buckets);
+    _fseeki64(file_.get(), -std::int64_t(states) * sizeof(positions_[0]), SEEK_END);
+    fread(&positions_[0], sizeof(positions_[0]), positions_.size(), file_.get());
 }
 
 double strategy::get(std::size_t state_id, int action, int bucket) const
 {
-    const auto& values = data_[state_id * actions_ + action];
-    
-    if (bucket >= values.size())
-        return -1;
-
-    return values[bucket];
+    std::size_t pos = (positions_[state_id] + bucket * actions_ + action) * sizeof(double);
+    _fseeki64(file_.get(), pos, SEEK_SET);
+    double value;
+    fread(&value, sizeof(value), 1, file_.get());
+    return value;
 }
 
 int strategy::get_action(std::size_t state_id, int bucket) const
@@ -62,23 +39,4 @@ int strategy::get_action(std::size_t state_id, int bucket) const
     }
 
     return -1;
-}
-
-void strategy::save(std::ostream& os) const
-{
-    binary_write(os, states_);
-    binary_write(os, actions_);
-
-    for (std::size_t i = 0; i < data_.size(); ++i)
-        binary_write(os, data_[i]);
-}
-
-void strategy::load(std::istream& is)
-{
-    binary_read(is, states_);
-    binary_read(is, actions_);
-    data_.resize(states_ * actions_);
-
-    for (std::size_t i = 0; i < data_.size(); ++i)
-        binary_read(is, data_[i]);
 }

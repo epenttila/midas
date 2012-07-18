@@ -1,8 +1,10 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include "cfr_solver.h"
 #include <cassert>
 #include <iostream>
 #include <omp.h>
 #include <boost/format.hpp>
+#include <cstdio>
 #include "strategy.h"
 #include "util/binary_io.h"
 
@@ -312,31 +314,26 @@ void cfr_solver<T, U>::load_state(std::istream& is)
 }
 
 template<class T, class U>
-std::unique_ptr<strategy> cfr_solver<T, U>::create_strategy() const
+void cfr_solver<T, U>::save_strategy(const std::string& filename) const
 {
-    std::unique_ptr<strategy> s(new strategy(states_.size(), ACTIONS));
+    std::unique_ptr<FILE, int (*)(FILE*)> file(fopen(filename.c_str(), "wb"), fclose);
+    std::vector<std::size_t> pointers;
 
-    for (std::size_t i = 0; i < states_.size(); ++i)
+    for (auto i = states_.begin(); i != states_.end(); ++i)
     {
-        if (states_[i]->is_terminal())
-            continue;
+        const auto& state = *i;
+        assert(!state->is_terminal() && std::distance(states_.begin(), i) == state->get_id());
+        pointers.push_back(_ftelli64(file.get()));
 
-        const int buckets = abstraction_.get_bucket_count(states_[i]->get_round());
-
-        for (int j = 0; j < buckets; ++j)
+        for (int bucket = 0; bucket < abstraction_.get_bucket_count(state->get_round()); ++bucket)
         {
             std::array<double, ACTIONS> p;
-            get_average_strategy(*states_[i], j, p);
-
-            for (std::size_t k = 0; k < p.size(); ++k)
-            {
-                s->set_buckets(i, int(k), buckets);
-                s->set(i, int(k), j, p[k]);
-            }
+            get_average_strategy(*state, bucket, p);
+            fwrite(reinterpret_cast<char*>(&p[0]), sizeof(p[0]), p.size(), file.get());
         }
     }
 
-    return s;
+    fwrite(reinterpret_cast<char*>(&pointers[0]), sizeof(pointers[0]), pointers.size(), file.get());
 }
 
 #include "holdem_game.h"

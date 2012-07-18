@@ -39,8 +39,26 @@ Gui::Gui()
     std::string abstraction_filename = QFileDialog::getOpenFileName(this).toStdString();
     abstraction_.reset(new holdem_abstraction(std::ifstream(abstraction_filename, std::ios::binary)));
 
+    std::size_t states = 0;
+    std::vector<const nl_holdem_state*> stack(1, root_state_.get());
+
+    while (!stack.empty())
+    {
+        const nl_holdem_state* s = stack.back();
+        stack.pop_back();
+
+        if (!s->is_terminal())
+            ++states;
+
+        for (int i = nl_holdem_state::ACTIONS - 1; i >= 0; --i)
+        {
+            if (const nl_holdem_state* child = s->get_child(i))
+                stack.push_back(child);
+        }
+    }
+
     std::string str_filename = QFileDialog::getOpenFileName(this).toStdString();
-    strategy_.reset(new strategy(std::ifstream(str_filename, std::ios::binary)));
+    strategy_.reset(new strategy(str_filename, states, nl_holdem_state::ACTIONS));
 }
 
 Gui::~Gui()

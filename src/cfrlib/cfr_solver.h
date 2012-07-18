@@ -15,8 +15,7 @@ public:
     virtual void solve(const int iterations) = 0;
     virtual void save_state(std::ostream&) const = 0;
     virtual void load_state(std::istream&) = 0;
-    //virtual void save_strategy(std::ostream&) const = 0;
-    virtual std::unique_ptr<strategy> create_strategy() const = 0;
+    virtual void save_strategy(const std::string& filename) const = 0;
 };
 
 template<class T, class U>
@@ -34,7 +33,7 @@ public:
     cfr_solver(abstraction_t abstraction, int stack_size);
     ~cfr_solver();
     virtual void solve(const int iterations);
-    std::unique_ptr<strategy> create_strategy() const;
+    virtual void save_strategy(const std::string& filename) const;
 
 private:
     double update(const game_state& state, const bucket_t& buckets, std::array<double, 2>& reach, const int result);
