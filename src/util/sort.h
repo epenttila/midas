@@ -3,8 +3,9 @@
 template<class T>
 void sort(T& a, T& b)
 {
-    if (a > b)
-        std::swap(a, b);
+    const int tmp = std::min(a, b);
+    b = std::max(a, b);
+    a = tmp;
 }
 
 template<class T>
