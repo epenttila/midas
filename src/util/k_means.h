@@ -20,89 +20,71 @@ namespace detail
 }
 
 template<class Distance, class T>
-const std::vector<int> k_means(const std::vector<T>& points, const int k, const int runs)
+const std::vector<int> k_means(const std::vector<T>& points, const int k, const int max_iterations)
 {
     const auto dimensions = points[0].size();
     Distance get_distance;
-    std::vector<int> best_clusters(points.size(), -1);
-    double min_distance_sum = std::numeric_limits<double>::max();
+    std::vector<T> means = detail::init_means(points, k);
+    std::vector<T> new_means = means;
+    std::vector<int> clusters(points.size(), -1);
+    std::vector<int> cluster_sizes(k);
+    bool converged = false;
+    int iters = 0;
 
-#pragma omp parallel for schedule(dynamic)
-    for (auto n = 0; n < runs; ++n)
+    while (!converged)
     {
-        std::vector<T> means = detail::init_means(points, k);
-        std::vector<T> new_means = means;
-        std::vector<int> clusters(points.size(), -1);
-        std::vector<int> cluster_sizes(k);
-        bool converged = false;
-        int iters = 0;
+        if (iters == max_iterations)
+            break;
 
-        while (!converged)
-        {
-            converged = true;
+        converged = true;
 
-            for (auto i = 0; i < k; ++i)
-                std::fill(new_means[i].begin(), new_means[i].end(), 0);
+        for (auto i = 0; i < k; ++i)
+            std::fill(new_means[i].begin(), new_means[i].end(), 0);
 
-            std::fill(cluster_sizes.begin(), cluster_sizes.end(), 0);
-
-            for (auto i = 0; i < points.size(); ++i)
-            {
-                double min_distance = std::numeric_limits<double>::max();
-                int cluster = 0;
-
-                for (auto j = 0; j < k; ++j)
-                {
-                    const double distance = get_distance(points[i], means[j]);
-                    assert(distance >= 0);
-
-                    if (distance < min_distance)
-                    {
-                        min_distance = distance;
-                        cluster = j;
-
-                        if (distance == 0)
-                            break;
-                    }
-                }
-
-                if (cluster != clusters[i])
-                {
-                    clusters[i] = cluster;
-                    converged = false;
-                }
-                
-                for (auto j = 0; j < dimensions; ++j)
-                    new_means[cluster][j] += points[i][j];
-
-                ++cluster_sizes[cluster];
-            }
-
-            for (auto i = 0; i < k; ++i)
-            {
-                for (auto j = 0; j < dimensions; ++j)
-                    new_means[i][j] /= double(cluster_sizes[i]);
-            }
-
-            std::swap(means, new_means);
-
-            ++iters;
-        }
-
-        double distance_sum = 0;
+        std::fill(cluster_sizes.begin(), cluster_sizes.end(), 0);
 
         for (auto i = 0; i < points.size(); ++i)
-            distance_sum += get_distance(points[i], means[clusters[i]]);
-
-#pragma omp critical
         {
-            if (distance_sum < min_distance_sum)
+            double min_distance = std::numeric_limits<double>::max();
+            int cluster = 0;
+
+            for (auto j = 0; j < k; ++j)
             {
-                min_distance_sum = distance_sum;
-                best_clusters = clusters;
+                const double distance = get_distance(points[i], means[j]);
+                assert(distance >= 0);
+
+                if (distance < min_distance)
+                {
+                    min_distance = distance;
+                    cluster = j;
+
+                    if (distance == 0)
+                        break;
+                }
             }
+
+            if (cluster != clusters[i])
+            {
+                clusters[i] = cluster;
+                converged = false;
+            }
+                
+            for (auto j = 0; j < dimensions; ++j)
+                new_means[cluster][j] += points[i][j];
+
+            ++cluster_sizes[cluster];
         }
+
+        for (auto i = 0; i < k; ++i)
+        {
+            for (auto j = 0; j < dimensions; ++j)
+                new_means[i][j] /= double(cluster_sizes[i]);
+        }
+
+        std::swap(means, new_means);
+
+        ++iters;
     }
 
-    return best_clusters;
+    return clusters;
 }

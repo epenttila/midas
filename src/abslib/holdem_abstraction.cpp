@@ -193,7 +193,7 @@ holdem_abstraction::bucket_cfg::bucket_cfg()
 {
 }
 
-holdem_abstraction::holdem_abstraction(const std::string& bucket_configuration)
+holdem_abstraction::holdem_abstraction(const std::string& bucket_configuration, int kmeans_max_iterations)
 {
     init();
 
@@ -242,44 +242,13 @@ holdem_abstraction::holdem_abstraction(const std::string& bucket_configuration)
     if (bucket_cfgs_[FLOP].pub > 1)
     {
         std::cout << "Generating public flop buckets\n";
+        generate_public_flop_buckets(kmeans_max_iterations, 10);
+    }
 
-        const int kmeans_buckets = 10;
-        const int kmeans_runs = 1000;
-        std::vector<std::vector<double>> flops(22100, std::vector<double>(kmeans_buckets * kmeans_buckets));
-        const auto flop_percentiles = get_percentiles(get_flop_frequencies(*flop_lut_), kmeans_buckets);
-        const auto turn_percentiles = get_percentiles(get_turn_frequencies(*turn_lut_), kmeans_buckets);
-
-#pragma omp parallel
-        {
-            std::vector<std::vector<double>> thread_flops = flops;
-
-            parallel_for_each_flop([&](int a, int b, int i, int j, int k) {
-                const auto flop_key = choose(k, 3) + choose(j, 2) + choose(i, 1);
-
-                for (int l = 0; l < 52; ++l)
-                {
-                    if (l == i || l == j || l == k || l == a || l == b)
-                        continue;
-
-                    const int flop_bucket =
-                        get_percentile_bucket(flop_lut_->get(a, b, i, j, k).second, flop_percentiles);
-                    const int turn_bucket =
-                        get_percentile_bucket(turn_lut_->get(a, b, i, j, k, l).second, turn_percentiles);
-                    ++thread_flops[flop_key][flop_bucket * kmeans_buckets + turn_bucket];
-                }
-            });
-
-#pragma omp critical
-            {
-                for (auto i = 0; i < flops.size(); ++i)
-                {
-                    for (auto j = 0; j < flops[i].size(); ++j)
-                        flops[i][j] += thread_flops[i][j];
-                }
-            }
-        }
-
-       public_flop_buckets_ = k_means<get_distance>(flops, bucket_cfgs_[FLOP].pub, kmeans_runs);
+    if (bucket_cfgs_[TURN].pub > 1)
+    {
+        std::cout << "Generating public turn buckets\n";
+        generate_public_turn_buckets(kmeans_max_iterations, 10);
     }
 }
 
@@ -323,8 +292,8 @@ int holdem_abstraction::get_bucket_count(const int round) const
 
     case RIVER:
         return remember_preflop * remember_flop * remember_turn
-            * bucket_cfgs_[TURN].hs2
-            * bucket_cfgs_[TURN].pub;
+            * bucket_cfgs_[RIVER].hs2
+            * bucket_cfgs_[RIVER].pub;
     }
 
     assert(false);
@@ -515,4 +484,84 @@ void holdem_abstraction::init()
     flop_lut_.reset(new holdem_flop_lut(std::ifstream("holdem_flop_lut.dat", std::ios::binary)));
     turn_lut_.reset(new holdem_turn_lut(std::ifstream("holdem_turn_lut.dat", std::ios::binary)));
     river_lut_.reset(new holdem_river_lut(std::ifstream("holdem_river_lut.dat", std::ios::binary)));
+}
+
+void holdem_abstraction::generate_public_flop_buckets(int kmeans_max_iterations, int kmeans_buckets)
+{
+    std::vector<std::vector<double>> flops(choose(52, 3), std::vector<double>(kmeans_buckets * kmeans_buckets));
+    const auto flop_percentiles = get_percentiles(get_flop_frequencies(*flop_lut_), kmeans_buckets);
+    const auto turn_percentiles = get_percentiles(get_turn_frequencies(*turn_lut_), kmeans_buckets);
+
+    std::cout << "Generating flop-turn matrix\n";
+
+#pragma omp parallel
+    {
+        std::vector<std::vector<double>> thread_flops = flops;
+
+        parallel_for_each_flop([&](int a, int b, int i, int j, int k) {
+            const auto flop_key = choose(k, 3) + choose(j, 2) + choose(i, 1);
+
+            for (int l = 0; l < 52; ++l)
+            {
+                if (l == i || l == j || l == k || l == a || l == b)
+                    continue;
+
+                const int flop_bucket =
+                    get_percentile_bucket(flop_lut_->get(a, b, i, j, k).second, flop_percentiles);
+                const int turn_bucket =
+                    get_percentile_bucket(turn_lut_->get(a, b, i, j, k, l).second, turn_percentiles);
+                ++thread_flops[flop_key][flop_bucket * kmeans_buckets + turn_bucket];
+            }
+        });
+
+#pragma omp critical
+        {
+            for (auto i = 0; i < flops.size(); ++i)
+            {
+                for (auto j = 0; j < flops[i].size(); ++j)
+                    flops[i][j] += thread_flops[i][j];
+            }
+        }
+    }
+
+    public_flop_buckets_ = k_means<get_distance>(flops, bucket_cfgs_[FLOP].pub, kmeans_max_iterations);
+}
+
+void holdem_abstraction::generate_public_turn_buckets(int kmeans_max_iterations, int kmeans_buckets)
+{
+    std::vector<std::vector<double>> turns(choose(52, 4), std::vector<double>(kmeans_buckets * kmeans_buckets));
+    const auto turn_percentiles = get_percentiles(get_turn_frequencies(*turn_lut_), kmeans_buckets);
+    const auto river_percentiles = get_percentiles(get_river_frequencies(*river_lut_), kmeans_buckets);
+
+    std::cout << "Generating turn-river matrix\n";
+
+#pragma omp parallel
+    {
+        std::vector<std::vector<double>> thread_turns = turns;
+
+        parallel_for_each_turn([&](int a, int b, int i, int j, int k, int l) {
+            const auto key = choose(l, 4) + choose(k, 3) + choose(j, 2) + choose(i, 1);
+
+            for (int m = 0; m < 52; ++m)
+            {
+                if (m == i || m == j || m == k || m == l || m == a || m == b)
+                    continue;
+
+                const int from = get_percentile_bucket(turn_lut_->get(a, b, i, j, k, l).second, turn_percentiles);
+                const int to = get_percentile_bucket(river_lut_->get(a, b, i, j, k, l, m), river_percentiles);
+                ++thread_turns[key][from * kmeans_buckets + to];
+            }
+        });
+
+#pragma omp critical
+        {
+            for (auto i = 0; i < turns.size(); ++i)
+            {
+                for (auto j = 0; j < turns[i].size(); ++j)
+                    turns[i][j] += thread_turns[i][j];
+            }
+        }
+    }
+
+    public_flop_buckets_ = k_means<get_distance>(turns, bucket_cfgs_[FLOP].pub, kmeans_max_iterations);
 }

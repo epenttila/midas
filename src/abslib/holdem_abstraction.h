@@ -13,7 +13,7 @@ public:
     typedef holdem_evaluator evaluator;
     enum holdem_round { PREFLOP, FLOP, TURN, RIVER, ROUNDS };
 
-    holdem_abstraction(const std::string& bucket_configuration);
+    holdem_abstraction(const std::string& bucket_configuration, int kmeans_max_iterations);
     holdem_abstraction(std::istream&& is);
     void get_buckets(int c0, int c1, int b0, int b1, int b2, int b3, int b4, bucket_type* buckets) const;
     int get_bucket(int c0, int c1) const;
@@ -43,6 +43,9 @@ private:
     int get_private_river_bucket(int c0, int c1, int b0, int b1, int b2, int b3, int b4) const;
 
     int get_public_flop_bucket(int b0, int b1, int b2) const;
+
+    void generate_public_flop_buckets(int kmeans_max_iterations, int kmeans_buckets);
+    void generate_public_turn_buckets(int kmeans_max_iterations, int kmeans_buckets);
 
     std::shared_ptr<evaluator> evaluator_;
     std::shared_ptr<holdem_preflop_lut> preflop_lut_;

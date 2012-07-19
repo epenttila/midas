@@ -15,13 +15,22 @@ int main(int argc, char* argv[])
 
     std::string game;
     std::string abstraction;
+    int kmeans_max_iterations;
 
-    po::options_description desc("Options");
-    desc.add_options()
+    po::options_description generic_options("Generic options");
+    generic_options.add_options()
         ("help", "produce help message")
         ("game", po::value<std::string>(&game), "game")
         ("abstraction", po::value<std::string>(&abstraction), "abstraction")
         ;
+
+    po::options_description holdem_options("holdem options");
+    holdem_options.add_options()
+        ("kmeans-max-iterations", po::value<int>(&kmeans_max_iterations), "maximum amount of iterations")
+        ;
+
+    po::options_description desc("Options");
+    desc.add(generic_options).add(holdem_options);
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -37,7 +46,7 @@ int main(int argc, char* argv[])
 
     if (game == "holdem")
     {
-        const auto abs = holdem_abstraction(abstraction);
+        const auto abs = holdem_abstraction(abstraction, kmeans_max_iterations);
         const std::string abstraction_file = abstraction + ".abs";
         std::cout << "Saving abstraction to: " << abstraction_file << "\n";
         abs.save(std::ofstream(abstraction_file, std::ios::binary));
