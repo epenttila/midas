@@ -49,7 +49,8 @@ int main(int argc, char* argv[])
         const auto abs = holdem_abstraction(abstraction, kmeans_max_iterations);
         const std::string abstraction_file = abstraction + ".abs";
         std::cout << "Saving abstraction to: " << abstraction_file << "\n";
-        abs.save(std::ofstream(abstraction_file, std::ios::binary));
+        std::ofstream f(abstraction_file, std::ios::binary);
+        abs.save(f);
     }
 
     return 0;
