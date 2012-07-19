@@ -42,33 +42,8 @@ cfr_solver<T, U>::cfr_solver(abstraction_t abstraction, const int stack_size)
         }
     }
 
-    std::cout << states_.size() << " game states\n";
-
     assert(states_.size() > 1); // invalid game tree
     assert(root_->get_child_count() > 0);
-
-    regrets_ = new value[states_.size()];
-    strategy_ = new value[states_.size()];
-
-    for (std::size_t i = 0; i < states_.size(); ++i)
-    {
-        if (states_[i]->is_terminal())
-            continue;
-
-        const int num_buckets = abstraction_.get_bucket_count(states_[i]->get_round());
-        assert(num_buckets > 0);
-        regrets_[i] = new double[num_buckets][ACTIONS];
-        strategy_[i] = new double[num_buckets][ACTIONS];
-
-        for (int j = 0; j < num_buckets; ++j)
-        {
-            for (int k = 0; k < ACTIONS; ++k)
-            {
-                regrets_[i][j][k] = 0;
-                strategy_[i][j][k] = 0;
-            }
-        }
-    }
 }
 
 template<class T, class U>
@@ -334,6 +309,65 @@ void cfr_solver<T, U>::save_strategy(const std::string& filename) const
     }
 
     fwrite(reinterpret_cast<char*>(&pointers[0]), sizeof(pointers[0]), pointers.size(), file.get());
+}
+
+template<class T, class U>
+void cfr_solver<T, U>::init_storage()
+{
+    regrets_ = new value[states_.size()];
+    strategy_ = new value[states_.size()];
+
+    for (std::size_t i = 0; i < states_.size(); ++i)
+    {
+        if (states_[i]->is_terminal())
+            continue;
+
+        const int num_buckets = abstraction_.get_bucket_count(states_[i]->get_round());
+        assert(num_buckets > 0);
+        regrets_[i] = new double[num_buckets][ACTIONS];
+        strategy_[i] = new double[num_buckets][ACTIONS];
+
+        for (int j = 0; j < num_buckets; ++j)
+        {
+            for (int k = 0; k < ACTIONS; ++k)
+            {
+                regrets_[i][j][k] = 0;
+                strategy_[i][j][k] = 0;
+            }
+        }
+    }
+}
+
+template<class T, class U>
+std::vector<int> cfr_solver<T, U>::get_bucket_counts() const
+{
+    std::vector<int> counts;
+
+    for (int i = 0; i < ROUNDS; ++i)
+        counts.push_back(abstraction_.get_bucket_count(i));
+
+    return counts;
+}
+
+template<class T, class U>
+std::vector<int> cfr_solver<T, U>::get_state_counts() const
+{
+    std::vector<int> counts(ROUNDS);
+    std::for_each(states_.begin(), states_.end(), [&](const game_state* s) { ++counts[s->get_round()]; });
+    return counts;
+}
+
+template<class T, class U>
+std::size_t cfr_solver<T, U>::get_required_memory() const
+{
+    const auto bucket_counts = get_bucket_counts();
+    const auto state_counts = get_state_counts();
+    std::size_t mem = 0;
+
+    for (int i = 0; i < ROUNDS; ++i)
+        mem += state_counts[i] * bucket_counts[i] * ACTIONS * sizeof(double) * 2; // regret and strategy
+
+    return mem;
 }
 
 #include "holdem_game.h"

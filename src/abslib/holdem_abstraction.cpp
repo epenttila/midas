@@ -214,42 +214,22 @@ holdem_abstraction::holdem_abstraction(const std::string& bucket_configuration, 
     river_ehs_percentiles_.resize(bucket_cfgs_[RIVER].hs2);
 
     if (bucket_cfgs_[PREFLOP].hs2 > 1 && bucket_cfgs_[PREFLOP].hs2 < 169)
-    {
-        std::cout << "Generating preflop ehs2 percentiles\n";
-        preflop_ehs2_percentiles_ = get_percentiles(get_preflop_frequencies(*preflop_lut_),
-            bucket_cfgs_[PREFLOP].hs2);
-    }
+        preflop_ehs2_percentiles_ = get_percentiles(get_preflop_frequencies(*preflop_lut_), bucket_cfgs_[PREFLOP].hs2);
 
     if (bucket_cfgs_[FLOP].hs2 > 1)
-    {
-        std::cout << "Generating flop ehs2 percentiles\n";
         flop_ehs2_percentiles_ = get_percentiles(get_flop_frequencies(*flop_lut_), bucket_cfgs_[FLOP].hs2);
-    }
 
     if (bucket_cfgs_[TURN].hs2 > 1)
-    {
-        std::cout << "Generating turn ehs2 percentiles\n";
         turn_ehs2_percentiles_ = get_percentiles(get_turn_frequencies(*turn_lut_), bucket_cfgs_[TURN].hs2);
-    }
 
     if (bucket_cfgs_[RIVER].hs2 > 1)
-    {
-        std::cout << "Generating river ehs percentiles\n";
-        river_ehs_percentiles_ =
-            get_percentiles(get_river_frequencies(*river_lut_), bucket_cfgs_[RIVER].hs2);
-    }
+        river_ehs_percentiles_ = get_percentiles(get_river_frequencies(*river_lut_), bucket_cfgs_[RIVER].hs2);
     
     if (bucket_cfgs_[FLOP].pub > 1)
-    {
-        std::cout << "Generating public flop buckets\n";
         generate_public_flop_buckets(kmeans_max_iterations, 10);
-    }
 
     if (bucket_cfgs_[TURN].pub > 1)
-    {
-        std::cout << "Generating public turn buckets\n";
         generate_public_turn_buckets(kmeans_max_iterations, 10);
-    }
 }
 
 holdem_abstraction::holdem_abstraction(std::istream&& is)
@@ -492,8 +472,6 @@ void holdem_abstraction::generate_public_flop_buckets(int kmeans_max_iterations,
     const auto flop_percentiles = get_percentiles(get_flop_frequencies(*flop_lut_), kmeans_buckets);
     const auto turn_percentiles = get_percentiles(get_turn_frequencies(*turn_lut_), kmeans_buckets);
 
-    std::cout << "Generating flop-turn matrix\n";
-
 #pragma omp parallel
     {
         std::vector<std::vector<double>> thread_flops = flops;
@@ -532,8 +510,6 @@ void holdem_abstraction::generate_public_turn_buckets(int kmeans_max_iterations,
     std::vector<std::vector<double>> turns(choose(52, 4), std::vector<double>(kmeans_buckets * kmeans_buckets));
     const auto turn_percentiles = get_percentiles(get_turn_frequencies(*turn_lut_), kmeans_buckets);
     const auto river_percentiles = get_percentiles(get_river_frequencies(*river_lut_), kmeans_buckets);
-
-    std::cout << "Generating turn-river matrix\n";
 
 #pragma omp parallel
     {

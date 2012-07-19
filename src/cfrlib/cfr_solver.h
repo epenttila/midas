@@ -16,6 +16,10 @@ public:
     virtual void save_state(std::ostream&) const = 0;
     virtual void load_state(std::istream&) = 0;
     virtual void save_strategy(const std::string& filename) const = 0;
+    virtual void init_storage() = 0;
+    virtual std::vector<int> get_bucket_counts() const = 0;
+    virtual std::vector<int> get_state_counts() const = 0;
+    virtual std::size_t get_required_memory() const = 0;
 };
 
 template<class T, class U>
@@ -34,6 +38,10 @@ public:
     ~cfr_solver();
     virtual void solve(const int iterations);
     virtual void save_strategy(const std::string& filename) const;
+    virtual void init_storage();
+    virtual std::vector<int> get_bucket_counts() const;
+    virtual std::vector<int> get_state_counts() const;
+    virtual std::size_t get_required_memory() const;
 
 private:
     double update(const game_state& state, const bucket_t& buckets, std::array<double, 2>& reach, const int result);
