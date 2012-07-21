@@ -81,7 +81,7 @@ void nl_holdem_state::create_child(const int action, int* id)
 
     int new_round = round_;
 
-    if (is_raise(action) && action == CALL)
+    if (is_raise(action_) && action == CALL)
         ++new_round; // raise-call
     else if (action_ == CALL && action == CALL && parent_ && round_ == parent_->round_)
         ++new_round; // check-check (or call-check preflop)
