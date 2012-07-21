@@ -1,14 +1,14 @@
 project(gui)
 
 set(gui_SOURCES
-    gui.cpp
+    main_window.cpp
     main.cpp
     site_stars.cpp
     table_widget.cpp
 )
 
 set(gui_HEADERS
-    gui.h
+    main_window.h
     table_widget.h
 )
 

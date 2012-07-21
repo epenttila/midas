@@ -1,4 +1,4 @@
-#include "gui.h"
+#include "main_window.h"
 
 #pragma warning(push, 3)
 #include <array>
@@ -51,7 +51,7 @@ namespace
     };
 }
 
-Gui::Gui()
+main_window::main_window()
     : root_state_(new nl_holdem_state(50))
     , current_state_(root_state_.get())
 {
@@ -80,7 +80,7 @@ Gui::Gui()
     widget->setLayout(layout);
 
     timer_ = new QTimer(this);
-    connect(timer_, SIGNAL(timeout()), SLOT(timerTimeout()));
+    connect(timer_, SIGNAL(timeout()), SLOT(timer_timeout()));
     timer_->start(100);
 
     create_menus();
@@ -93,11 +93,11 @@ Gui::Gui()
     statusBar()->addWidget(capture_label_, 1);
 }
 
-Gui::~Gui()
+main_window::~main_window()
 {
 }
 
-void Gui::timerTimeout()
+void main_window::timer_timeout()
 {
     if (!site_ || !site_->update())
         return;
@@ -191,14 +191,14 @@ void Gui::timerTimeout()
     decision_label_->setText(QString("Decision: %1 (%2%)").arg(s.c_str()).arg(int(probability * 100)));
 }
 
-void Gui::create_menus()
+void main_window::create_menus()
 {
     auto file_menu = menuBar()->addMenu("File");
     file_menu->addAction("Open abstraction...", this, SLOT(open_abstraction()));
     file_menu->addAction("Set strategies...", this, SLOT(open_strategy()));
 }
 
-void Gui::open_strategy()
+void main_window::open_strategy()
 {
     const auto filename = QFileDialog::getOpenFileName(this, "Open strategy", QString(), "Strategy files (*.str)");
 
@@ -227,7 +227,7 @@ void Gui::open_strategy()
     strategy_label_->setText(QFileInfo(filename).fileName());
 }
 
-void Gui::open_abstraction()
+void main_window::open_abstraction()
 {
     const auto filename = QFileDialog::getOpenFileName(this, "Open abstraction", QString(), "Abstraction files (*.abs)");
 

@@ -12,16 +12,16 @@ class strategy;
 class QLabel;
 class table_widget;
 
-class Gui : public QMainWindow
+class main_window : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    Gui();
-    ~Gui();
+    main_window();
+    ~main_window();
 
 public slots:
-    void timerTimeout();
+    void timer_timeout();
     void open_strategy();
     void open_abstraction();
 
