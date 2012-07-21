@@ -236,7 +236,7 @@ bool site_stars::update()
     if (image.isNull())
         return false;
 
-    const int dealer = get_dealer(image);
+    const int dealer = ::get_dealer(image);
     const int player = get_active_player(image);
 
     if (dealer == -1 || player == -1)
@@ -251,8 +251,8 @@ bool site_stars::update()
     const double stack2 = get_stack_size(image, 1);
     const double total_pot = get_total_pot(image);
 
-    hole_[0] = 5;
-    hole_[1] = 18;
+    hole_[0] = get_board_card(image, QRect(51, 112, 50, 13));
+    hole_[1] = get_board_card(image, QRect(66, 116, 50, 13));
     board_[0] = get_board_card(image, QRect(268, 157, 50, 13));
     board_[1] = get_board_card(image, QRect(322, 157, 50, 13));
     board_[2] = get_board_card(image, QRect(376, 157, 50, 13));
@@ -342,4 +342,9 @@ int site_stars::get_round() const
 double site_stars::get_raise_fraction() const
 {
     return fraction_;
+}
+
+int site_stars::get_dealer() const
+{
+    return dealer_;
 }

@@ -243,3 +243,8 @@ const nl_holdem_state* nl_holdem_state::raise(const double fraction) const
 
     return children_[action];
 }
+
+std::array<int, 2> nl_holdem_state::get_pot() const
+{
+    return pot_;
+}

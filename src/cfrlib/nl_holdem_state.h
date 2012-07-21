@@ -29,6 +29,7 @@ public:
     int get_child_count() const;
     const nl_holdem_state* call() const;
     const nl_holdem_state* raise(double fraction) const;
+    std::array<int, 2> get_pot() const;
 
 private:
     nl_holdem_state(const nl_holdem_state* parent, int action, int player, const std::array<int, 2>& pot, int round,

@@ -17,6 +17,7 @@ public:
     bool is_new_hand() const;
     int get_round() const;
     double get_raise_fraction() const;
+    int get_dealer() const;
 
 private:
     int dealer_;

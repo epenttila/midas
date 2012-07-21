@@ -10,6 +10,7 @@ class nl_holdem_state;
 class site_stars;
 class strategy;
 class QLabel;
+class table_widget;
 
 class Gui : public QMainWindow
 {
@@ -27,7 +28,7 @@ public slots:
 private:
     void create_menus();
 
-    QTextEdit* text_;
+    table_widget* visualizer_;
     std::unique_ptr<holdem_abstraction> abstraction_;
     std::unique_ptr<nl_holdem_state> root_state_;
     const nl_holdem_state* current_state_;
@@ -37,4 +38,5 @@ private:
     QLabel* abstraction_label_;
     QLabel* strategy_label_;
     QLabel* capture_label_;
+    QLabel* decision_label_;
 };

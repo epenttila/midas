@@ -21,6 +21,7 @@
 #include "cfrlib/holdem_game.h"
 #include "cfrlib/nl_holdem_state.h"
 #include "cfrlib/strategy.h"
+#include "table_widget.h"
 
 namespace
 {
@@ -54,11 +55,12 @@ Gui::Gui()
     : root_state_(new nl_holdem_state(50))
     , current_state_(root_state_.get())
 {
-    auto widget = new QWidget(this);
+    auto widget = new QFrame(this);
+    widget->setFrameStyle(QFrame::StyledPanel);
+
     setCentralWidget(widget);
 
-    text_ = new QTextEdit(this);
-    text_->setReadOnly(true);
+    visualizer_ = new table_widget(this);
 
     capture_button* button = new capture_button("Capture", this);
     button->released_.connect([&](HWND hwnd) {
@@ -69,8 +71,11 @@ Gui::Gui()
         capture_label_->setText(QString("%1 (%2)").arg(class_name).arg(std::size_t(hwnd)));
     });
 
+    decision_label_ = new QLabel("Decision: n/a", this);
+
     QVBoxLayout* layout = new QVBoxLayout(this);
-    layout->addWidget(text_);
+    layout->addWidget(visualizer_);
+    layout->addWidget(decision_label_);
     layout->addWidget(button);
     widget->setLayout(layout);
 
@@ -94,7 +99,20 @@ Gui::~Gui()
 
 void Gui::timerTimeout()
 {
-    if (!abstraction_ || !strategy_ || !site_ || !site_->update())
+    if (!site_ || !site_->update())
+        return;
+
+    visualizer_->set_dealer(site_->get_dealer());
+
+    auto hole = site_->get_hole_cards();
+    std::array<int, 2> hole_array = {{ hole.first, hole.second }};
+    visualizer_->set_hole_cards(0, hole_array);
+
+    std::array<int, 5> board;
+    site_->get_board_cards(board);
+    visualizer_->set_board_cards(board);
+
+    if (!abstraction_ || !strategy_)
         return;
 
     if (site_->is_new_hand())
@@ -113,17 +131,18 @@ void Gui::timerTimeout()
         }
     }
 
-    std::stringstream ss;
-
     if (current_state_)
-        ss << *current_state_;
+    {
+        std::array<int, 2> pot = current_state_->get_pot();
+        
+        if (site_->get_dealer() == 1)
+            std::swap(pot[0], pot[1]);
 
-    auto hole = site_->get_hole_cards();
+        visualizer_->set_pot(current_state_->get_round(), pot);
+    }
+
     const int c0 = hole.first;
     const int c1 = hole.second;
-
-    std::array<int, 5> board;
-    site_->get_board_cards(board);
     const int b0 = board[0];
     const int b1 = board[1];
     const int b2 = board[2];
@@ -150,29 +169,26 @@ void Gui::timerTimeout()
     }
 
     std::string s;
+    double probability = 0;
 
     if (current_state_)
     {
-        s += "FOLD: " + boost::lexical_cast<std::string>(strategy_->get(current_state_->get_id(), nl_holdem_state::FOLD, bucket)) + "\n";
-        s += "CALL: " + boost::lexical_cast<std::string>(strategy_->get(current_state_->get_id(), nl_holdem_state::CALL, bucket)) + "\n";
-        s += "RAISE_HALFPOT: " + boost::lexical_cast<std::string>(strategy_->get(current_state_->get_id(), nl_holdem_state::RAISE_HALFPOT, bucket)) + "\n";
-        s += "RAISE_75POT: " + boost::lexical_cast<std::string>(strategy_->get(current_state_->get_id(), nl_holdem_state::RAISE_75POT, bucket)) + "\n";
-        s += "RAISE_POT: " + boost::lexical_cast<std::string>(strategy_->get(current_state_->get_id(), nl_holdem_state::RAISE_POT, bucket)) + "\n";
-        s += "RAISE_MAX: " + boost::lexical_cast<std::string>(strategy_->get(current_state_->get_id(), nl_holdem_state::RAISE_MAX, bucket)) + "\n";
-        s += "\n";
+        const int action = strategy_->get_action(current_state_->get_id(), bucket);
 
-        switch (strategy_->get_action(current_state_->get_id(), bucket))
+        switch (action)
         {
-        case nl_holdem_state::FOLD: s += "FOLD\n"; break;
-        case nl_holdem_state::CALL: s += "CALL\n"; break;
-        case nl_holdem_state::RAISE_HALFPOT: s += "RAISE_HALFPOT\n"; break;
-        case nl_holdem_state::RAISE_75POT: s += "RAISE_75POT\n"; break;
-        case nl_holdem_state::RAISE_POT: s += "RAISE_POT\n"; break;
-        case nl_holdem_state::RAISE_MAX: s += "RAISE_MAX\n"; break;
+        case nl_holdem_state::FOLD: s = "FOLD"; break;
+        case nl_holdem_state::CALL: s = "CALL"; break;
+        case nl_holdem_state::RAISE_HALFPOT: s = "RAISE_HALFPOT"; break;
+        case nl_holdem_state::RAISE_75POT: s = "RAISE_75POT"; break;
+        case nl_holdem_state::RAISE_POT: s = "RAISE_POT"; break;
+        case nl_holdem_state::RAISE_MAX: s = "RAISE_MAX"; break;
         }
+
+        probability = strategy_->get(current_state_->get_id(), action, bucket);
     }
 
-    text_->setText(QString("state: %1\nbucket: %2\n\n%3").arg(ss.str().c_str()).arg(bucket).arg(s.c_str()));
+    decision_label_->setText(QString("Decision: %1 (%2%)").arg(s.c_str()).arg(int(probability * 100)));
 }
 
 void Gui::create_menus()
