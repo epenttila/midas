@@ -15,7 +15,7 @@ strategy::strategy(const std::string& filename, std::size_t states, int actions)
 
 double strategy::get(std::size_t state_id, int action, int bucket) const
 {
-    std::size_t pos = (positions_[state_id] + bucket * actions_ + action) * sizeof(double);
+    std::size_t pos = positions_[state_id] + (bucket * actions_ + action) * sizeof(double);
     _fseeki64(file_.get(), pos, SEEK_SET);
     double value;
     fread(&value, sizeof(value), 1, file_.get());
