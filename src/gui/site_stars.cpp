@@ -1,10 +1,12 @@
+#include "site_stars.h"
+
 #pragma warning(push, 3)
-#include <QtGui>
+#include <QImage>
+#include <QPixmap>
 #define NOMINMAX
 #include <Windows.h>
 #pragma warning(pop)
 
-#include "site_stars.h"
 #include "util/card.h"
 #include "abslib/holdem_abstraction.h"
 
@@ -187,7 +189,7 @@ namespace
         return std::atof(read_text_type1(image, QRect(336, 11, 124, 15), qRgb(0, 0, 0)).c_str());
     }
 
-    QPixmap screenshot(HWND winId)
+    QPixmap screenshot(WId winId)
     {
         RECT r;
         GetClientRect(winId, &r);
@@ -216,17 +218,20 @@ namespace
     }
 }
 
+site_stars::site_stars(WId window)
+    : window_(window)
+{
+}
+
 bool site_stars::update()
 {
-    HWND hwnd = FindWindow("PokerStarsTableFrameClass", nullptr);
-
-    if (!hwnd)
+    if (!IsWindow(window_))
     {
         dealer_ = -1;
         return false;
     }
 
-    const auto image = screenshot(hwnd).toImage();
+    const auto image = screenshot(window_).toImage();
 
     if (image.isNull())
         return false;

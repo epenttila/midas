@@ -1,11 +1,15 @@
 #pragma once
 
+#pragma warning(push, 3)
 #include <array>
+#include <QWidget>
+#pragma warning(pop)
 
 class site_stars
 {
 public:
     enum { CALL, RAISE };
+    site_stars(WId window);
     bool update();
     int get_action() const;
     std::pair<int, int> get_hole_cards() const;
@@ -25,4 +29,5 @@ private:
     std::array<int, 2> hole_;
     std::array<int, 5> board_;
     double fraction_;
+    WId window_;
 };

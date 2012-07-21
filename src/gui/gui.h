@@ -1,7 +1,7 @@
 #pragma once
 
 #pragma warning(push, 3)
-#include <QWidget>
+#include <QMainWindow>
 #pragma warning(pop)
 
 class QTextEdit;
@@ -9,8 +9,9 @@ class holdem_abstraction;
 class nl_holdem_state;
 class site_stars;
 class strategy;
+class QLabel;
 
-class Gui : public QWidget
+class Gui : public QMainWindow
 {
     Q_OBJECT
 
@@ -19,10 +20,14 @@ public:
     ~Gui();
 
 public slots:
-    void buttonClicked();
     void timerTimeout();
+    void button_pressed();
+    void open_strategy();
+    void open_abstraction();
 
 private:
+    void create_menus();
+
     QTextEdit* text_;
     std::unique_ptr<holdem_abstraction> abstraction_;
     std::unique_ptr<nl_holdem_state> root_state_;
@@ -30,4 +35,7 @@ private:
     QTimer* timer_;
     std::unique_ptr<site_stars> site_;
     std::unique_ptr<strategy> strategy_;
+    QLabel* abstraction_label_;
+    QLabel* strategy_label_;
+    QLabel* capture_label_;
 };
