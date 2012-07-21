@@ -21,7 +21,6 @@ public:
 
 public slots:
     void timerTimeout();
-    void button_pressed();
     void open_strategy();
     void open_abstraction();
 

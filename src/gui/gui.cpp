@@ -31,13 +31,21 @@ namespace
         boost::signals2::signal<void (HWND)> released_;
 
     private:
-        virtual void mouseReleaseEvent(QMouseEvent*)
+        virtual void mousePressEvent(QMouseEvent* event)
         {
+            QPushButton::mousePressEvent(event);
+
+            setCursor(Qt::CrossCursor);
+        }
+
+        virtual void mouseReleaseEvent(QMouseEvent* event)
+        {
+            QPushButton::mouseReleaseEvent(event);
+
+            unsetCursor();
             QPoint point = QCursor::pos();
             POINT pt = { point.x(), point.y() };
-            HWND hwnd = WindowFromPoint(pt);
-            released_(hwnd);
-            hwnd = 0;
+            released_(WindowFromPoint(pt));
         }
     };
 }
@@ -60,7 +68,6 @@ Gui::Gui()
         QString class_name(&arr[0]);
         capture_label_->setText(QString("%1 (%2)").arg(class_name).arg(std::size_t(hwnd)));
     });
-    connect(button, SIGNAL(pressed()), SLOT(button_pressed()));
 
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->addWidget(text_);
@@ -83,11 +90,6 @@ Gui::Gui()
 
 Gui::~Gui()
 {
-}
-
-void Gui::button_pressed()
-{
-    grabMouse(QCursor(Qt::CrossCursor));
 }
 
 void Gui::timerTimeout()
