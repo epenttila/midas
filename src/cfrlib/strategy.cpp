@@ -1,4 +1,3 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include "strategy.h"
 #include <cstdio>
 #include <cstdint>

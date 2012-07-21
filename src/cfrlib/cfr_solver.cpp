@@ -1,4 +1,3 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include "cfr_solver.h"
 #include <cassert>
 #include <iostream>
