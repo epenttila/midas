@@ -50,6 +50,22 @@ namespace
             released_(WindowFromPoint(pt));
         }
     };
+
+    template<class T>
+    typename T::const_iterator find_nearest(const T& map, const typename T::key_type& value)
+    {
+        auto upper = map.lower_bound(value);
+
+        if (upper == map.begin() || upper->first == value)
+            return upper;
+
+        auto lower = boost::prior(upper);
+
+        if (upper == map.end() || (value - lower->first) < (upper->first - value))
+            return lower;
+
+        return upper;
+    }
 }
 
 main_window::main_window()
@@ -111,15 +127,11 @@ void main_window::timer_timeout()
     site_->get_board_cards(board);
     visualizer_->set_board_cards(board);
 
-    auto stack_size = site_->get_stack_size();
-    auto it = strategy_infos_.lower_bound(stack_size);
-
-    if (it == strategy_infos_.end() && !strategy_infos_.empty())
-        it = boost::prior(strategy_infos_.end());
-
-    if (it == strategy_infos_.end())
+    if (strategy_infos_.empty())
         return;
 
+    auto stack_size = site_->get_stack_size();
+    auto it = find_nearest(strategy_infos_, stack_size);
     auto& strategy_info = *it->second;
     auto& current_state = strategy_info.current_state_;
 
