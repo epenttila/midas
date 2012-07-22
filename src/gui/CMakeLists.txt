@@ -5,11 +5,13 @@ set(gui_SOURCES
     main.cpp
     site_stars.cpp
     table_widget.cpp
+    strategy_dialog.cpp
 )
 
 set(gui_HEADERS
     main_window.h
     table_widget.h
+    strategy_dialog.h
 )
 
 qt4_wrap_cpp(gui_HEADERS_MOC ${gui_HEADERS})

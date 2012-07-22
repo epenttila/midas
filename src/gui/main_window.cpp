@@ -22,6 +22,7 @@
 #include "cfrlib/nl_holdem_state.h"
 #include "cfrlib/strategy.h"
 #include "table_widget.h"
+#include "strategy_dialog.h"
 
 namespace
 {
@@ -52,8 +53,6 @@ namespace
 }
 
 main_window::main_window()
-    : root_state_(new nl_holdem_state(50))
-    , current_state_(root_state_.get())
 {
     auto widget = new QFrame(this);
     widget->setFrameStyle(QFrame::StyledPanel);
@@ -112,34 +111,46 @@ void main_window::timer_timeout()
     site_->get_board_cards(board);
     visualizer_->set_board_cards(board);
 
-    if (!abstraction_ || !strategy_)
+    auto stack_size = site_->get_stack_size();
+    auto it = strategy_infos_.lower_bound(stack_size);
+
+    if (it == strategy_infos_.end() && !strategy_infos_.empty())
+        it = boost::prior(strategy_infos_.end());
+
+    if (it == strategy_infos_.end())
         return;
 
+    auto& strategy_info = *it->second;
+    auto& current_state = strategy_info.current_state_;
+
     if (site_->is_new_hand())
-        current_state_ = root_state_.get();
+        current_state = strategy_info.root_state_.get();
 
-    if (current_state_)
+    if (!current_state)
+        return;
+
+    switch (site_->get_action())
     {
-        switch (site_->get_action())
-        {
-        case site_stars::CALL:
-            current_state_ = current_state_->call();
-            break;
-        case site_stars::RAISE:
-            current_state_ = current_state_->raise(site_->get_raise_fraction());
-            break;
-        }
+    case site_stars::CALL:
+        current_state = current_state->call();
+        break;
+    case site_stars::RAISE:
+        current_state = current_state->raise(site_->get_raise_fraction());
+        break;
     }
 
-    if (current_state_)
-    {
-        std::array<int, 2> pot = current_state_->get_pot();
+    if (!current_state)
+        return;
+
+    std::array<int, 2> pot = current_state->get_pot();
         
-        if (site_->get_dealer() == 1)
-            std::swap(pot[0], pot[1]);
+    if (site_->get_dealer() == 1)
+        std::swap(pot[0], pot[1]);
 
-        visualizer_->set_pot(current_state_->get_round(), pot);
-    }
+    visualizer_->set_pot(current_state->get_round(), pot);
+
+    if (!abstraction_)
+        return;
 
     const int c0 = hole.first;
     const int c1 = hole.second;
@@ -148,32 +159,34 @@ void main_window::timer_timeout()
     const int b2 = board[2];
     const int b3 = board[3];
     const int b4 = board[4];
-    int bucket;
+    int bucket = -1;
 
-    switch (site_->get_round())
+    if (c0 != -1 && c1 != -1)
     {
-    case holdem_game::PREFLOP:
-        bucket = abstraction_->get_bucket(c0, c1);
-        break;
-    case holdem_game::FLOP:
-        bucket = abstraction_->get_bucket(c0, c1, b0, b1, b2);
-        break;
-    case holdem_game::TURN:
-        bucket = abstraction_->get_bucket(c0, c1, b0, b1, b2, b3);
-        break;
-    case holdem_game::RIVER:
-        bucket = abstraction_->get_bucket(c0, c1, b0, b1, b2, b3, b4);
-        break;
-    default:
-        bucket = -1;
+        switch (site_->get_round())
+        {
+        case holdem_game::PREFLOP:
+            bucket = abstraction_->get_bucket(c0, c1);
+            break;
+        case holdem_game::FLOP:
+            bucket = abstraction_->get_bucket(c0, c1, b0, b1, b2);
+            break;
+        case holdem_game::TURN:
+            bucket = abstraction_->get_bucket(c0, c1, b0, b1, b2, b3);
+            break;
+        case holdem_game::RIVER:
+            bucket = abstraction_->get_bucket(c0, c1, b0, b1, b2, b3, b4);
+            break;
+        }
     }
 
-    std::string s;
+    std::string s = "n/a";
     double probability = 0;
+    auto& strategy = strategy_info.strategy_;
 
-    if (current_state_)
+    if (current_state)
     {
-        const int action = strategy_->get_action(current_state_->get_id(), bucket);
+        const int action = strategy->get_action(current_state->get_id(), bucket);
 
         switch (action)
         {
@@ -185,46 +198,68 @@ void main_window::timer_timeout()
         case nl_holdem_state::RAISE_MAX: s = "RAISE_MAX"; break;
         }
 
-        probability = strategy_->get(current_state_->get_id(), action, bucket);
+        probability = strategy->get(current_state->get_id(), action, bucket);
     }
 
     decision_label_->setText(QString("Decision: %1 (%2%)").arg(s.c_str()).arg(int(probability * 100)));
+    strategy_label_->setText(QString("%1: %2").arg(stack_size).arg(QFileInfo(strategy->get_filename().c_str()).fileName()));
 }
 
 void main_window::create_menus()
 {
     auto file_menu = menuBar()->addMenu("File");
     file_menu->addAction("Open abstraction...", this, SLOT(open_abstraction()));
-    file_menu->addAction("Set strategies...", this, SLOT(open_strategy()));
+    file_menu->addAction("Open strategy...", this, SLOT(open_strategy()));
 }
 
 void main_window::open_strategy()
 {
-    const auto filename = QFileDialog::getOpenFileName(this, "Open strategy", QString(), "Strategy files (*.str)");
+    std::map<int, std::string> filenames;
 
-    if (filename.isEmpty())
+    for (auto i = strategy_infos_.begin(); i != strategy_infos_.end(); ++i)
+        filenames[i->first] = i->second->strategy_->get_filename();
+
+    strategy_dialog d(filenames, this);
+
+    if (d.exec() != QDialog::Accepted)
         return;
 
-    std::size_t states = 0;
-    std::vector<const nl_holdem_state*> stack(1, root_state_.get());
+    strategy_infos_.clear();
+    filenames = d.get_filenames();
 
-    while (!stack.empty())
+    for (auto i = filenames.begin(); i != filenames.end(); ++i)
     {
-        const nl_holdem_state* s = stack.back();
-        stack.pop_back();
+        const auto stack_size = i->first;
+        const auto filename = i->second;
 
-        if (!s->is_terminal())
-            ++states;
+        if (filename.empty())
+            return;
 
-        for (int i = nl_holdem_state::ACTIONS - 1; i >= 0; --i)
+        auto& si = strategy_infos_[stack_size];
+        si.reset(new strategy_info);
+        si->root_state_.reset(new nl_holdem_state(stack_size));
+        si->current_state_ = si->root_state_.get();
+
+        std::size_t states = 0;
+        std::vector<const nl_holdem_state*> stack(1, si->root_state_.get());
+
+        while (!stack.empty())
         {
-            if (const nl_holdem_state* child = s->get_child(i))
-                stack.push_back(child);
-        }
-    }
+            const nl_holdem_state* s = stack.back();
+            stack.pop_back();
 
-    strategy_.reset(new strategy(filename.toStdString(), states, nl_holdem_state::ACTIONS));
-    strategy_label_->setText(QFileInfo(filename).fileName());
+            if (!s->is_terminal())
+                ++states;
+
+            for (int i = nl_holdem_state::ACTIONS - 1; i >= 0; --i)
+            {
+                if (const nl_holdem_state* child = s->get_child(i))
+                    stack.push_back(child);
+            }
+        }
+
+        si->strategy_.reset(new strategy(filename, states, nl_holdem_state::ACTIONS));
+    }
 }
 
 void main_window::open_abstraction()
@@ -236,4 +271,13 @@ void main_window::open_abstraction()
 
     abstraction_.reset(new holdem_abstraction(std::ifstream(filename.toStdString(), std::ios::binary)));
     abstraction_label_->setText(QFileInfo(filename).fileName());
+}
+
+main_window::strategy_info::strategy_info()
+    : current_state_(nullptr)
+{
+}
+
+main_window::strategy_info::~strategy_info()
+{
 }

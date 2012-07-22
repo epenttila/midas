@@ -2,6 +2,7 @@
 
 #pragma warning(push, 3)
 #include <QMainWindow>
+#include <map>
 #pragma warning(pop)
 
 class QTextEdit;
@@ -26,15 +27,22 @@ public slots:
     void open_abstraction();
 
 private:
+    struct strategy_info
+    {
+        strategy_info();
+        ~strategy_info();
+        std::unique_ptr<nl_holdem_state> root_state_;
+        const nl_holdem_state* current_state_;
+        std::unique_ptr<strategy> strategy_;
+    };
+
     void create_menus();
 
     table_widget* visualizer_;
     std::unique_ptr<holdem_abstraction> abstraction_;
-    std::unique_ptr<nl_holdem_state> root_state_;
-    const nl_holdem_state* current_state_;
+    std::map<int, std::unique_ptr<strategy_info>> strategy_infos_;
     QTimer* timer_;
     std::unique_ptr<site_stars> site_;
-    std::unique_ptr<strategy> strategy_;
     QLabel* abstraction_label_;
     QLabel* strategy_label_;
     QLabel* capture_label_;

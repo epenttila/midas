@@ -247,8 +247,8 @@ bool site_stars::update()
     const bool new_player = player != player_;
     player_ = player;
 
-    const double stack = get_stack_size(image, 0);
-    const double stack2 = get_stack_size(image, 1);
+    const double stack = ::get_stack_size(image, 0);
+    const double stack2 = ::get_stack_size(image, 1);
     const double total_pot = get_total_pot(image);
 
     hole_[0] = get_board_card(image, QRect(51, 112, 50, 13));
@@ -285,7 +285,8 @@ bool site_stars::update()
     if (big_blind_ == 0 && left_bet > 0 && right_bet > 0)
         big_blind_ = dealer_ == 0 ? right_bet : left_bet;
 
-    stack_bb_ = (new_hand_ && big_blind_ > 0) ? std::min(stack, stack2) / big_blind_ : -1;
+    if (new_hand_ && big_blind_ > 0)
+        stack_bb_ = std::min(stack, stack2) / big_blind_;
 
     const double last_bet = player_ == 0 ? right_bet : left_bet;
     const double to_call = last_bet - (player_ == 0 ? left_bet : right_bet);
@@ -347,4 +348,9 @@ double site_stars::get_raise_fraction() const
 int site_stars::get_dealer() const
 {
     return dealer_;
+}
+
+int site_stars::get_stack_size() const
+{
+    return int(stack_bb_ * 2 + 0.5);
 }

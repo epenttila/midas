@@ -18,6 +18,7 @@ public:
     int get_round() const;
     double get_raise_fraction() const;
     int get_dealer() const;
+    int get_stack_size() const;
 
 private:
     int dealer_;
