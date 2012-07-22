@@ -196,7 +196,7 @@ void main_window::timer_timeout()
     double probability = 0;
     auto& strategy = strategy_info.strategy_;
 
-    if (current_state)
+    if (current_state && bucket != -1)
     {
         const int action = strategy->get_action(current_state->get_id(), bucket);
 
