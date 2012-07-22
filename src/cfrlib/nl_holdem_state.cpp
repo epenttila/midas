@@ -9,9 +9,13 @@ namespace
 
     int soft_translate(const double b1, const double b, const double b2)
     {
+        assert(b1 <= b && b <= b2);
+        static std::random_device rd;
+        static std::mt19937 engine(rd());
+        static std::uniform_real_distribution<double> dist;
         const double s1 = (b1 / b - b1 / b2) / (1 - b1 / b2);
         const double s2 = (b / b2 - b1 / b2) / (1 - b1 / b2);
-        return (rand() / RAND_MAX) < (s1 / (s1 + s2)) ? 0 : 1;
+        return dist(engine) < (s1 / (s1 + s2)) ? 0 : 1;
     }
 
     bool is_raise(int action)
@@ -224,22 +228,41 @@ const nl_holdem_state* nl_holdem_state::call() const
 
 const nl_holdem_state* nl_holdem_state::raise(const double fraction) const
 {
-    const double halfpot = 0.5 / 1.5;
-    const double qpot = 0.75 / 1.75;
-    const double pot = 1 / 2.0;
+    std::array<double, ACTIONS> pot_sizes = {{
+        -1,
+        -1,
+        0.5 / 1.5,
+        0.75 / 1.75,
+        1 / 2.0,
+        (stack_size_ - pot_[1 - player_]) / double(stack_size_ + pot_[1 - player_]),
+    }};
+
+    int lower = -1;
+    int upper = -1;
+
+    for (int i = CALL + 1; i < ACTIONS; ++i)
+    {
+        if (children_[i] == nullptr)
+            continue;
+
+        if (pot_sizes[i] <= fraction && (lower == -1 || pot_sizes[i] > pot_sizes[lower]))
+            lower = i;
+        else if (pot_sizes[i] >= fraction && (upper == -1 || pot_sizes[i] < pot_sizes[upper]))
+            upper = i;
+    }
+
+    assert(lower != -1 || upper != -1);
 
     int action;
 
-    if (fraction <= halfpot)
-        action = RAISE_HALFPOT;
-    else if (fraction <= qpot)
-        action = soft_translate(halfpot, fraction, qpot) == 0 ? RAISE_HALFPOT : RAISE_75POT;
-    else if (fraction <= pot)
-        action = soft_translate(qpot, fraction, pot) == 0 ? RAISE_75POT : RAISE_POT;
-    else if (fraction <= 1)
-        action = RAISE_POT;
+    if (lower == -1)
+        action = upper;
+    else if (upper == -1)
+        action = lower;
+    else if (lower == upper)
+        action = lower;
     else
-        action = RAISE_MAX;
+        action = soft_translate(pot_sizes[lower], fraction, pot_sizes[upper]) == 0 ? lower : upper;
 
     return children_[action];
 }
