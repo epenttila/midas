@@ -76,7 +76,7 @@ std::map<int, std::string> strategy_dialog::get_filenames()
     std::map<int, std::string> m;
 
     for (int i = 0; i < table_->rowCount(); ++i)
-        m[table_->item(i, 0)->text().toInt()] = table_->item(i, 1)->text().toStdString();
+        m[table_->item(i, 0)->text().toInt()] = table_->item(i, 1)->text().toUtf8().data();
 
     return m;
 }

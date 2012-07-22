@@ -232,8 +232,10 @@ holdem_abstraction::holdem_abstraction(const std::string& bucket_configuration, 
         generate_public_turn_buckets(kmeans_max_iterations, 10);
 }
 
-holdem_abstraction::holdem_abstraction(std::istream&& is)
+holdem_abstraction::holdem_abstraction(const std::string& filename)
 {
+    std::ifstream is(filename, std::ios::binary);
+
     if (!is)
         throw std::runtime_error("bad istream");
 

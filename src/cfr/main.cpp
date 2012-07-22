@@ -68,20 +68,18 @@ int main(int argc, char* argv[])
         std::cout << "Creating solver for game: " << game << "\n";
         std::cout << "Using abstraction: " << abstraction << "\n";
 
-        std::ifstream abs_file(abstraction, std::ios::binary);
-
         if (game == "kuhn")
         {
             solver.reset(new cfr_solver<kuhn_game, kuhn_state>(kuhn_abstraction(), stack_size));
         }
         else if (game == "holdem")
         {
-            solver.reset(new cfr_solver<holdem_game, holdem_state>(holdem_abstraction(std::move(abs_file)), stack_size));
+            solver.reset(new cfr_solver<holdem_game, holdem_state>(holdem_abstraction(abstraction), stack_size));
         }
         else if (game == "nlhe")
         {
             std::cout << "Using stack size: " << stack_size << "\n";
-            solver.reset(new cfr_solver<holdem_game, nl_holdem_state>(holdem_abstraction(std::move(abs_file)), stack_size));
+            solver.reset(new cfr_solver<holdem_game, nl_holdem_state>(holdem_abstraction(abstraction), stack_size));
         }
         else
         {

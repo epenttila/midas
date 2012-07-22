@@ -269,7 +269,7 @@ void main_window::open_abstraction()
     if (filename.isEmpty())
         return;
 
-    abstraction_.reset(new holdem_abstraction(std::ifstream(filename.toStdString(), std::ios::binary)));
+    abstraction_.reset(new holdem_abstraction(std::string(filename.toUtf8().data())));
     abstraction_label_->setText(QFileInfo(filename).fileName());
 }
 
