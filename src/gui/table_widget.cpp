@@ -53,6 +53,7 @@ table_widget::table_widget(QWidget* parent)
     , dealer_(-1)
     , round_(-1)
 {
+    // TODO make editable and feed back to game state
     hole_[0].fill(-1);
     hole_[1].fill(-1);
     board_.fill(-1);

@@ -70,6 +70,7 @@ int main(int argc, char* argv[])
         std::cout << "Creating solver for game: " << game << "\n";
         std::cout << "Using abstraction: " << abstraction << "\n";
 
+        // TODO leduc poker
         if (game == "kuhn")
         {
             solver.reset(new cfr_solver<kuhn_game, kuhn_state>(kuhn_abstraction(), stack_size));

@@ -35,6 +35,7 @@ namespace
 
     const frequency_map get_flop_frequencies(const holdem_flop_lut& lut)
     {
+        // TODO bins for percentiles (folly/histogram)
         unordered_frequency_map frequencies;
 
 #pragma omp parallel

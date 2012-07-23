@@ -82,6 +82,7 @@ holdem_river_lut::holdem_river_lut()
 
             if (iteration == 2809475760 || (omp_get_thread_num() == 0 && t - time >= 1))
             {
+                // TODO use same progress system as cfr
                 const double duration = t - start_time;
                 const int hour = int(duration / 3600);
                 const int minute = int(duration / 60 - hour * 60);
