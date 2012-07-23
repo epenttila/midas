@@ -48,8 +48,8 @@ namespace
 
 table_widget::table_widget(QWidget* parent)
     : QWidget(parent)
-    , cards_image_(new QPixmap("cards.png"))
-    , dealer_image_(new QPixmap("dealer.png"))
+    , cards_image_(new QPixmap(":/images/cards.png"))
+    , dealer_image_(new QPixmap(":/images/dealer.png"))
     , dealer_(-1)
     , round_(-1)
 {
