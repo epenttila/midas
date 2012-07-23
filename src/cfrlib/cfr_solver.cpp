@@ -58,11 +58,11 @@ cfr_solver<T, U>::~cfr_solver()
 }
 
 template<class T, class U>
-void cfr_solver<T, U>::solve(const int iterations)
+void cfr_solver<T, U>::solve(const std::uint64_t iterations)
 {
     const double start_time = omp_get_wtime();
     double time = start_time;
-    int iteration = 0;
+    std::uint64_t iteration = 0;
 
     progressed_(iteration);
 
@@ -71,7 +71,8 @@ void cfr_solver<T, U>::solve(const int iterations)
         T g;
 
 #pragma omp for schedule(dynamic)
-        for (int i = 0; i < iterations; ++i)
+        // TODO make unsigned when OpenMP 3.0 is supported
+        for (std::int64_t i = 0; i < std::int64_t(iterations); ++i)
         {
             bucket_t buckets;
             const int result = g.play(evaluator_, abstraction_, &buckets);

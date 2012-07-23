@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
         std::string state_file;
         std::string strategy_file;
         std::string game;
-        int iterations;
+        std::uint64_t iterations;
         std::string abstraction;
         int stack_size;
 
@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
             ("state-file", po::value<std::string>(&state_file), "state file")
             ("strategy-file", po::value<std::string>(&strategy_file)->required(), "strategy file")
             ("game", po::value<std::string>(&game)->required(), "game type")
-            ("iterations", po::value<int>(&iterations)->required(), "number of iterations")
+            ("iterations", po::value<std::uint64_t>(&iterations)->required(), "number of iterations")
             ("abstraction", po::value<std::string>(&abstraction)->required(), "abstraction type or file")
             ;
 

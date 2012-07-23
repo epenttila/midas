@@ -16,7 +16,7 @@ class solver_base
     friend std::ostream& operator<<(std::ostream& o, const solver_base& solver);
 
 public:
-    virtual void solve(const int iterations) = 0;
+    virtual void solve(const std::uint64_t iterations) = 0;
     virtual void save_state(std::ostream&) const = 0;
     virtual void load_state(std::istream&) = 0;
     virtual void save_strategy(const std::string& filename) const = 0;
@@ -41,7 +41,7 @@ public:
 
     cfr_solver(abstraction_t abstraction, int stack_size);
     ~cfr_solver();
-    virtual void solve(const int iterations);
+    virtual void solve(const std::uint64_t iterations);
     virtual void save_strategy(const std::string& filename) const;
     virtual void init_storage();
     virtual std::vector<int> get_bucket_counts() const;
@@ -65,6 +65,6 @@ private:
     std::unique_ptr<game_state> root_;
     const evaluator_t evaluator_;
     const abstraction_t abstraction_;
-    int total_iterations_;
+    std::uint64_t total_iterations_;
     boost::signals2::signal<void (std::uint64_t)> progressed_;
 };
