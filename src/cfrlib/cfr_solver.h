@@ -1,9 +1,13 @@
 #pragma once
 
+#pragma warning(push, 1)
 #include <ostream>
 #include <boost/noncopyable.hpp>
 #include <array>
 #include <vector>
+#include <cstdint>
+#include <boost/signals2.hpp>
+#pragma warning(pop)
 
 class strategy;
 
@@ -20,6 +24,7 @@ public:
     virtual std::vector<int> get_bucket_counts() const = 0;
     virtual std::vector<int> get_state_counts() const = 0;
     virtual std::size_t get_required_memory() const = 0;
+    virtual void connect_progressed(const std::function<void (std::uint64_t)>& f) = 0;
 };
 
 template<class T, class U>
@@ -42,6 +47,7 @@ public:
     virtual std::vector<int> get_bucket_counts() const;
     virtual std::vector<int> get_state_counts() const;
     virtual std::size_t get_required_memory() const;
+    virtual void connect_progressed(const std::function<void (std::uint64_t)>& f);
 
 private:
     double update(const game_state& state, const bucket_t& buckets, std::array<double, 2>& reach, const int result);
@@ -60,4 +66,5 @@ private:
     const evaluator_t evaluator_;
     const abstraction_t abstraction_;
     int total_iterations_;
+    boost::signals2::signal<void (std::uint64_t)> progressed_;
 };

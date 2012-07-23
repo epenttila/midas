@@ -4,6 +4,8 @@
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <fstream>
+#include <boost/format.hpp>
+#include <boost/date_time.hpp>
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
@@ -111,6 +113,18 @@ int main(int argc, char* argv[])
             std::cout << "Loading state from: " << state_file << "\n";
             solver->load_state(state_file);
         }*/
+
+        auto start_time = boost::posix_time::second_clock::universal_time();
+
+        solver->connect_progressed([&](std::uint64_t i) {
+            using namespace boost::posix_time;
+            const auto d = second_clock::universal_time() - start_time;
+            const int ips = d.total_seconds() > 0 ? int(i / d.total_seconds()) : 0;
+            const auto eta = seconds(ips > 0 ? int((iterations - i) / ips) : 0);
+            const double pct = double(i) / iterations * 100.0;
+            std::cout << boost::format("%d/%d (%.1f%%) ips: %d elapsed: %s eta: %s\n")
+                % i % iterations % pct % ips % to_simple_string(d) % to_simple_string(eta);
+        });
 
         std::cout << "Solving for " << iterations << " iterations\n";
         solver->solve(iterations);

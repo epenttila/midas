@@ -2,7 +2,6 @@
 #include <cassert>
 #include <iostream>
 #include <omp.h>
-#include <boost/format.hpp>
 #include <cstdio>
 #include "strategy.h"
 #include "util/binary_io.h"
@@ -65,6 +64,8 @@ void cfr_solver<T, U>::solve(const int iterations)
     double time = start_time;
     int iteration = 0;
 
+    progressed_(iteration);
+
 #pragma omp parallel
     {
         T g;
@@ -83,22 +84,15 @@ void cfr_solver<T, U>::solve(const int iterations)
 
             const double t = omp_get_wtime();
 
-            if (iteration == iterations || (omp_get_thread_num() == 0 && t - time >= 1))
+            if (omp_get_thread_num() == 0 && t - time >= 1)
             {
-                const double duration = t - start_time;
-                const int hour = int(duration / 3600);
-                const int minute = int(duration / 60 - hour * 60);
-                const int second = int(duration - minute * 60 - hour * 3600);
-                const int ips = int(iteration / duration);
-                std::array<double, 2> acfr;
-                acfr[0] = get_accumulated_regret(0) / (iteration + total_iterations_);
-                acfr[1] = get_accumulated_regret(1) / (iteration + total_iterations_);
-                std::cout << boost::format("%02d:%02d:%02d: %d (%d i/s) ACFR: %f, %f\n") %
-                    hour % minute % second % iteration % ips % acfr[0] % acfr[1];
+                progressed_(iteration);
                 time = t;
             }
         }
     }
+
+    progressed_(iteration);
 
     total_iterations_ += iterations;
 }
@@ -367,6 +361,12 @@ std::size_t cfr_solver<T, U>::get_required_memory() const
         mem += state_counts[i] * bucket_counts[i] * ACTIONS * sizeof(double) * 2; // regret and strategy
 
     return mem;
+}
+
+template<class T, class U>
+void cfr_solver<T, U>::connect_progressed(const std::function<void (std::uint64_t)>& f)
+{
+    progressed_.connect(f);
 }
 
 #include "holdem_game.h"
