@@ -8,3 +8,9 @@ set(lutlib_SOURCES
 )
 
 add_library(lutlib ${lutlib_SOURCES})
+
+if(MSVC)
+    set_target_properties(lutlib PROPERTIES
+        STATIC_LIBRARY_FLAGS_RELEASE "/LTCG"
+        STATIC_LIBRARY_FLAGS_RELWITHDEBINFO "/LTCG")
+endif()

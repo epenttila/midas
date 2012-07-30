@@ -7,3 +7,9 @@ set(evallib_SOURCES
 )
 
 add_library(evallib ${evallib_SOURCES})
+
+if(MSVC)
+    set_target_properties(evallib PROPERTIES
+        STATIC_LIBRARY_FLAGS_RELEASE "/LTCG"
+        STATIC_LIBRARY_FLAGS_RELWITHDEBINFO "/LTCG")
+endif()
