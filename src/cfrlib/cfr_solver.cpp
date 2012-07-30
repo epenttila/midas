@@ -47,14 +47,6 @@ cfr_solver<T, U>::cfr_solver(abstraction_t abstraction, const int stack_size)
 template<class T, class U>
 cfr_solver<T, U>::~cfr_solver()
 {
-    for (std::size_t i = 0; i < states_.size(); ++i)
-    {
-        delete[] regrets_[i];
-        delete[] strategy_[i];
-    }
-
-    delete[] regrets_;
-    delete[] strategy_;
 }
 
 template<class T, class U>
@@ -112,7 +104,7 @@ double cfr_solver<T, U>::update(const game_state& state, const bucket_t& buckets
 
     if (reach[player] > EPSILON)
     {
-        auto& strategy = strategy_[state.get_id()][bucket];
+        auto data = get_data(state.get_id(), bucket, 0);
 
         for (int i = 0; i < ACTIONS; ++i)
         {
@@ -120,7 +112,7 @@ double cfr_solver<T, U>::update(const game_state& state, const bucket_t& buckets
 
             // update average strategy
             if (action_probabilities[i] > EPSILON)
-                strategy[i] += reach[player] * action_probabilities[i];
+                data[i].strategy += reach[player] * action_probabilities[i];
         }
     }
 
@@ -156,7 +148,7 @@ double cfr_solver<T, U>::update(const game_state& state, const bucket_t& buckets
     // update regrets
     if (reach[opponent] > EPSILON)
     {
-        auto& regrets = regrets_[state.get_id()][bucket];
+        auto data = get_data(state.get_id(), bucket, 0);
 
         for (int i = 0; i < ACTIONS; ++i)
         {
@@ -169,7 +161,7 @@ double cfr_solver<T, U>::update(const game_state& state, const bucket_t& buckets
             if (player == 1)
                 delta_regret = -delta_regret; // invert sign for P2
 
-            regrets[i] += delta_regret;
+            data[i].regret += delta_regret;
 
             if (delta_regret > EPSILON)
                 accumulated_regret_[player] += delta_regret;
@@ -180,23 +172,23 @@ double cfr_solver<T, U>::update(const game_state& state, const bucket_t& buckets
 }
 
 template<class T, class U>
-void cfr_solver<T, U>::get_regret_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out)
+void cfr_solver<T, U>::get_regret_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out) const
 {
-    const auto& bucket_regret = regrets_[state.get_id()][bucket];
+    const auto data = get_data(state.get_id(), bucket, 0);
     double bucket_sum = 0;
 
     for (int i = 0; i < ACTIONS; ++i)
     {
-        assert(state.get_child(i) || bucket_regret[i] <= EPSILON);
+        assert(state.get_child(i) || data[i].regret <= EPSILON);
 
-        if (bucket_regret[i] > EPSILON)
-            bucket_sum += bucket_regret[i];
+        if (data[i].regret > EPSILON)
+            bucket_sum += data[i].regret;
     }
 
     if (bucket_sum > EPSILON)
     {
         for (int i = 0; i < ACTIONS; ++i)
-            out[i] = bucket_regret[i] > EPSILON ? bucket_regret[i] / bucket_sum : 0;
+            out[i] = data[i].regret > EPSILON ? data[i].regret / bucket_sum : 0;
     }
     else
     {
@@ -208,20 +200,20 @@ void cfr_solver<T, U>::get_regret_strategy(const game_state& state, const int bu
 template<class T, class U>
 void cfr_solver<T, U>::get_average_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out) const
 {
-    const auto& bucket_strategy = strategy_[state.get_id()][bucket];
+    const auto data = get_data(state.get_id(), bucket, 0);
     double bucket_sum = 0;
 
     for (int i = 0; i < ACTIONS; ++i)
     {
-        assert(state.get_child(i) || bucket_strategy[i] <= EPSILON);
-        assert(bucket_strategy[i] >= 0);
-        bucket_sum += bucket_strategy[i];
+        assert(state.get_child(i) || data[i].strategy <= EPSILON);
+        assert(data[i].strategy >= 0);
+        bucket_sum += data[i].strategy;
     }
 
     if (bucket_sum > EPSILON)
     {
         for (int i = 0; i < ACTIONS; ++i)
-            out[i] = bucket_strategy[i] / bucket_sum;
+            out[i] = data[i].strategy / bucket_sum;
     }
     else
     {
@@ -242,21 +234,7 @@ void cfr_solver<T, U>::save_state(std::ostream& os) const
     binary_write(os, total_iterations_);
     binary_write(os, accumulated_regret_[0]);
     binary_write(os, accumulated_regret_[1]);
-
-    for (std::size_t i = 0; i < states_.size(); ++i)
-    {
-        if (states_[i]->is_terminal())
-            continue;
-
-        for (int j = 0; j < abstraction_.get_bucket_count(states_[i]->get_round()); ++j)
-        {
-            for (int k = 0; k < ACTIONS; ++k)
-            {
-                binary_write(os, regrets_[i][j][k]);
-                binary_write(os, strategy_[i][j][k]);
-            }
-        }
-    }
+    binary_write(os, data_);
 }
 
 template<class T, class U>
@@ -265,21 +243,7 @@ void cfr_solver<T, U>::load_state(std::istream& is)
     binary_read(is, total_iterations_);
     binary_read(is, accumulated_regret_[0]);
     binary_read(is, accumulated_regret_[1]);
-
-    for (std::size_t i = 0; i < states_.size(); ++i)
-    {
-        if (states_[i]->is_terminal())
-            continue;
-
-        for (int j = 0; j < abstraction_.get_bucket_count(states_[i]->get_round()); ++j)
-        {
-            for (int k = 0; k < ACTIONS; ++k)
-            {
-                binary_read(is, regrets_[i][j][k]);
-                binary_read(is, strategy_[i][j][k]);
-            }
-        }
-    }
+    binary_read(is, data_);
 }
 
 template<class T, class U>
@@ -308,28 +272,17 @@ void cfr_solver<T, U>::save_strategy(const std::string& filename) const
 template<class T, class U>
 void cfr_solver<T, U>::init_storage()
 {
-    regrets_ = new value[states_.size()];
-    strategy_ = new value[states_.size()];
+    data_.resize(get_required_values());
+    positions_.resize(states_.size());
+    std::size_t pos = 0;
 
-    for (std::size_t i = 0; i < states_.size(); ++i)
+    for (auto i = states_.begin(); i != states_.end(); ++i)
     {
-        if (states_[i]->is_terminal())
-            continue;
-
-        const int num_buckets = abstraction_.get_bucket_count(states_[i]->get_round());
-        assert(num_buckets > 0);
-        regrets_[i] = new double[num_buckets][ACTIONS];
-        strategy_[i] = new double[num_buckets][ACTIONS];
-
-        for (int j = 0; j < num_buckets; ++j)
-        {
-            for (int k = 0; k < ACTIONS; ++k)
-            {
-                regrets_[i][j][k] = 0;
-                strategy_[i][j][k] = 0;
-            }
-        }
+        positions_[(*i)->get_id()] = pos;
+        pos += abstraction_.get_bucket_count((*i)->get_round()) * ACTIONS;
     }
+
+    assert(pos == data_.size());
 }
 
 template<class T, class U>
@@ -352,22 +305,43 @@ std::vector<int> cfr_solver<T, U>::get_state_counts() const
 }
 
 template<class T, class U>
-std::size_t cfr_solver<T, U>::get_required_memory() const
+std::size_t cfr_solver<T, U>::get_required_values() const
 {
     const auto bucket_counts = get_bucket_counts();
     const auto state_counts = get_state_counts();
-    std::size_t mem = 0;
+    std::size_t n = 0;
 
     for (int i = 0; i < ROUNDS; ++i)
-        mem += state_counts[i] * bucket_counts[i] * ACTIONS * sizeof(double) * 2; // regret and strategy
+        n += state_counts[i] * bucket_counts[i] * ACTIONS;
 
-    return mem;
+    return n;
+}
+
+template<class T, class U>
+std::size_t cfr_solver<T, U>::get_required_memory() const
+{
+    return get_required_values() * sizeof(data_type);
 }
 
 template<class T, class U>
 void cfr_solver<T, U>::connect_progressed(const std::function<void (std::uint64_t)>& f)
 {
     progressed_.connect(f);
+}
+
+template<class T, class U>
+typename cfr_solver<T, U>::data_type* cfr_solver<T, U>::get_data(std::size_t state_id, int bucket, int action)
+{
+    return const_cast<data_type*>(const_cast<const cfr_solver<T, U>&>(*this).get_data(state_id, bucket, action));
+}
+
+template<class T, class U>
+const typename cfr_solver<T, U>::data_type* cfr_solver<T, U>::get_data(std::size_t state_id, int bucket, int action) const
+{
+    assert(state_id >= 0 && state_id < states_.size());
+    assert(bucket >= 0 && bucket < abstraction_.get_bucket_count(states_[state_id]->get_round()));
+
+    return &data_[positions_[state_id] + bucket * ACTIONS + action];
 }
 
 #include "holdem_game.h"
