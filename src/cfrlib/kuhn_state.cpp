@@ -7,7 +7,7 @@ namespace
     static const std::array<int, 2> INITIAL_POT = {{1, 1}};
 }
 
-kuhn_state::kuhn_state(int)
+kuhn_state::kuhn_state()
     : id_(0)
     , parent_(nullptr)
     , action_(-1)

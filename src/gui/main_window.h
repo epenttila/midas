@@ -7,7 +7,7 @@
 
 class QTextEdit;
 class holdem_abstraction;
-class nl_holdem_state;
+class nlhe_state_base;
 class site_stars;
 class strategy;
 class QLabel;
@@ -31,8 +31,8 @@ private:
     {
         strategy_info();
         ~strategy_info();
-        std::unique_ptr<nl_holdem_state> root_state_;
-        const nl_holdem_state* current_state_;
+        std::unique_ptr<nlhe_state_base> root_state_;
+        const nlhe_state_base* current_state_;
         std::unique_ptr<strategy> strategy_;
     };
 

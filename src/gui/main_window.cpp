@@ -6,6 +6,7 @@
 #include <sstream>
 #include <boost/lexical_cast.hpp>
 #include <boost/signals2.hpp>
+#define NOMINMAX
 #include <Windows.h>
 #include <QTextEdit>
 #include <QVBoxLayout>
@@ -196,21 +197,24 @@ void main_window::timer_timeout()
     double probability = 0;
     auto& strategy = strategy_info.strategy_;
 
-    if (current_state && bucket != -1)
+    if (current_state && current_state->get_id() != -1 && bucket != -1)
     {
-        const int action = strategy->get_action(current_state->get_id(), bucket);
+        const int index = strategy->get_action(current_state->get_id(), bucket);
 
-        switch (action)
+        switch (current_state->get_action(index))
         {
-        case nl_holdem_state::FOLD: s = "FOLD"; break;
-        case nl_holdem_state::CALL: s = "CALL"; break;
-        case nl_holdem_state::RAISE_HALFPOT: s = "RAISE_HALFPOT"; break;
-        case nl_holdem_state::RAISE_75POT: s = "RAISE_75POT"; break;
-        case nl_holdem_state::RAISE_POT: s = "RAISE_POT"; break;
-        case nl_holdem_state::RAISE_MAX: s = "RAISE_MAX"; break;
+        case nlhe_state_base::FOLD: s = "FOLD"; break;
+        case nlhe_state_base::CALL: s = "CALL"; break;
+        case nlhe_state_base::RAISE_H: s = "RAISE_H"; break;
+        case nlhe_state_base::RAISE_Q: s = "RAISE_Q"; break;
+        case nlhe_state_base::RAISE_P: s = "RAISE_P"; break;
+        case nlhe_state_base::RAISE_A: s = "RAISE_A"; break;
         }
 
-        probability = strategy->get(current_state->get_id(), action, bucket);
+        probability = strategy->get(current_state->get_id(), index, bucket);
+        std::stringstream ss;
+        ss << current_state;
+        s += " " + ss.str();
     }
 
     decision_label_->setText(QString("Decision: %1 (%2%)").arg(s.c_str()).arg(int(probability * 100)));
@@ -249,28 +253,28 @@ void main_window::open_strategy()
 
         auto& si = strategy_infos_[stack_size];
         si.reset(new strategy_info);
-        si->root_state_.reset(new nl_holdem_state(stack_size));
+        si->root_state_.reset(new nl_holdem_state<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | A_MASK>(stack_size));
         si->current_state_ = si->root_state_.get();
 
         std::size_t states = 0;
-        std::vector<const nl_holdem_state*> stack(1, si->root_state_.get());
+        std::vector<const nlhe_state_base*> stack(1, si->root_state_.get());
 
         while (!stack.empty())
         {
-            const nl_holdem_state* s = stack.back();
+            const nlhe_state_base* s = stack.back();
             stack.pop_back();
 
             if (!s->is_terminal())
                 ++states;
 
-            for (int i = nl_holdem_state::ACTIONS - 1; i >= 0; --i)
+            for (int i = s->get_action_count() - 1; i >= 0; --i)
             {
-                if (const nl_holdem_state* child = s->get_child(i))
+                if (const nlhe_state_base* child = s->get_child(i))
                     stack.push_back(child);
             }
         }
 
-        si->strategy_.reset(new strategy(filename, states, nl_holdem_state::ACTIONS));
+        si->strategy_.reset(new strategy(filename, states, si->root_state_->get_action_count()));
     }
 }
 

@@ -1,19 +1,14 @@
-#include "cfr_solver.h"
-#include <cassert>
-#include <iostream>
 #include <omp.h>
-#include <cstdio>
-#include "strategy.h"
 #include "util/binary_io.h"
 
-namespace
+namespace detail
 {
     static const double EPSILON = 1e-7;
 }
 
 template<class T, class U>
-cfr_solver<T, U>::cfr_solver(abstraction_t abstraction, const int stack_size)
-    : root_(new game_state(stack_size))
+cfr_solver<T, U>::cfr_solver(abstraction_t abstraction, std::unique_ptr<game_state> state)
+    : root_(std::move(state))
     , evaluator_()
     , abstraction_(std::move(abstraction))
     , total_iterations_(0)
@@ -102,7 +97,7 @@ double cfr_solver<T, U>::update(const game_state& state, const bucket_t& buckets
 
     get_regret_strategy(state, bucket, action_probabilities);
 
-    if (reach[player] > EPSILON)
+    if (reach[player] > detail::EPSILON)
     {
         auto data = get_data(state.get_id(), bucket, 0);
 
@@ -111,7 +106,7 @@ double cfr_solver<T, U>::update(const game_state& state, const bucket_t& buckets
             assert(state.get_child(i) || action_probabilities[i] == 0);
 
             // update average strategy
-            if (action_probabilities[i] > EPSILON)
+            if (action_probabilities[i] > detail::EPSILON)
                 data[i].strategy += reach[player] * action_probabilities[i];
         }
     }
@@ -136,7 +131,7 @@ double cfr_solver<T, U>::update(const game_state& state, const bucket_t& buckets
         {
             reach[player] = old_reach * action_probabilities[i];
 
-            if (reach[0] >= EPSILON || reach[1] >= EPSILON)
+            if (reach[0] >= detail::EPSILON || reach[1] >= detail::EPSILON)
                 action_ev[i] = update(*next, buckets, reach, result);
         }
 
@@ -146,7 +141,7 @@ double cfr_solver<T, U>::update(const game_state& state, const bucket_t& buckets
     reach[player] = old_reach;
 
     // update regrets
-    if (reach[opponent] > EPSILON)
+    if (reach[opponent] > detail::EPSILON)
     {
         auto data = get_data(state.get_id(), bucket, 0);
 
@@ -163,7 +158,7 @@ double cfr_solver<T, U>::update(const game_state& state, const bucket_t& buckets
 
             data[i].regret += delta_regret;
 
-            if (delta_regret > EPSILON)
+            if (delta_regret > detail::EPSILON)
                 accumulated_regret_[player] += delta_regret;
         }
     }
@@ -179,16 +174,16 @@ void cfr_solver<T, U>::get_regret_strategy(const game_state& state, const int bu
 
     for (int i = 0; i < ACTIONS; ++i)
     {
-        assert(state.get_child(i) || data[i].regret <= EPSILON);
+        assert(state.get_child(i) || data[i].regret <= detail::EPSILON);
 
-        if (data[i].regret > EPSILON)
+        if (data[i].regret > detail::EPSILON)
             bucket_sum += data[i].regret;
     }
 
-    if (bucket_sum > EPSILON)
+    if (bucket_sum > detail::EPSILON)
     {
         for (int i = 0; i < ACTIONS; ++i)
-            out[i] = data[i].regret > EPSILON ? data[i].regret / bucket_sum : 0;
+            out[i] = data[i].regret > detail::EPSILON ? data[i].regret / bucket_sum : 0;
     }
     else
     {
@@ -205,12 +200,12 @@ void cfr_solver<T, U>::get_average_strategy(const game_state& state, const int b
 
     for (int i = 0; i < ACTIONS; ++i)
     {
-        assert(state.get_child(i) || data[i].strategy <= EPSILON);
+        assert(state.get_child(i) || data[i].strategy <= detail::EPSILON);
         assert(data[i].strategy >= 0);
         bucket_sum += data[i].strategy;
     }
 
-    if (bucket_sum > EPSILON)
+    if (bucket_sum > detail::EPSILON)
     {
         for (int i = 0; i < ACTIONS; ++i)
             out[i] = data[i].strategy / bucket_sum;
@@ -307,12 +302,10 @@ std::vector<int> cfr_solver<T, U>::get_state_counts() const
 template<class T, class U>
 std::size_t cfr_solver<T, U>::get_required_values() const
 {
-    const auto bucket_counts = get_bucket_counts();
-    const auto state_counts = get_state_counts();
     std::size_t n = 0;
 
-    for (int i = 0; i < ROUNDS; ++i)
-        n += state_counts[i] * bucket_counts[i] * ACTIONS;
+    for (auto i = states_.begin(); i != states_.end(); ++i)
+        n += abstraction_.get_bucket_count((*i)->get_round()) * ACTIONS;
 
     return n;
 }
@@ -343,13 +336,3 @@ const typename cfr_solver<T, U>::data_type* cfr_solver<T, U>::get_data(std::size
 
     return &data_[positions_[state_id] + bucket * ACTIONS + action];
 }
-
-#include "holdem_game.h"
-#include "kuhn_game.h"
-#include "holdem_state.h"
-#include "kuhn_state.h"
-#include "nl_holdem_state.h"
-
-template class cfr_solver<holdem_game, holdem_state>;
-template class cfr_solver<kuhn_game, kuhn_state>;
-template class cfr_solver<holdem_game, nl_holdem_state>;

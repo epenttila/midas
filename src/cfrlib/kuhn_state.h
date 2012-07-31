@@ -13,7 +13,7 @@ public:
         ACTIONS
     };
 
-    kuhn_state(int);
+    kuhn_state();
     int get_id() const;
     int get_player() const;
     bool is_terminal() const;

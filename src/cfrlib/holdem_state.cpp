@@ -8,7 +8,7 @@ namespace
     static const std::array<int, 2> INITIAL_POT = {{1, 2}};
 }
 
-holdem_state::holdem_state(int)
+holdem_state::holdem_state()
     : id_(0)
     , parent_(nullptr)
     , action_(-1)

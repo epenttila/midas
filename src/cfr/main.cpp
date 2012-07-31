@@ -73,16 +73,49 @@ int main(int argc, char* argv[])
         // TODO leduc poker
         if (game == "kuhn")
         {
-            solver.reset(new cfr_solver<kuhn_game, kuhn_state>(kuhn_abstraction(), stack_size));
+            std::unique_ptr<kuhn_state> state(new kuhn_state());
+            solver.reset(new cfr_solver<kuhn_game, kuhn_state>(kuhn_abstraction(), std::move(state)));
         }
         else if (game == "holdem")
         {
-            solver.reset(new cfr_solver<holdem_game, holdem_state>(holdem_abstraction(abstraction), stack_size));
+            std::unique_ptr<holdem_state> state(new holdem_state());
+            solver.reset(new cfr_solver<holdem_game, holdem_state>(holdem_abstraction(abstraction), std::move(state)));
         }
-        else if (game == "nlhe")
+        else if (game == "fca_nlhe")
         {
+            typedef nl_holdem_state<F_MASK | C_MASK | A_MASK> state_type;
             std::cout << "Using stack size: " << stack_size << "\n";
-            solver.reset(new cfr_solver<holdem_game, nl_holdem_state>(holdem_abstraction(abstraction), stack_size));
+            std::unique_ptr<state_type> state(new state_type(stack_size));
+            solver.reset(new cfr_solver<holdem_game, state_type>(holdem_abstraction(abstraction), std::move(state)));
+        }
+        else if (game == "fcpa_nlhe")
+        {
+            typedef nl_holdem_state<F_MASK | C_MASK | P_MASK | A_MASK> state_type;
+            std::cout << "Using stack size: " << stack_size << "\n";
+            std::unique_ptr<state_type> state(new state_type(stack_size));
+            solver.reset(new cfr_solver<holdem_game, state_type>(holdem_abstraction(abstraction), std::move(state)));
+        }
+        else if (game == "fchpa_nlhe")
+        {
+            typedef nl_holdem_state<F_MASK | C_MASK | H_MASK | P_MASK | A_MASK> state_type;
+            std::cout << "Using stack size: " << stack_size << "\n";
+            std::unique_ptr<state_type> state(new state_type(stack_size));
+            solver.reset(new cfr_solver<holdem_game, state_type>(holdem_abstraction(abstraction), std::move(state)));
+        }
+        else if (game == "fchqpa_nlhe")
+        {
+            typedef nl_holdem_state<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | A_MASK> state_type;
+            std::cout << "Using stack size: " << stack_size << "\n";
+            std::unique_ptr<state_type> state(new state_type(stack_size));
+            solver.reset(new cfr_solver<holdem_game, state_type>(holdem_abstraction(abstraction), std::move(state)));
+        }
+        else if (game == "fchqpwdtea_nlhe")
+        {
+            typedef nl_holdem_state<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | W_MASK | D_MASK | T_MASK | E_MASK
+                | A_MASK> state_type;
+            std::cout << "Using stack size: " << stack_size << "\n";
+            std::unique_ptr<state_type> state(new state_type(stack_size));
+            solver.reset(new cfr_solver<holdem_game, state_type>(holdem_abstraction(abstraction), std::move(state)));
         }
         else
         {

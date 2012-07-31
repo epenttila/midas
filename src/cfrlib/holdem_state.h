@@ -14,7 +14,7 @@ public:
         ACTIONS
     };
 
-    holdem_state(int);
+    holdem_state();
     int get_action() const;
     int get_round() const;
     const holdem_state* get_parent() const;

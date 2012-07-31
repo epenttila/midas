@@ -13,8 +13,6 @@ class strategy;
 
 class solver_base
 {
-    friend std::ostream& operator<<(std::ostream& o, const solver_base& solver);
-
 public:
     virtual void solve(const std::uint64_t iterations) = 0;
     virtual void save_state(std::ostream&) const = 0;
@@ -39,7 +37,7 @@ public:
     typedef typename T::evaluator_t evaluator_t;
     typedef typename T::abstraction_t abstraction_t;
 
-    cfr_solver(abstraction_t abstraction, int stack_size);
+    cfr_solver(abstraction_t abstraction, std::unique_ptr<game_state> state);
     ~cfr_solver();
     virtual void solve(const std::uint64_t iterations);
     virtual void save_strategy(const std::string& filename) const;
@@ -77,3 +75,5 @@ private:
     std::uint64_t total_iterations_;
     boost::signals2::signal<void (std::uint64_t)> progressed_;
 };
+
+#include "cfr_solver.ipp"
