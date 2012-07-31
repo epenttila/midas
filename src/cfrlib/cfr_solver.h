@@ -37,7 +37,7 @@ public:
     typedef typename T::evaluator_t evaluator_t;
     typedef typename T::abstraction_t abstraction_t;
 
-    cfr_solver(abstraction_t abstraction, std::unique_ptr<game_state> state);
+    cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr<abstraction_t> abstraction);
     ~cfr_solver();
     virtual void solve(const std::uint64_t iterations);
     virtual void save_strategy(const std::string& filename) const;
@@ -71,7 +71,7 @@ private:
     std::array<double, 2> accumulated_regret_;
     std::unique_ptr<game_state> root_;
     const evaluator_t evaluator_;
-    const abstraction_t abstraction_;
+    std::unique_ptr<abstraction_t> abstraction_;
     std::uint64_t total_iterations_;
     boost::signals2::signal<void (std::uint64_t)> progressed_;
 };
