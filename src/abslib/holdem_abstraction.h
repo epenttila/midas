@@ -13,7 +13,18 @@ public:
     typedef holdem_evaluator evaluator;
     enum holdem_round { PREFLOP, FLOP, TURN, RIVER, ROUNDS };
 
-    holdem_abstraction(const std::string& bucket_configuration, int kmeans_max_iterations);
+    struct bucket_cfg
+    {
+        bucket_cfg();
+        int hs2;
+        int pub;
+        bool forget_hs2;
+        bool forget_pub;
+    };
+
+    typedef std::array<bucket_cfg, ROUNDS> bucket_cfg_type;
+
+    holdem_abstraction(const bucket_cfg_type& bucket_cfgs, int kmeans_max_iterations);
     holdem_abstraction(const std::string& filename);
     void get_buckets(int c0, int c1, int b0, int b1, int b2, int b3, int b4, bucket_type* buckets) const;
     int get_bucket(int c0, int c1) const;
@@ -26,15 +37,6 @@ public:
     void load(std::istream& is);
 
 private:
-    struct bucket_cfg
-    {
-        bucket_cfg();
-        int hs2;
-        int pub;
-        bool forget_hs2;
-        bool forget_pub;
-    };
-
     void init();
 
     int get_preflop_bucket(int c0, int c1) const;
@@ -57,5 +59,5 @@ private:
     std::vector<float> turn_ehs2_percentiles_;
     std::vector<float> river_ehs_percentiles_;
     std::vector<int> public_flop_buckets_;
-    std::array<bucket_cfg, 4> bucket_cfgs_;
+    bucket_cfg_type bucket_cfgs_;
 };

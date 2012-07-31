@@ -5,7 +5,6 @@
 #include <omp.h>
 #include <numeric>
 #include <string>
-#include <boost/tokenizer.hpp>
 #include <unordered_map>
 #include "util/card.h"
 #include "lutlib/holdem_preflop_lut.h"
@@ -144,27 +143,6 @@ namespace
         }
     };
 
-    void parse_buckets(const std::string& s, int* hs2, int* pub, bool* forget_hs2, bool* forget_pub)
-    {
-        boost::tokenizer<boost::char_separator<char>> tok(s, boost::char_separator<char>("x"));
-
-        for (auto j = tok.begin(); j != tok.end(); ++j)
-        {
-            const bool forget = (j->at(j->size() - 1) == 'i');
-
-            if (j->at(0) == 'p')
-            {
-                *pub = std::atoi(j->substr(1).c_str());
-                *forget_pub = forget;
-            }
-            else
-            {
-                *hs2 = std::atoi(j->c_str());
-                *forget_hs2 = forget;
-            }
-        }
-    }
-
     int index(int i, int j, int j_max)
     {
         return i * j_max + j;
@@ -194,19 +172,10 @@ holdem_abstraction::bucket_cfg::bucket_cfg()
 {
 }
 
-holdem_abstraction::holdem_abstraction(const std::string& bucket_configuration, int kmeans_max_iterations)
+holdem_abstraction::holdem_abstraction(const bucket_cfg_type& bucket_cfgs, int kmeans_max_iterations)
+    : bucket_cfgs_(bucket_cfgs)
 {
     init();
-
-    boost::char_separator<char> sep(".");
-    boost::tokenizer<boost::char_separator<char>> tok(bucket_configuration, sep);
-    int round = 0;
-
-    for (auto i = tok.begin(); i != tok.end(); ++i)
-    {
-        auto& cfg = bucket_cfgs_[round++];
-        parse_buckets(*i, &cfg.hs2, &cfg.pub, &cfg.forget_hs2, &cfg.forget_pub);
-    }
 
     preflop_ehs2_percentiles_.resize(bucket_cfgs_[PREFLOP].hs2);
     flop_ehs2_percentiles_.resize(bucket_cfgs_[FLOP].hs2);
