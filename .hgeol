@@ -3,3 +3,4 @@
 **.h = native
 **.py = native
 **.txt = native
+**.ipp = native
