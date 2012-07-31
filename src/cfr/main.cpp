@@ -6,6 +6,7 @@
 #include <fstream>
 #include <boost/format.hpp>
 #include <boost/date_time.hpp>
+#include <regex>
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
@@ -18,6 +19,18 @@
 #include "cfrlib/nl_holdem_state.h"
 #include "cfrlib/strategy.h"
 
+namespace
+{
+    template<int BITMASK>
+    std::unique_ptr<solver_base> create_nlhe_solver(const int stack_size, const std::string& abstraction)
+    {
+        typedef nl_holdem_state<BITMASK> state_type;
+        std::unique_ptr<state_type> state(new state_type(stack_size));
+        return std::unique_ptr<solver_base>(new cfr_solver<holdem_game, state_type>(holdem_abstraction(abstraction),
+            std::move(state)));
+    }
+}
+
 int main(int argc, char* argv[])
 {
     try
@@ -29,10 +42,9 @@ int main(int argc, char* argv[])
         std::string game;
         std::uint64_t iterations;
         std::string abstraction;
-        int stack_size;
 
-        po::options_description generic_options("Generic options");
-        generic_options.add_options()
+        po::options_description desc("Options");
+        desc.add_options()
             ("help", "produce help message")
             ("state-file", po::value<std::string>(&state_file), "state file")
             ("strategy-file", po::value<std::string>(&strategy_file)->required(), "strategy file")
@@ -40,14 +52,6 @@ int main(int argc, char* argv[])
             ("iterations", po::value<std::uint64_t>(&iterations)->required(), "number of iterations")
             ("abstraction", po::value<std::string>(&abstraction)->required(), "abstraction type or file")
             ;
-
-        po::options_description nlhe_options("nlhe options");
-        nlhe_options.add_options()
-            ("stack-size", po::value<int>(&stack_size), "stack size in small blinds")
-            ;
-
-        po::options_description desc("Options");
-        desc.add(generic_options).add(nlhe_options);
 
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -70,6 +74,9 @@ int main(int argc, char* argv[])
         std::cout << "Creating solver for game: " << game << "\n";
         std::cout << "Using abstraction: " << abstraction << "\n";
 
+        std::regex nlhe_regex("nlhe\\.([a-z]+)\\.([0-9]+)");
+        std::smatch match;
+
         // TODO leduc poker
         if (game == "kuhn")
         {
@@ -81,43 +88,24 @@ int main(int argc, char* argv[])
             std::unique_ptr<holdem_state> state(new holdem_state());
             solver.reset(new cfr_solver<holdem_game, holdem_state>(holdem_abstraction(abstraction), std::move(state)));
         }
-        else if (game == "fca_nlhe")
+        else if (std::regex_match(game, match, nlhe_regex))
         {
-            typedef nl_holdem_state<F_MASK | C_MASK | A_MASK> state_type;
-            std::cout << "Using stack size: " << stack_size << "\n";
-            std::unique_ptr<state_type> state(new state_type(stack_size));
-            solver.reset(new cfr_solver<holdem_game, state_type>(holdem_abstraction(abstraction), std::move(state)));
+            const std::string actions = match[1].str();
+            const int stack_size = boost::lexical_cast<int>(match[2].str());
+
+            if (actions == "fca")
+                solver = create_nlhe_solver<F_MASK | C_MASK | A_MASK>(stack_size, abstraction);
+            else if (actions == "fcpa")
+                solver = create_nlhe_solver<F_MASK | C_MASK | P_MASK | A_MASK>(stack_size, abstraction);
+            else if (actions == "fchpa")
+                solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | P_MASK | A_MASK>(stack_size, abstraction);
+            else if (actions == "fchqpa")
+                solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | A_MASK>(stack_size, abstraction);
+            else if (actions == "fchqpwdtea")
+                solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | W_MASK | D_MASK | T_MASK | E_MASK | A_MASK>(stack_size, abstraction);
         }
-        else if (game == "fcpa_nlhe")
-        {
-            typedef nl_holdem_state<F_MASK | C_MASK | P_MASK | A_MASK> state_type;
-            std::cout << "Using stack size: " << stack_size << "\n";
-            std::unique_ptr<state_type> state(new state_type(stack_size));
-            solver.reset(new cfr_solver<holdem_game, state_type>(holdem_abstraction(abstraction), std::move(state)));
-        }
-        else if (game == "fchpa_nlhe")
-        {
-            typedef nl_holdem_state<F_MASK | C_MASK | H_MASK | P_MASK | A_MASK> state_type;
-            std::cout << "Using stack size: " << stack_size << "\n";
-            std::unique_ptr<state_type> state(new state_type(stack_size));
-            solver.reset(new cfr_solver<holdem_game, state_type>(holdem_abstraction(abstraction), std::move(state)));
-        }
-        else if (game == "fchqpa_nlhe")
-        {
-            typedef nl_holdem_state<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | A_MASK> state_type;
-            std::cout << "Using stack size: " << stack_size << "\n";
-            std::unique_ptr<state_type> state(new state_type(stack_size));
-            solver.reset(new cfr_solver<holdem_game, state_type>(holdem_abstraction(abstraction), std::move(state)));
-        }
-        else if (game == "fchqpwdtea_nlhe")
-        {
-            typedef nl_holdem_state<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | W_MASK | D_MASK | T_MASK | E_MASK
-                | A_MASK> state_type;
-            std::cout << "Using stack size: " << stack_size << "\n";
-            std::unique_ptr<state_type> state(new state_type(stack_size));
-            solver.reset(new cfr_solver<holdem_game, state_type>(holdem_abstraction(abstraction), std::move(state)));
-        }
-        else
+
+        if (!solver)
         {
             std::cout << "Unknown game\n";
             return 1;
