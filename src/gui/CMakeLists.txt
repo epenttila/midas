@@ -6,8 +6,6 @@ set(gui_SOURCES
     main_window.h
     site_stars.cpp
     site_stars.h
-    strategy_dialog.cpp
-    strategy_dialog.h
     table_widget.cpp
     table_widget.h
 )
@@ -15,7 +13,6 @@ set(gui_SOURCES
 set(gui_HEADERS
     main_window.h
     table_widget.h
-    strategy_dialog.h
 )
 
 set(gui_RESOURCES

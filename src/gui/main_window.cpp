@@ -6,6 +6,7 @@
 #include <sstream>
 #include <boost/lexical_cast.hpp>
 #include <boost/signals2.hpp>
+#include <regex>
 #define NOMINMAX
 #include <Windows.h>
 #include <QTextEdit>
@@ -23,7 +24,6 @@
 #include "cfrlib/nl_holdem_state.h"
 #include "cfrlib/strategy.h"
 #include "table_widget.h"
-#include "strategy_dialog.h"
 
 namespace
 {
@@ -101,8 +101,6 @@ main_window::main_window()
 
     create_menus();
 
-    abstraction_label_ = new QLabel("No abstraction", this);
-    statusBar()->addWidget(abstraction_label_, 1);
     strategy_label_ = new QLabel("No strategy", this);
     statusBar()->addWidget(strategy_label_, 1);
     capture_label_ = new QLabel("No window", this);
@@ -162,9 +160,6 @@ void main_window::timer_timeout()
 
     visualizer_->set_pot(current_state->get_round(), pot);
 
-    if (!abstraction_)
-        return;
-
     const int c0 = hole.first;
     const int c1 = hole.second;
     const int b0 = board[0];
@@ -179,16 +174,16 @@ void main_window::timer_timeout()
         switch (site_->get_round())
         {
         case holdem_game::PREFLOP:
-            bucket = abstraction_->get_bucket(c0, c1);
+            bucket = strategy_info.abstraction_->get_bucket(c0, c1);
             break;
         case holdem_game::FLOP:
-            bucket = abstraction_->get_bucket(c0, c1, b0, b1, b2);
+            bucket = strategy_info.abstraction_->get_bucket(c0, c1, b0, b1, b2);
             break;
         case holdem_game::TURN:
-            bucket = abstraction_->get_bucket(c0, c1, b0, b1, b2, b3);
+            bucket = strategy_info.abstraction_->get_bucket(c0, c1, b0, b1, b2, b3);
             break;
         case holdem_game::RIVER:
-            bucket = abstraction_->get_bucket(c0, c1, b0, b1, b2, b3, b4);
+            bucket = strategy_info.abstraction_->get_bucket(c0, c1, b0, b1, b2, b3, b4);
             break;
         }
     }
@@ -213,7 +208,7 @@ void main_window::timer_timeout()
 
         probability = strategy->get(current_state->get_id(), index, bucket);
         std::stringstream ss;
-        ss << current_state;
+        ss << *current_state;
         s += " " + ss.str();
     }
 
@@ -224,36 +219,40 @@ void main_window::timer_timeout()
 void main_window::create_menus()
 {
     auto file_menu = menuBar()->addMenu("File");
-    file_menu->addAction("Open abstraction...", this, SLOT(open_abstraction()));
-    file_menu->addAction("Open strategy...", this, SLOT(open_strategy()));
+    file_menu->addAction("Open...", this, SLOT(open_strategy()));
 }
 
 void main_window::open_strategy()
 {
-    std::map<int, std::string> filenames;
-
-    for (auto i = strategy_infos_.begin(); i != strategy_infos_.end(); ++i)
-        filenames[i->first] = i->second->strategy_->get_filename();
-
-    strategy_dialog d(filenames, this);
-
-    if (d.exec() != QDialog::Accepted)
-        return;
+    const auto filenames = QFileDialog::getOpenFileNames(this, "Open Strategy", QString(), "Strategy files (*.str)");
 
     strategy_infos_.clear();
-    filenames = d.get_filenames();
+
+    std::regex r("([^-]+)-([^-]+)-[0-9]+\\.str");
+    std::regex r_nlhe("nlhe\\.([a-z]+)\\.([0-9]+)");
+    std::smatch m;
+    std::smatch m_nlhe;
 
     for (auto i = filenames.begin(); i != filenames.end(); ++i)
     {
-        const auto stack_size = i->first;
-        const auto filename = i->second;
+        const std::string filename = QFileInfo(*i).fileName().toUtf8().data();
 
-        if (filename.empty())
-            return;
+        if (!std::regex_match(filename, m, r))
+            continue;
 
+        if (!std::regex_match(m[1].first, m[1].second, m_nlhe, r_nlhe))
+            continue;
+
+        const std::string actions = m_nlhe[1];
+        const auto stack_size = boost::lexical_cast<int>(m_nlhe[2]);
         auto& si = strategy_infos_[stack_size];
         si.reset(new strategy_info);
-        si->root_state_.reset(new nl_holdem_state<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | A_MASK>(stack_size));
+
+        if (actions == "fchpa")
+            si->root_state_.reset(new nl_holdem_state<F_MASK | C_MASK | H_MASK | P_MASK | A_MASK>(stack_size));
+        else if (actions == "fchqpa")
+            si->root_state_.reset(new nl_holdem_state<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | A_MASK>(stack_size));
+
         si->current_state_ = si->root_state_.get();
 
         std::size_t states = 0;
@@ -274,19 +273,15 @@ void main_window::open_strategy()
             }
         }
 
-        si->strategy_.reset(new strategy(filename, states, si->root_state_->get_action_count()));
+        const auto dir = QFileInfo(*i).dir();
+        const std::string abs_filename = dir.filePath(QString(m[2].str().data()) + ".abs").toUtf8().data();
+        si->abstraction_.reset(new holdem_abstraction(abs_filename));
+
+        const std::string str_filename = i->toUtf8().data();
+        si->strategy_.reset(new strategy(str_filename, states, si->root_state_->get_action_count()));
     }
-}
 
-void main_window::open_abstraction()
-{
-    const auto filename = QFileDialog::getOpenFileName(this, "Open abstraction", QString(), "Abstraction files (*.abs)");
-
-    if (filename.isEmpty())
-        return;
-
-    abstraction_.reset(new holdem_abstraction(std::string(filename.toUtf8().data())));
-    abstraction_label_->setText(QFileInfo(filename).fileName());
+    statusBar()->showMessage(QString("%1 strategies loaded").arg(filenames.size()), 2000);
 }
 
 main_window::strategy_info::strategy_info()
