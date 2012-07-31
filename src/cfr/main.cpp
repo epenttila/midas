@@ -130,11 +130,11 @@ int main(int argc, char* argv[])
         std::cout << "Initializing storage: " << solver->get_required_memory() << " bytes\n";
         solver->init_storage();
 
-        /*if (!state_file.empty())
+        if (!state_file.empty())
         {
             std::cout << "Loading state from: " << state_file << "\n";
             solver->load_state(state_file);
-        }*/
+        }
 
         auto start_time = boost::posix_time::second_clock::universal_time();
 
@@ -154,11 +154,11 @@ int main(int argc, char* argv[])
         std::cout << "Saving strategy to: " << strategy_file << "\n";
         solver->save_strategy(strategy_file);
 
-        /*if (!state_file.empty())
+        if (!state_file.empty())
         {
             std::cout << "Saving state to: " << state_file << "\n";
             solver->save_state(state_file);
-        }*/
+        }
 
         return 0;
     }

@@ -224,20 +224,24 @@ double cfr_solver<T, U>::get_accumulated_regret(const int player) const
 }
 
 template<class T, class U>
-void cfr_solver<T, U>::save_state(std::ostream& os) const
+void cfr_solver<T, U>::save_state(const std::string& filename) const
 {
+    std::ofstream os(filename, std::ios::binary);
     binary_write(os, total_iterations_);
-    binary_write(os, accumulated_regret_[0]);
-    binary_write(os, accumulated_regret_[1]);
+    binary_write(os, accumulated_regret_);
     binary_write(os, data_);
 }
 
 template<class T, class U>
-void cfr_solver<T, U>::load_state(std::istream& is)
+void cfr_solver<T, U>::load_state(const std::string& filename)
 {
+    std::ifstream is(filename, std::ios::binary);
+
+    if (!is)
+        return;
+
     binary_read(is, total_iterations_);
-    binary_read(is, accumulated_regret_[0]);
-    binary_read(is, accumulated_regret_[1]);
+    binary_read(is, accumulated_regret_);
     binary_read(is, data_);
 }
 

@@ -15,8 +15,8 @@ class solver_base
 {
 public:
     virtual void solve(const std::uint64_t iterations) = 0;
-    virtual void save_state(std::ostream&) const = 0;
-    virtual void load_state(std::istream&) = 0;
+    virtual void save_state(const std::string& filename) const = 0;
+    virtual void load_state(const std::string& filename) = 0;
     virtual void save_strategy(const std::string& filename) const = 0;
     virtual void init_storage() = 0;
     virtual std::vector<int> get_bucket_counts() const = 0;
@@ -47,6 +47,8 @@ public:
     virtual std::size_t get_required_values() const;
     virtual std::size_t get_required_memory() const;
     virtual void connect_progressed(const std::function<void (std::uint64_t)>& f);
+    virtual void save_state(const std::string& filename) const;
+    virtual void load_state(const std::string& filename);
 
 private:
     struct data_type
@@ -60,8 +62,6 @@ private:
     void get_regret_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out) const;
     void get_average_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out) const;
     double get_accumulated_regret(const int player) const;
-    void save_state(std::ostream& os) const;
-    void load_state(std::istream& is);
     data_type* get_data(std::size_t state_id, int bucket, int action);
     const data_type* get_data(std::size_t state_id, int bucket, int action) const;
 
