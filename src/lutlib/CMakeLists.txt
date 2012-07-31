@@ -2,9 +2,13 @@ project(lutlib)
 
 set(lutlib_SOURCES
     holdem_flop_lut.cpp
+    holdem_flop_lut.h
     holdem_preflop_lut.cpp
+    holdem_preflop_lut.h
     holdem_river_lut.cpp
+    holdem_river_lut.h
     holdem_turn_lut.cpp
+    holdem_turn_lut.h
 )
 
 add_library(lutlib ${lutlib_SOURCES})

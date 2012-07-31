@@ -2,7 +2,9 @@ project(abslib)
 
 set(abslib_SOURCES
     holdem_abstraction.cpp
+    holdem_abstraction.h
     kuhn_abstraction.cpp
+    kuhn_abstraction.h
 )
 
 add_library(abslib ${abslib_SOURCES})

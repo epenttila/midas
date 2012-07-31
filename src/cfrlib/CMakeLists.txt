@@ -1,11 +1,20 @@
 project(cfrlib)
 
 set(cfrlib_SOURCES
+    cfr_solver.h
+    cfr_solver.ipp
     holdem_game.cpp
+    holdem_game.h
     holdem_state.cpp
+    holdem_state.h
     kuhn_game.cpp
+    kuhn_game.h
     kuhn_state.cpp
+    kuhn_state.h
+    nl_holdem_state.h
+    nl_holdem_state.ipp
     strategy.cpp
+    strategy.h
 )
 
 add_library(cfrlib ${cfrlib_SOURCES})

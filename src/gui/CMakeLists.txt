@@ -1,11 +1,15 @@
 project(gui)
 
 set(gui_SOURCES
-    main_window.cpp
     main.cpp
+    main_window.cpp
+    main_window.h
     site_stars.cpp
-    table_widget.cpp
+    site_stars.h
     strategy_dialog.cpp
+    strategy_dialog.h
+    table_widget.cpp
+    table_widget.h
 )
 
 set(gui_HEADERS
