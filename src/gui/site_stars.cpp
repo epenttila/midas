@@ -219,8 +219,18 @@ namespace
 }
 
 site_stars::site_stars(WId window)
-    : window_(window)
+    : dealer_(-1)
+    , player_(-1)
+    , round_(-1)
+    , big_blind_(-1)
+    , action_(-1)
+    , stack_bb_(-1)
+    , new_hand_(true)
+    , fraction_(-1)
+    , window_(window)
 {
+    hole_.fill(-1);
+    board_.fill(-1);
 }
 
 bool site_stars::update()
