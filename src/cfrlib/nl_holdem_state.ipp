@@ -125,10 +125,10 @@ void nl_holdem_state<BITMASK>::create_child(const int action_index, int* id)
         || prev_action == -1
         || prev_action == FOLD
         || prev_action == CALL
-        || (prev_action == RAISE_H && to_call == 0.5 * in_pot)
-        || (prev_action == RAISE_Q && to_call == 0.75 * in_pot)
+        || (prev_action == RAISE_H && to_call == int(0.5 * in_pot))
+        || (prev_action == RAISE_Q && to_call == int(0.75 * in_pot))
         || (prev_action == RAISE_P && to_call == in_pot)
-        || (prev_action == RAISE_W && to_call == 1.5 * in_pot)
+        || (prev_action == RAISE_W && to_call == int(1.5 * in_pot))
         || (prev_action == RAISE_D && to_call == 2 * in_pot)
         || (prev_action == RAISE_T && to_call == 10 * in_pot)
         || (prev_action == RAISE_E && to_call == 11 * in_pot));
@@ -260,6 +260,9 @@ const nl_holdem_state<BITMASK>* nl_holdem_state<BITMASK>::call() const
 template<int BITMASK>
 const nl_holdem_state<BITMASK>* nl_holdem_state<BITMASK>::raise(double fraction) const
 {
+    if (stack_size_ == pot_[1 - player_])
+        return nullptr;
+
     std::array<double, MAX_ACTIONS> pot_sizes = {{
         -1,
         -1,
