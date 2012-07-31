@@ -46,11 +46,11 @@ int main(int argc, char* argv[])
         po::options_description desc("Options");
         desc.add_options()
             ("help", "produce help message")
-            ("state-file", po::value<std::string>(&state_file), "state file")
-            ("strategy-file", po::value<std::string>(&strategy_file)->required(), "strategy file")
             ("game", po::value<std::string>(&game)->required(), "game type")
-            ("iterations", po::value<std::uint64_t>(&iterations)->required(), "number of iterations")
             ("abstraction", po::value<std::string>(&abstraction)->required(), "abstraction type or file")
+            ("iterations", po::value<std::uint64_t>(&iterations)->required(), "number of iterations")
+            ("strategy-file", po::value<std::string>(&strategy_file)->required(), "strategy file")
+            ("state-file", po::value<std::string>(&state_file), "state file")
             ;
 
         po::variables_map vm;
