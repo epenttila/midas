@@ -60,7 +60,10 @@ main_window::main_window()
 
     auto toolbar = addToolBar("File");
     toolbar->setMovable(false);
-    auto action = toolbar->addAction("Open strategy...");
+    toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    auto action = toolbar->addAction(QIcon(":/icons/folder_page_white.png"), "&Open strategy...");
+    action->setIconText("Open strategy...");
+    action->setToolTip("Open strategy...");
     connect(action, SIGNAL(triggered()), SLOT(open_strategy()));
     toolbar->addSeparator();
     class_filter_ = new QLineEdit(this);
@@ -68,8 +71,8 @@ main_window::main_window()
     action = toolbar->addWidget(class_filter_);
     title_filter_ = new QLineEdit(this);
     title_filter_->setPlaceholderText("Window title");
-    action = toolbar->addWidget(title_filter_);
-    action = toolbar->addAction("Capture");
+    toolbar->addWidget(title_filter_);
+    action = toolbar->addAction(QIcon(":/icons/control_play.png"), "Capture");
     action->setCheckable(true);
     connect(action, SIGNAL(changed()), SLOT(capture_changed()));
 
