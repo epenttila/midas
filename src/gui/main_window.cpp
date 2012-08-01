@@ -68,7 +68,6 @@ main_window::main_window()
     action->setIconText("Open strategy...");
     action->setToolTip("Open strategy...");
     connect(action, SIGNAL(triggered()), SLOT(open_strategy()));
-    toolbar->addSeparator();
     action = toolbar->addAction(QIcon(":/icons/table.png"), "Show strategy");
     action->setCheckable(true);
     connect(action, SIGNAL(changed()), SLOT(show_strategy_changed()));
@@ -76,9 +75,11 @@ main_window::main_window()
     class_filter_ = new QLineEdit(this);
     class_filter_->setPlaceholderText("Window class");
     action = toolbar->addWidget(class_filter_);
+    toolbar->addSeparator();
     title_filter_ = new QLineEdit(this);
     title_filter_->setPlaceholderText("Window title");
     toolbar->addWidget(title_filter_);
+    toolbar->addSeparator();
     action = toolbar->addAction(QIcon(":/icons/control_play.png"), "Capture");
     action->setCheckable(true);
     connect(action, SIGNAL(changed()), SLOT(capture_changed()));
@@ -164,6 +165,9 @@ void main_window::timer_timeout()
     }
 
     if (!current_state)
+        return;
+
+    if (current_state->get_round() != site_->get_round())
         return;
 
     std::array<int, 2> pot = current_state->get_pot();
