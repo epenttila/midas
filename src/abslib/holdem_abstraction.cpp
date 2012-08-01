@@ -162,6 +162,94 @@ namespace
     {
         return i * j_max * k_max * l_max * m_max + j * k_max * l_max * m_max + k * l_max * m_max + l * m_max + m;
     }
+
+    int index(int i, int j, int j_max, int k, int k_max, int l, int l_max, int m, int m_max, int n, int n_max)
+    {
+        return i * j_max * k_max * l_max * m_max * n_max
+            + j * k_max * l_max * m_max * n_max
+            + k * l_max * m_max * n_max
+            + l * m_max * n_max
+            + m * n_max
+            + n;
+    }
+
+    std::vector<int> generate_public_flop_buckets(holdem_flop_lut& flop_lut, holdem_turn_lut& turn_lut,
+        const int kmeans_max_iterations, const int kmeans_buckets, const int clusters)
+    {
+        std::vector<std::vector<double>> flops(choose(52, 3), std::vector<double>(kmeans_buckets * kmeans_buckets));
+        const auto flop_percentiles = get_percentiles(get_flop_frequencies(flop_lut), kmeans_buckets);
+        const auto turn_percentiles = get_percentiles(get_turn_frequencies(turn_lut), kmeans_buckets);
+
+#pragma omp parallel
+        {
+            std::vector<std::vector<double>> thread_flops = flops;
+
+            parallel_for_each_flop([&](int a, int b, int i, int j, int k) {
+                const auto flop_key = choose(k, 3) + choose(j, 2) + choose(i, 1);
+
+                for (int l = 0; l < 52; ++l)
+                {
+                    if (l == i || l == j || l == k || l == a || l == b)
+                        continue;
+
+                    const int flop_bucket =
+                        get_percentile_bucket(flop_lut.get(a, b, i, j, k).second, flop_percentiles);
+                    const int turn_bucket =
+                        get_percentile_bucket(turn_lut.get(a, b, i, j, k, l).second, turn_percentiles);
+                    ++thread_flops[flop_key][flop_bucket * kmeans_buckets + turn_bucket];
+                }
+            });
+
+#pragma omp critical
+            {
+                for (auto i = 0; i < flops.size(); ++i)
+                {
+                    for (auto j = 0; j < flops[i].size(); ++j)
+                        flops[i][j] += thread_flops[i][j];
+                }
+            }
+        }
+
+        return k_means<get_distance>(flops, clusters, kmeans_max_iterations);
+    }
+
+    std::vector<int> generate_public_turn_buckets(holdem_turn_lut& turn_lut, holdem_river_lut& river_lut,
+        const int kmeans_max_iterations, const int kmeans_buckets, const int clusters)
+    {
+        std::vector<std::vector<double>> turns(choose(52, 4), std::vector<double>(kmeans_buckets * kmeans_buckets));
+        const auto turn_percentiles = get_percentiles(get_turn_frequencies(turn_lut), kmeans_buckets);
+        const auto river_percentiles = get_percentiles(get_river_frequencies(river_lut), kmeans_buckets);
+
+#pragma omp parallel
+        {
+            std::vector<std::vector<double>> thread_turns = turns;
+
+            parallel_for_each_turn([&](int a, int b, int i, int j, int k, int l) {
+                const auto key = choose(l, 4) + choose(k, 3) + choose(j, 2) + choose(i, 1);
+
+                for (int m = 0; m < 52; ++m)
+                {
+                    if (m == i || m == j || m == k || m == l || m == a || m == b)
+                        continue;
+
+                    const int from = get_percentile_bucket(turn_lut.get(a, b, i, j, k, l).second, turn_percentiles);
+                    const int to = get_percentile_bucket(river_lut.get(a, b, i, j, k, l, m), river_percentiles);
+                    ++thread_turns[key][from * kmeans_buckets + to];
+                }
+            });
+
+#pragma omp critical
+            {
+                for (auto i = 0; i < turns.size(); ++i)
+                {
+                    for (auto j = 0; j < turns[i].size(); ++j)
+                        turns[i][j] += thread_turns[i][j];
+                }
+            }
+        }
+
+        return k_means<get_distance>(turns, clusters, kmeans_max_iterations);
+    }
 }
 
 holdem_abstraction::bucket_cfg::bucket_cfg()
@@ -181,6 +269,7 @@ holdem_abstraction::holdem_abstraction(const bucket_cfg_type& bucket_cfgs, int k
     flop_ehs2_percentiles_.resize(bucket_cfgs_[FLOP].hs2);
     public_flop_buckets_.resize(bucket_cfgs_[FLOP].pub);
     turn_ehs2_percentiles_.resize(bucket_cfgs_[TURN].hs2);
+    public_turn_buckets_.resize(bucket_cfgs_[TURN].pub);
     river_ehs_percentiles_.resize(bucket_cfgs_[RIVER].hs2);
 
     if (bucket_cfgs_[PREFLOP].hs2 > 1 && bucket_cfgs_[PREFLOP].hs2 < 169)
@@ -196,10 +285,16 @@ holdem_abstraction::holdem_abstraction(const bucket_cfg_type& bucket_cfgs, int k
         river_ehs_percentiles_ = get_percentiles(get_river_frequencies(*river_lut_), bucket_cfgs_[RIVER].hs2);
     
     if (bucket_cfgs_[FLOP].pub > 1)
-        generate_public_flop_buckets(kmeans_max_iterations, 10);
+    {
+        public_flop_buckets_ = generate_public_flop_buckets(*flop_lut_, *turn_lut_, kmeans_max_iterations, 10,
+            bucket_cfgs_[FLOP].pub);
+    }
 
     if (bucket_cfgs_[TURN].pub > 1)
-        generate_public_turn_buckets(kmeans_max_iterations, 10);
+    {
+        public_turn_buckets_ = generate_public_turn_buckets(*turn_lut_, *river_lut_, kmeans_max_iterations, 10,
+            bucket_cfgs_[TURN].pub);
+    }
 }
 
 holdem_abstraction::holdem_abstraction(const std::string& filename)
@@ -291,8 +386,11 @@ void holdem_abstraction::get_buckets(const int c0, const int c1, const int b0, c
     // TURN
     int turn_hs2 = get_private_turn_bucket(c0, c1, b0, b1, b2, b3);
     int turn_hs2_size = cfgs[TURN].hs2;
+    int turn_pub = get_public_turn_bucket(b0, b1, b2, b3);
+    int turn_pub_size = cfgs[TURN].pub;
 
-    const int turn = index(preflop_hs2, flop_hs2, flop_hs2_size, flop_pub, flop_pub_size, turn_hs2, turn_hs2_size);
+    const int turn = index(preflop_hs2, flop_hs2, flop_hs2_size, flop_pub, flop_pub_size, turn_hs2, turn_hs2_size,
+        turn_pub, turn_pub_size);
 
     if (cfgs[TURN].forget_hs2)
     {
@@ -303,7 +401,8 @@ void holdem_abstraction::get_buckets(const int c0, const int c1, const int b0, c
     // RIVER
     const int river_hs = get_private_river_bucket(c0, c1, b0, b1, b2, b3, b4);
     const int river_hs_size = cfgs[RIVER].hs2;
-    const int river = index(preflop_hs2, flop_hs2, flop_hs2_size, flop_pub, flop_pub_size, turn_hs2, turn_hs2_size, river_hs, river_hs_size);
+    const int river = index(preflop_hs2, flop_hs2, flop_hs2_size, flop_pub, flop_pub_size, turn_hs2, turn_hs2_size,
+        turn_pub, turn_pub_size, river_hs, river_hs_size);
 
     (*buckets)[PREFLOP] = preflop;
     (*buckets)[FLOP] = flop;
@@ -336,8 +435,11 @@ int holdem_abstraction::get_bucket(int c0, int c1, int b0, int b1, int b2, int b
     const int flop_pub_size = bucket_cfgs_[FLOP].forget_pub ? 1 : bucket_cfgs_[FLOP].pub;
     const int turn_hs2 = get_private_turn_bucket(c0, c1, b0, b1, b2, b3);
     const int turn_hs2_size = bucket_cfgs_[TURN].hs2;
+    const int turn_pub = bucket_cfgs_[TURN].forget_pub ? 0 : get_public_turn_bucket(b0, b1, b2, b3);
+    const int turn_pub_size = bucket_cfgs_[TURN].forget_pub ? 1 : bucket_cfgs_[TURN].pub;
 
-    return index(preflop_hs2, flop_hs2, flop_hs2_size, flop_pub, flop_pub_size, turn_hs2, turn_hs2_size);
+    return index(preflop_hs2, flop_hs2, flop_hs2_size, flop_pub, flop_pub_size, turn_hs2, turn_hs2_size,
+        turn_pub, turn_pub_size);
 }
 
 int holdem_abstraction::get_bucket(int c0, int c1, int b0, int b1, int b2, int b3, int b4) const
@@ -349,11 +451,13 @@ int holdem_abstraction::get_bucket(int c0, int c1, int b0, int b1, int b2, int b
     const int flop_pub_size = bucket_cfgs_[FLOP].forget_pub ? 1 : bucket_cfgs_[FLOP].pub;
     const int turn_hs2 = bucket_cfgs_[TURN].forget_hs2 ? 0 : get_private_turn_bucket(c0, c1, b0, b1, b2, b3);
     const int turn_hs2_size = bucket_cfgs_[TURN].forget_hs2 ? 0 : bucket_cfgs_[TURN].hs2;
+    const int turn_pub = bucket_cfgs_[TURN].forget_pub ? 0 : get_public_turn_bucket(b0, b1, b2, b3);
+    const int turn_pub_size = bucket_cfgs_[TURN].forget_pub ? 1 : bucket_cfgs_[TURN].pub;
     const int river_hs = get_private_river_bucket(c0, c1, b0, b1, b2, b3, b4);
     const int river_hs_size = bucket_cfgs_[RIVER].hs2;
 
-    return index(preflop_hs2, flop_hs2, flop_hs2_size, flop_pub, flop_pub_size, turn_hs2, turn_hs2_size, river_hs,
-        river_hs_size);
+    return index(preflop_hs2, flop_hs2, flop_hs2_size, flop_pub, flop_pub_size, turn_hs2, turn_hs2_size,
+        turn_pub, turn_pub_size, river_hs, river_hs_size);
 }
 
 int holdem_abstraction::get_preflop_bucket(const int c0, const int c1) const
@@ -409,6 +513,22 @@ int holdem_abstraction::get_public_flop_bucket(int b0, int b1, int b2) const
     }
 }
 
+int holdem_abstraction::get_public_turn_bucket(int b0, int b1, int b2, int b3) const
+{
+    if (bucket_cfgs_[TURN].pub > 1)
+    {
+        std::array<int, 4> board = {{b0, b1, b2, b3}};
+        sort(board);
+
+        const auto key = choose(board[3], 4) + choose(board[2], 3) + choose(board[1], 2) + choose(board[0], 1);
+        return public_turn_buckets_[key];
+    }
+    else
+    {
+        return 0;
+    }
+}
+
 void holdem_abstraction::save(std::ostream& os) const
 {
     binary_write(os, bucket_cfgs_);
@@ -417,6 +537,7 @@ void holdem_abstraction::save(std::ostream& os) const
     binary_write(os, turn_ehs2_percentiles_);
     binary_write(os, river_ehs_percentiles_);
     binary_write(os, public_flop_buckets_);
+    binary_write(os, public_turn_buckets_);
 }
 
 void holdem_abstraction::load(std::istream& is)
@@ -427,6 +548,7 @@ void holdem_abstraction::load(std::istream& is)
     binary_read(is, turn_ehs2_percentiles_);
     binary_read(is, river_ehs_percentiles_);
     binary_read(is, public_flop_buckets_);
+    binary_read(is, public_turn_buckets_);
 }
 
 void holdem_abstraction::init()
@@ -436,80 +558,4 @@ void holdem_abstraction::init()
     flop_lut_.reset(new holdem_flop_lut(std::ifstream("holdem_flop_lut.dat", std::ios::binary)));
     turn_lut_.reset(new holdem_turn_lut(std::ifstream("holdem_turn_lut.dat", std::ios::binary)));
     river_lut_.reset(new holdem_river_lut(std::ifstream("holdem_river_lut.dat", std::ios::binary)));
-}
-
-void holdem_abstraction::generate_public_flop_buckets(int kmeans_max_iterations, int kmeans_buckets)
-{
-    std::vector<std::vector<double>> flops(choose(52, 3), std::vector<double>(kmeans_buckets * kmeans_buckets));
-    const auto flop_percentiles = get_percentiles(get_flop_frequencies(*flop_lut_), kmeans_buckets);
-    const auto turn_percentiles = get_percentiles(get_turn_frequencies(*turn_lut_), kmeans_buckets);
-
-#pragma omp parallel
-    {
-        std::vector<std::vector<double>> thread_flops = flops;
-
-        parallel_for_each_flop([&](int a, int b, int i, int j, int k) {
-            const auto flop_key = choose(k, 3) + choose(j, 2) + choose(i, 1);
-
-            for (int l = 0; l < 52; ++l)
-            {
-                if (l == i || l == j || l == k || l == a || l == b)
-                    continue;
-
-                const int flop_bucket =
-                    get_percentile_bucket(flop_lut_->get(a, b, i, j, k).second, flop_percentiles);
-                const int turn_bucket =
-                    get_percentile_bucket(turn_lut_->get(a, b, i, j, k, l).second, turn_percentiles);
-                ++thread_flops[flop_key][flop_bucket * kmeans_buckets + turn_bucket];
-            }
-        });
-
-#pragma omp critical
-        {
-            for (auto i = 0; i < flops.size(); ++i)
-            {
-                for (auto j = 0; j < flops[i].size(); ++j)
-                    flops[i][j] += thread_flops[i][j];
-            }
-        }
-    }
-
-    public_flop_buckets_ = k_means<get_distance>(flops, bucket_cfgs_[FLOP].pub, kmeans_max_iterations);
-}
-
-void holdem_abstraction::generate_public_turn_buckets(int kmeans_max_iterations, int kmeans_buckets)
-{
-    std::vector<std::vector<double>> turns(choose(52, 4), std::vector<double>(kmeans_buckets * kmeans_buckets));
-    const auto turn_percentiles = get_percentiles(get_turn_frequencies(*turn_lut_), kmeans_buckets);
-    const auto river_percentiles = get_percentiles(get_river_frequencies(*river_lut_), kmeans_buckets);
-
-#pragma omp parallel
-    {
-        std::vector<std::vector<double>> thread_turns = turns;
-
-        parallel_for_each_turn([&](int a, int b, int i, int j, int k, int l) {
-            const auto key = choose(l, 4) + choose(k, 3) + choose(j, 2) + choose(i, 1);
-
-            for (int m = 0; m < 52; ++m)
-            {
-                if (m == i || m == j || m == k || m == l || m == a || m == b)
-                    continue;
-
-                const int from = get_percentile_bucket(turn_lut_->get(a, b, i, j, k, l).second, turn_percentiles);
-                const int to = get_percentile_bucket(river_lut_->get(a, b, i, j, k, l, m), river_percentiles);
-                ++thread_turns[key][from * kmeans_buckets + to];
-            }
-        });
-
-#pragma omp critical
-        {
-            for (auto i = 0; i < turns.size(); ++i)
-            {
-                for (auto j = 0; j < turns[i].size(); ++j)
-                    turns[i][j] += thread_turns[i][j];
-            }
-        }
-    }
-
-    public_flop_buckets_ = k_means<get_distance>(turns, bucket_cfgs_[FLOP].pub, kmeans_max_iterations);
 }
