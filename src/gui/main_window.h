@@ -5,7 +5,7 @@
 #include <map>
 #pragma warning(pop)
 
-class QTextEdit;
+class QPlainTextEdit;
 class holdem_abstraction;
 class nlhe_state_base;
 class site_stars;
@@ -47,7 +47,7 @@ private:
     std::unique_ptr<site_stars> site_;
     QLabel* strategy_label_;
     QLabel* capture_label_;
-    QLabel* decision_label_;
+    QPlainTextEdit* log_;
     QLineEdit* class_filter_;
     QLineEdit* title_filter_;
     std::unique_ptr<window_manager> window_manager_;

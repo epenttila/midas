@@ -1,6 +1,6 @@
 #include "main_window.h"
 
-#pragma warning(push, 3)
+#pragma warning(push, 1)
 #include <array>
 #include <fstream>
 #include <sstream>
@@ -9,7 +9,7 @@
 #include <regex>
 #define NOMINMAX
 #include <Windows.h>
-#include <QTextEdit>
+#include <QPlainTextEdit>
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QTimer>
@@ -84,11 +84,13 @@ main_window::main_window()
     action->setCheckable(true);
     connect(action, SIGNAL(changed()), SLOT(capture_changed()));
 
-    decision_label_ = new QLabel("Decision: n/a", this);
+    log_ = new QPlainTextEdit(this);
+    log_->setReadOnly(true);
+    log_->setMaximumBlockCount(1000);
 
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->addWidget(visualizer_);
-    layout->addWidget(decision_label_);
+    layout->addWidget(log_);
     layout->addWidget(strategy_);
     widget->setLayout(layout);
 
@@ -210,6 +212,10 @@ void main_window::timer_timeout()
 
     if (current_state && current_state->get_id() != -1)
     {
+        std::stringstream ss;
+        ss << *current_state;
+        log_->appendPlainText(ss.str().c_str());
+
         if (bucket != -1)
         {
             const int index = strategy->get_action(current_state->get_id(), bucket);
@@ -226,7 +232,7 @@ void main_window::timer_timeout()
             }
 
             double probability = strategy->get(current_state->get_id(), index, bucket);
-            decision_label_->setText(QString("Decision: %1 (%2%)").arg(s.c_str()).arg(int(probability * 100)));
+            log_->appendPlainText(QString("%1 (%2%)").arg(s.c_str()).arg(int(probability * 100)));
         }
 
         strategy_->update(*strategy_info.abstraction_, board, *strategy, current_state->get_id(), current_state->get_action_count());
@@ -292,7 +298,7 @@ void main_window::open_strategy()
         si->strategy_.reset(new strategy(str_filename, states, si->root_state_->get_action_count()));
     }
 
-    statusBar()->showMessage(QString("%1 strategies loaded").arg(filenames.size()), 2000);
+    log_->appendPlainText(QString("%1 strategies loaded").arg(filenames.size()));
 }
 
 void main_window::capture_changed()
