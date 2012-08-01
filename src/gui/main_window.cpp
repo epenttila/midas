@@ -27,6 +27,7 @@
 #include "cfrlib/strategy.h"
 #include "table_widget.h"
 #include "window_manager.h"
+#include "holdem_strategy_widget.h"
 
 namespace
 {
@@ -57,6 +58,8 @@ main_window::main_window()
     setCentralWidget(widget);
 
     visualizer_ = new table_widget(this);
+    strategy_ = new holdem_strategy_widget(this);
+    strategy_->setVisible(false);
 
     auto toolbar = addToolBar("File");
     toolbar->setMovable(false);
@@ -65,6 +68,10 @@ main_window::main_window()
     action->setIconText("Open strategy...");
     action->setToolTip("Open strategy...");
     connect(action, SIGNAL(triggered()), SLOT(open_strategy()));
+    toolbar->addSeparator();
+    action = toolbar->addAction(QIcon(":/icons/table.png"), "Show strategy");
+    action->setCheckable(true);
+    connect(action, SIGNAL(changed()), SLOT(show_strategy_changed()));
     toolbar->addSeparator();
     class_filter_ = new QLineEdit(this);
     class_filter_->setPlaceholderText("Window class");
@@ -81,6 +88,7 @@ main_window::main_window()
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->addWidget(visualizer_);
     layout->addWidget(decision_label_);
+    layout->addWidget(strategy_);
     widget->setLayout(layout);
 
     timer_ = new QTimer(this);
@@ -193,32 +201,32 @@ void main_window::timer_timeout()
         }
     }
 
-    std::string s = "n/a";
-    double probability = 0;
     auto& strategy = strategy_info.strategy_;
+    strategy_label_->setText(QString("%1").arg(QFileInfo(strategy->get_filename().c_str()).fileName()));
 
-    if (current_state && current_state->get_id() != -1 && bucket != -1)
+    if (current_state && current_state->get_id() != -1)
     {
-        const int index = strategy->get_action(current_state->get_id(), bucket);
-
-        switch (current_state->get_action(index))
+        if (bucket != -1)
         {
-        case nlhe_state_base::FOLD: s = "FOLD"; break;
-        case nlhe_state_base::CALL: s = "CALL"; break;
-        case nlhe_state_base::RAISE_H: s = "RAISE_H"; break;
-        case nlhe_state_base::RAISE_Q: s = "RAISE_Q"; break;
-        case nlhe_state_base::RAISE_P: s = "RAISE_P"; break;
-        case nlhe_state_base::RAISE_A: s = "RAISE_A"; break;
+            const int index = strategy->get_action(current_state->get_id(), bucket);
+            std::string s = "n/a";
+
+            switch (current_state->get_action(index))
+            {
+            case nlhe_state_base::FOLD: s = "FOLD"; break;
+            case nlhe_state_base::CALL: s = "CALL"; break;
+            case nlhe_state_base::RAISE_H: s = "RAISE_H"; break;
+            case nlhe_state_base::RAISE_Q: s = "RAISE_Q"; break;
+            case nlhe_state_base::RAISE_P: s = "RAISE_P"; break;
+            case nlhe_state_base::RAISE_A: s = "RAISE_A"; break;
+            }
+
+            double probability = strategy->get(current_state->get_id(), index, bucket);
+            decision_label_->setText(QString("Decision: %1 (%2%)").arg(s.c_str()).arg(int(probability * 100)));
         }
 
-        probability = strategy->get(current_state->get_id(), index, bucket);
-        std::stringstream ss;
-        ss << *current_state;
-        s += " " + ss.str();
+        strategy_->update(*strategy_info.abstraction_, board, *strategy, current_state->get_id(), current_state->get_action_count());
     }
-
-    decision_label_->setText(QString("Decision: %1 (%2%)").arg(s.c_str()).arg(int(probability * 100)));
-    strategy_label_->setText(QString("%1: %2").arg(stack_size).arg(QFileInfo(strategy->get_filename().c_str()).fileName()));
 }
 
 void main_window::open_strategy()
@@ -299,6 +307,11 @@ void main_window::capture_changed()
         class_filter_->setEnabled(true);
         title_filter_->setEnabled(true);
     }
+}
+
+void main_window::show_strategy_changed()
+{
+    strategy_->setVisible(!strategy_->isVisible());
 }
 
 main_window::strategy_info::strategy_info()

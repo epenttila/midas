@@ -14,6 +14,7 @@ class QLabel;
 class table_widget;
 class QLineEdit;
 class window_manager;
+class holdem_strategy_widget;
 
 class main_window : public QMainWindow
 {
@@ -27,6 +28,7 @@ public slots:
     void timer_timeout();
     void open_strategy();
     void capture_changed();
+    void show_strategy_changed();
 
 private:
     struct strategy_info
@@ -49,4 +51,5 @@ private:
     QLineEdit* class_filter_;
     QLineEdit* title_filter_;
     std::unique_ptr<window_manager> window_manager_;
+    holdem_strategy_widget* strategy_;
 };

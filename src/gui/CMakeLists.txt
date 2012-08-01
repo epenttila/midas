@@ -1,6 +1,8 @@
 project(gui)
 
 set(gui_SOURCES
+    holdem_strategy_widget.cpp
+    holdem_strategy_widget.h
     main.cpp
     main_window.cpp
     main_window.h
@@ -13,6 +15,7 @@ set(gui_SOURCES
 )
 
 set(gui_HEADERS
+    holdem_strategy_widget.h
     main_window.h
     table_widget.h
 )
