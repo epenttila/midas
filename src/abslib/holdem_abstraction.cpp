@@ -104,21 +104,22 @@ namespace
         const unsigned int total_hands = std::accumulate(frequencies.begin(), frequencies.end(), 0,
             [](int a, const frequency_map::value_type& v) { return a + v.second; });
         unsigned int cumulative = 0;
+        const unsigned int bucket_size = total_hands / bucket_count;
         std::vector<float> buckets;
         buckets.push_back(0);
 
         for (auto i = frequencies.begin(); i != frequencies.end(); ++i)
         {
-            if (cumulative + i->second >= total_hands / bucket_count)
+            cumulative += i->second;
+
+            if (cumulative >= bucket_size)
             {
-                cumulative = 0;
                 buckets.push_back(i->first);
-            }
-            else
-            {
-                cumulative += i->second;
+                cumulative -= bucket_size;
             }
         }
+
+        buckets.resize(bucket_count);
 
         return buckets;
     }
