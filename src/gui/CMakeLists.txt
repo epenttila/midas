@@ -8,6 +8,8 @@ set(gui_SOURCES
     site_stars.h
     table_widget.cpp
     table_widget.h
+    window_manager.cpp
+    window_manager.h
 )
 
 set(gui_HEADERS

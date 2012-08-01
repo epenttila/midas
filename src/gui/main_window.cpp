@@ -17,6 +17,8 @@
 #include <QFileDialog>
 #include <QStatusBar>
 #include <QLabel>
+#include <QToolBar>
+#include <QLineEdit>
 #pragma warning(pop)
 
 #include "site_stars.h"
@@ -24,34 +26,10 @@
 #include "cfrlib/nl_holdem_state.h"
 #include "cfrlib/strategy.h"
 #include "table_widget.h"
+#include "window_manager.h"
 
 namespace
 {
-    class capture_button : public QPushButton
-    {
-    public:
-        capture_button(const QString& text, QWidget* parent) : QPushButton(text, parent) {}
-        boost::signals2::signal<void (HWND)> released_;
-
-    private:
-        virtual void mousePressEvent(QMouseEvent* event)
-        {
-            QPushButton::mousePressEvent(event);
-
-            setCursor(Qt::CrossCursor);
-        }
-
-        virtual void mouseReleaseEvent(QMouseEvent* event)
-        {
-            QPushButton::mouseReleaseEvent(event);
-
-            unsetCursor();
-            QPoint point = QCursor::pos();
-            POINT pt = { point.x(), point.y() };
-            released_(WindowFromPoint(pt));
-        }
-    };
-
     template<class T>
     typename T::const_iterator find_nearest(const T& map, const typename T::key_type& value)
     {
@@ -70,36 +48,40 @@ namespace
 }
 
 main_window::main_window()
+    : window_manager_(new window_manager)
 {
     auto widget = new QFrame(this);
     widget->setFrameStyle(QFrame::StyledPanel);
+    widget->setFocus();
 
     setCentralWidget(widget);
 
     visualizer_ = new table_widget(this);
 
-    capture_button* button = new capture_button("Capture", this);
-    button->released_.connect([&](HWND hwnd) {
-        site_.reset(new site_stars(hwnd));
-        std::array<char, 256> arr;
-        GetClassNameA(hwnd, &arr[0], int(arr.size()));
-        QString class_name(&arr[0]);
-        capture_label_->setText(QString("%1 (%2)").arg(class_name).arg(std::size_t(hwnd)));
-    });
+    auto toolbar = addToolBar("File");
+    toolbar->setMovable(false);
+    auto action = toolbar->addAction("Open strategy...");
+    connect(action, SIGNAL(triggered()), SLOT(open_strategy()));
+    toolbar->addSeparator();
+    class_filter_ = new QLineEdit(this);
+    class_filter_->setPlaceholderText("Window class");
+    action = toolbar->addWidget(class_filter_);
+    title_filter_ = new QLineEdit(this);
+    title_filter_->setPlaceholderText("Window title");
+    action = toolbar->addWidget(title_filter_);
+    action = toolbar->addAction("Capture");
+    action->setCheckable(true);
+    connect(action, SIGNAL(changed()), SLOT(capture_changed()));
 
     decision_label_ = new QLabel("Decision: n/a", this);
 
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->addWidget(visualizer_);
     layout->addWidget(decision_label_);
-    layout->addWidget(button);
     widget->setLayout(layout);
 
     timer_ = new QTimer(this);
     connect(timer_, SIGNAL(timeout()), SLOT(timer_timeout()));
-    timer_->start(100);
-
-    create_menus();
 
     strategy_label_ = new QLabel("No strategy", this);
     statusBar()->addWidget(strategy_label_, 1);
@@ -113,6 +95,26 @@ main_window::~main_window()
 
 void main_window::timer_timeout()
 {
+    if (!window_manager_->is_window())
+    {
+        if (window_manager_->find_window())
+        {
+            const std::string class_name = window_manager_->get_class_name();
+            const std::string title_name = window_manager_->get_title_name();
+            const auto window = window_manager_->get_window();
+
+            if (class_name == "PokerStarsTableFrameClass")
+                site_.reset(new site_stars(window));
+
+            capture_label_->setText(QString("%1").arg(title_name.c_str()));
+        }
+        else
+        {
+            site_.reset();
+            capture_label_->setText("No window");
+        }
+    }
+
     if (!site_ || !site_->update())
         return;
 
@@ -216,12 +218,6 @@ void main_window::timer_timeout()
     strategy_label_->setText(QString("%1: %2").arg(stack_size).arg(QFileInfo(strategy->get_filename().c_str()).fileName()));
 }
 
-void main_window::create_menus()
-{
-    auto file_menu = menuBar()->addMenu("File");
-    file_menu->addAction("Open...", this, SLOT(open_strategy()));
-}
-
 void main_window::open_strategy()
 {
     const auto filenames = QFileDialog::getOpenFileNames(this, "Open Strategy", QString(), "Strategy files (*.str)");
@@ -282,6 +278,24 @@ void main_window::open_strategy()
     }
 
     statusBar()->showMessage(QString("%1 strategies loaded").arg(filenames.size()), 2000);
+}
+
+void main_window::capture_changed()
+{
+    if (!timer_->isActive())
+    {
+        timer_->start(100);
+        class_filter_->setEnabled(false);
+        title_filter_->setEnabled(false);
+        window_manager_->set_class_filter(std::string(class_filter_->text().toUtf8().data()));
+        window_manager_->set_title_filter(std::string(title_filter_->text().toUtf8().data()));
+    }
+    else
+    {
+        timer_->stop();
+        class_filter_->setEnabled(true);
+        title_filter_->setEnabled(true);
+    }
 }
 
 main_window::strategy_info::strategy_info()

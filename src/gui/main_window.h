@@ -12,6 +12,8 @@ class site_stars;
 class strategy;
 class QLabel;
 class table_widget;
+class QLineEdit;
+class window_manager;
 
 class main_window : public QMainWindow
 {
@@ -24,6 +26,7 @@ public:
 public slots:
     void timer_timeout();
     void open_strategy();
+    void capture_changed();
 
 private:
     struct strategy_info
@@ -36,8 +39,6 @@ private:
         std::unique_ptr<holdem_abstraction> abstraction_;
     };
 
-    void create_menus();
-
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<strategy_info>> strategy_infos_;
     QTimer* timer_;
@@ -45,4 +46,7 @@ private:
     QLabel* strategy_label_;
     QLabel* capture_label_;
     QLabel* decision_label_;
+    QLineEdit* class_filter_;
+    QLineEdit* title_filter_;
+    std::unique_ptr<window_manager> window_manager_;
 };
