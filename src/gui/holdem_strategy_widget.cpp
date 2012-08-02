@@ -94,8 +94,6 @@ void holdem_strategy_widget::update(const holdem_abstraction& abs, const std::ar
             else
                 bucket = abs.get_bucket(i, j);
 
-            int max_action = -1;
-            double max_p = -1;
             double fold_p = 0;
             double call_p = 0;
             double raise_p = 0;
@@ -103,12 +101,6 @@ void holdem_strategy_widget::update(const holdem_abstraction& abs, const std::ar
             for (int action = 0; action < actions; ++action)
             {
                 const double p = strategy.get(state_id, action, bucket);
-
-                if (p >= max_p)
-                {
-                    max_action = action;
-                    max_p = p;
-                }
 
                 if (action == 0)
                     fold_p = p;
@@ -118,16 +110,7 @@ void holdem_strategy_widget::update(const holdem_abstraction& abs, const std::ar
                     raise_p += p;
             }
 
-            QColor color(Qt::black);
-
-            if (max_action == 0)
-                color.setRgbF(0, 0, 1, fold_p);
-            else if (max_action == 1)
-                color.setRgbF(0, 1, 0, call_p);
-            else if (max_action > 1)
-                color.setRgbF(1, 0, 0, raise_p);
-
-            actions_[i][j] = color;
+            actions_[i][j] = QColor::fromRgbF(raise_p, call_p, fold_p);
         }
     }
 
