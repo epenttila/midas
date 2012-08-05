@@ -76,6 +76,8 @@ const holdem_preflop_lut::data_type& holdem_preflop_lut::get(int c0, int c1) con
 
 int holdem_preflop_lut::get_key(int c0, int c1) const
 {
+    assert(c0 != c1);
+
     const std::pair<int, int> ranks = std::minmax(get_rank(c0), get_rank(c1));
     const int suits[2] = {get_suit(c0), get_suit(c1)};
 
