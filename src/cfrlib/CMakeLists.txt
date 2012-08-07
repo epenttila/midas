@@ -13,6 +13,9 @@ set(cfrlib_SOURCES
     kuhn_state.h
     nl_holdem_state.h
     nl_holdem_state.ipp
+    pcs_cfr_solver.h
+    pcs_cfr_solver.ipp
+    solver_base.h
     strategy.cpp
     strategy.h
 )

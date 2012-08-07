@@ -14,19 +14,19 @@
 class strategy;
 
 template<class T, class U>
-class cfr_solver : public solver_base, private boost::noncopyable
+class pcs_cfr_solver : public solver_base, private boost::noncopyable
 {
 public:
     static const int ACTIONS = U::ACTIONS;
     static const int ROUNDS = T::ROUNDS;
 
     typedef typename U game_state;
-    typedef typename T::bucket_t bucket_t;
+    typedef typename T::abstraction_t::bucket_type bucket_t;
     typedef typename T::evaluator_t evaluator_t;
     typedef typename T::abstraction_t abstraction_t;
 
-    cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr<abstraction_t> abstraction);
-    ~cfr_solver();
+    pcs_cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr<abstraction_t> abstraction);
+    ~pcs_cfr_solver();
     virtual void solve(const std::uint64_t iterations);
     virtual void save_strategy(const std::string& filename) const;
     virtual void init_storage();
@@ -40,6 +40,7 @@ public:
 
 private:
     static const double EPSILON;
+    static const int PRIVATE = T::PRIVATE_OUTCOMES;
 
     struct data_type
     {
@@ -48,7 +49,14 @@ private:
         double strategy;
     };
 
-    double update(const game_state& state, const bucket_t& buckets, std::array<double, 2>& reach, const int result);
+    typedef typename T::buckets_type buckets_type;
+    typedef typename T::results_type results_type;
+    typedef typename T::public_type public_type;
+    typedef std::array<double, PRIVATE> ev_type;
+    typedef std::array<std::array<double, 2>, PRIVATE> reach_type;
+
+    void update(const game_state& state, const buckets_type& buckets, const reach_type& reach,
+        const results_type& results, ev_type& total_ev);
     void get_regret_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out) const;
     void get_average_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out) const;
     double get_accumulated_regret(const int player) const;
@@ -66,4 +74,4 @@ private:
     boost::signals2::signal<void (std::uint64_t)> progressed_;
 };
 
-#include "cfr_solver.ipp"
+#include "pcs_cfr_solver.ipp"
