@@ -112,7 +112,11 @@ const std::pair<float, float>& holdem_turn_lut::get(int c0, int c1, int b0, int 
 
 int holdem_turn_lut::get_key(const int c0, const int c1, const int b0, const int b1, const int b2, const int b3) const
 {
-    assert(c0 != c1 && c1 != b0 && b0 != b1 && b1 != b2 && b2 != b3);
+    assert(c0 != c1 && c0 != b0 && c0 != b1 && c0 != b2 && c0 != b3
+        && c1 != b0 && c1 != b1 && c1 != b2 && c1 != b3
+        && b0 != b1 && b0 != b2 && b0 != b3
+        && b1 != b2 && b1 != b3
+        && b2 != b3);
 
     const int board_cards = 4;
     std::array<int, board_cards> board = {{b0, b1, b2, b3}};

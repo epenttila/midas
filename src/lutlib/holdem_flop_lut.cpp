@@ -99,7 +99,10 @@ const std::pair<float, float>& holdem_flop_lut::get(int c0, int c1, int b0, int 
 
 int holdem_flop_lut::get_key(const int c0, const int c1, const int b0, const int b1, const int b2) const
 {
-    assert(c0 != c1 && c1 != b0 && b0 != b1 && b1 != b2);
+    assert(c0 != c1 && c0 != b0 && c0 != b1 && c0 != b2
+        && c1 != b0 && c1 != b1 && c1 != b2
+        && b0 != b1 && b0 != b2
+        && b1 != b2);
 
     const int board_cards = 3;
     std::array<int, board_cards> board = {{b0, b1, b2}};
