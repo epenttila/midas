@@ -143,10 +143,10 @@ int main(int argc, char* argv[])
         solver->connect_progressed([&](std::uint64_t i) {
             using namespace boost::posix_time;
             const auto d = second_clock::universal_time() - start_time;
-            const int ips = d.total_seconds() > 0 ? int(i / d.total_seconds()) : 0;
+            const double ips = d.total_milliseconds() > 0 ? i / double(d.total_milliseconds()) * 1000.0 : 0;
             const auto eta = seconds(ips > 0 ? int((iterations - i) / ips) : 0);
             const double pct = double(i) / iterations * 100.0;
-            std::cout << boost::format("%d/%d (%.1f%%) ips: %d elapsed: %s eta: %s\n")
+            std::cout << boost::format("%d/%d (%.1f%%) ips: %.1f elapsed: %s eta: %s\n")
                 % i % iterations % pct % ips % to_simple_string(d) % to_simple_string(eta);
         });
 
