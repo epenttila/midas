@@ -5,6 +5,8 @@ set(evallib_SOURCES
     holdem_evaluator.h
     kuhn_evaluator.cpp
     kuhn_evaluator.h
+    leduc_evaluator.cpp
+    leduc_evaluator.h
     twoplustwo_evaluator.cpp
     twoplustwo_evaluator.h
 )

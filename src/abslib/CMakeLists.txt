@@ -5,6 +5,8 @@ set(abslib_SOURCES
     holdem_abstraction.h
     kuhn_abstraction.cpp
     kuhn_abstraction.h
+    leduc_abstraction.cpp
+    leduc_abstraction.h
 )
 
 add_library(abslib ${abslib_SOURCES})

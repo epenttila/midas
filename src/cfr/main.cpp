@@ -18,6 +18,10 @@
 #include "cfrlib/holdem_state.h"
 #include "cfrlib/nl_holdem_state.h"
 #include "cfrlib/strategy.h"
+#include "cfrlib/pcs_cfr_solver.h"
+#include "cfrlib/leduc_state.h"
+#include "abslib/leduc_abstraction.h"
+#include "cfrlib/leduc_game.h"
 
 namespace
 {
@@ -41,6 +45,7 @@ int main(int argc, char* argv[])
         std::string game;
         std::uint64_t iterations;
         std::string abstraction;
+        std::string variant;
 
         po::options_description desc("Options");
         desc.add_options()
@@ -50,6 +55,7 @@ int main(int argc, char* argv[])
             ("iterations", po::value<std::uint64_t>(&iterations)->required(), "number of iterations")
             ("strategy-file", po::value<std::string>(&strategy_file)->required(), "strategy file")
             ("state-file", po::value<std::string>(&state_file), "state file")
+            ("variant", po::value<std::string>(&variant)->required(), "solver variant")
             ;
 
         po::variables_map vm;
@@ -76,12 +82,23 @@ int main(int argc, char* argv[])
         std::regex nlhe_regex("nlhe\\.([a-z]+)\\.([0-9]+)");
         std::smatch match;
 
-        // TODO leduc poker
         if (game == "kuhn")
         {
             std::unique_ptr<kuhn_state> state(new kuhn_state());
             std::unique_ptr<kuhn_abstraction> abs(new kuhn_abstraction);
-            solver.reset(new cfr_solver<kuhn_game, kuhn_state>(std::move(state), std::move(abs)));
+
+            if (variant == "cs")
+                solver.reset(new cfr_solver<kuhn_game, kuhn_state>(std::move(state), std::move(abs)));
+        }
+        else if (game == "leduc")
+        {
+            std::unique_ptr<leduc_state> state(new leduc_state());
+            std::unique_ptr<leduc_abstraction> abs(new leduc_abstraction);
+
+            if (variant == "cs")
+                solver.reset(new cfr_solver<leduc_game, leduc_state>(std::move(state), std::move(abs)));
+            else if (variant == "pcs")
+                solver.reset(new pcs_cfr_solver<leduc_game, leduc_state>(std::move(state), std::move(abs)));
         }
         else if (game == "holdem")
         {

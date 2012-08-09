@@ -11,6 +11,10 @@ set(cfrlib_SOURCES
     kuhn_game.h
     kuhn_state.cpp
     kuhn_state.h
+    leduc_game.cpp
+    leduc_game.h
+    leduc_state.cpp
+    leduc_state.h
     nl_holdem_state.h
     nl_holdem_state.ipp
     pcs_cfr_solver.h

@@ -53,19 +53,22 @@ void pcs_cfr_solver<T, U>::solve(const std::uint64_t iterations)
         T g;
 
         buckets_type buckets;
-        results_type results;
+        public_type pub;
 
         // TODO make unsigned when OpenMP 3.0 is supported
 #pragma omp for schedule(dynamic)
         for (std::int64_t i = 0; i < std::int64_t(iterations); ++i)
         {
-            g.play_public(evaluator_, *abstraction_, buckets, results);
+            g.play_public(*abstraction_, pub, buckets);
 
-            ev_type ev = {{}};
-            reach_type reach;
-            std::for_each(reach.begin(), reach.end(), [](reach_type::value_type& v) { v.fill(1.0); });
+            reach_type reach_player;
+            reach_type reach_opponent;
 
-            update(*states_[0], buckets, reach, results, ev);
+            reach_player.fill(1.0);
+            reach_opponent.fill(1.0);
+
+            update(*states_[0], 0, pub, buckets, reach_player, reach_opponent);
+            update(*states_[0], 1, pub, buckets, reach_player, reach_opponent);
 
 #pragma omp atomic
             ++iteration;
@@ -86,120 +89,118 @@ void pcs_cfr_solver<T, U>::solve(const std::uint64_t iterations)
 }
 
 template<class T, class U>
-void pcs_cfr_solver<T, U>::update(const game_state& state, const buckets_type& buckets, const reach_type& reaches,
-    const results_type& results, ev_type& total_ev)
+typename pcs_cfr_solver<T, U>::ev_type pcs_cfr_solver<T, U>::update(const game_state& state, const int train_player,
+    const public_type& pub, const buckets_type& buckets, const reach_type& reach_player,
+    const reach_type& reach_opponent)
 {
-    const int player = state.get_player();
-    const int opponent = player ^ 1;
+    if (state.is_terminal())
+    {
+        results_type results;
+        T::get_results(evaluator_, pub, reach_opponent, results);
+
+        ev_type utility = {{}};
+
+        for (int infoset = 0; infoset < PRIVATE; ++infoset)
+        {
+            const auto& r = results[infoset];
+
+            utility[infoset] = r.win * state.get_terminal_ev(1) + r.tie * state.get_terminal_ev(0) + r.lose * state.get_terminal_ev(-1);
+
+            // TODO fix this in get_terminal_ev
+            if (state.get_action() == 0 && train_player == 1)
+                utility[infoset] = -utility[infoset];
+        }
+
+        return utility;
+    }
+
+    // lookup infosets
     const buckets_type::value_type& round_buckets = buckets[state.get_round()];
 
-    std::array<std::array<double, ACTIONS>, PRIVATE> action_probabilities;
-    std::memset(&action_probabilities[0], 0, ACTIONS * PRIVATE * sizeof(double));
+    // regret matching
+    std::array<std::array<double, PRIVATE>, ACTIONS> current_strategy = {{}};
 
-    for (int p = 0; p < PRIVATE; ++p)
+    for (int infoset = 0; infoset < PRIVATE; ++infoset)
     {
-        const int bucket = round_buckets[p];
+        const int bucket = round_buckets[infoset];
 
         if (bucket == -1)
             continue;
 
         assert(bucket >= 0 && bucket < abstraction_->get_bucket_count(state.get_round()));
 
-        get_regret_strategy(state, bucket, action_probabilities[p]);
-
-        const reach_type::value_type& reach = reaches[p];
-
-        if (reach[player] > EPSILON)
-        {
-            auto data = get_data(state.get_id(), bucket, 0);
-
-            for (int i = 0; i < ACTIONS; ++i)
-            {
-                assert(state.get_child(i) || action_probabilities[p][i] == 0);
-
-                // update average strategy
-                if (action_probabilities[p][i] > EPSILON)
-                    data[i].strategy += reach[player] * action_probabilities[p][i];
-            }
-        }
+        std::array<double, ACTIONS> s;
+        get_regret_strategy(state, bucket, s);
+        
+        for (int action = 0; action < ACTIONS; ++action)
+            current_strategy[action][infoset] = s[action];
     }
 
-    std::array<ev_type, ACTIONS> action_ev;
-    std::memset(&action_ev[0], 0, ACTIONS * PRIVATE * sizeof(double));
+    ev_type utility = {{}};
+    std::array<ev_type, ACTIONS> action_utility = {{}};
 
-    for (int i = 0; i < ACTIONS; ++i)
+    for (int action = 0; action < ACTIONS; ++action)
     {
-        // handle next state
-        const game_state* next = state.get_child(i);
+        const game_state* next = state.get_child(action);
 
         if (!next)
-            continue; // impossible action
+            continue;
 
-        if (next->is_terminal())
+        if (state.get_player() == train_player)
         {
-            for (int hole = 0; hole < PRIVATE; ++hole)
-            {
-                const results_type::value_type& result = results[hole];
+            reach_type new_reach;
 
-                if (result.win == -1)
-                    continue;
+            for (int infoset = 0; infoset < PRIVATE; ++infoset)
+                new_reach[infoset] = reach_player[infoset] * current_strategy[action][infoset];
 
-                action_ev[i][hole] =
-                    (result.win * next->get_terminal_ev(1)
-                    + result.tie * next->get_terminal_ev(0)
-                    + result.lose * next->get_terminal_ev(-1))
-                    / double(result.win + result.tie + result.lose);
-            }
+            const auto u = update(*next, train_player, pub, buckets, new_reach, reach_opponent);
+            action_utility[action] = u;
+
+            for (int infoset = 0; infoset < PRIVATE; ++infoset)
+                utility[infoset] += current_strategy[action][infoset] * u[infoset];
         }
         else
         {
-            reach_type new_reaches;
+            reach_type new_reach;
 
-            for (int p = 0; p < PRIVATE; ++p)
-            {
-                new_reaches[p][player] = reaches[p][player] * action_probabilities[p][i];
-                new_reaches[p][opponent] = reaches[p][opponent];
-            }
+            for (int infoset = 0; infoset < PRIVATE; ++infoset)
+                new_reach[infoset] = reach_opponent[infoset] * current_strategy[action][infoset];
 
-            update(*next, buckets, new_reaches, results, action_ev[i]);
+            const auto u = update(*next, train_player, pub, buckets, reach_player, new_reach);
+
+            for (int infoset = 0; infoset < PRIVATE; ++infoset)
+                utility[infoset] += u[infoset];
         }
-
-        for (int p = 0; p < PRIVATE; ++p)
-            total_ev[p] += action_probabilities[p][i] * action_ev[i][p];
     }
 
-    // update regrets
-    for (int p = 0; p < PRIVATE; ++p)
+    if (state.get_player() == train_player)
     {
-        const int bucket = round_buckets[p];
-
-        if (bucket == -1)
-            continue;
-
-        const reach_type::value_type& reach = reaches[p];
-
-        if (reach[opponent] > EPSILON)
+        for (int infoset = 0; infoset < PRIVATE; ++infoset)
         {
+            const int bucket = round_buckets[infoset];
+
+            if (bucket == -1)
+                continue;
+
             auto data = get_data(state.get_id(), bucket, 0);
 
-            for (int i = 0; i < ACTIONS; ++i)
+            for (int action = 0; action < ACTIONS; ++action)
             {
-                if (!state.get_child(i))
+                // update regrets
+                if (!state.get_child(action))
                     continue;
 
-                // counterfactual regret
-                double delta_regret = (action_ev[i][p] - total_ev[p]) * reach[opponent];
+                data[action].regret += action_utility[action][infoset] - utility[infoset];
 
-                if (player == 1)
-                    delta_regret = -delta_regret; // invert sign for P2
+                // update average strategy
+                assert(state.get_child(action) || current_strategy[action][infoset] == 0);
 
-                data[i].regret += delta_regret;
-
-                if (delta_regret > EPSILON)
-                    accumulated_regret_[player] += delta_regret;
+                data[action].strategy += reach_player[infoset] * current_strategy[action][infoset];
             }
         }
     }
+
+    return utility;
 }
 
 template<class T, class U>
