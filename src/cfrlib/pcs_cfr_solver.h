@@ -53,11 +53,11 @@ private:
     typedef typename T::buckets_type buckets_type;
     typedef typename T::results_type results_type;
     typedef typename T::public_type public_type;
-    typedef std::array<double, PRIVATE> ev_type;
-    typedef std::array<double, PRIVATE> reach_type;
+    typedef std::array<std::array<double, PRIVATE>, 2> ev_type;
+    typedef std::array<std::array<double, PRIVATE>, 2> reach_type;
 
-    ev_type update(const game_state& state, int train_player, const public_type& pub, const buckets_type& buckets,
-        const reach_type& reach_player, const reach_type& reach_opponent);
+    ev_type update(const game_state& state, const public_type& pub, const buckets_type& buckets,
+        const reach_type& reach);
     void get_regret_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out) const;
     void get_average_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out) const;
     double get_accumulated_regret(const int player) const;
