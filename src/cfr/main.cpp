@@ -46,6 +46,7 @@ int main(int argc, char* argv[])
         std::uint64_t iterations;
         std::string abstraction;
         std::string variant;
+        std::string debug_file;
 
         po::options_description desc("Options");
         desc.add_options()
@@ -56,6 +57,7 @@ int main(int argc, char* argv[])
             ("strategy-file", po::value<std::string>(&strategy_file)->required(), "strategy file")
             ("state-file", po::value<std::string>(&state_file), "state file")
             ("variant", po::value<std::string>(&variant)->required(), "solver variant")
+            ("debug-file", po::value<std::string>(&debug_file), "debug output file")
             ;
 
         po::variables_map vm;
@@ -177,6 +179,13 @@ int main(int argc, char* argv[])
         {
             std::cout << "Saving state to: " << state_file << "\n";
             solver->save_state(state_file);
+        }
+
+        if (!debug_file.empty())
+        {
+            std::cout << "Saving debug output to: " << debug_file << "\n";
+            std::ofstream f(debug_file);
+            f << *solver;
         }
 
         return 0;

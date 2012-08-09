@@ -338,4 +338,26 @@ const typename cfr_solver<T, U>::data_type* cfr_solver<T, U>::get_data(std::size
 }
 
 template<class T, class U>
+void cfr_solver<T, U>::print(std::ostream& os) const
+{
+    for (auto it = states_.begin(); it != states_.end(); ++it)
+    {
+        const auto& state = **it;
+
+        for (int bucket = 0; bucket < abstraction_->get_bucket_count(state.get_round()); ++bucket)
+        {
+            os << state << ":" << bucket << ": ";
+
+            std::array<double, ACTIONS> p;
+            get_average_strategy(state, bucket, p);
+
+            for (int action = 0; action < p.size(); ++action)
+                os << (action > 0 ? ", " : "") << p[action];
+
+            os << "\n";
+        }
+    }
+}
+
+template<class T, class U>
 const double cfr_solver<T, U>::EPSILON = 1e-7;

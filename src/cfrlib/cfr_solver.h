@@ -37,6 +37,7 @@ public:
     virtual void connect_progressed(const std::function<void (std::uint64_t)>& f);
     virtual void save_state(const std::string& filename) const;
     virtual void load_state(const std::string& filename);
+    virtual void print(std::ostream& os) const;
 
 private:
     static const double EPSILON;
