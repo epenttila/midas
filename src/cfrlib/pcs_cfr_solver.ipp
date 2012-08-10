@@ -137,12 +137,18 @@ void pcs_cfr_solver<T, U>::update(const game_type& game, const game_state& state
             continue;
 
         reach_type new_reach;
+        std::array<double, 2> total_reach = {0, 0};
 
         for (int infoset = 0; infoset < PRIVATE; ++infoset)
         {
             new_reach[player][infoset] = reach[player][infoset] * current_strategy[action][infoset];
             new_reach[opponent][infoset] = reach[opponent][infoset];
+            total_reach[player] += new_reach[player][infoset];
+            total_reach[opponent] += new_reach[opponent][infoset];
         }
+
+        if (total_reach[player] < EPSILON && total_reach[opponent] < EPSILON)
+            continue;
 
         if (next->is_terminal())
         {
