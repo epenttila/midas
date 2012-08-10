@@ -14,7 +14,9 @@ namespace
     }
 }
 
-holdem_game::holdem_game()
+holdem_game::holdem_game(const evaluator_t& evaluator, const abstraction_t& abstraction)
+    : evaluator_(evaluator)
+    , abstraction_(abstraction)
 {
     std::random_device rd;
     engine_.seed(rd());
@@ -23,19 +25,24 @@ holdem_game::holdem_game()
 
     for (int i = 0; i < 52; ++i)
     {
-        for (int j = i + 1; j < 52; ++j)
+        for (int j = 0; j < 52; ++j)
         {
-            if (i == j)
-                continue;
+            int index = -1;
 
-            assert(get_hole_index(i, j) == get_hole_index(j, i));
+            if (i != j)
+            {
+                assert(get_hole_index(i, j) == get_hole_index(j, i));
+                index = get_hole_index(i, j);
+                hole_cards_[index] = std::make_pair(j, i);
+            }
 
-            hole_cards_[get_hole_index(i, j)] = std::make_pair(j, i);
+            reverse_hole_cards_[i][j] = index;
+            reverse_hole_cards_[j][i] = index;
         }
     }
 }
 
-int holdem_game::play(const evaluator_t& eval, const abstraction_t& abs, bucket_t* buckets)
+int holdem_game::play(bucket_t* buckets)
 {
     partial_shuffle(deck_, 9, engine_); // 4 hole, 5 board
 
@@ -55,41 +62,29 @@ int holdem_game::play(const evaluator_t& eval, const abstraction_t& abs, bucket_
        
     for (int k = 0; k < 2; ++k)
     {
-        abs.get_buckets(hands[k][0], hands[k][1], b0, b1, b2, b3, b4, &(*buckets)[k]);
-        value[k] = eval.get_hand_value(hands[k][0], hands[k][1], b0, b1, b2, b3, b4);
+        abstraction_.get_buckets(hands[k][0], hands[k][1], b0, b1, b2, b3, b4, &(*buckets)[k]);
+        value[k] = evaluator_.get_hand_value(hands[k][0], hands[k][1], b0, b1, b2, b3, b4);
     }
 
     return value[0] > value[1] ? 1 : (value[0] < value[1] ? -1 : 0);
 }
 
-void holdem_game::play_public(const evaluator_t& eval, const abstraction_t& abs, buckets_type& buckets,
-    results_type& results)
-{
-    public_type pub;
-    get_public_sample(pub);
-    get_buckets(abs, pub, buckets);
-    get_results(eval, pub, results);
-}
-
-void holdem_game::get_public_sample(public_type& board)
+void holdem_game::play_public(buckets_type& buckets)
 {
     partial_shuffle(deck_, 5, engine_);
-    board[0] = deck_[deck_.size() - 1];
-    board[1] = deck_[deck_.size() - 2];
-    board[2] = deck_[deck_.size() - 3];
-    board[3] = deck_[deck_.size() - 4];
-    board[4] = deck_[deck_.size() - 5];
-}
+    board_[0] = deck_[deck_.size() - 1];
+    board_[1] = deck_[deck_.size() - 2];
+    board_[2] = deck_[deck_.size() - 3];
+    board_[3] = deck_[deck_.size() - 4];
+    board_[4] = deck_[deck_.size() - 5];
 
-void holdem_game::get_buckets(const abstraction_t& abs, const public_type& pub, buckets_type& buckets) const
-{
     for (int i = 0; i < PRIVATE_OUTCOMES; ++i)
     {
         const int c0 = hole_cards_[i].first;
         const int c1 = hole_cards_[i].second;
 
-        if (c0 == pub[0] || c0 == pub[1] || c0 == pub[2] || c0 == pub[3] || c0 == pub[4]
-            || c1 == pub[0] || c1 == pub[1] || c1 == pub[2] || c1 == pub[3] || c1 == pub[4])
+        if (c0 == board_[0] || c0 == board_[1] || c0 == board_[2] || c0 == board_[3] || c0 == board_[4]
+            || c1 == board_[0] || c1 == board_[1] || c1 == board_[2] || c1 == board_[3] || c1 == board_[4])
         {
             for (int j = 0; j < ROUNDS; ++j)
                 buckets[j][i] = -1;
@@ -97,18 +92,12 @@ void holdem_game::get_buckets(const abstraction_t& abs, const public_type& pub, 
         else
         {
             abstraction_t::bucket_type b;
-            abs.get_buckets(hole_cards_[i].first, hole_cards_[i].second, pub[0], pub[1], pub[2], pub[3], pub[4], &b);
+            abstraction_.get_buckets(hole_cards_[i].first, hole_cards_[i].second, board_[0], board_[1], board_[2], board_[3], board_[4], &b);
 
             for (int j = 0; j < ROUNDS; ++j)
                 buckets[j][i] = b[j];
         }
     }
-}
-
-void holdem_game::get_results(const evaluator_t& eval, const public_type& pub, results_type& results) const
-{
-    std::array<int, PRIVATE_OUTCOMES> ranks;
-    std::array<std::pair<int, int>, PRIVATE_OUTCOMES> sorted_ranks;
 
     for (int i = 0; i < PRIVATE_OUTCOMES; ++i)
     {
@@ -116,103 +105,151 @@ void holdem_game::get_results(const evaluator_t& eval, const public_type& pub, r
         const int c1 = hole_cards_[i].second;
         assert(c0 != c1);
 
-        if (c0 == pub[0] || c0 == pub[1] || c0 == pub[2] || c0 == pub[3] || c0 == pub[4]
-            || c1 == pub[0] || c1 == pub[1] || c1 == pub[2] || c1 == pub[3] || c1 == pub[4])
+        if (c0 == board_[0] || c0 == board_[1] || c0 == board_[2] || c0 == board_[3] || c0 == board_[4]
+            || c1 == board_[0] || c1 == board_[1] || c1 == board_[2] || c1 == board_[3] || c1 == board_[4])
         {
-            ranks[i] = -1;
+            ranks_[i] = -1;
         }
         else
         {
-            ranks[i] = eval.get_hand_value(c0, c1, pub[0], pub[1], pub[2], pub[3], pub[4]);
+            ranks_[i] = evaluator_.get_hand_value(c0, c1, board_[0], board_[1], board_[2], board_[3], board_[4]);
         }
 
-        sorted_ranks[i] = std::make_pair(ranks[i], i);
+        sorted_ranks_[i] = std::make_pair(ranks_[i], i);
     }
 
-    std::sort(sorted_ranks.begin(), sorted_ranks.end());
+    std::sort(sorted_ranks_.begin(), sorted_ranks_.end());
 
-    int invalid_rank_hole = 0;
+    first_rank_ = 0;
 
-    for (; invalid_rank_hole < PRIVATE_OUTCOMES; ++invalid_rank_hole)
+    for (; first_rank_ < PRIVATE_OUTCOMES; ++first_rank_)
     {
-        if (sorted_ranks[invalid_rank_hole].first != -1)
+        if (sorted_ranks_[first_rank_].first != -1)
             break;
     }
 
-    int next_rank_hole = 0;
-    int prev_rank_hole = 0;
+}
 
-    for (auto i = 0; i < sorted_ranks.size(); ++i)
+void holdem_game::get_results(const int action, const reaches_type& reaches, results_type& results) const
+{
+    if (action == 0) // assume fold is 0
     {
-        const auto rank = sorted_ranks[i].first;
-        const auto hole = sorted_ranks[i].second;
+		double opsum = 0;
+        std::array<double, 52> cr = {{}};
 
-        if (rank == -1)
+		for (int i = first_rank_; i < PRIVATE_OUTCOMES; ++i)
+		{
+            const int ohole = sorted_ranks_[i].second;
+			cr[hole_cards_[ohole].first] += reaches[ohole];
+			cr[hole_cards_[ohole].second] += reaches[ohole];
+			opsum += reaches[ohole];
+		}
+
+		for (int i = first_rank_; i < PRIVATE_OUTCOMES; ++i)
+		{
+            const int phole = sorted_ranks_[i].second;
+			results[phole] = opsum - cr[hole_cards_[phole].first] - cr[hole_cards_[phole].second] + reaches[phole];
+		}
+
+#if !defined(NDEBUG)
+        results_type test_results = {{}};
+
+        for (int i = 0; i < PRIVATE_OUTCOMES; ++i)
         {
-            results[hole].win = -1;
-            results[hole].tie = -1;
-            results[hole].lose = -1;
-            continue;
-        }
+            if (ranks_[i] == -1)
+                continue;
 
-        for (; prev_rank_hole < PRIVATE_OUTCOMES; ++prev_rank_hole)
-        {
-            if (sorted_ranks[prev_rank_hole].first == rank)
-                break;
-        }
-
-        for (; next_rank_hole < PRIVATE_OUTCOMES; ++next_rank_hole)
-        {
-            if (sorted_ranks[next_rank_hole].first > rank)
-                break;
-        }
-                
-        int win = prev_rank_hole - invalid_rank_hole;
-        int tie = next_rank_hole - prev_rank_hole;
-        int lose = PRIVATE_OUTCOMES - next_rank_hole;
-
-        const int c0 = hole_cards_[hole].first;
-        const int c1 = hole_cards_[hole].second;
-
-        for (int i = 0; i < 52; ++i)
-        {
-            const int x = c0 == i ? -1 : get_hole_index(c0, i);
-            const int y = c1 == i ? -1 : get_hole_index(c1, i);
-
-            if (x != -1 && ranks[x] != -1)
+            for (int j = 0; j < PRIVATE_OUTCOMES; ++j)
             {
-                assert(x == get_hole_index(hole_cards_[x].first, hole_cards_[x].second));
-            
-                if (ranks[hole] > ranks[x])
-                    --win;
-                else if (ranks[hole] < ranks[x])
-                    --lose;
-                else
-                    --tie;
+                if (i == j || ranks_[j] == -1)
+                    continue;
+
+                if (hole_cards_[i].first == hole_cards_[j].first
+                    || hole_cards_[i].first == hole_cards_[j].second
+                    || hole_cards_[i].second == hole_cards_[j].first
+                    || hole_cards_[i].second == hole_cards_[j].second)
+                {
+                    continue;
+                }
+
+                test_results[i] += reaches[j];
             }
 
-            if (y != -1 && ranks[y] != -1)
-            {
-                assert(y == get_hole_index(hole_cards_[y].first, hole_cards_[y].second));
-    
-                if (ranks[hole] > ranks[y])
-                    --win;
-                else if (ranks[hole] < ranks[y])
-                    --lose;
-                else
-                    --tie;
-            }
+            assert(std::abs(results[i] - test_results[i]) < 0.00001);
         }
+#endif
+    }
+    else
+    {
+        std::array<double, 52> wincr = {{}};
+	    double winsum = 0;
+	    int j = first_rank_;
 
-        ++tie; // our cards (c0, c1) were subtracted twice, add one back
+	    for (int i = first_rank_; i < PRIVATE_OUTCOMES; ++i)
+	    {
+            const int phole = sorted_ranks_[i].second;
 
-        assert(win >= 0 && win < PRIVATE_OUTCOMES);
-        assert(tie >= 0 && tie < PRIVATE_OUTCOMES);
-        assert(lose >= 0 && lose < PRIVATE_OUTCOMES);
-        assert(win + tie + lose < PRIVATE_OUTCOMES);
+		    while (sorted_ranks_[j].first < sorted_ranks_[i].first)
+		    {
+                const int ohole = sorted_ranks_[j].second;
+			    winsum += reaches[ohole];
+			    wincr[hole_cards_[ohole].first] += reaches[ohole];
+			    wincr[hole_cards_[ohole].second] += reaches[ohole];
+			    ++j;
+		    }
 
-        results[hole].win = win;
-        results[hole].tie = tie;
-        results[hole].lose = lose;
+		    results[phole] = winsum - wincr[hole_cards_[phole].first] - wincr[hole_cards_[phole].second];
+	    }
+
+        std::array<double, 52> losecr = {{}};
+	    double losesum = 0;
+	    j = PRIVATE_OUTCOMES - 1;
+
+	    for (int i = PRIVATE_OUTCOMES - 1; i >= first_rank_; --i)
+	    {
+            const int phole = sorted_ranks_[i].second;
+
+		    while (sorted_ranks_[j].first > sorted_ranks_[i].first)
+		    {
+                const int ohole = sorted_ranks_[j].second;
+			    losesum += reaches[ohole];
+			    losecr[hole_cards_[ohole].first] += reaches[ohole];
+			    losecr[hole_cards_[ohole].second] += reaches[ohole];
+			    --j;
+		    }
+
+		    results[phole] -= losesum - losecr[hole_cards_[phole].first] - losecr[hole_cards_[phole].second];
+	    }
+
+#if !defined(NDEBUG)
+        results_type test_results = {{}};
+
+        for (int i = 0; i < PRIVATE_OUTCOMES; ++i)
+        {
+            if (ranks_[i] == -1)
+                continue;
+
+            for (int j = 0; j < PRIVATE_OUTCOMES; ++j)
+            {
+                if (i == j || ranks_[j] == -1)
+                    continue;
+
+                if (hole_cards_[i].first == hole_cards_[j].first
+                    || hole_cards_[i].first == hole_cards_[j].second
+                    || hole_cards_[i].second == hole_cards_[j].first
+                    || hole_cards_[i].second == hole_cards_[j].second)
+                {
+                    continue;
+                }
+
+                if (ranks_[i] > ranks_[j])
+                    test_results[i] += reaches[j];
+                else if (ranks_[i] < ranks_[j])
+                    test_results[i] -= reaches[j];
+            }
+
+            assert(std::abs(results[i] - test_results[i]) < 0.00001);
+        }
+#endif
     }
 }

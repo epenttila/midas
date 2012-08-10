@@ -50,22 +50,21 @@ void pcs_cfr_solver<T, U>::solve(const std::uint64_t iterations)
 
 #pragma omp parallel
     {
-        T g;
+        T g(evaluator_, *abstraction_);
 
         buckets_type buckets;
-        public_type pub;
 
         // TODO make unsigned when OpenMP 3.0 is supported
 #pragma omp for schedule(dynamic)
         for (std::int64_t i = 0; i < std::int64_t(iterations); ++i)
         {
-            g.play_public(*abstraction_, pub, buckets);
+            g.play_public(buckets);
 
             reach_type reach;
             reach[0].fill(1.0);
             reach[1].fill(1.0);
 
-            update(*states_[0], pub, buckets, reach);
+            update(g, *states_[0], buckets, reach);
 
 #pragma omp atomic
             ++iteration;
@@ -86,8 +85,8 @@ void pcs_cfr_solver<T, U>::solve(const std::uint64_t iterations)
 }
 
 template<class T, class U>
-typename pcs_cfr_solver<T, U>::ev_type pcs_cfr_solver<T, U>::update(const game_state& state,
-    const public_type& pub, const buckets_type& buckets, const reach_type& reach)
+typename pcs_cfr_solver<T, U>::ev_type pcs_cfr_solver<T, U>::update(const game_type& game, const game_state& state,
+    const buckets_type& buckets, const reach_type& reach)
 {
     const int player = state.get_player();
     const int opponent = player ^ 1;
@@ -151,17 +150,14 @@ typename pcs_cfr_solver<T, U>::ev_type pcs_cfr_solver<T, U>::update(const game_s
             const int new_player = next->get_player();
             const int new_opponent = new_player ^ 1;
 
-            std::array<results_type, 2> results;
-            T::get_results(evaluator_, pub, new_reach[new_opponent], results[new_player]);
-            T::get_results(evaluator_, pub, new_reach[new_player], results[new_opponent]);
+            std::array<results_type, 2> results = {{}};
+            game.get_results(action, new_reach[new_opponent], results[new_player]);
+            game.get_results(action, new_reach[new_player], results[new_opponent]);
 
             for (int infoset = 0; infoset < PRIVATE; ++infoset)
             {
-                const auto& r0 = results[new_player][infoset];
-                const auto& r1 = results[new_opponent][infoset];
-
-                action_utility[action][new_player][infoset] = r0.win * next->get_terminal_ev(1) + r0.tie * next->get_terminal_ev(0) + r0.lose * next->get_terminal_ev(-1);
-                action_utility[action][new_opponent][infoset] = r1.win * next->get_terminal_ev(1) + r1.tie * next->get_terminal_ev(0) + r1.lose * next->get_terminal_ev(-1);
+                action_utility[action][new_player][infoset] = results[new_player][infoset] * next->get_terminal_ev(1);
+                action_utility[action][new_opponent][infoset] = results[new_opponent][infoset] * next->get_terminal_ev(1);
 
                 // TODO fix get_terminal_ev to return consistent values
                 if (action == 0)
@@ -172,7 +168,7 @@ typename pcs_cfr_solver<T, U>::ev_type pcs_cfr_solver<T, U>::update(const game_s
         }
         else
         {
-            action_utility[action] = update(*next, pub, buckets, new_reach);
+            action_utility[action] = update(game, *next, buckets, new_reach);
         }
 
         for (int infoset = 0; infoset < PRIVATE; ++infoset)

@@ -106,7 +106,11 @@ int main(int argc, char* argv[])
         {
             std::unique_ptr<holdem_state> state(new holdem_state());
             std::unique_ptr<holdem_abstraction> abs(new holdem_abstraction(abstraction));
-            solver.reset(new cfr_solver<holdem_game, holdem_state>(std::move(state), std::move(abs)));
+
+            if (variant == "cs")
+                solver.reset(new cfr_solver<holdem_game, holdem_state>(std::move(state), std::move(abs)));
+            else
+                solver.reset(new pcs_cfr_solver<holdem_game, holdem_state>(std::move(state), std::move(abs)));
         }
         else if (std::regex_match(game, match, nlhe_regex))
         {

@@ -50,7 +50,7 @@ void cfr_solver<T, U>::solve(const std::uint64_t iterations)
 
 #pragma omp parallel
     {
-        T g;
+        T g(evaluator_, *abstraction_);
 
 #pragma omp for schedule(dynamic)
         // TODO make unsigned when OpenMP 3.0 is supported
@@ -58,7 +58,7 @@ void cfr_solver<T, U>::solve(const std::uint64_t iterations)
         {
             bucket_t buckets;
             // TODO move evaluator and abstraction go game class
-            const int result = g.play(evaluator_, *abstraction_, &buckets);
+            const int result = g.play(&buckets);
 
             std::array<double, 2> reach = {{1.0, 1.0}};
             update(*states_[0], buckets, reach, result);
