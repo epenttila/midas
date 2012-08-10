@@ -26,11 +26,18 @@
 namespace
 {
     template<int BITMASK>
-    std::unique_ptr<solver_base> create_nlhe_solver(const int stack_size, std::unique_ptr<holdem_abstraction> abs)
+    std::unique_ptr<solver_base> create_nlhe_solver(const std::string& variant, const int stack_size,
+        std::unique_ptr<holdem_abstraction> abs)
     {
         typedef nl_holdem_state<BITMASK> state_type;
         std::unique_ptr<state_type> state(new state_type(stack_size));
-        return std::unique_ptr<solver_base>(new cfr_solver<holdem_game, state_type>(std::move(state), std::move(abs)));
+
+        if (variant == "cs")
+            return std::unique_ptr<solver_base>(new cfr_solver<holdem_game, state_type>(std::move(state), std::move(abs)));
+        else if (variant == "pcs")
+            return std::unique_ptr<solver_base>(new pcs_cfr_solver<holdem_game, state_type>(std::move(state), std::move(abs)));
+        else
+            return std::unique_ptr<solver_base>();
     }
 }
 
@@ -79,6 +86,7 @@ int main(int argc, char* argv[])
         std::unique_ptr<solver_base> solver;
 
         std::cout << "Creating solver for game: " << game << "\n";
+        std::cout << "Using solver variant: " << variant << "\n";
         std::cout << "Using abstraction: " << abstraction << "\n";
 
         std::regex nlhe_regex("nlhe\\.([a-z]+)\\.([0-9]+)");
@@ -119,15 +127,15 @@ int main(int argc, char* argv[])
             std::unique_ptr<holdem_abstraction> abs(new holdem_abstraction(abstraction));
 
             if (actions == "fca")
-                solver = create_nlhe_solver<F_MASK | C_MASK | A_MASK>(stack_size, std::move(abs));
+                solver = create_nlhe_solver<F_MASK | C_MASK | A_MASK>(variant, stack_size, std::move(abs));
             else if (actions == "fcpa")
-                solver = create_nlhe_solver<F_MASK | C_MASK | P_MASK | A_MASK>(stack_size, std::move(abs));
+                solver = create_nlhe_solver<F_MASK | C_MASK | P_MASK | A_MASK>(variant, stack_size, std::move(abs));
             else if (actions == "fchpa")
-                solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | P_MASK | A_MASK>(stack_size, std::move(abs));
+                solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | P_MASK | A_MASK>(variant, stack_size, std::move(abs));
             else if (actions == "fchqpa")
-                solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | A_MASK>(stack_size, std::move(abs));
+                solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | A_MASK>(variant, stack_size, std::move(abs));
             else if (actions == "fchqpwdtea")
-                solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | W_MASK | D_MASK | T_MASK | E_MASK | A_MASK>(stack_size, std::move(abs));
+                solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | W_MASK | D_MASK | T_MASK | E_MASK | A_MASK>(variant, stack_size, std::move(abs));
         }
 
         if (!solver)
