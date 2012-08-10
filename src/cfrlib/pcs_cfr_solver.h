@@ -56,8 +56,8 @@ private:
     typedef std::array<std::array<double, PRIVATE>, 2> ev_type;
     typedef std::array<std::array<double, PRIVATE>, 2> reach_type;
 
-    ev_type update(const game_type& game, const game_state& state, const buckets_type& buckets,
-        const reach_type& reach);
+    void update(const game_type& game, const game_state& state, const buckets_type& buckets,
+        const reach_type& reach,  ev_type& utility);
     void get_regret_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out) const;
     void get_average_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out) const;
     double get_accumulated_regret(const int player) const;

@@ -64,7 +64,8 @@ void pcs_cfr_solver<T, U>::solve(const std::uint64_t iterations)
             reach[0].fill(1.0);
             reach[1].fill(1.0);
 
-            update(g, *states_[0], buckets, reach);
+            ev_type utility = {{}};
+            update(g, *states_[0], buckets, reach, utility);
 
 #pragma omp atomic
             ++iteration;
@@ -85,8 +86,8 @@ void pcs_cfr_solver<T, U>::solve(const std::uint64_t iterations)
 }
 
 template<class T, class U>
-typename pcs_cfr_solver<T, U>::ev_type pcs_cfr_solver<T, U>::update(const game_type& game, const game_state& state,
-    const buckets_type& buckets, const reach_type& reach)
+void pcs_cfr_solver<T, U>::update(const game_type& game, const game_state& state, const buckets_type& buckets,
+    const reach_type& reach, ev_type& utility)
 {
     const int player = state.get_player();
     const int opponent = player ^ 1;
@@ -126,7 +127,6 @@ typename pcs_cfr_solver<T, U>::ev_type pcs_cfr_solver<T, U>::update(const game_t
         }
     }
 
-    ev_type utility = {{}};
     std::array<ev_type, ACTIONS> action_utility = {{}};
 
     for (int action = 0; action < ACTIONS; ++action)
@@ -168,7 +168,7 @@ typename pcs_cfr_solver<T, U>::ev_type pcs_cfr_solver<T, U>::update(const game_t
         }
         else
         {
-            action_utility[action] = update(game, *next, buckets, new_reach);
+            update(game, *next, buckets, new_reach, action_utility[action]);
         }
 
         for (int infoset = 0; infoset < PRIVATE; ++infoset)
@@ -196,8 +196,6 @@ typename pcs_cfr_solver<T, U>::ev_type pcs_cfr_solver<T, U>::update(const game_t
             data[action].regret += action_utility[action][player][infoset] - utility[player][infoset];
         }
     }
-
-    return utility;
 }
 
 template<class T, class U>
