@@ -16,6 +16,7 @@ class table_widget;
 class QLineEdit;
 class window_manager;
 class holdem_strategy_widget;
+class QComboBox;
 
 class main_window : public QMainWindow
 {
@@ -55,7 +56,7 @@ private:
     QLabel* strategy_label_;
     QLabel* capture_label_;
     QPlainTextEdit* log_;
-    QLineEdit* class_filter_;
+    QComboBox* site_list_;
     QLineEdit* title_filter_;
     std::unique_ptr<window_manager> window_manager_;
     holdem_strategy_widget* strategy_;

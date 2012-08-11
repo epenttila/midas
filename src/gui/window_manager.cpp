@@ -51,23 +51,10 @@ WId window_manager::get_window() const
 
 bool window_manager::is_window_good(const WId window) const
 {
-    if (!std::regex_match(get_class_name(window), class_regex_))
-        return false;
-
     if (!std::regex_match(get_window_text(window), title_regex_))
         return false;
 
     return true;
-}
-
-void window_manager::set_class_filter(const std::string& filter)
-{
-    if (filter == class_filter_)
-        return;
-
-    class_filter_ = filter;
-    class_regex_ = std::regex(filter);
-    clear_window();
 }
 
 void window_manager::set_title_filter(const std::string& filter)

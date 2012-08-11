@@ -19,6 +19,7 @@
 #include <QLabel>
 #include <QToolBar>
 #include <QLineEdit>
+#include <QComboBox>
 #pragma warning(pop)
 
 #include "site_stars.h"
@@ -33,6 +34,8 @@
 
 namespace
 {
+    enum { SITE_STARS, SITE_888 };
+
     template<class T>
     typename T::const_iterator find_nearest(const T& map, const typename T::key_type& value)
     {
@@ -76,9 +79,12 @@ main_window::main_window()
     action->setCheckable(true);
     connect(action, SIGNAL(changed()), SLOT(show_strategy_changed()));
     toolbar->addSeparator();
-    class_filter_ = new QLineEdit(this);
-    class_filter_->setPlaceholderText("Window class");
-    action = toolbar->addWidget(class_filter_);
+
+    site_list_ = new QComboBox(this);
+    site_list_->insertItem(SITE_STARS, "PokerStars", SITE_STARS);
+    site_list_->insertItem(SITE_888, "888 Poker", SITE_888);
+    action = toolbar->addWidget(site_list_);
+
     toolbar->addSeparator();
     title_filter_ = new QLineEdit(this);
     title_filter_->setPlaceholderText("Window title");
@@ -190,16 +196,16 @@ void main_window::capture_changed()
     if (!timer_->isActive())
     {
         timer_->start(100);
-        class_filter_->setEnabled(false);
+        site_list_->setEnabled(false);
         title_filter_->setEnabled(false);
-        window_manager_->set_class_filter(std::string(class_filter_->text().toUtf8().data()));
         window_manager_->set_title_filter(std::string(title_filter_->text().toUtf8().data()));
     }
     else
     {
         timer_->stop();
-        class_filter_->setEnabled(true);
+        site_list_->setEnabled(true);
         title_filter_->setEnabled(true);
+        window_manager_->clear_window();
     }
 }
 
@@ -246,15 +252,21 @@ void main_window::find_window()
     {
         if (window_manager_->find_window())
         {
-            const std::string class_name = window_manager_->get_class_name();
-            const std::string title_name = window_manager_->get_title_name();
             const auto window = window_manager_->get_window();
 
-            if (class_name == "PokerStarsTableFrameClass")
+            switch (site_list_->itemData(site_list_->currentIndex()).toInt())
+            {
+            case SITE_STARS:
                 site_.reset(new site_stars(window));
-            else if (class_name == "#32770")
+                break;
+            case SITE_888:
                 site_.reset(new site_888(window));
+                break;
+            default:
+                assert(false);
+            }
 
+            const std::string title_name = window_manager_->get_title_name();
             capture_label_->setText(QString("%1").arg(title_name.c_str()));
         }
         else
