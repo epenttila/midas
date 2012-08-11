@@ -20,6 +20,8 @@
 #include <QToolBar>
 #include <QLineEdit>
 #include <QComboBox>
+#include <QSettings>
+#include <QCoreApplication>
 #pragma warning(pop)
 
 #include "site_stars.h"
@@ -31,6 +33,8 @@
 #include "holdem_strategy_widget.h"
 #include "site_888.h"
 #include "site_base.h"
+#include "settings_dialog.h"
+#include "input_manager.h"
 
 namespace
 {
@@ -58,6 +62,7 @@ main_window::main_window()
     , engine_(std::random_device()())
     , play_(false)
     , action_needed_(false)
+    , input_manager_(new input_manager)
 {
     auto widget = new QFrame(this);
     widget->setFrameStyle(QFrame::StyledPanel);
@@ -78,6 +83,8 @@ main_window::main_window()
     action = toolbar->addAction(QIcon(":/icons/table.png"), "Show strategy");
     action->setCheckable(true);
     connect(action, SIGNAL(changed()), SLOT(show_strategy_changed()));
+    action = toolbar->addAction(QIcon(":/icons/cog.png"), "Settings");
+    connect(action, SIGNAL(triggered()), SLOT(settings_triggered()));
     toolbar->addSeparator();
 
     site_list_ = new QComboBox(this);
@@ -116,10 +123,26 @@ main_window::main_window()
     statusBar()->addWidget(strategy_label_, 1);
     capture_label_ = new QLabel("No window", this);
     statusBar()->addWidget(capture_label_, 1);
+
+    QCoreApplication::setOrganizationName("baabeli.com");
+    QCoreApplication::setApplicationName("midas");
+
+    QSettings settings;
+    capture_interval_ = settings.value("capture_interval", 0.1).toDouble();
+    action_delay_mean_ = settings.value("action_delay_mean", 5).toDouble();
+    action_delay_stddev_ = settings.value("action_delay_dev", 2).toDouble();
+    input_manager_->set_delay_mean(settings.value("input_delay_mean", 0.1).toDouble());
+    input_manager_->set_delay_stddev(settings.value("input_delay_stddev", 0.01).toDouble());
 }
 
 main_window::~main_window()
 {
+    QSettings settings;
+    settings.setValue("capture_interval", capture_interval_);
+    settings.setValue("action_delay_mean", action_delay_mean_);
+    settings.setValue("action_delay_dev", action_delay_stddev_);
+    settings.setValue("input_delay_mean", input_manager_->get_delay_mean());
+    settings.setValue("input_delay_stddev", input_manager_->get_delay_stddev());
 }
 
 void main_window::timer_timeout()
@@ -195,7 +218,7 @@ void main_window::capture_changed()
 {
     if (!timer_->isActive())
     {
-        timer_->start(100);
+        timer_->start(int(capture_interval_ * 1000.0));
         site_list_->setEnabled(false);
         title_filter_->setEnabled(false);
         window_manager_->set_title_filter(std::string(title_filter_->text().toUtf8().data()));
@@ -260,7 +283,7 @@ void main_window::find_window()
                 site_.reset(new site_stars(window));
                 break;
             case SITE_888:
-                site_.reset(new site_888(window));
+                site_.reset(new site_888(*input_manager_, window));
                 break;
             default:
                 assert(false);
@@ -442,13 +465,27 @@ void main_window::perform_action()
         next_action_ = site_base::FOLD;
     }
 
-    // TODO set these in program settings
-    std::normal_distribution<> dist(2.7564237, 1.19837);
-    const double wait = std::max(0.0, dist(engine_));
+    std::normal_distribution<> dist(action_delay_mean_, action_delay_stddev_);
+    const double wait = std::max(capture_interval_ * 2.0, dist(engine_));
     play_timer_->setSingleShot(true);
     play_timer_->start(int(wait * 1000.0));
     log_->appendPlainText(QString("Waiting %1 seconds...").arg(wait));
     action_needed_ = false;
+}
+
+void main_window::settings_triggered()
+{
+    settings_dialog d(capture_interval_, action_delay_mean_, action_delay_stddev_, input_manager_->get_delay_mean(),
+        input_manager_->get_delay_stddev(), this);
+    
+    if (d.exec() == QDialog::Accepted)
+    {
+        capture_interval_ = d.get_capture_interval();
+        action_delay_mean_ = d.get_action_delay_mean();
+        action_delay_stddev_ = d.get_action_delay_stddev();
+        input_manager_->set_delay_mean(d.get_input_delay_mean());
+        input_manager_->set_delay_stddev(d.get_input_delay_stddev());
+    }
 }
 
 main_window::strategy_info::strategy_info()

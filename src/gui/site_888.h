@@ -3,6 +3,7 @@
 #pragma warning(push, 3)
 #include <array>
 #include <regex>
+#include <boost/noncopyable.hpp>
 #include <QWidget>
 #pragma warning(pop)
 
@@ -10,10 +11,10 @@
 
 class input_manager;
 
-class site_888 : public site_base
+class site_888 : public site_base, private boost::noncopyable
 {
 public:
-    site_888(WId window);
+    site_888(input_manager& input_manager, WId window);
     bool update();
     int get_action() const;
     std::pair<int, int> get_hole_cards() const;
@@ -44,7 +45,7 @@ private:
     std::array<double, 2> bets_;
     double total_pot_;
     double to_call_;
-    std::unique_ptr<input_manager> input_;
+    input_manager& input_;
     bool can_raise_;
     std::regex big_blind_regex_;
 };

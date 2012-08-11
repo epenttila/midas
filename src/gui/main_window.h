@@ -17,6 +17,7 @@ class QLineEdit;
 class window_manager;
 class holdem_strategy_widget;
 class QComboBox;
+class input_manager;
 
 class main_window : public QMainWindow
 {
@@ -33,6 +34,7 @@ public slots:
     void show_strategy_changed();
     void play_changed();
     void play_timer_timeout();
+    void settings_triggered();
 
 private:
     struct strategy_info
@@ -66,4 +68,8 @@ private:
     std::mt19937 engine_;
     double raise_fraction_;
     bool action_needed_;
+    double capture_interval_;
+    double action_delay_mean_;
+    double action_delay_stddev_;
+    std::unique_ptr<input_manager> input_manager_;
 };

@@ -279,7 +279,7 @@ namespace
     }
 }
 
-site_888::site_888(WId window)
+site_888::site_888(input_manager& input_manager, WId window)
     : dealer_(-1)
     , player_(-1)
     , round_(-1)
@@ -289,7 +289,7 @@ site_888::site_888(WId window)
     , new_hand_(true)
     , fraction_(-1)
     , window_(window)
-    , input_(new input_manager)
+    , input_(input_manager)
     , big_blind_regex_(".*\\$[0-9.]+/\\$([0-9.]+).*")
 {
     hole_.fill(-1);
@@ -447,12 +447,12 @@ bool site_888::is_action_needed() const
 
 void site_888::fold() const
 {
-    input_->send_keypress(VK_F5);
+    input_.send_keypress(VK_F5);
 }
 
 void site_888::call() const
 {
-    input_->send_keypress(VK_F6);
+    input_.send_keypress(VK_F6);
 }
 
 void site_888::raise(double fraction) const
@@ -460,8 +460,9 @@ void site_888::raise(double fraction) const
     if (can_raise_)
     {
         const double amount = int((fraction * (total_pot_ + to_call_) + to_call_ + bets_[0]) / big_blind_) * big_blind_;
-        input_->send_string(boost::lexical_cast<std::string>(amount));
-        input_->send_keypress(VK_F7);
+        input_.send_string(boost::lexical_cast<std::string>(amount));
+        input_.sleep();
+        input_.send_keypress(VK_F7);
     }
     else
     {
