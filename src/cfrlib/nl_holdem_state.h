@@ -45,6 +45,7 @@ public:
     virtual int get_action_count() const = 0;
     virtual int get_action(int index) const = 0;
     virtual void print(std::ostream& os) const = 0;
+    virtual int get_action() const = 0;
 };
 
 template<int BITMASK>

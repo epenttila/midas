@@ -54,6 +54,7 @@ main_window::main_window()
     : window_manager_(new window_manager)
     , engine_(std::random_device()())
     , play_(false)
+    , action_needed_(false)
 {
     auto widget = new QFrame(this);
     widget->setFrameStyle(QFrame::StyledPanel);
@@ -117,173 +118,9 @@ main_window::~main_window()
 
 void main_window::timer_timeout()
 {
-    if (!window_manager_->is_window())
-    {
-        if (window_manager_->find_window())
-        {
-            const std::string class_name = window_manager_->get_class_name();
-            const std::string title_name = window_manager_->get_title_name();
-            const auto window = window_manager_->get_window();
-
-            if (class_name == "PokerStarsTableFrameClass")
-                site_.reset(new site_stars(window));
-            else if (class_name == "#32770")
-                site_.reset(new site_888(window));
-
-            capture_label_->setText(QString("%1").arg(title_name.c_str()));
-        }
-        else
-        {
-            site_.reset();
-            capture_label_->setText("No window");
-        }
-    }
-
-    if (!site_ || !site_->update())
-        return;
-
-    visualizer_->set_dealer(site_->get_dealer());
-
-    auto hole = site_->get_hole_cards();
-    std::array<int, 2> hole_array = {{ hole.first, hole.second }};
-    visualizer_->set_hole_cards(0, hole_array);
-
-    std::array<int, 5> board;
-    site_->get_board_cards(board);
-    visualizer_->set_board_cards(board);
-
-    if (strategy_infos_.empty())
-        return;
-
-    auto stack_size = site_->get_stack_size();
-    auto it = find_nearest(strategy_infos_, stack_size);
-    auto& strategy_info = *it->second;
-    auto& current_state = strategy_info.current_state_;
-
-    if (site_->is_new_hand())
-        current_state = strategy_info.root_state_.get();
-
-    if (!current_state)
-        return;
-
-    switch (site_->get_action())
-    {
-    case site_base::CALL:
-        current_state = current_state->call();
-        break;
-    case site_base::RAISE:
-        current_state = current_state->raise(site_->get_raise_fraction());
-        break;
-    }
-
-    if (!current_state)
-        return;
-
-    if (current_state->get_round() != site_->get_round())
-        return;
-
-    std::array<int, 2> pot = current_state->get_pot();
-        
-    if (site_->get_dealer() == 1)
-        std::swap(pot[0], pot[1]);
-
-    visualizer_->set_pot(current_state->get_round(), pot);
-
-    const int c0 = hole.first;
-    const int c1 = hole.second;
-    const int b0 = board[0];
-    const int b1 = board[1];
-    const int b2 = board[2];
-    const int b3 = board[3];
-    const int b4 = board[4];
-    int bucket = -1;
-
-    if (c0 != -1 && c1 != -1)
-    {
-        switch (site_->get_round())
-        {
-        case holdem_game::PREFLOP:
-            bucket = strategy_info.abstraction_->get_bucket(c0, c1);
-            break;
-        case holdem_game::FLOP:
-            bucket = strategy_info.abstraction_->get_bucket(c0, c1, b0, b1, b2);
-            break;
-        case holdem_game::TURN:
-            bucket = strategy_info.abstraction_->get_bucket(c0, c1, b0, b1, b2, b3);
-            break;
-        case holdem_game::RIVER:
-            bucket = strategy_info.abstraction_->get_bucket(c0, c1, b0, b1, b2, b3, b4);
-            break;
-        }
-    }
-
-    auto& strategy = strategy_info.strategy_;
-    strategy_label_->setText(QString("%1").arg(QFileInfo(strategy->get_filename().c_str()).fileName()));
-
-    if (current_state && current_state->get_id() != -1)
-    {
-        std::stringstream ss;
-        ss << *current_state;
-        log_->appendPlainText(ss.str().c_str());
-        // TODO this doesnt always work for some reason
-// 4736:hC
-// 4737:hCC
-// 4738:hCCc <- here
-// 4893:hCCcH
-        if (bucket != -1 && site_->is_action_needed())
-        {
-            const int index = strategy->get_action(current_state->get_id(), bucket);
-            const int action = current_state->get_action(index);
-            std::string s = "n/a";
-
-            switch (action)
-            {
-            case nlhe_state_base::FOLD: s = "FOLD"; break;
-            case nlhe_state_base::CALL: s = "CALL"; break;
-            case nlhe_state_base::RAISE_H: s = "RAISE_H"; break;
-            case nlhe_state_base::RAISE_Q: s = "RAISE_Q"; break;
-            case nlhe_state_base::RAISE_P: s = "RAISE_P"; break;
-            case nlhe_state_base::RAISE_A: s = "RAISE_A"; break;
-            }
-
-            double probability = strategy->get(current_state->get_id(), index, bucket);
-            log_->appendPlainText(QString("%1 (%2%)").arg(s.c_str()).arg(int(probability * 100)));
-
-            if (play_)
-            {
-                switch (action)
-                {
-                case nlhe_state_base::FOLD:
-                    next_action_ = site_base::FOLD;
-                    break;
-                case nlhe_state_base::CALL:
-                    next_action_ = site_base::CALL;
-                    break;
-                case nlhe_state_base::RAISE_H:
-                    next_action_ = site_base::RAISE;
-                    raise_fraction_ = 0.5;
-                    break;
-                case nlhe_state_base::RAISE_P:
-                    next_action_ = site_base::RAISE;
-                    raise_fraction_ = 1.0;
-                    break;
-                case nlhe_state_base::RAISE_A:
-                    next_action_ = site_base::RAISE;
-                    raise_fraction_ = 999.0;
-                    break;
-                }
-
-                // TODO set these in program settings
-                std::normal_distribution<> dist(2.7564237, 1.19837);
-                const double wait = std::max(0.0, dist(engine_));
-                play_timer_->setSingleShot(true);
-                play_timer_->start(int(wait * 1000.0));
-                log_->appendPlainText(QString("Waiting %1 seconds...").arg(wait));
-            }
-        }
-
-        strategy_->update(*strategy_info.abstraction_, board, *strategy, current_state->get_id(), current_state->get_action_count());
-    }
+    find_window();
+    update_site_info();
+    perform_action();
 }
 
 void main_window::open_strategy()
@@ -401,6 +238,205 @@ void main_window::play_timer_timeout()
         site_->raise(raise_fraction_);
         break;
     }
+}
+
+void main_window::find_window()
+{
+    if (!window_manager_->is_window())
+    {
+        if (window_manager_->find_window())
+        {
+            const std::string class_name = window_manager_->get_class_name();
+            const std::string title_name = window_manager_->get_title_name();
+            const auto window = window_manager_->get_window();
+
+            if (class_name == "PokerStarsTableFrameClass")
+                site_.reset(new site_stars(window));
+            else if (class_name == "#32770")
+                site_.reset(new site_888(window));
+
+            capture_label_->setText(QString("%1").arg(title_name.c_str()));
+        }
+        else
+        {
+            site_.reset();
+            capture_label_->setText("No window");
+        }
+    }
+}
+
+void main_window::update_site_info()
+{
+    if (!site_ || !site_->update())
+        return;
+
+    action_needed_ = site_->is_action_needed();
+
+    visualizer_->set_dealer(site_->get_dealer());
+
+    auto hole = site_->get_hole_cards();
+    std::array<int, 2> hole_array = {{ hole.first, hole.second }};
+    visualizer_->set_hole_cards(0, hole_array);
+
+    std::array<int, 5> board;
+    site_->get_board_cards(board);
+    visualizer_->set_board_cards(board);
+
+    if (strategy_infos_.empty())
+        return;
+
+    auto stack_size = site_->get_stack_size();
+    auto it = find_nearest(strategy_infos_, stack_size);
+    auto& strategy_info = *it->second;
+    auto& current_state = strategy_info.current_state_;
+
+    if (site_->is_new_hand())
+        current_state = strategy_info.root_state_.get();
+
+    if (!current_state)
+        return;
+
+    switch (site_->get_action())
+    {
+    case site_base::CALL:
+        current_state = current_state->call();
+        break;
+    case site_base::RAISE:
+        current_state = current_state->raise(site_->get_raise_fraction());
+        break;
+    }
+
+    if (!current_state)
+        return;
+
+    if (current_state->get_round() != site_->get_round())
+        return;
+
+    std::array<int, 2> pot = current_state->get_pot();
+        
+    if (site_->get_dealer() == 1)
+        std::swap(pot[0], pot[1]);
+
+    visualizer_->set_pot(current_state->get_round(), pot);
+
+    const auto& strategy = strategy_info.strategy_;
+    strategy_label_->setText(QString("%1").arg(QFileInfo(strategy->get_filename().c_str()).fileName()));
+
+    if (current_state && current_state->get_id() != -1)
+    {
+        std::stringstream ss;
+        ss << *current_state;
+        log_->appendPlainText(ss.str().c_str());
+        strategy_->update(*strategy_info.abstraction_, board, *strategy, current_state->get_id(),
+            current_state->get_action_count());
+    }
+}
+
+void main_window::perform_action()
+{
+    if (!play_ || !site_ || strategy_infos_.empty() || !action_needed_ || play_timer_->isActive())
+        return;
+
+    auto stack_size = site_->get_stack_size();
+    auto it = find_nearest(strategy_infos_, stack_size);
+    auto& strategy_info = *it->second;
+
+    auto hole = site_->get_hole_cards();
+    std::array<int, 5> board;
+    site_->get_board_cards(board);
+
+    const int c0 = hole.first;
+    const int c1 = hole.second;
+    const int b0 = board[0];
+    const int b1 = board[1];
+    const int b2 = board[2];
+    const int b3 = board[3];
+    const int b4 = board[4];
+    int bucket = -1;
+
+    if (c0 != -1 && c1 != -1)
+    {
+        if (b4 != -1)
+            bucket = strategy_info.abstraction_->get_bucket(c0, c1, b0, b1, b2, b3, b4);
+        else if (b3 != -1)
+            bucket = strategy_info.abstraction_->get_bucket(c0, c1, b0, b1, b2, b3);
+        else if (b0 != -1)
+            bucket = strategy_info.abstraction_->get_bucket(c0, c1, b0, b1, b2);
+        else
+            bucket = strategy_info.abstraction_->get_bucket(c0, c1);
+    }
+
+    const auto& current_state = strategy_info.current_state_;
+
+    if (current_state && !current_state->is_terminal() && bucket != -1)
+    {
+        const auto& strategy = strategy_info.strategy_;
+        const int index = strategy->get_action(current_state->get_id(), bucket);
+        const int action = current_state->get_action(index);
+        std::string s = "n/a";
+
+        switch (action)
+        {
+        case nlhe_state_base::FOLD: s = "FOLD"; break;
+        case nlhe_state_base::CALL: s = "CALL"; break;
+        case nlhe_state_base::RAISE_H: s = "RAISE_H"; break;
+        case nlhe_state_base::RAISE_Q: s = "RAISE_Q"; break;
+        case nlhe_state_base::RAISE_P: s = "RAISE_P"; break;
+        case nlhe_state_base::RAISE_A: s = "RAISE_A"; break;
+        }
+
+        double probability = strategy->get(current_state->get_id(), index, bucket);
+        log_->appendPlainText(QString("%1 (%2%)").arg(s.c_str()).arg(int(probability * 100)));
+
+        switch (action)
+        {
+        case nlhe_state_base::FOLD:
+            next_action_ = site_base::FOLD;
+            break;
+        case nlhe_state_base::CALL:
+            {
+                const int prev_action_index = current_state->get_action();
+                const int prev_action = prev_action_index != -1 ? current_state->get_action(prev_action_index) : -1;
+
+                // ensure we get allin if the opponent went allin
+                if (prev_action == nlhe_state_base::RAISE_A)
+                {
+                    next_action_ = site_base::RAISE;
+                    raise_fraction_ = 999.0;
+                }
+                else
+                {
+                    next_action_ = site_base::CALL;
+                }
+            }
+            break;
+        case nlhe_state_base::RAISE_H:
+            next_action_ = site_base::RAISE;
+            raise_fraction_ = 0.5;
+            break;
+        case nlhe_state_base::RAISE_P:
+            next_action_ = site_base::RAISE;
+            raise_fraction_ = 1.0;
+            break;
+        case nlhe_state_base::RAISE_A:
+            next_action_ = site_base::RAISE;
+            raise_fraction_ = 999.0;
+            break;
+        }
+    }
+    else
+    {
+        log_->appendPlainText("Warning: unknown state, folding...");
+        next_action_ = site_base::FOLD;
+    }
+
+    // TODO set these in program settings
+    std::normal_distribution<> dist(2.7564237, 1.19837);
+    const double wait = std::max(0.0, dist(engine_));
+    play_timer_->setSingleShot(true);
+    play_timer_->start(int(wait * 1000.0));
+    log_->appendPlainText(QString("Waiting %1 seconds...").arg(wait));
+    action_needed_ = false;
 }
 
 main_window::strategy_info::strategy_info()

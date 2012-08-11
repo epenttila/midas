@@ -44,6 +44,10 @@ private:
         std::unique_ptr<holdem_abstraction> abstraction_;
     };
 
+    void find_window();
+    void update_site_info();
+    void perform_action();
+
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<strategy_info>> strategy_infos_;
     QTimer* timer_;
@@ -60,4 +64,5 @@ private:
     int next_action_;
     std::mt19937 engine_;
     double raise_fraction_;
+    bool action_needed_;
 };

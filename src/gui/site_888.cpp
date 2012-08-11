@@ -314,6 +314,9 @@ bool site_888::update()
     //image.save("test.png");
     //mono_image.save("testmono.png");
 
+    const int dealer = ::get_dealer(image);
+    const int player = get_active_player(image);
+
     hole_[0] = get_board_card(image, QRect(338, 326, 48, 17));
     hole_[1] = get_board_card(image, QRect(388, 326, 48, 17));
     board_[0] = get_board_card(image, QRect(264, 156, 48, 17));
@@ -323,22 +326,17 @@ bool site_888::update()
     board_[4] = get_board_card(image, QRect(480, 156, 48, 17));
 
     can_raise_ = image.pixel(639, 437) == qRgb(0, 0, 0);
-    action_needed_ = image.pixel(327, 437) == qRgb(0, 0, 0);
+    action_needed_ = player == 0 ? image.pixel(327, 437) == qRgb(0, 0, 0) : false;
 
     total_pot_ = read_bet_size(mono_image, QRect(263, 140, 266, 12));
     bets_[0] = read_bet_size(mono_image, QRect(263, 310, 266, 12));
     bets_[1] = read_bet_size(mono_image, QRect(263, 124, 266, 12));
-
-    const int dealer = ::get_dealer(image);
-    const int player = get_active_player(image);
 
     const auto title = window_manager::get_window_text(window_);
     std::smatch match;
 
     if (std::regex_match(title, match, big_blind_regex_))
         big_blind_ = std::atof(match[1].str().c_str());
-
-    //assert(action_needed_ || player != 0);
 
     if (dealer == -1 || player == -1)
         return false;
