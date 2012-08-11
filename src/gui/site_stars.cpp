@@ -364,3 +364,24 @@ int site_stars::get_stack_size() const
 {
     return int(stack_bb_ * 2 + 0.5);
 }
+
+bool site_stars::is_action_needed() const
+{
+    // TODO implement
+    return false;
+}
+
+void site_stars::fold() const
+{
+    // TODO implement
+}
+
+void site_stars::call() const
+{
+    // TODO implement
+}
+
+void site_stars::raise(double) const
+{
+    // TODO implement
+}

@@ -3,9 +3,15 @@ project(gui)
 set(gui_SOURCES
     holdem_strategy_widget.cpp
     holdem_strategy_widget.h
+    input_manager.cpp
+    input_manager.h
     main.cpp
     main_window.cpp
     main_window.h
+    site_888.cpp
+    site_888.h
+    site_base.cpp
+    site_base.h
     site_stars.cpp
     site_stars.h
     table_widget.cpp

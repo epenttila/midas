@@ -14,20 +14,6 @@ namespace
         window_manager* wm = reinterpret_cast<window_manager*>(object);
         return !wm->try_window(hwnd);
     }
-
-    std::string get_class_name(WId window)
-    {
-        std::array<char, 256> arr;
-        GetClassName(window, &arr[0], int(arr.size()));
-        return std::string(arr.data());
-    }
-
-    std::string get_window_text(WId window)
-    {
-        std::array<char, 256> arr;
-        GetWindowText(window, &arr[0], int(arr.size()));
-        return std::string(arr.data());
-    }
 }
 
 window_manager::window_manager()
@@ -39,6 +25,7 @@ window_manager::window_manager()
     mutex_ = segment_.find_or_construct<interprocess_mutex>("window_list_mutex")();
     set_ = segment_.find_or_construct<shm_set>("window_list")(std::less<key_type>(),
         shm_allocator(segment_.get_segment_manager()));
+    interact_mutex_ = segment_.find_or_construct<interprocess_mutex>("interact_mutex")();
 }
 
 window_manager::~window_manager()
@@ -64,7 +51,7 @@ WId window_manager::get_window() const
 
 bool window_manager::is_window_good(const WId window) const
 {
-    if (!std::regex_match(::get_class_name(window), class_regex_))
+    if (!std::regex_match(get_class_name(window), class_regex_))
         return false;
 
     if (!std::regex_match(get_window_text(window), title_regex_))
@@ -112,7 +99,7 @@ bool window_manager::try_window(WId window)
 
 std::string window_manager::get_class_name() const
 {
-    return ::get_class_name(window_);
+    return get_class_name(window_);
 }
 
 std::string window_manager::get_title_name() const
@@ -128,4 +115,23 @@ void window_manager::clear_window()
     boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> lock(*mutex_);
     set_->erase(window_);
     window_ = 0;
+}
+
+boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> window_manager::try_interact()
+{
+    return boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex>(*interact_mutex_);
+}
+
+std::string window_manager::get_class_name(WId window)
+{
+    std::array<char, 256> arr;
+    GetClassName(window, &arr[0], int(arr.size()));
+    return std::string(arr.data());
+}
+
+std::string window_manager::get_window_text(WId window)
+{
+    std::array<char, 256> arr;
+    GetWindowText(window, &arr[0], int(arr.size()));
+    return std::string(arr.data());
 }

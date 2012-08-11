@@ -28,6 +28,8 @@
 #include "table_widget.h"
 #include "window_manager.h"
 #include "holdem_strategy_widget.h"
+#include "site_888.h"
+#include "site_base.h"
 
 namespace
 {
@@ -50,6 +52,8 @@ namespace
 
 main_window::main_window()
     : window_manager_(new window_manager)
+    , engine_(std::random_device()())
+    , play_(false)
 {
     auto widget = new QFrame(this);
     widget->setFrameStyle(QFrame::StyledPanel);
@@ -63,7 +67,6 @@ main_window::main_window()
 
     auto toolbar = addToolBar("File");
     toolbar->setMovable(false);
-    toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     auto action = toolbar->addAction(QIcon(":/icons/folder_page_white.png"), "&Open strategy...");
     action->setIconText("Open strategy...");
     action->setToolTip("Open strategy...");
@@ -80,9 +83,12 @@ main_window::main_window()
     title_filter_->setPlaceholderText("Window title");
     toolbar->addWidget(title_filter_);
     toolbar->addSeparator();
-    action = toolbar->addAction(QIcon(":/icons/control_play.png"), "Capture");
+    action = toolbar->addAction(QIcon(":/icons/control_record.png"), "Capture");
     action->setCheckable(true);
     connect(action, SIGNAL(changed()), SLOT(capture_changed()));
+    action = toolbar->addAction(QIcon(":/icons/control_play.png"), "Play");
+    action->setCheckable(true);
+    connect(action, SIGNAL(changed()), SLOT(play_changed()));
 
     log_ = new QPlainTextEdit(this);
     log_->setReadOnly(true);
@@ -96,6 +102,8 @@ main_window::main_window()
 
     timer_ = new QTimer(this);
     connect(timer_, SIGNAL(timeout()), SLOT(timer_timeout()));
+    play_timer_ = new QTimer(this);
+    connect(play_timer_, SIGNAL(timeout()), SLOT(play_timer_timeout()));
 
     strategy_label_ = new QLabel("No strategy", this);
     statusBar()->addWidget(strategy_label_, 1);
@@ -119,6 +127,8 @@ void main_window::timer_timeout()
 
             if (class_name == "PokerStarsTableFrameClass")
                 site_.reset(new site_stars(window));
+            else if (class_name == "#32770")
+                site_.reset(new site_888(window));
 
             capture_label_->setText(QString("%1").arg(title_name.c_str()));
         }
@@ -158,10 +168,10 @@ void main_window::timer_timeout()
 
     switch (site_->get_action())
     {
-    case site_stars::CALL:
+    case site_base::CALL:
         current_state = current_state->call();
         break;
-    case site_stars::RAISE:
+    case site_base::RAISE:
         current_state = current_state->raise(site_->get_raise_fraction());
         break;
     }
@@ -215,13 +225,18 @@ void main_window::timer_timeout()
         std::stringstream ss;
         ss << *current_state;
         log_->appendPlainText(ss.str().c_str());
-
-        if (bucket != -1)
+        // TODO this doesnt always work for some reason
+// 4736:hC
+// 4737:hCC
+// 4738:hCCc <- here
+// 4893:hCCcH
+        if (bucket != -1 && site_->is_action_needed())
         {
             const int index = strategy->get_action(current_state->get_id(), bucket);
+            const int action = current_state->get_action(index);
             std::string s = "n/a";
 
-            switch (current_state->get_action(index))
+            switch (action)
             {
             case nlhe_state_base::FOLD: s = "FOLD"; break;
             case nlhe_state_base::CALL: s = "CALL"; break;
@@ -233,6 +248,38 @@ void main_window::timer_timeout()
 
             double probability = strategy->get(current_state->get_id(), index, bucket);
             log_->appendPlainText(QString("%1 (%2%)").arg(s.c_str()).arg(int(probability * 100)));
+
+            if (play_)
+            {
+                switch (action)
+                {
+                case nlhe_state_base::FOLD:
+                    next_action_ = site_base::FOLD;
+                    break;
+                case nlhe_state_base::CALL:
+                    next_action_ = site_base::CALL;
+                    break;
+                case nlhe_state_base::RAISE_H:
+                    next_action_ = site_base::RAISE;
+                    raise_fraction_ = 0.5;
+                    break;
+                case nlhe_state_base::RAISE_P:
+                    next_action_ = site_base::RAISE;
+                    raise_fraction_ = 1.0;
+                    break;
+                case nlhe_state_base::RAISE_A:
+                    next_action_ = site_base::RAISE;
+                    raise_fraction_ = 999.0;
+                    break;
+                }
+
+                // TODO set these in program settings
+                std::normal_distribution<> dist(2.7564237, 1.19837);
+                const double wait = std::max(0.0, dist(engine_));
+                play_timer_->setSingleShot(true);
+                play_timer_->start(int(wait * 1000.0));
+                log_->appendPlainText(QString("Waiting %1 seconds...").arg(wait));
+            }
         }
 
         strategy_->update(*strategy_info.abstraction_, board, *strategy, current_state->get_id(), current_state->get_action_count());
@@ -322,6 +369,38 @@ void main_window::capture_changed()
 void main_window::show_strategy_changed()
 {
     strategy_->setVisible(!strategy_->isVisible());
+}
+
+void main_window::play_changed()
+{
+    play_ = !play_;
+
+    if (!play_)
+        play_timer_->stop();
+}
+
+void main_window::play_timer_timeout()
+{
+    assert(play_);
+    log_->appendPlainText("Waiting for mutex...");
+
+    auto mutex = window_manager_->try_interact();
+
+    switch (next_action_)
+    {
+    case site_base::FOLD:
+        log_->appendPlainText("Folding");
+        site_->fold();
+        break;
+    case site_base::CALL:
+        log_->appendPlainText("Calling");
+        site_->call();
+        break;
+    case site_base::RAISE:
+        log_->appendPlainText(QString("Raising %1").arg(raise_fraction_));
+        site_->raise(raise_fraction_);
+        break;
+    }
 }
 
 main_window::strategy_info::strategy_info()

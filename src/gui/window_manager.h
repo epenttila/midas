@@ -23,6 +23,9 @@ public:
     bool try_window(WId window);
     std::string get_class_name() const;
     std::string get_title_name() const;
+    boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> try_interact();
+    static std::string get_class_name(WId window);
+    static std::string get_window_text(WId window);
 
 private:
     typedef WId key_type;
@@ -39,4 +42,5 @@ private:
     boost::interprocess::managed_windows_shared_memory segment_;
     shm_set* set_;
     boost::interprocess::interprocess_mutex* mutex_;
+    boost::interprocess::interprocess_mutex* interact_mutex_;
 };
