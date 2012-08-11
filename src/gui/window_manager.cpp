@@ -106,6 +106,9 @@ void window_manager::clear_window()
 
 boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> window_manager::try_interact()
 {
+    while (GetForegroundWindow() != window_)
+        Sleep(100);
+
     return boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex>(*interact_mutex_);
 }
 
