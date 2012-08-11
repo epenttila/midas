@@ -290,7 +290,6 @@ site_888::site_888(input_manager& input_manager, WId window)
     , fraction_(-1)
     , window_(window)
     , input_(input_manager)
-    , big_blind_regex_(".*\\$[0-9.]+/\\$([0-9.]+).*")
 {
     hole_.fill(-1);
     board_.fill(-1);
@@ -333,9 +332,10 @@ bool site_888::update()
     bets_[1] = read_bet_size(mono_image, QRect(263, 124, 266, 12));
 
     const auto title = window_manager::get_window_text(window_);
+    const std::regex re(".*\\$[0-9.]+/\\$([0-9.]+).*");
     std::smatch match;
 
-    if (std::regex_match(title, match, big_blind_regex_))
+    if (std::regex_match(title, match, re))
         big_blind_ = std::atof(match[1].str().c_str());
 
     if (dealer == -1 || player == -1)

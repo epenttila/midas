@@ -47,5 +47,4 @@ private:
     double to_call_;
     input_manager& input_;
     bool can_raise_;
-    std::regex big_blind_regex_;
 };

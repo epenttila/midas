@@ -9,6 +9,7 @@
 
 #include "util/card.h"
 #include "abslib/holdem_abstraction.h"
+#include "window_manager.h"
 
 namespace
 {
@@ -241,6 +242,13 @@ bool site_stars::update()
         return false;
     }
 
+    const auto title = window_manager::get_window_text(window_);
+    const std::regex re(".*\\$[0-9.]+/\\$([0-9.]+).*");
+    std::smatch match;
+
+    if (std::regex_match(title, match, re))
+        big_blind_ = std::atof(match[1].str().c_str());
+
     const auto image = screenshot(window_).toImage();
 
     if (image.isNull())
@@ -289,12 +297,6 @@ bool site_stars::update()
     const double left_bet = get_bet_size(image, QRect(128, 235, 140, 10));
     const double right_bet = get_bet_size(image, QRect(534, 235, 136, 10));
     
-    if (new_hand_)
-        big_blind_ = 0;
-
-    if (big_blind_ == 0 && left_bet > 0 && right_bet > 0)
-        big_blind_ = dealer_ == 0 ? right_bet : left_bet;
-
     if (new_hand_ && big_blind_ > 0)
         stack_bb_ = std::min(stack, stack2) / big_blind_;
 
