@@ -17,41 +17,22 @@ namespace
     static const int CARD_HEIGHT = 70;
     static const int CARD_MARGIN = 5;
 
-    void paint_card(QPainter& painter, const QPoint& destination, const QPixmap& cards_image, int card)
+    void paint_card(QPainter& painter, const QPoint& destination, const std::array<std::unique_ptr<QPixmap>, 52>& cards_images,
+        const QPixmap& empty, int card)
     {
-        QRect rect;
-
         if (card != -1)
-        {
-            const int x = (12 - get_rank(card)) * CARD_WIDTH;
-            int y;
-
-            switch (get_suit(card))
-            {
-            case CLUB: y = 5 * CARD_HEIGHT; break;
-            case DIAMOND: y = 4 * CARD_HEIGHT; break;
-            case HEART: y = 70; break;
-            case SPADE: y = 0; break;
-            default: y = 0;
-            }
-
-            rect.setRect(x, y, CARD_WIDTH, CARD_HEIGHT);
-        }
+            painter.drawPixmap(destination, *cards_images[card]);
         else
-        {
-            rect.setRect(650, 140, CARD_WIDTH, CARD_HEIGHT);
-        }
-
-        painter.drawPixmap(destination, cards_image, rect);
+            painter.drawPixmap(destination, empty);
     }
 }
 
 table_widget::table_widget(QWidget* parent)
     : QWidget(parent)
-    , cards_image_(new QPixmap(":/images/cards.png"))
     , dealer_image_(new QPixmap(":/images/dealer.png"))
     , dealer_(-1)
     , round_(-1)
+    , empty_image_(new QPixmap(":/images/card_empty.png"))
 {
     // TODO make editable and feed back to game state
     hole_[0].fill(-1);
@@ -59,6 +40,9 @@ table_widget::table_widget(QWidget* parent)
     board_.fill(-1);
     bets_.fill(0);
     pot_.fill(0);
+
+    for (int i = 0; i < 52; ++i)
+        card_images_[i].reset(new QPixmap(QString(":/images/card_%1.png").arg(get_card_string(i).c_str())));
 
     setFixedSize(800, 200);
 }
@@ -111,15 +95,15 @@ void table_widget::paintEvent(QPaintEvent*)
 
     int y = 0;
 
-    paint_card(painter, QPoint(0, y), *cards_image_, hole_[0][0]);
-    paint_card(painter, QPoint(CARD_WIDTH + CARD_MARGIN, y), *cards_image_, hole_[0][1]);
-    paint_card(painter, QPoint(rect().right() - 2 * CARD_WIDTH - CARD_MARGIN, y), *cards_image_, hole_[1][0]);
-    paint_card(painter, QPoint(rect().right() - CARD_WIDTH, y), *cards_image_, hole_[1][1]);
+    paint_card(painter, QPoint(0, y), card_images_, *empty_image_, hole_[0][0]);
+    paint_card(painter, QPoint(CARD_WIDTH + CARD_MARGIN, y), card_images_, *empty_image_, hole_[0][1]);
+    paint_card(painter, QPoint(rect().right() - 2 * CARD_WIDTH - CARD_MARGIN, y), card_images_, *empty_image_, hole_[1][0]);
+    paint_card(painter, QPoint(rect().right() - CARD_WIDTH, y), card_images_, *empty_image_, hole_[1][1]);
 
     for (int i = 0; i < board_.size(); ++i)
     {
         paint_card(painter, QPoint(rect().center().x() - (5 * CARD_WIDTH + 4 * CARD_MARGIN) / 2 + i
-            * (CARD_WIDTH + CARD_MARGIN), y), *cards_image_, board_[i]);
+            * (CARD_WIDTH + CARD_MARGIN), y), card_images_, *empty_image_, board_[i]);
     }
 
     y += CARD_HEIGHT + CARD_MARGIN;

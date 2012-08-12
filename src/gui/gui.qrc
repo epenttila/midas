@@ -1,6 +1,58 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
-    <file>images/cards.png</file>
+    <file>images/card_2c.png</file>
+    <file>images/card_2d.png</file>
+    <file>images/card_2h.png</file>
+    <file>images/card_2s.png</file>
+    <file>images/card_3c.png</file>
+    <file>images/card_3d.png</file>
+    <file>images/card_3h.png</file>
+    <file>images/card_3s.png</file>
+    <file>images/card_4c.png</file>
+    <file>images/card_4d.png</file>
+    <file>images/card_4h.png</file>
+    <file>images/card_4s.png</file>
+    <file>images/card_5c.png</file>
+    <file>images/card_5d.png</file>
+    <file>images/card_5h.png</file>
+    <file>images/card_5s.png</file>
+    <file>images/card_6c.png</file>
+    <file>images/card_6d.png</file>
+    <file>images/card_6h.png</file>
+    <file>images/card_6s.png</file>
+    <file>images/card_7c.png</file>
+    <file>images/card_7d.png</file>
+    <file>images/card_7h.png</file>
+    <file>images/card_7s.png</file>
+    <file>images/card_8c.png</file>
+    <file>images/card_8d.png</file>
+    <file>images/card_8h.png</file>
+    <file>images/card_8s.png</file>
+    <file>images/card_9c.png</file>
+    <file>images/card_9d.png</file>
+    <file>images/card_9h.png</file>
+    <file>images/card_9s.png</file>
+    <file>images/card_Tc.png</file>
+    <file>images/card_Td.png</file>
+    <file>images/card_Th.png</file>
+    <file>images/card_Ts.png</file>
+    <file>images/card_Jc.png</file>
+    <file>images/card_Jd.png</file>
+    <file>images/card_Jh.png</file>
+    <file>images/card_Js.png</file>
+    <file>images/card_Qc.png</file>
+    <file>images/card_Qd.png</file>
+    <file>images/card_Qh.png</file>
+    <file>images/card_Qs.png</file>
+    <file>images/card_Kc.png</file>
+    <file>images/card_Kd.png</file>
+    <file>images/card_Kh.png</file>
+    <file>images/card_Ks.png</file>
+    <file>images/card_Ac.png</file>
+    <file>images/card_Ad.png</file>
+    <file>images/card_Ah.png</file>
+    <file>images/card_As.png</file>
+    <file>images/card_empty.png</file>
     <file>images/dealer.png</file>
     <file>icons/cog.png</file>
     <file>icons/control_play.png</file>

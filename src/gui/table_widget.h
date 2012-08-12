@@ -24,10 +24,11 @@ protected:
 private:
     std::array<int, 5> board_;
     std::array<std::array<int, 2>, 2> hole_;
-    std::unique_ptr<QPixmap> cards_image_;
     std::unique_ptr<QPixmap> dealer_image_;
     int dealer_;
     int round_;
     std::array<int, 2> bets_;
     std::array<int, 2> pot_;
+    std::array<std::unique_ptr<QPixmap>, 52> card_images_;
+    std::unique_ptr<QPixmap> empty_image_;
 };
