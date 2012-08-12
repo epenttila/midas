@@ -347,6 +347,7 @@ bool site_888::update()
 
     std::array<double, 2> stack = {::get_stack_size(mono_image, 0), ::get_stack_size(mono_image, 1)};
 
+    // TODO consider opponent is button and bets before we get to read the stacks thus skipping the first snapshot
     // wait until we see stack sizes at the start of a hand
     if (dealer != dealer_ && (stack[0] == 0 || stack[1] == 0))
         return false;
