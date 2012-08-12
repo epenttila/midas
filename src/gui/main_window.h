@@ -48,7 +48,7 @@ private:
     };
 
     void find_window();
-    void update_site_info();
+    void process_snapshot();
     void perform_action();
 
     table_widget* visualizer_;
@@ -67,7 +67,6 @@ private:
     int next_action_;
     std::mt19937 engine_;
     double raise_fraction_;
-    bool action_needed_;
     double capture_interval_;
     double action_delay_mean_;
     double action_delay_stddev_;

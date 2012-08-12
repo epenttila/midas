@@ -232,22 +232,20 @@ namespace
         return d;
     }
 
-    enum action { NONE, FOLD, CALL, RAISE, ALLIN };
-
-    action get_last_action(const QImage& image, int player)
+    int get_last_action(const QImage& image, int player)
     {
-        const QPoint p = player == 0 ? QPoint(354, 405) : QPoint(354, 83);
+        const int y = player == 0 ? 381 : 59;
 
-        if (image.pixel(p) == qRgb(5, 130, 214))
-            return FOLD;
-        else if (image.pixel(p) == qRgb(102, 190, 44))
-            return CALL;
-        else if (image.pixel(p) == qRgb(254, 127, 3))
-            return RAISE;
-        else if (image.pixel(p) == qRgb(255, 0, 0))
-            return ALLIN;
+        if (image.pixel(QPoint(390, y)) == qRgb(5, 130, 213))
+            return site_base::FOLD;
+        else if (image.pixel(QPoint(385, y)) == qRgb(102, 190, 44) || image.pixel(QPoint(395, y)) == qRgb(102, 190, 44))
+            return site_base::CALL;
+        else if (image.pixel(QPoint(386, y)) == qRgb(254, 127, 3) || image.pixel(QPoint(394, y)) == qRgb(254, 127, 3))
+            return site_base::RAISE;
+        else if (image.pixel(QPoint(388, y)) == qRgb(255, 0, 0))
+            return site_base::ALLIN;
         else
-            return NONE;
+            return -1;
     }
 
     QPixmap screenshot(WId winId)
@@ -290,6 +288,7 @@ site_888::site_888(input_manager& input_manager, WId window)
     , fraction_(-1)
     , window_(window)
     , input_(input_manager)
+    , action_needed_(false)
 {
     hole_.fill(-1);
     board_.fill(-1);
@@ -332,19 +331,28 @@ bool site_888::update()
     bets_[1] = read_bet_size(mono_image, QRect(263, 124, 266, 12));
 
     const auto title = window_manager::get_window_text(window_);
-    const std::regex re(".*\\$[0-9.]+/\\$([0-9.]+).*");
+    const std::regex re(".*\\$?[0-9.]+[^/]*/(\\$?)([0-9.]+).*");
     std::smatch match;
 
     if (std::regex_match(title, match, re))
-        big_blind_ = std::atof(match[1].str().c_str());
+    {
+        big_blind_ = std::atof(match[2].str().c_str());
+
+        if (match.length(1) == 0)
+            big_blind_ /= 100;
+    }
 
     if (dealer == -1 || player == -1)
         return false;
 
     std::array<double, 2> stack = {::get_stack_size(mono_image, 0), ::get_stack_size(mono_image, 1)};
 
-    // TODO this might sometime result in a new hand not being detected
+    // wait until we see stack sizes at the start of a hand
     if (dealer != dealer_ && (stack[0] == 0 || stack[1] == 0))
+        return false;
+
+    // wait until we see action buttons on our turn
+    if (player == 0 && !action_needed_)
         return false;
 
     new_hand_ = dealer != dealer_;
@@ -366,6 +374,7 @@ bool site_888::update()
     const bool new_round = round != round_;
     round_ = round;
 
+    // we are on the same turn as before, ignore update
     if (!new_player && !new_round && !new_hand_)
         return false;
 
@@ -375,17 +384,17 @@ bool site_888::update()
     const double last_bet = player_ == 0 ? bets_[1] : bets_[0];
     to_call_ = last_bet - (player_ == 0 ? bets_[0] : bets_[1]);
  
-    if (get_last_action(image, 0) == ALLIN || get_last_action(image, 1) == ALLIN)
+    if (get_last_action(image, player ^ 1) == ALLIN)
     {
         action_ = RAISE;
         fraction_ = std::numeric_limits<double>::max();
     }
-    else if (get_last_action(image, 0) == CALL || (round_ != holdem_abstraction::PREFLOP
+    else if (get_last_action(image, player ^ 1) == CALL || (round_ != holdem_abstraction::PREFLOP
         && (new_round || (new_player && last_bet == 0))) || (bets_[0] > 0 && bets_[0] == bets_[1]))
     {
         action_ = CALL;
     }
-    else if (get_last_action(image, 0) == RAISE || (big_blind_ > 0
+    else if (get_last_action(image, player ^ 1) == RAISE || (big_blind_ > 0
         && ((round_ == holdem_abstraction::PREFLOP && (bets_[0] > big_blind_ || bets_[1] > big_blind_)
         || (round_ != holdem_abstraction::PREFLOP && (bets_[0] >= big_blind_ || bets_[1] >= big_blind_))))))
     {

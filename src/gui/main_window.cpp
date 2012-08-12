@@ -61,7 +61,6 @@ main_window::main_window()
     : window_manager_(new window_manager)
     , engine_(std::random_device()())
     , play_(false)
-    , action_needed_(false)
     , input_manager_(new input_manager)
 {
     auto widget = new QFrame(this);
@@ -148,8 +147,7 @@ main_window::~main_window()
 void main_window::timer_timeout()
 {
     find_window();
-    update_site_info();
-    perform_action();
+    process_snapshot();
 }
 
 void main_window::open_strategy()
@@ -271,41 +269,39 @@ void main_window::play_timer_timeout()
 
 void main_window::find_window()
 {
-    if (!window_manager_->is_window())
+    if (window_manager_->is_window())
+        return;
+
+    if (window_manager_->find_window())
     {
-        if (window_manager_->find_window())
-        {
-            const auto window = window_manager_->get_window();
+        const auto window = window_manager_->get_window();
 
-            switch (site_list_->itemData(site_list_->currentIndex()).toInt())
-            {
-            case SITE_STARS:
-                site_.reset(new site_stars(window));
-                break;
-            case SITE_888:
-                site_.reset(new site_888(*input_manager_, window));
-                break;
-            default:
-                assert(false);
-            }
-
-            const std::string title_name = window_manager_->get_title_name();
-            capture_label_->setText(QString("%1").arg(title_name.c_str()));
-        }
-        else
+        switch (site_list_->itemData(site_list_->currentIndex()).toInt())
         {
-            site_.reset();
-            capture_label_->setText("No window");
+        case SITE_STARS:
+            site_.reset(new site_stars(window));
+            break;
+        case SITE_888:
+            site_.reset(new site_888(*input_manager_, window));
+            break;
+        default:
+            assert(false);
         }
+
+        const std::string title_name = window_manager_->get_title_name();
+        capture_label_->setText(QString("%1").arg(title_name.c_str()));
+    }
+    else
+    {
+        site_.reset();
+        capture_label_->setText("No window");
     }
 }
 
-void main_window::update_site_info()
+void main_window::process_snapshot()
 {
     if (!site_ || !site_->update())
         return;
-
-    action_needed_ = site_->is_action_needed();
 
     visualizer_->set_dealer(site_->get_dealer());
 
@@ -365,11 +361,13 @@ void main_window::update_site_info()
         strategy_->update(*strategy_info.abstraction_, board, *strategy, current_state->get_id(),
             current_state->get_action_count());
     }
+
+    perform_action();
 }
 
 void main_window::perform_action()
 {
-    if (!play_ || !site_ || strategy_infos_.empty() || !action_needed_ || play_timer_->isActive())
+    if (!play_ || !site_ || strategy_infos_.empty() || !site_->is_action_needed() || play_timer_->isActive())
         return;
 
     auto stack_size = site_->get_stack_size();
@@ -470,7 +468,6 @@ void main_window::perform_action()
     play_timer_->setSingleShot(true);
     play_timer_->start(int(wait * 1000.0));
     log_->appendPlainText(QString("Waiting %1 seconds...").arg(wait));
-    action_needed_ = false;
 }
 
 void main_window::settings_triggered()

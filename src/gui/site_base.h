@@ -6,7 +6,7 @@
 class site_base
 {
 public:
-    enum { FOLD, CALL, RAISE };
+    enum { FOLD, CALL, RAISE, ALLIN };
     virtual ~site_base() {}
     virtual bool update() = 0;
     virtual int get_action() const = 0;
