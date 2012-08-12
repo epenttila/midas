@@ -50,6 +50,7 @@ private:
     void find_window();
     void process_snapshot();
     void perform_action();
+    void closeEvent(QCloseEvent* event);
 
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<strategy_info>> strategy_infos_;

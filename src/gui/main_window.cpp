@@ -136,12 +136,6 @@ main_window::main_window()
 
 main_window::~main_window()
 {
-    QSettings settings;
-    settings.setValue("capture_interval", capture_interval_);
-    settings.setValue("action_delay_mean", action_delay_mean_);
-    settings.setValue("action_delay_dev", action_delay_stddev_);
-    settings.setValue("input_delay_mean", input_manager_->get_delay_mean());
-    settings.setValue("input_delay_stddev", input_manager_->get_delay_stddev());
 }
 
 void main_window::timer_timeout()
@@ -483,6 +477,17 @@ void main_window::settings_triggered()
         input_manager_->set_delay_mean(d.get_input_delay_mean());
         input_manager_->set_delay_stddev(d.get_input_delay_stddev());
     }
+}
+
+void main_window::closeEvent(QCloseEvent* event)
+{
+    QSettings settings;
+    settings.setValue("capture_interval", capture_interval_);
+    settings.setValue("action_delay_mean", action_delay_mean_);
+    settings.setValue("action_delay_dev", action_delay_stddev_);
+    settings.setValue("input_delay_mean", input_manager_->get_delay_mean());
+    settings.setValue("input_delay_stddev", input_manager_->get_delay_stddev());
+    event->accept();
 }
 
 main_window::strategy_info::strategy_info()
