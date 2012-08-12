@@ -35,6 +35,7 @@
 #include "site_base.h"
 #include "settings_dialog.h"
 #include "input_manager.h"
+#include "util/card.h"
 
 namespace
 {
@@ -203,7 +204,7 @@ void main_window::open_strategy()
         si->strategy_.reset(new strategy(str_filename, states, si->root_state_->get_action_count()));
     }
 
-    log_->appendPlainText(QString("%1 strategies loaded").arg(filenames.size()));
+    log_->appendPlainText(QString("%1 strategy files loaded").arg(filenames.size()));
 }
 
 void main_window::capture_changed()
@@ -240,22 +241,22 @@ void main_window::play_changed()
 void main_window::play_timer_timeout()
 {
     assert(play_);
-    log_->appendPlainText("Waiting for mutex...");
+    log_->appendPlainText("Player: Waiting for mutex...");
 
     auto mutex = window_manager_->try_interact();
 
     switch (next_action_)
     {
     case site_base::FOLD:
-        log_->appendPlainText("Folding");
+        log_->appendPlainText("Player: Fold");
         site_->fold();
         break;
     case site_base::CALL:
-        log_->appendPlainText("Calling");
+        log_->appendPlainText("Player: Call");
         site_->call();
         break;
     case site_base::RAISE:
-        log_->appendPlainText(QString("Raising %1").arg(raise_fraction_));
+        log_->appendPlainText(QString("Player: Raise %1x pot").arg(raise_fraction_));
         site_->raise(raise_fraction_);
         break;
     }
@@ -297,6 +298,8 @@ void main_window::process_snapshot()
     if (!site_ || !site_->update())
         return;
 
+    log_->appendPlainText("*** SNAPSHOT ***");
+
     visualizer_->set_dealer(site_->get_dealer());
 
     auto hole = site_->get_hole_cards();
@@ -306,6 +309,28 @@ void main_window::process_snapshot()
     std::array<int, 5> board;
     site_->get_board_cards(board);
     visualizer_->set_board_cards(board);
+
+    if (hole.first != -1 && hole.second != -1)
+    {
+        log_->appendPlainText(QString("Hole: [%1 %2]").arg(get_card_string(hole.first).c_str())
+           .arg(get_card_string(hole.second).c_str()));
+    }
+
+    if (board[4] != -1)
+    {
+        log_->appendPlainText(QString("Board: [%1 %2 %3 %4] [%5]").arg(get_card_string(board[0]).c_str()).arg(get_card_string(board[1]).c_str())
+            .arg(get_card_string(board[2]).c_str()).arg(get_card_string(board[3]).c_str()).arg(get_card_string(board[4]).c_str()));
+    }
+    else if (board[3] != -1)
+    {
+        log_->appendPlainText(QString("Board: [%1 %2 %3] [%4]").arg(get_card_string(board[0]).c_str()).arg(get_card_string(board[1]).c_str())
+            .arg(get_card_string(board[2]).c_str()).arg(get_card_string(board[3]).c_str()));
+    }
+    else if (board[0] != -1)
+    {
+        log_->appendPlainText(QString("Board: [%1 %2 %3]").arg(get_card_string(board[0]).c_str()).arg(get_card_string(board[1]).c_str())
+            .arg(get_card_string(board[2]).c_str()));
+    }
 
     if (strategy_infos_.empty())
         return;
@@ -351,7 +376,7 @@ void main_window::process_snapshot()
     {
         std::stringstream ss;
         ss << *current_state;
-        log_->appendPlainText(ss.str().c_str());
+        log_->appendPlainText(QString("State: %1").arg(ss.str().c_str()));
         strategy_->update(*strategy_info.abstraction_, board, *strategy, current_state->get_id(),
             current_state->get_action_count());
     }
@@ -404,21 +429,9 @@ void main_window::perform_action()
 
         switch (action)
         {
-        case nlhe_state_base::FOLD: s = "FOLD"; break;
-        case nlhe_state_base::CALL: s = "CALL"; break;
-        case nlhe_state_base::RAISE_H: s = "RAISE_H"; break;
-        case nlhe_state_base::RAISE_Q: s = "RAISE_Q"; break;
-        case nlhe_state_base::RAISE_P: s = "RAISE_P"; break;
-        case nlhe_state_base::RAISE_A: s = "RAISE_A"; break;
-        }
-
-        double probability = strategy->get(current_state->get_id(), index, bucket);
-        log_->appendPlainText(QString("%1 (%2%)").arg(s.c_str()).arg(int(probability * 100)));
-
-        switch (action)
-        {
         case nlhe_state_base::FOLD:
             next_action_ = site_base::FOLD;
+            s = "FOLD";
             break;
         case nlhe_state_base::CALL:
             {
@@ -435,25 +448,33 @@ void main_window::perform_action()
                 {
                     next_action_ = site_base::CALL;
                 }
+
+                s = "CALL";
             }
             break;
         case nlhe_state_base::RAISE_H:
             next_action_ = site_base::RAISE;
             raise_fraction_ = 0.5;
+            s = "RAISE_H";
             break;
         case nlhe_state_base::RAISE_P:
             next_action_ = site_base::RAISE;
             raise_fraction_ = 1.0;
+            s = "RAISE_P";
             break;
         case nlhe_state_base::RAISE_A:
             next_action_ = site_base::RAISE;
             raise_fraction_ = 999.0;
+            s = "RAISE_A";
             break;
         }
+
+        const double probability = strategy->get(current_state->get_id(), index, bucket);
+        log_->appendPlainText(QString("Decision: %1 (%2%)").arg(s.c_str()).arg(int(probability * 100)));
     }
     else
     {
-        log_->appendPlainText("Warning: unknown state, folding...");
+        log_->appendPlainText("Warning: Unknown state, folding...");
         next_action_ = site_base::FOLD;
     }
 
@@ -461,7 +482,7 @@ void main_window::perform_action()
     const double wait = std::max(capture_interval_ * 2.0, dist(engine_));
     play_timer_->setSingleShot(true);
     play_timer_->start(int(wait * 1000.0));
-    log_->appendPlainText(QString("Waiting %1 seconds...").arg(wait));
+    log_->appendPlainText(QString("Player: Waiting %1 seconds...").arg(wait));
 }
 
 void main_window::settings_triggered()
