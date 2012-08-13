@@ -7,6 +7,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/signals2.hpp>
 #include <regex>
+#include <boost/timer/timer.hpp>
 #define NOMINMAX
 #include <Windows.h>
 #include <QPlainTextEdit>
@@ -295,10 +296,15 @@ void main_window::find_window()
 
 void main_window::process_snapshot()
 {
-    if (!site_ || !site_->update())
+    if (play_timer_->isActive() || !site_)
         return;
 
-    log_->appendPlainText("*** SNAPSHOT ***");
+    boost::timer::cpu_timer t;
+
+    if (!site_->update())
+        return;
+
+    log_->appendPlainText(QString("*** SNAPSHOT (%1 ms) ***").arg(t.elapsed().wall / 1000000.0));
 
     visualizer_->set_dealer(site_->get_dealer());
 
@@ -357,10 +363,16 @@ void main_window::process_snapshot()
     }
 
     if (!current_state)
+    {
+        log_->appendPlainText("Warning: Invalid state");
         return;
+    }
 
     if (current_state->get_round() != site_->get_round())
+    {
+        log_->appendPlainText("Warning: Round mismatch");
         return;
+    }
 
     std::array<int, 2> pot = current_state->get_pot();
         
