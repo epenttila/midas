@@ -67,8 +67,7 @@ main_window::main_window()
     , input_manager_(new input_manager)
     , acting_(false)
 {
-    auto widget = new QFrame(this);
-    widget->setFrameStyle(QFrame::StyledPanel);
+    auto widget = new QWidget(this);
     widget->setFocus();
 
     setCentralWidget(widget);
