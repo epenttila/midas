@@ -91,7 +91,9 @@ main_window::main_window()
 
     site_list_ = new QComboBox(this);
     site_list_->insertItem(SITE_STARS, "PokerStars", SITE_STARS);
-    site_list_->insertItem(SITE_888, "888 Poker", SITE_888);
+    site_list_->insertItem(SITE_888, "888poker", SITE_888);
+    site_list_->model()->sort(0);
+    site_list_->setCurrentIndex(0);
     action = toolbar->addWidget(site_list_);
 
     toolbar->addSeparator();
