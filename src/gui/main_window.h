@@ -35,6 +35,7 @@ public slots:
     void play_changed();
     void play_timer_timeout();
     void settings_triggered();
+    void step_triggered();
 
 private:
     struct strategy_info
@@ -45,6 +46,13 @@ private:
         const nlhe_state_base* current_state_;
         std::unique_ptr<strategy> strategy_;
         std::unique_ptr<holdem_abstraction> abstraction_;
+    };
+
+    struct snapshot_type
+    {
+        int round;
+        double bet;
+        int stack_size;
     };
 
     void find_window();
@@ -72,4 +80,8 @@ private:
     double action_delay_mean_;
     double action_delay_stddev_;
     std::unique_ptr<input_manager> input_manager_;
+    snapshot_type snapshot_;
+    bool acting_;
+    QAction* step_action_;
+    double action_min_delay_;
 };

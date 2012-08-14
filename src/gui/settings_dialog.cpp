@@ -7,8 +7,8 @@
 #include <QDialogButtonBox>
 #pragma warning(pop)
 
-settings_dialog::settings_dialog(double capture_interval, double action_delay_mean, double action_delay_stddev, double input_delay_mean,
-    double input_delay_stddev, QWidget* parent)
+settings_dialog::settings_dialog(double capture_interval, double action_min_delay, double action_delay_mean,
+    double action_delay_stddev, double input_delay_mean, double input_delay_stddev, QWidget* parent)
     : QDialog(parent)
 {
     auto layout = new QFormLayout(this);
@@ -16,6 +16,8 @@ settings_dialog::settings_dialog(double capture_interval, double action_delay_me
     capture_interval_ = new QLineEdit(QString("%1").arg(capture_interval));
     layout->addRow("Capture interval:", capture_interval_);
 
+    action_min_delay_ = new QLineEdit(QString("%1").arg(action_min_delay));
+    layout->addRow("Action minimum delay:", action_min_delay_);
     action_delay_mean_ = new QLineEdit(QString("%1").arg(action_delay_mean));
     layout->addRow("Action delay mean:", action_delay_mean_);
     action_delay_stddev_ = new QLineEdit(QString("%1").arg(action_delay_stddev));
@@ -57,4 +59,9 @@ double settings_dialog::get_input_delay_mean() const
 double settings_dialog::get_input_delay_stddev() const
 {
     return input_delay_stddev_->text().toDouble();
+}
+
+double settings_dialog::get_action_min_delay() const
+{
+    return action_min_delay_->text().toDouble();
 }

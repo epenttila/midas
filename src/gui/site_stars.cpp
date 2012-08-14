@@ -224,22 +224,19 @@ site_stars::site_stars(WId window)
     , player_(-1)
     , round_(-1)
     , big_blind_(-1)
-    , action_(-1)
     , stack_bb_(-1)
-    , new_hand_(true)
-    , fraction_(-1)
     , window_(window)
 {
     hole_.fill(-1);
     board_.fill(-1);
 }
 
-bool site_stars::update()
+void site_stars::update()
 {
     if (!IsWindow(window_))
     {
         dealer_ = -1;
-        return false;
+        return;
     }
 
     const auto title = window_manager::get_window_text(window_);
@@ -252,22 +249,22 @@ bool site_stars::update()
     const auto image = screenshot(window_).toImage();
 
     if (image.isNull())
-        return false;
+        return;
 
     const int dealer = ::get_dealer(image);
     const int player = get_active_player(image);
 
     if (dealer == -1 || player == -1)
-        return false;
+        return;
 
-    new_hand_ = dealer != dealer_;
+    const bool new_hand = dealer != dealer_;
     dealer_ = dealer;
     const bool new_player = player != player_;
     player_ = player;
 
     const double stack = ::get_stack_size(image, 0);
     const double stack2 = ::get_stack_size(image, 1);
-    const double total_pot = get_total_pot(image);
+    //const double total_pot = ::get_total_pot(image);
 
     hole_[0] = get_board_card(image, QRect(51, 112, 50, 13));
     hole_[1] = get_board_card(image, QRect(66, 116, 50, 13));
@@ -291,45 +288,14 @@ bool site_stars::update()
     const bool new_round = round != round_;
     round_ = round;
 
-    if (!new_player && !new_round && !new_hand_)
-        return false;
+    if (!new_player && !new_round && !new_hand)
+        return;
 
-    const double left_bet = get_bet_size(image, QRect(128, 235, 140, 10));
-    const double right_bet = get_bet_size(image, QRect(534, 235, 136, 10));
+    //const double left_bet = get_bet_size(image, QRect(128, 235, 140, 10));
+    //const double right_bet = get_bet_size(image, QRect(534, 235, 136, 10));
     
-    if (new_hand_ && big_blind_ > 0)
+    if (new_hand && big_blind_ > 0)
         stack_bb_ = std::min(stack, stack2) / big_blind_;
-
-    const double last_bet = player_ == 0 ? right_bet : left_bet;
-    const double to_call = last_bet - (player_ == 0 ? left_bet : right_bet);
- 
-    if (stack == 0 || stack2 == 0)
-    {
-        action_ = RAISE;
-        fraction_ = std::numeric_limits<double>::max();
-    }
-    else if ((round_ != holdem_abstraction::PREFLOP && (new_round || (new_player && last_bet == 0))) || (left_bet > 0 && left_bet == right_bet))
-    {
-        action_ = CALL;
-    }
-    else if (big_blind_ > 0
-        && ((round_ == holdem_abstraction::PREFLOP && (left_bet > big_blind_ || right_bet > big_blind_)
-        || (round_ != holdem_abstraction::PREFLOP && (left_bet >= big_blind_ || right_bet >= big_blind_)))))
-    {
-        action_ = RAISE;
-        fraction_ = to_call / total_pot;
-    }
-    else
-    {
-        action_ = -1;
-    }
-
-    return true;
-}
-
-int site_stars::get_action() const
-{
-    return action_;
 }
 
 std::pair<int, int> site_stars::get_hole_cards() const
@@ -342,35 +308,9 @@ void site_stars::get_board_cards(std::array<int, 5>& board) const
     board = board_;
 }
 
-bool site_stars::is_new_hand() const
-{
-    return new_hand_;
-}
-
-int site_stars::get_round() const
-{
-    return round_;
-}
-
-double site_stars::get_raise_fraction() const
-{
-    return fraction_;
-}
-
 int site_stars::get_dealer() const
 {
     return dealer_;
-}
-
-int site_stars::get_stack_size() const
-{
-    return int(stack_bb_ * 2 + 0.5);
-}
-
-bool site_stars::is_action_needed() const
-{
-    // TODO implement
-    return false;
 }
 
 void site_stars::fold() const
@@ -386,4 +326,52 @@ void site_stars::call() const
 void site_stars::raise(double) const
 {
     // TODO implement
+}
+
+double site_stars::get_stack(int) const
+{
+    // TODO implement
+    return -1;
+}
+
+double site_stars::get_bet(int) const
+{
+    // TODO implement
+    return -1;
+}
+
+double site_stars::get_big_blind() const
+{
+    // TODO implement
+    return -1;
+}
+
+double site_stars::get_total_pot() const
+{
+    // TODO implement
+    return -1;
+}
+
+int site_stars::get_player() const
+{
+    // TODO implement
+    return -1;
+}
+
+bool site_stars::is_opponent_allin() const
+{
+    // TODO implement
+    return false;
+}
+
+int site_stars::get_buttons() const
+{
+    // TODO implement
+    return 0;
+}
+
+bool site_stars::is_opponent_sitout() const
+{
+    // TODO implement
+    return false;
 }

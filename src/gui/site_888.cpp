@@ -29,16 +29,6 @@ namespace
         return bitmap;
     }
 
-    int get_active_player(const QImage& image)
-    {
-        if (image.pixel(310, 365) == qRgb(255, 255, 255))
-            return 0;
-        else if (image.pixel(310, 88) == qRgb(255, 255, 255))
-            return 1;
-        else
-            return -1;
-    }
-
     std::string read_text_type1(const QImage& image, const QRect& rect, const QRgb& color)
     {
         std::string s;
@@ -150,28 +140,7 @@ namespace
         return s;
     }
 
-    double get_stack_size(const QImage& image, const int player)
-    {
-        const QRect left_rect(312, 390, 150, 11);
-        const QRect right_rect(312, 68, 150, 11);
-        const QRect rect = player == 0 ? left_rect : right_rect;
-        const bool flashing = (image.pixel(QPoint(rect.left() - 1, rect.top())) == qRgb(255, 255, 255));
-        const auto s = flashing ? read_text_type3(image, rect, qRgb(255, 255, 255))
-            : read_text_type2(image, rect, qRgb(255, 255, 255));
-        return s.empty() ? 0 : std::atof(s.c_str());
-    }
-
-    int get_dealer(const QImage& image)
-    {
-        if (image.pixel(QPoint(332, 300)) == qRgb(255, 255, 255))
-            return 0;
-        else if (image.pixel(QPoint(332, 99)) == qRgb(255, 255, 255))
-            return 1;
-        else
-            return -1;
-    }
-
-    int get_board_card(const QImage& image, const QRect& rect)
+    int read_card(const QImage& image, const QRect& rect)
     {
         const std::array<QRgb, 4> colors = {{
             qRgb(29, 149, 5), // clubs
@@ -232,22 +201,6 @@ namespace
         return d;
     }
 
-    int get_last_action(const QImage& image, int player)
-    {
-        const int y = player == 0 ? 381 : 59;
-
-        if (image.pixel(QPoint(390, y)) == qRgb(5, 130, 213))
-            return site_base::FOLD;
-        else if (image.pixel(QPoint(385, y)) == qRgb(102, 190, 44) || image.pixel(QPoint(395, y)) == qRgb(102, 190, 44))
-            return site_base::CALL;
-        else if (image.pixel(QPoint(386, y)) == qRgb(254, 127, 3) || image.pixel(QPoint(394, y)) == qRgb(254, 127, 3))
-            return site_base::RAISE;
-        else if (image.pixel(QPoint(388, y)) == qRgb(255, 0, 0))
-            return site_base::ALLIN;
-        else
-            return -1;
-    }
-
     QPixmap screenshot(WId winId)
     {
         RECT r;
@@ -278,181 +231,72 @@ namespace
 }
 
 site_888::site_888(input_manager& input_manager, WId window)
-    : dealer_(-1)
-    , player_(-1)
-    , round_(-1)
-    , big_blind_(-1)
-    , action_(-1)
-    , stack_bb_(-1)
-    , new_hand_(true)
-    , fraction_(-1)
-    , window_(window)
+    : window_(window)
     , input_(input_manager)
-    , action_needed_(false)
 {
-    hole_.fill(-1);
-    board_.fill(-1);
 }
 
-bool site_888::update()
+void site_888::update()
 {
     if (!IsWindow(window_))
     {
-        dealer_ = -1;
-        return false;
+        image_.reset();
+        mono_image_.reset();
+        return;
     }
 
-    const auto image = screenshot(window_).toImage();
+    if (!image_)
+        image_.reset(new QImage);
 
-    if (image.isNull())
-        return false;
+    *image_ = screenshot(window_).toImage();
 
-    const auto mono_image = image.convertToFormat(QImage::Format_Mono, Qt::ThresholdDither);
-
-    //image.save("test.png");
-    //mono_image.save("testmono.png");
-
-    const int dealer = ::get_dealer(image);
-    const int player = get_active_player(image);
-
-    hole_[0] = get_board_card(image, QRect(338, 326, 48, 17));
-    hole_[1] = get_board_card(image, QRect(388, 326, 48, 17));
-    board_[0] = get_board_card(image, QRect(264, 156, 48, 17));
-    board_[1] = get_board_card(image, QRect(318, 156, 48, 17));
-    board_[2] = get_board_card(image, QRect(372, 156, 48, 17));
-    board_[3] = get_board_card(image, QRect(426, 156, 48, 17));
-    board_[4] = get_board_card(image, QRect(480, 156, 48, 17));
-
-    can_raise_ = image.pixel(639, 437) == qRgb(0, 0, 0);
-    action_needed_ = player == 0 ? image.pixel(327, 437) == qRgb(0, 0, 0) : false;
-
-    total_pot_ = read_bet_size(mono_image, QRect(263, 140, 266, 12));
-    bets_[0] = read_bet_size(mono_image, QRect(263, 310, 266, 12));
-    bets_[1] = read_bet_size(mono_image, QRect(263, 124, 266, 12));
-
-    const auto title = window_manager::get_window_text(window_);
-    const std::regex re(".*\\$?[0-9.]+[^/]*/(\\$?)([0-9.]+).*");
-    std::smatch match;
-
-    if (std::regex_match(title, match, re))
+    if (image_->isNull())
     {
-        big_blind_ = std::atof(match[2].str().c_str());
-
-        if (match.length(1) == 0)
-            big_blind_ /= 100;
+        image_.reset();
+        mono_image_.reset();
+        return;
     }
 
-    if (dealer == -1 || player == -1)
-        return false;
+    if (!mono_image_)
+        mono_image_.reset(new QImage);
 
-    std::array<double, 2> stack = {::get_stack_size(mono_image, 0), ::get_stack_size(mono_image, 1)};
-
-    // TODO consider opponent is button and bets before we get to read the stacks thus skipping the first snapshot
-    // wait until we see stack sizes at the start of a hand
-    if (dealer != dealer_ && (stack[0] == 0 || stack[1] == 0))
-        return false;
-
-    // wait until we see action buttons on our turn
-    if (player == 0 && !action_needed_)
-        return false;
-
-    new_hand_ = dealer != dealer_;
-    dealer_ = dealer;
-    const bool new_player = player != player_;
-    player_ = player;    
-
-    int round;
-
-    if (board_[4] != -1)
-        round = holdem_abstraction::RIVER;
-    else if (board_[3] != -1)
-        round = holdem_abstraction::TURN;
-    else if (board_[0] != -1)
-        round = holdem_abstraction::FLOP;
-    else
-        round = holdem_abstraction::PREFLOP;
-
-    const bool new_round = round != round_;
-    round_ = round;
-
-    // we are on the same turn as before, ignore update
-    if (!new_player && !new_round && !new_hand_)
-        return false;
-
-    if (new_hand_ && big_blind_ > 0 && stack[0] > 0 && stack[1] > 0)
-        stack_bb_ = std::min(stack[0] + bets_[0], stack[1] + bets_[1]) / big_blind_;
-
-    const double last_bet = player_ == 0 ? bets_[1] : bets_[0];
-    to_call_ = last_bet - (player_ == 0 ? bets_[0] : bets_[1]);
- 
-    if (get_last_action(image, player ^ 1) == ALLIN)
-    {
-        action_ = RAISE;
-        fraction_ = std::numeric_limits<double>::max();
-    }
-    else if (get_last_action(image, player ^ 1) == CALL || (round_ != holdem_abstraction::PREFLOP
-        && (new_round || (new_player && last_bet == 0))) || (bets_[0] > 0 && bets_[0] == bets_[1]))
-    {
-        action_ = CALL;
-    }
-    else if (get_last_action(image, player ^ 1) == RAISE || (big_blind_ > 0
-        && ((round_ == holdem_abstraction::PREFLOP && (bets_[0] > big_blind_ || bets_[1] > big_blind_)
-        || (round_ != holdem_abstraction::PREFLOP && (bets_[0] >= big_blind_ || bets_[1] >= big_blind_))))))
-    {
-        action_ = RAISE;
-        fraction_ = to_call_ / total_pot_;
-    }
-    else
-    {
-        action_ = -1;
-    }
-
-    return true;
-}
-
-int site_888::get_action() const
-{
-    return action_;
+    *mono_image_ = image_->convertToFormat(QImage::Format_Mono, Qt::ThresholdDither);
 }
 
 std::pair<int, int> site_888::get_hole_cards() const
 {
-    return std::make_pair(hole_[0], hole_[1]);
+    if (!image_)
+        return std::make_pair(-1, -1);
+
+    return std::make_pair(read_card(*image_, QRect(338, 326, 48, 17)), read_card(*image_, QRect(388, 326, 48, 17)));
 }
 
 void site_888::get_board_cards(std::array<int, 5>& board) const
 {
-    board = board_;
-}
+    if (!image_)
+    {
+        board.fill(-1);
+        return;
+    }
 
-bool site_888::is_new_hand() const
-{
-    return new_hand_;
-}
-
-int site_888::get_round() const
-{
-    return round_;
-}
-
-double site_888::get_raise_fraction() const
-{
-    return fraction_;
+    board[0] = read_card(*image_, QRect(264, 156, 48, 17));
+    board[1] = read_card(*image_, QRect(318, 156, 48, 17));
+    board[2] = read_card(*image_, QRect(372, 156, 48, 17));
+    board[3] = read_card(*image_, QRect(426, 156, 48, 17));
+    board[4] = read_card(*image_, QRect(480, 156, 48, 17));
 }
 
 int site_888::get_dealer() const
 {
-    return dealer_;
-}
+    if (!image_)
+        return -1;
 
-int site_888::get_stack_size() const
-{
-    return int(stack_bb_ * 2 + 0.5);
-}
-
-bool site_888::is_action_needed() const
-{
-    return action_needed_;
+    if (image_->pixel(QPoint(332, 300)) == qRgb(255, 255, 255))
+        return 0;
+    else if (image_->pixel(QPoint(332, 99)) == qRgb(255, 255, 255))
+        return 1;
+    else
+        return -1;
 }
 
 void site_888::fold() const
@@ -465,11 +309,10 @@ void site_888::call() const
     input_.send_keypress(VK_F6);
 }
 
-void site_888::raise(double fraction) const
+void site_888::raise(double amount) const
 {
-    if (can_raise_)
+    if (get_buttons() & RAISE_BUTTON)
     {
-        const double amount = int((fraction * (total_pot_ + to_call_) + to_call_ + bets_[0]) / big_blind_) * big_blind_;
         input_.send_string(boost::lexical_cast<std::string>(amount));
         input_.sleep();
         input_.send_keypress(VK_F7);
@@ -478,4 +321,96 @@ void site_888::raise(double fraction) const
     {
         call();
     }
+}
+
+double site_888::get_stack(int player) const
+{
+    if (!mono_image_)
+        return -1;
+
+    const QRect left_rect(353, 390, 150, 11);
+    const QRect right_rect(353, 68, 150, 11);
+    const QRect rect = player == 0 ? left_rect : right_rect;
+    const bool flashing = (mono_image_->pixel(QPoint(rect.left() - 43, rect.top())) == qRgb(255, 255, 255));
+    const auto s = flashing ? read_text_type3(*mono_image_, rect, qRgb(255, 255, 255))
+        : read_text_type2(*mono_image_, rect, qRgb(255, 255, 255));
+    return s.empty() ? 0 : std::atof(s.c_str());
+}
+
+double site_888::get_bet(int player) const
+{
+    if (!mono_image_)
+        return -1;
+
+    return player == 0 ? read_bet_size(*mono_image_, QRect(263, 310, 266, 12))
+        : read_bet_size(*mono_image_, QRect(263, 124, 266, 12));
+}
+
+double site_888::get_big_blind() const
+{
+    const auto title = window_manager::get_window_text(window_);
+    const std::regex re(".*\\$?[0-9.]+[^/]*/(\\$?)([0-9.]+).*");
+    std::smatch match;
+
+    double big_blind = -1;
+
+    if (std::regex_match(title, match, re))
+    {
+        big_blind = std::atof(match[2].str().c_str());
+
+        if (match.length(1) == 0)
+            big_blind /= 100;
+    }
+
+    return big_blind;
+}
+
+int site_888::get_player() const
+{
+    if (!image_)
+        return -1;
+
+    if (image_->pixel(310, 365) == qRgb(255, 255, 255))
+        return 0;
+    else if (image_->pixel(310, 88) == qRgb(255, 255, 255))
+        return 1;
+    else
+        return -1;
+}
+
+double site_888::get_total_pot() const
+{
+    return mono_image_ ? read_bet_size(*mono_image_, QRect(263, 140, 266, 12)) : -1;
+}
+
+bool site_888::is_opponent_allin() const
+{
+    return image_ ? image_->pixel(374, 67) == qRgb(255, 0, 0) : false;
+}
+
+int site_888::get_buttons() const
+{
+    if (!image_)
+        return 0;
+
+    int buttons = 0;
+
+    if (image_->pixel(328, 469) == qRgb(5, 130, 213) || image_->pixel(328, 469) == qRgb(18, 162, 226))
+        buttons |= FOLD_BUTTON;
+
+    if (image_->pixel(484, 469) == qRgb(89, 218, 0) || image_->pixel(484, 469) == qRgb(126, 229, 0))
+        buttons |= CALL_BUTTON;
+
+    if (image_->pixel(640, 469) == qRgb(255, 130, 7) || image_->pixel(640, 469) == qRgb(255, 162, 23)
+        || image_->pixel(640, 469) == qRgb(255, 0, 0))
+    {
+        buttons |= RAISE_BUTTON;
+    }
+
+    return buttons;
+}
+
+bool site_888::is_opponent_sitout() const
+{
+    return image_ ? image_->pixel(367, 67) == qRgb(113, 113, 113) : false;
 }

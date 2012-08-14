@@ -64,6 +64,7 @@ main_window::main_window()
     , engine_(std::random_device()())
     , play_(false)
     , input_manager_(new input_manager)
+    , acting_(false)
 {
     auto widget = new QFrame(this);
     widget->setFrameStyle(QFrame::StyledPanel);
@@ -104,6 +105,9 @@ main_window::main_window()
     action = toolbar->addAction(QIcon(":/icons/control_play.png"), "Play");
     action->setCheckable(true);
     connect(action, SIGNAL(changed()), SLOT(play_changed()));
+    step_action_ = toolbar->addAction(QIcon(":/icons/control_step.png"), "Step");
+    step_action_->setEnabled(false);
+    connect(action, SIGNAL(triggered()), SLOT(step_triggered()));
 
     log_ = new QPlainTextEdit(this);
     log_->setReadOnly(true);
@@ -130,6 +134,7 @@ main_window::main_window()
 
     QSettings settings;
     capture_interval_ = settings.value("capture_interval", 0.1).toDouble();
+    action_min_delay_ = settings.value("action_min_delay", 0.1).toDouble();
     action_delay_mean_ = settings.value("action_delay_mean", 5).toDouble();
     action_delay_stddev_ = settings.value("action_delay_dev", 2).toDouble();
     input_manager_->set_delay_mean(settings.value("input_delay_mean", 0.1).toDouble());
@@ -176,8 +181,6 @@ void main_window::open_strategy()
             si->root_state_.reset(new nl_holdem_state<F_MASK | C_MASK | H_MASK | P_MASK | A_MASK>(stack_size));
         else if (actions == "fchqpa")
             si->root_state_.reset(new nl_holdem_state<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | A_MASK>(stack_size));
-
-        si->current_state_ = si->root_state_.get();
 
         std::size_t states = 0;
         std::vector<const nlhe_state_base*> stack(1, si->root_state_.get());
@@ -257,10 +260,22 @@ void main_window::play_timer_timeout()
         site_->call();
         break;
     case site_base::RAISE:
-        log_->appendPlainText(QString("Player: Raise %1x pot").arg(raise_fraction_));
-        site_->raise(raise_fraction_);
+        {
+            const double total_pot = site_->get_total_pot();
+            const double my_bet = site_->get_bet(0);
+            const double op_bet = site_->get_bet(1);
+            const double big_blind = site_->get_big_blind();
+            const double to_call = op_bet - my_bet;
+            const double amount = int((raise_fraction_ * (total_pot + to_call) + to_call + my_bet) / big_blind) * big_blind;
+
+            log_->appendPlainText(QString("Player: Raise %1").arg(amount));
+            site_->raise(amount);
+        }
         break;
     }
+
+    acting_ = false;
+    step_action_->setEnabled(acting_);
 }
 
 void main_window::find_window()
@@ -286,6 +301,9 @@ void main_window::find_window()
 
         const std::string title_name = window_manager_->get_title_name();
         capture_label_->setText(QString("%1").arg(title_name.c_str()));
+
+        snapshot_.round = -1;
+        snapshot_.bet = -1;
     }
     else
     {
@@ -296,25 +314,100 @@ void main_window::find_window()
 
 void main_window::process_snapshot()
 {
-    if (play_timer_->isActive() || !site_)
+    if (acting_ || !site_)
         return;
 
     boost::timer::cpu_timer t;
 
-    if (!site_->update())
-        return;
+    site_->update();
 
-    log_->appendPlainText(QString("*** SNAPSHOT (%1 ms) ***").arg(t.elapsed().wall / 1000000.0));
+    t.stop();
 
-    visualizer_->set_dealer(site_->get_dealer());
-
-    auto hole = site_->get_hole_cards();
-    std::array<int, 2> hole_array = {{ hole.first, hole.second }};
-    visualizer_->set_hole_cards(0, hole_array);
-
+    const auto hole = site_->get_hole_cards();
     std::array<int, 5> board;
     site_->get_board_cards(board);
+
+    int round;
+
+    if (board[4] != -1)
+        round = holdem_abstraction::RIVER;
+    else if (board[3] != -1)
+        round = holdem_abstraction::TURN;
+    else if (board[0] != -1)
+        round = holdem_abstraction::FLOP;
+    else if (hole.first != -1 && hole.second != -1)
+        round = holdem_abstraction::PREFLOP;
+    else
+        round = -1;
+
+    const bool new_game = round == 0
+        && ((site_->get_dealer() == 0 && site_->get_bet(0) < site_->get_big_blind())
+        || (site_->get_dealer() == 1 && site_->get_bet(0) == site_->get_big_blind()));
+
+#if !defined(NDEBUG)
+    log_->appendPlainText(QString("new_game:%1 round:%2 bet0:%3 bet1:%4 stack0:%5 stack1:%6 allin:%7 sitout:%8")
+        .arg(new_game)
+        .arg(round)
+        .arg(site_->get_bet(0))
+        .arg(site_->get_bet(1))
+        .arg(site_->get_stack(0))
+        .arg(site_->get_stack(1))
+        .arg(site_->is_opponent_allin())
+        .arg(site_->is_opponent_sitout()));
+#endif
+
+    visualizer_->set_dealer(site_->get_dealer());
+    std::array<int, 2> hole_array = {{ hole.first, hole.second }};
+    visualizer_->set_hole_cards(0, hole_array);
     visualizer_->set_board_cards(board);
+
+    // wait until we see buttons
+    if (site_->get_buttons() == 0)
+        return;
+
+    // TODO allin states postflop are sometimes not detected correctly, remove new_game check here?
+    // wait until we see stack sizes at the start of a hand
+    if (new_game
+        && (site_->get_stack(0) == 0
+        || (site_->get_stack(1) == 0 && !site_->is_opponent_allin() && !site_->is_opponent_sitout())))
+    {
+        return;
+    }
+
+    acting_ = true;
+    step_action_->setEnabled(acting_);
+
+    snapshot_.round = round;
+    snapshot_.bet = site_->get_bet(1);
+
+    // our stack size should always be visible
+    assert(site_->get_stack(0) > 0);
+    // opponent stack might be obstructed by all-in or sitout statuses
+    assert(site_->get_stack(1) > 0 || site_->is_opponent_allin() || site_->is_opponent_sitout());
+
+    if (new_game)
+    {
+        std::array<double, 2> stacks;
+        
+        stacks[0] = site_->get_stack(0) + site_->get_bet(0);
+
+        if (site_->get_stack(1) > 0)
+        {
+            stacks[1] = site_->get_stack(1) + site_->get_bet(1); // opponent stack equals stack+bet
+        }
+        else
+        {
+            if (site_->is_opponent_sitout())
+                stacks[1] = 9999; // can't see stack due to sitout, assume worst case
+            else if (site_->is_opponent_allin())
+                stacks[1] = site_->get_bet(1); // opponent stack equals his bet
+        }
+
+        assert(stacks[0] > 0 && stacks[1] > 0);
+        snapshot_.stack_size = int(std::min(stacks[0], stacks[1]) / site_->get_big_blind() * 2 + 0.5);
+    }
+
+    log_->appendPlainText(QString("*** SNAPSHOT (%1 ms) ***").arg(t.elapsed().wall / 1000000.0));
 
     if (hole.first != -1 && hole.second != -1)
     {
@@ -341,38 +434,60 @@ void main_window::process_snapshot()
     if (strategy_infos_.empty())
         return;
 
-    auto stack_size = site_->get_stack_size();
-    auto it = find_nearest(strategy_infos_, stack_size);
+    auto it = find_nearest(strategy_infos_, snapshot_.stack_size);
     auto& strategy_info = *it->second;
     auto& current_state = strategy_info.current_state_;
 
-    if (site_->is_new_hand())
+    if (new_game && round == 0)
+    {
+        log_->appendPlainText(QString("State: New game (%1 SB)").arg(snapshot_.stack_size));
         current_state = strategy_info.root_state_.get();
+    }
 
     if (!current_state)
         return;
 
-    switch (site_->get_action())
+    // a new round has started but we did not end the previous one, opponent has called
+    if (current_state->get_round() != round)
     {
-    case site_base::CALL:
+        log_->appendPlainText("State: Opponent called");
         current_state = current_state->call();
-        break;
-    case site_base::RAISE:
-        current_state = current_state->raise(site_->get_raise_fraction());
-        break;
     }
 
-    if (!current_state)
+    if (site_->is_opponent_sitout())
     {
-        log_->appendPlainText("Warning: Invalid state");
-        return;
+        log_->appendPlainText("State: Opponent is sitting out");
+    }
+    else if (site_->is_opponent_allin())
+    {
+        log_->appendPlainText("State: Opponent is all-in");
+        current_state = current_state->raise(999.0);
+    }
+    else if ((current_state->get_round() == holdem_abstraction::PREFLOP && (site_->get_bet(1) > site_->get_big_blind()))
+        || (current_state->get_round() > holdem_abstraction::PREFLOP && (site_->get_bet(1) > 0)))
+    {
+        const double fraction = (site_->get_bet(1) - site_->get_bet(0)) / site_->get_total_pot();
+        assert(fraction > 0);
+        log_->appendPlainText(QString("State: Opponent raised %1").arg(fraction));
+        current_state = current_state->raise(fraction); // there is an outstanding bet/raise
+    }
+    else if ((current_state->get_round() > holdem_abstraction::PREFLOP && site_->get_dealer() == 0 && site_->get_bet(1) == 0)
+        || (current_state->get_round() == holdem_abstraction::PREFLOP && site_->get_dealer() == 1 && site_->get_bet(1) == site_->get_big_blind()))
+    {
+        // we are in position facing 0 sized bet, opponent has checked
+        // we are oop facing big blind sized bet preflop, opponent has called
+        log_->appendPlainText("State: Opponent called");
+        current_state = current_state->call();
     }
 
-    if (current_state->get_round() != site_->get_round())
-    {
-        log_->appendPlainText("Warning: Round mismatch");
-        return;
-    }
+    assert(current_state);
+
+    // ensure it is our turn
+    assert((site_->get_dealer() == 0 && current_state->get_player() == 0)
+            || (site_->get_dealer() == 1 && current_state->get_player() == 1));
+
+    // ensure rounds match
+    assert(current_state->get_round() == round);
 
     std::array<int, 2> pot = current_state->get_pot();
         
@@ -384,25 +499,23 @@ void main_window::process_snapshot()
     const auto& strategy = strategy_info.strategy_;
     strategy_label_->setText(QString("%1").arg(QFileInfo(strategy->get_filename().c_str()).fileName()));
 
-    if (current_state && current_state->get_id() != -1)
-    {
-        std::stringstream ss;
-        ss << *current_state;
-        log_->appendPlainText(QString("State: %1").arg(ss.str().c_str()));
-        strategy_->update(*strategy_info.abstraction_, board, *strategy, current_state->get_id(),
-            current_state->get_action_count());
-    }
+    // we should never reach terminal states when we have a pending action
+    assert(current_state->get_id() != -1);
+
+    std::stringstream ss;
+    ss << *current_state;
+    log_->appendPlainText(QString("State: %1").arg(ss.str().c_str()));
+    strategy_->update(*strategy_info.abstraction_, board, *strategy, current_state->get_id(),
+        current_state->get_action_count());
 
     perform_action();
 }
 
 void main_window::perform_action()
 {
-    if (!play_ || !site_ || strategy_infos_.empty() || !site_->is_action_needed() || play_timer_->isActive())
-        return;
+    assert(site_ && !strategy_infos_.empty() && !play_timer_->isActive());
 
-    auto stack_size = site_->get_stack_size();
-    auto it = find_nearest(strategy_infos_, stack_size);
+    auto it = find_nearest(strategy_infos_, snapshot_.stack_size);
     auto& strategy_info = *it->second;
 
     auto hole = site_->get_hole_cards();
@@ -430,81 +543,84 @@ void main_window::perform_action()
             bucket = strategy_info.abstraction_->get_bucket(c0, c1);
     }
 
-    const auto& current_state = strategy_info.current_state_;
+    auto& current_state = strategy_info.current_state_;
 
-    if (current_state && !current_state->is_terminal() && bucket != -1)
+    assert(current_state && !current_state->is_terminal() && bucket != -1);
+
+    const auto& strategy = strategy_info.strategy_;
+    const int index = site_->is_opponent_sitout() ? nlhe_state_base::CALL + 1
+        : strategy->get_action(current_state->get_id(), bucket);
+    const int action = current_state->get_action(index);
+    std::string s = "n/a";
+
+    switch (action)
     {
-        const auto& strategy = strategy_info.strategy_;
-        const int index = strategy->get_action(current_state->get_id(), bucket);
-        const int action = current_state->get_action(index);
-        std::string s = "n/a";
-
-        switch (action)
-        {
-        case nlhe_state_base::FOLD:
-            next_action_ = site_base::FOLD;
-            s = "FOLD";
-            break;
-        case nlhe_state_base::CALL:
-            {
-                const int prev_action_index = current_state->get_action();
-                const int prev_action = prev_action_index != -1 ? current_state->get_action(prev_action_index) : -1;
-
-                // ensure we get allin if the opponent went allin
-                if (prev_action == nlhe_state_base::RAISE_A)
-                {
-                    next_action_ = site_base::RAISE;
-                    raise_fraction_ = 999.0;
-                }
-                else
-                {
-                    next_action_ = site_base::CALL;
-                }
-
-                s = "CALL";
-            }
-            break;
-        case nlhe_state_base::RAISE_H:
-            next_action_ = site_base::RAISE;
-            raise_fraction_ = 0.5;
-            s = "RAISE_H";
-            break;
-        case nlhe_state_base::RAISE_P:
-            next_action_ = site_base::RAISE;
-            raise_fraction_ = 1.0;
-            s = "RAISE_P";
-            break;
-        case nlhe_state_base::RAISE_A:
-            next_action_ = site_base::RAISE;
-            raise_fraction_ = 999.0;
-            s = "RAISE_A";
-            break;
-        }
-
-        const double probability = strategy->get(current_state->get_id(), index, bucket);
-        log_->appendPlainText(QString("Decision: %1 (%2%)").arg(s.c_str()).arg(int(probability * 100)));
-    }
-    else
-    {
-        log_->appendPlainText("Warning: Unknown state, folding...");
+    case nlhe_state_base::FOLD:
         next_action_ = site_base::FOLD;
+        s = "FOLD";
+        break;
+    case nlhe_state_base::CALL:
+        {
+            const int prev_action_index = current_state->get_action();
+            const int prev_action = prev_action_index != -1 ? current_state->get_action(prev_action_index) : -1;
+
+            // ensure we get allin if the opponent went allin
+            if (prev_action == nlhe_state_base::RAISE_A)
+            {
+                next_action_ = site_base::RAISE;
+                raise_fraction_ = 999.0;
+            }
+            else
+            {
+                next_action_ = site_base::CALL;
+            }
+
+            s = "CALL";
+        }
+        break;
+    case nlhe_state_base::RAISE_H:
+        next_action_ = site_base::RAISE;
+        raise_fraction_ = 0.5;
+        s = "RAISE_H";
+        break;
+    case nlhe_state_base::RAISE_P:
+        next_action_ = site_base::RAISE;
+        raise_fraction_ = 1.0;
+        s = "RAISE_P";
+        break;
+    case nlhe_state_base::RAISE_A:
+        next_action_ = site_base::RAISE;
+        raise_fraction_ = 999.0;
+        s = "RAISE_A";
+        break;
+    default:
+        assert(false);
     }
 
-    std::normal_distribution<> dist(action_delay_mean_, action_delay_stddev_);
-    const double wait = std::max(capture_interval_ * 2.0, dist(engine_));
-    play_timer_->setSingleShot(true);
-    play_timer_->start(int(wait * 1000.0));
-    log_->appendPlainText(QString("Player: Waiting %1 seconds...").arg(wait));
+    const double probability = strategy->get(current_state->get_id(), index, bucket);
+    log_->appendPlainText(QString("Strategy: %1 (%2)").arg(s.c_str()).arg(probability));
+
+    current_state = current_state->get_child(index);
+
+    if (play_)
+    {
+        std::normal_distribution<> dist(action_delay_mean_, action_delay_stddev_);
+        const double wait = site_->is_opponent_sitout() ? action_min_delay_ : std::max(action_min_delay_, dist(engine_));
+        play_timer_->setSingleShot(true);
+        play_timer_->start(int(wait * 1000.0));
+        log_->appendPlainText(QString("Player: Waiting %1 seconds...").arg(wait));
+    }
 }
 
 void main_window::settings_triggered()
 {
-    settings_dialog d(capture_interval_, action_delay_mean_, action_delay_stddev_, input_manager_->get_delay_mean(),
-        input_manager_->get_delay_stddev(), this);
+    settings_dialog d(capture_interval_, action_min_delay_, action_delay_mean_, action_delay_stddev_,
+        input_manager_->get_delay_mean(), input_manager_->get_delay_stddev(), this);
     
     if (d.exec() == QDialog::Accepted)
     {
         capture_interval_ = d.get_capture_interval();
+        action_min_delay_ = d.get_action_min_delay();
         action_delay_mean_ = d.get_action_delay_mean();
         action_delay_stddev_ = d.get_action_delay_stddev();
         input_manager_->set_delay_mean(d.get_input_delay_mean());
@@ -516,11 +632,19 @@ void main_window::closeEvent(QCloseEvent* event)
 {
     QSettings settings;
     settings.setValue("capture_interval", capture_interval_);
+    settings.setValue("action_min_delay", action_min_delay_);
     settings.setValue("action_delay_mean", action_delay_mean_);
     settings.setValue("action_delay_dev", action_delay_stddev_);
     settings.setValue("input_delay_mean", input_manager_->get_delay_mean());
     settings.setValue("input_delay_stddev", input_manager_->get_delay_stddev());
     event->accept();
+}
+
+void main_window::step_triggered()
+{
+    // TODO this doesnt work for some reason
+    acting_ = false;
+    step_action_->setEnabled(acting_);
 }
 
 main_window::strategy_info::strategy_info()

@@ -11,28 +11,28 @@ class site_stars : public site_base
 {
 public:
     site_stars(WId window);
-    bool update();
-    int get_action() const;
+    void update();
     std::pair<int, int> get_hole_cards() const;
     void get_board_cards(std::array<int, 5>& board) const;
-    bool is_new_hand() const;
-    int get_round() const;
-    double get_raise_fraction() const;
     int get_dealer() const;
-    int get_stack_size() const;
-    bool is_action_needed() const;
     void fold() const;
     void call() const;
     void raise(double fraction) const;
+    double get_stack(int player) const;
+    double get_bet(int player) const;
+    double get_big_blind() const;
+    double get_total_pot() const;
+    int get_player() const;
+    bool is_opponent_allin() const;
+    int get_buttons() const;
+    bool is_opponent_sitout() const;
 
 private:
     int dealer_;
     int player_;
     int round_;
     double big_blind_;
-    int action_;
     double stack_bb_;
-    bool new_hand_;
     std::array<int, 2> hole_;
     std::array<int, 5> board_;
     double fraction_;
