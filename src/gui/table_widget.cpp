@@ -28,7 +28,7 @@ namespace
 }
 
 table_widget::table_widget(QWidget* parent)
-    : QWidget(parent)
+    : QFrame(parent)
     , dealer_image_(new QPixmap(":/images/dealer.png"))
     , dealer_(-1)
     , round_(-1)
@@ -44,7 +44,8 @@ table_widget::table_widget(QWidget* parent)
     for (int i = 0; i < 52; ++i)
         card_images_[i].reset(new QPixmap(QString(":/images/card_%1.png").arg(get_card_string(i).c_str())));
 
-    setFixedSize(800, 200);
+    setMinimumSize(13 * CARD_WIDTH + 15 * CARD_MARGIN, 3 * CARD_HEIGHT + 5 * CARD_MARGIN);
+    setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
 }
 
 void table_widget::set_board_cards(const std::array<int, 5>& board)
@@ -88,17 +89,17 @@ void table_widget::set_pot(int round, const std::array<int, 2>& pot)
     update();
 }
 
-void table_widget::paintEvent(QPaintEvent*)
+void table_widget::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
     painter.fillRect(rect(), Qt::white);
 
-    int y = 0;
+    int y = CARD_MARGIN;
 
-    paint_card(painter, QPoint(0, y), card_images_, *empty_image_, hole_[0][0]);
-    paint_card(painter, QPoint(CARD_WIDTH + CARD_MARGIN, y), card_images_, *empty_image_, hole_[0][1]);
-    paint_card(painter, QPoint(rect().right() - 2 * CARD_WIDTH - CARD_MARGIN, y), card_images_, *empty_image_, hole_[1][0]);
-    paint_card(painter, QPoint(rect().right() - CARD_WIDTH, y), card_images_, *empty_image_, hole_[1][1]);
+    paint_card(painter, QPoint(CARD_MARGIN, y), card_images_, *empty_image_, hole_[0][0]);
+    paint_card(painter, QPoint(CARD_WIDTH + 2 * CARD_MARGIN, y), card_images_, *empty_image_, hole_[0][1]);
+    paint_card(painter, QPoint(rect().right() - 2 * CARD_WIDTH - 2 * CARD_MARGIN, y), card_images_, *empty_image_, hole_[1][0]);
+    paint_card(painter, QPoint(rect().right() - CARD_WIDTH - CARD_MARGIN, y), card_images_, *empty_image_, hole_[1][1]);
 
     for (int i = 0; i < board_.size(); ++i)
     {
@@ -112,26 +113,28 @@ void table_widget::paintEvent(QPaintEvent*)
 
     if (bets_[0] > 0)
     {
-        QRect rect(0, y, 2 * CARD_WIDTH + CARD_MARGIN, 4 * CARD_MARGIN);
+        QRect rect(CARD_MARGIN, y, 2 * CARD_WIDTH + CARD_MARGIN, CARD_HEIGHT);
         painter.drawText(rect, Qt::AlignCenter, QString::number(bets_[0]));
     }
 
     if (bets_[1] > 0)
     {
-        QRect rect(rect().right() - (2 * CARD_WIDTH + CARD_MARGIN), y, 2 * CARD_WIDTH + CARD_MARGIN, 4 * CARD_MARGIN);
+        QRect rect(rect().right() - 2 * (CARD_WIDTH + CARD_MARGIN), y, 2 * CARD_WIDTH + CARD_MARGIN, CARD_HEIGHT);
         painter.drawText(rect, Qt::AlignCenter, QString::number(bets_[1]));
     }
 
     if (pot_[0] > 0)
     {
-        QRect rect(rect().center().x() - 200, y, 400, 4 * CARD_MARGIN);
+        QRect rect(rect().center().x() - 200, y, 400, CARD_HEIGHT);
         painter.drawText(rect, Qt::AlignCenter, QString::number(pot_[0] + pot_[1]));
     }
 
-    y += CARD_MARGIN + 4 * CARD_MARGIN;
+    y += CARD_HEIGHT + CARD_MARGIN;
 
-    const QPoint dealer_point((dealer_ == 0 ? CARD_WIDTH + CARD_MARGIN / 2 : rect().right() - (CARD_WIDTH + CARD_MARGIN
-        / 2)) - dealer_image_->width() / 2, y);
+    const int hole_midpoint = CARD_MARGIN + CARD_WIDTH + CARD_MARGIN / 2;
+    const QPoint dealer_point((dealer_ == 0 ? hole_midpoint : rect().right() - hole_midpoint) - dealer_image_->width() / 2, y);
 
     painter.drawPixmap(dealer_point, *dealer_image_);
+
+    QFrame::paintEvent(event);
 }

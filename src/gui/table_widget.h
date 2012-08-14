@@ -2,12 +2,12 @@
 
 #pragma warning(push, 3)
 #include <array>
-#include <QWidget>
+#include <QFrame>
 #pragma warning(pop)
 
 class QPixmap;
 
-class table_widget : public QWidget
+class table_widget : public QFrame
 {
     Q_OBJECT
 
