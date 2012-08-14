@@ -57,7 +57,6 @@ void cfr_solver<T, U>::solve(const std::uint64_t iterations)
         for (std::int64_t i = 0; i < std::int64_t(iterations); ++i)
         {
             bucket_t buckets;
-            // TODO move evaluator and abstraction go game class
             const int result = g.play(&buckets);
 
             std::array<double, 2> reach = {{1.0, 1.0}};
