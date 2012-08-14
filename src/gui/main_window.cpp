@@ -23,6 +23,7 @@
 #include <QComboBox>
 #include <QSettings>
 #include <QCoreApplication>
+#include <QApplication>
 #pragma warning(pop)
 
 #include "site_stars.h"
@@ -155,6 +156,8 @@ void main_window::open_strategy()
 {
     const auto filenames = QFileDialog::getOpenFileNames(this, "Open Strategy", QString(), "Strategy files (*.str)");
 
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+
     strategy_infos_.clear();
 
     std::regex r("([^-]+)-([^-]+)-[0-9]+\\.str");
@@ -207,6 +210,8 @@ void main_window::open_strategy()
         const std::string str_filename = i->toUtf8().data();
         si->strategy_.reset(new strategy(str_filename, states, si->root_state_->get_action_count()));
     }
+
+    QApplication::restoreOverrideCursor();
 
     log_->appendPlainText(QString("%1 strategy files loaded").arg(filenames.size()));
 }
