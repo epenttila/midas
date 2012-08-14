@@ -15,8 +15,8 @@ namespace
     static const int CARDS = 52;
 }
 
-holdem_strategy_widget::holdem_strategy_widget(QWidget* parent)
-    : QWidget(parent)
+holdem_strategy_widget::holdem_strategy_widget(QWidget* parent, Qt::WindowFlags flags)
+    : QWidget(parent, flags)
 {
     for (int i = 0; i < actions_.size(); ++i)
         actions_[i].fill(Qt::transparent);

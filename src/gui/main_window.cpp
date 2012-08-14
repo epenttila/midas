@@ -74,7 +74,7 @@ main_window::main_window()
     setCentralWidget(widget);
 
     visualizer_ = new table_widget(this);
-    strategy_ = new holdem_strategy_widget(this);
+    strategy_ = new holdem_strategy_widget(this, Qt::Tool);
     strategy_->setVisible(false);
 
     auto toolbar = addToolBar("File");
@@ -117,7 +117,6 @@ main_window::main_window()
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->addWidget(visualizer_);
     layout->addWidget(log_);
-    layout->addWidget(strategy_);
     widget->setLayout(layout);
 
     timer_ = new QTimer(this);
