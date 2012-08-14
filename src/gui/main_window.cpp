@@ -156,6 +156,9 @@ void main_window::open_strategy()
 {
     const auto filenames = QFileDialog::getOpenFileNames(this, "Open Strategy", QString(), "Strategy files (*.str)");
 
+    if (filenames.empty())
+        return;
+
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
     strategy_infos_.clear();
