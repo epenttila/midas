@@ -162,6 +162,7 @@ void main_window::open_strategy()
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
     strategy_infos_.clear();
+    abstractions_.clear();
 
     std::regex r("([^-]+)-([^-]+)-[0-9]+\\.str");
     std::regex r_nlhe("nlhe\\.([a-z]+)\\.([0-9]+)");
@@ -208,7 +209,10 @@ void main_window::open_strategy()
 
         const auto dir = QFileInfo(*i).dir();
         const std::string abs_filename = dir.filePath(QString(m[2].str().data()) + ".abs").toUtf8().data();
-        si->abstraction_.reset(new holdem_abstraction(abs_filename));
+        si->abstraction_ = abs_filename;
+
+        if (!abstractions_.count(abs_filename))
+            abstractions_[abs_filename].reset(new holdem_abstraction(abs_filename));
 
         const std::string str_filename = i->toUtf8().data();
         si->strategy_.reset(new strategy(str_filename, states, si->root_state_->get_action_count()));
@@ -513,7 +517,7 @@ void main_window::process_snapshot()
     std::stringstream ss;
     ss << *current_state;
     log_->appendPlainText(QString("State: %1").arg(ss.str().c_str()));
-    strategy_->update(*strategy_info.abstraction_, board, *strategy, current_state->get_id(),
+    strategy_->update(*abstractions_.at(strategy_info.abstraction_), board, *strategy, current_state->get_id(),
         current_state->get_action_count());
 
     perform_action();
@@ -538,17 +542,18 @@ void main_window::perform_action()
     const int b3 = board[3];
     const int b4 = board[4];
     int bucket = -1;
+    const auto abstraction = *abstractions_.at(strategy_info.abstraction_);
 
     if (c0 != -1 && c1 != -1)
     {
         if (b4 != -1)
-            bucket = strategy_info.abstraction_->get_bucket(c0, c1, b0, b1, b2, b3, b4);
+            bucket = abstraction.get_bucket(c0, c1, b0, b1, b2, b3, b4);
         else if (b3 != -1)
-            bucket = strategy_info.abstraction_->get_bucket(c0, c1, b0, b1, b2, b3);
+            bucket = abstraction.get_bucket(c0, c1, b0, b1, b2, b3);
         else if (b0 != -1)
-            bucket = strategy_info.abstraction_->get_bucket(c0, c1, b0, b1, b2);
+            bucket = abstraction.get_bucket(c0, c1, b0, b1, b2);
         else
-            bucket = strategy_info.abstraction_->get_bucket(c0, c1);
+            bucket = abstraction.get_bucket(c0, c1);
     }
 
     auto& current_state = strategy_info.current_state_;

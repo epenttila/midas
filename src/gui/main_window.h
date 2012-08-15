@@ -45,7 +45,7 @@ private:
         std::unique_ptr<nlhe_state_base> root_state_;
         const nlhe_state_base* current_state_;
         std::unique_ptr<strategy> strategy_;
-        std::unique_ptr<holdem_abstraction> abstraction_;
+        std::string abstraction_;
     };
 
     struct snapshot_type
@@ -84,4 +84,6 @@ private:
     bool acting_;
     QAction* step_action_;
     double action_min_delay_;
+    std::map<std::string, std::unique_ptr<holdem_abstraction>> abstractions_;
+
 };
