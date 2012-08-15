@@ -377,14 +377,9 @@ void main_window::process_snapshot()
     if (site_->get_buttons() == 0)
         return;
 
-    // TODO allin states postflop are sometimes not detected correctly, remove new_game check here?
-    // wait until we see stack sizes at the start of a hand
-    if (new_game
-        && (site_->get_stack(0) == 0
-        || (site_->get_stack(1) == 0 && !site_->is_opponent_allin() && !site_->is_opponent_sitout())))
-    {
+    // wait until we see stack sizes
+    if (site_->get_stack(0) == 0 || (site_->get_stack(1) == 0 && !site_->is_opponent_allin() && !site_->is_opponent_sitout()))
         return;
-    }
 
     acting_ = true;
     step_action_->setEnabled(acting_);
