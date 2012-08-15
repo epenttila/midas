@@ -35,7 +35,6 @@
 #include "holdem_strategy_widget.h"
 #include "site_888.h"
 #include "site_base.h"
-#include "settings_dialog.h"
 #include "input_manager.h"
 #include "util/card.h"
 #include "lobby_888.h"
@@ -86,8 +85,6 @@ main_window::main_window()
     action = toolbar->addAction(QIcon(":/icons/table.png"), "Show strategy");
     action->setCheckable(true);
     connect(action, SIGNAL(changed()), SLOT(show_strategy_changed()));
-    action = toolbar->addAction(QIcon(":/icons/cog.png"), "Settings");
-    connect(action, SIGNAL(triggered()), SLOT(settings_triggered()));
     toolbar->addSeparator();
 
     site_list_ = new QComboBox(this);
@@ -137,17 +134,15 @@ main_window::main_window()
     capture_label_ = new QLabel("No window", this);
     statusBar()->addWidget(capture_label_, 1);
 
-    QCoreApplication::setOrganizationName("baabeli.com");
-    QCoreApplication::setApplicationName("midas");
-
-    QSettings settings;
+    QSettings settings("settings.ini", QSettings::IniFormat);
     capture_interval_ = settings.value("capture_interval", 0.1).toDouble();
     action_min_delay_ = settings.value("action_min_delay", 0.1).toDouble();
     action_delay_mean_ = settings.value("action_delay_mean", 5).toDouble();
-    action_delay_stddev_ = settings.value("action_delay_dev", 2).toDouble();
+    action_delay_stddev_ = settings.value("action_delay_stddev", 2).toDouble();
     action_post_delay_ = settings.value("action_post_delay", 1.0).toDouble();
     input_manager_->set_delay_mean(settings.value("input_delay_mean", 0.1).toDouble());
     input_manager_->set_delay_stddev(settings.value("input_delay_stddev", 0.01).toDouble());
+    lobby_interval_ = settings.value("lobby_interval", 0.1).toDouble();
 }
 
 main_window::~main_window()
@@ -259,7 +254,7 @@ void main_window::play_changed()
     play_ = !play_;
 
     if (play_)
-        lobby_timer_->start(100);
+        lobby_timer_->start(int(lobby_interval_ * 1000.0));
 
     if (!play_)
     {
@@ -637,32 +632,17 @@ void main_window::perform_action()
     }
 }
 
-void main_window::settings_triggered()
-{
-    settings_dialog d(capture_interval_, action_min_delay_, action_delay_mean_, action_delay_stddev_,
-        input_manager_->get_delay_mean(), input_manager_->get_delay_stddev(), this);
-    
-    if (d.exec() == QDialog::Accepted)
-    {
-        capture_interval_ = d.get_capture_interval();
-        action_min_delay_ = d.get_action_min_delay();
-        action_delay_mean_ = d.get_action_delay_mean();
-        action_delay_stddev_ = d.get_action_delay_stddev();
-        input_manager_->set_delay_mean(d.get_input_delay_mean());
-        input_manager_->set_delay_stddev(d.get_input_delay_stddev());
-    }
-}
-
 void main_window::closeEvent(QCloseEvent* event)
 {
-    QSettings settings;
+    QSettings settings("settings.ini", QSettings::IniFormat);
     settings.setValue("capture_interval", capture_interval_);
     settings.setValue("action_min_delay", action_min_delay_);
     settings.setValue("action_delay_mean", action_delay_mean_);
-    settings.setValue("action_delay_dev", action_delay_stddev_);
+    settings.setValue("action_delay_stddev", action_delay_stddev_);
     settings.setValue("action_post_delay", action_post_delay_);
     settings.setValue("input_delay_mean", input_manager_->get_delay_mean());
     settings.setValue("input_delay_stddev", input_manager_->get_delay_stddev());
+    settings.setValue("lobby_interval", capture_interval_);
     event->accept();
 }
 

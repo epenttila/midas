@@ -35,7 +35,6 @@ public slots:
     void show_strategy_changed();
     void play_changed();
     void play_timer_timeout();
-    void settings_triggered();
     void step_triggered();
     void play_done_timeout();
     void lobby_timer_timeout();
@@ -93,4 +92,5 @@ private:
     QTimer* lobby_timer_;
     std::unique_ptr<lobby_base> lobby_;
     QLineEdit* lobby_title_;
+    double lobby_interval_;
 };

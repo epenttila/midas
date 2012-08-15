@@ -12,8 +12,6 @@ set(gui_SOURCES
     main.cpp
     main_window.cpp
     main_window.h
-    settings_dialog.cpp
-    settings_dialog.h
     site_888.cpp
     site_888.h
     site_base.cpp
@@ -29,7 +27,6 @@ set(gui_SOURCES
 set(gui_HEADERS
     holdem_strategy_widget.h
     main_window.h
-    settings_dialog.h
     table_widget.h
 )
 
