@@ -266,14 +266,14 @@ const nl_holdem_state<BITMASK>* nl_holdem_state<BITMASK>::raise(double fraction)
     std::array<double, MAX_ACTIONS> pot_sizes = {{
         -1,
         -1,
-        0.5 / 1.5,
-        0.75 / 1.75,
-        1.0 / 2.0,
-        1.5 / 2.5,
-        2.0 / 3.0,
-        10.0 / 11.0,
-        11.0 / 12.0,
-        (stack_size_ - pot_[1 - player_]) / double(stack_size_ + pot_[1 - player_]),
+        0.5,
+        0.75,
+        1.0,
+        1.5,
+        2.0,
+        10.0,
+        11.0,
+        (stack_size_ - pot_[1 - player_]) / double(2 * pot_[1 - player_]),
     }};
 
     int lower = -1;

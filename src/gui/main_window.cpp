@@ -473,9 +473,10 @@ void main_window::process_snapshot()
     else if ((current_state->get_round() == holdem_abstraction::PREFLOP && (site_->get_bet(1) > site_->get_big_blind()))
         || (current_state->get_round() > holdem_abstraction::PREFLOP && (site_->get_bet(1) > 0)))
     {
-        const double fraction = (site_->get_bet(1) - site_->get_bet(0)) / site_->get_total_pot();
+        const double fraction = (site_->get_bet(1) - site_->get_bet(0))
+            / (site_->get_total_pot() - (site_->get_bet(1) - site_->get_bet(0)));
         assert(fraction > 0);
-        log_->appendPlainText(QString("State: Opponent raised %1").arg(fraction));
+        log_->appendPlainText(QString("State: Opponent raised %1x pot").arg(fraction));
         current_state = current_state->raise(fraction); // there is an outstanding bet/raise
     }
     else if ((current_state->get_round() > holdem_abstraction::PREFLOP && site_->get_dealer() == 0 && site_->get_bet(1) == 0)
