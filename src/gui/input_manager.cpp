@@ -1,6 +1,9 @@
 #include "input_manager.h"
 
 #pragma warning(push, 1)
+#include <boost/math/special_functions.hpp>
+#include <boost/algorithm/clamp.hpp>
+#define NOMINMAX
 #include <Windows.h>
 #pragma warning(pop)
 
@@ -63,4 +66,132 @@ double input_manager::get_delay_stddev() const
 void input_manager::sleep()
 {
     Sleep(int(dist_(engine_) * 1000.0));
+}
+
+void input_manager::set_cursor_position(int x, int y)
+{
+    const double width = GetSystemMetrics(SM_CXSCREEN); 
+    const double height = GetSystemMetrics(SM_CYSCREEN); 
+    const double xx = boost::algorithm::clamp(x * 65535.0 / (width - 1), 0.0, 65535.0);
+    const double yy = boost::algorithm::clamp(y * 65535.0 / (height - 1), 0.0, 65535.0);
+
+    assert(xx >= 0 && xx <= 65535.0);
+    assert(yy >= 0 && yy <= 65535.0);
+
+    INPUT input = {};
+    input.type = INPUT_MOUSE;
+    input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+    input.mi.dx = int(xx + 0.5);
+    input.mi.dy = int(yy + 0.5);
+    SendInput(1, &input, sizeof(input));
+}
+
+void input_manager::wind_mouse_impl(double xs, double ys, double xe, double ye, double gravity, double wind, double min_wait,
+    double max_wait, double max_step, double target_area)
+{
+    std::uniform_real_distribution<> distribution(0.0, 1.0);
+    const double sqrt3 = std::sqrt(3.0);
+    const double sqrt5 = std::sqrt(5.0);
+    double distance;
+    double velo_x = 0;
+    double velo_y = 0;
+    double wind_x = 0;
+    double wind_y = 0;
+
+    while ((distance = boost::math::hypot(xs - xe, ys - ye)) >= 1)
+    {
+        wind = std::min(wind, distance);
+
+        if (distance >= target_area)
+        {
+            wind_x = wind_x / sqrt3 + (distribution(engine_) * (wind * 2.0 + 1.0) - wind) / sqrt5;
+            wind_y = wind_y / sqrt3 + (distribution(engine_) * (wind * 2.0 + 1.0) - wind) / sqrt5;
+        }
+        else
+        {
+            wind_x /= sqrt3;
+            wind_y /= sqrt3;
+
+            if (max_step < 3)
+                max_step = distribution(engine_) * 3 + 3.0;
+            else
+                max_step /= sqrt5;
+        }
+
+        velo_x += wind_x + gravity * (xe - xs) / distance;
+        velo_y += wind_y + gravity * (ye - ys) / distance;
+        const double velo_mag = boost::math::hypot(velo_x, velo_y);
+
+        if (velo_mag > max_step)
+        {
+            double random_dist = max_step / 2.0 + distribution(engine_) * max_step / 2.0;
+            velo_x = (velo_x / velo_mag) * random_dist;
+            velo_y = (velo_y / velo_mag) * random_dist;
+        }
+
+        xs += velo_x;
+        ys += velo_y;
+        int mx = int(xs + 0.5);
+        int my = int(ys + 0.5);
+        POINT pt;
+        GetCursorPos(&pt);
+
+        if (pt.x != mx || pt.y != my)
+            set_cursor_position(mx, my);
+
+        const double step = boost::math::hypot(xs - pt.x, ys - pt.y);
+        Sleep(int(((max_wait - min_wait) * (step / max_step) + min_wait) + 0.5));
+    }
+}
+
+void input_manager::move_mouse(int x, int y)
+{
+    POINT pt;
+    GetCursorPos(&pt);
+
+    std::uniform_real_distribution<> d(1.5, 3.0);
+    const double speed = d(engine_);
+
+    wind_mouse_impl(pt.x, pt.y, x, y, 9, 3, 5.0 / speed, 10.0 / speed, 10.0 * speed, 8.0 * speed);
+    set_cursor_position(x, y);
+
+#if !defined(NDEBUG)
+    GetCursorPos(&pt);
+    assert(pt.x == x && pt.y == y);
+#endif
+}
+
+void input_manager::move_mouse(int x, int y, int width, int height)
+{
+    std::normal_distribution<> dist_x(x + width / 2.0, width / 10.0);
+    std::normal_distribution<> dist_y(y + height / 2.0, height / 10.0);
+
+    int target_x = int(dist_x(engine_) + 0.5);
+    int target_y = int(dist_y(engine_) + 0.5);
+
+    target_x = boost::algorithm::clamp(target_x, x, x + width - 1);
+    target_y = boost::algorithm::clamp(target_y, y, y + height - 1);
+
+    move_mouse(target_x, target_y);
+}
+
+void input_manager::move_mouse(WId window, int x, int y, int width, int height)
+{
+    POINT point = {x, y};
+    ClientToScreen(window, &point);
+    move_mouse(point.x, point.y, width, height);
+}
+
+void input_manager::left_click()
+{
+    INPUT input = {};
+    input.type = INPUT_MOUSE;
+    input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
+    SendInput(1, &input, sizeof(INPUT));
+
+    sleep();
+
+    input.type = INPUT_MOUSE;
+    input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
+    SendInput(1, &input, sizeof(INPUT));
 }

@@ -323,7 +323,7 @@ void site_stars::call() const
     // TODO implement
 }
 
-void site_stars::raise(double) const
+void site_stars::raise(double, double) const
 {
     // TODO implement
 }

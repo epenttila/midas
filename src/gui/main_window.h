@@ -36,6 +36,7 @@ public slots:
     void play_timer_timeout();
     void settings_triggered();
     void step_triggered();
+    void play_done_timeout();
 
 private:
     struct strategy_info
@@ -85,5 +86,6 @@ private:
     QAction* step_action_;
     double action_min_delay_;
     std::map<std::string, std::unique_ptr<holdem_abstraction>> abstractions_;
-
+    QTimer* play_done_timer_;
+    double action_post_delay_;
 };

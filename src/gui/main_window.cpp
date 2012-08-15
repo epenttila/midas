@@ -138,6 +138,7 @@ main_window::main_window()
     action_min_delay_ = settings.value("action_min_delay", 0.1).toDouble();
     action_delay_mean_ = settings.value("action_delay_mean", 5).toDouble();
     action_delay_stddev_ = settings.value("action_delay_dev", 2).toDouble();
+    action_post_delay_ = settings.value("action_post_delay", 1.0).toDouble();
     input_manager_->set_delay_mean(settings.value("input_delay_mean", 0.1).toDouble());
     input_manager_->set_delay_stddev(settings.value("input_delay_stddev", 0.01).toDouble());
 }
@@ -280,14 +281,14 @@ void main_window::play_timer_timeout()
             const double to_call = op_bet - my_bet;
             const double amount = int((raise_fraction_ * (total_pot + to_call) + to_call + my_bet) / big_blind) * big_blind;
 
-            log_->appendPlainText(QString("Player: Raise %1").arg(amount));
-            site_->raise(amount);
+            log_->appendPlainText(QString("Player: Raise %1 (%2x pot)").arg(amount).arg(raise_fraction_));
+            site_->raise(amount, raise_fraction_);
         }
         break;
     }
 
-    acting_ = false;
-    step_action_->setEnabled(acting_);
+    log_->appendPlainText(QString("Player: Waiting for %1 seconds after action...").arg(action_post_delay_));
+    QTimer::singleShot(int(action_post_delay_ * 1000.0), this, SLOT(play_done_timeout()));
 }
 
 void main_window::find_window()
@@ -461,11 +462,11 @@ void main_window::process_snapshot()
         current_state = current_state->call();
     }
 
+    // note: we modify the current state normally as this will be interpreted as a check
     if (site_->is_opponent_sitout())
-    {
         log_->appendPlainText("State: Opponent is sitting out");
-    }
-    else if (site_->is_opponent_allin())
+
+    if (site_->is_opponent_allin())
     {
         log_->appendPlainText("State: Opponent is all-in");
         current_state = current_state->raise(999.0);
@@ -644,6 +645,7 @@ void main_window::closeEvent(QCloseEvent* event)
     settings.setValue("action_min_delay", action_min_delay_);
     settings.setValue("action_delay_mean", action_delay_mean_);
     settings.setValue("action_delay_dev", action_delay_stddev_);
+    settings.setValue("action_post_delay", action_post_delay_);
     settings.setValue("input_delay_mean", input_manager_->get_delay_mean());
     settings.setValue("input_delay_stddev", input_manager_->get_delay_stddev());
     event->accept();
@@ -663,4 +665,10 @@ main_window::strategy_info::strategy_info()
 
 main_window::strategy_info::~strategy_info()
 {
+}
+
+void main_window::play_done_timeout()
+{
+    acting_ = false;
+    step_action_->setEnabled(acting_);
 }

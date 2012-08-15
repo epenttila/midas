@@ -15,7 +15,7 @@ public:
     virtual int get_dealer() const = 0;
     virtual void fold() const = 0;
     virtual void call() const = 0;
-    virtual void raise(double fraction) const = 0;
+    virtual void raise(double amount, double fraction) const = 0;
     virtual double get_stack(int player) const = 0;
     virtual double get_bet(int player) const = 0;
     virtual double get_big_blind() const = 0;

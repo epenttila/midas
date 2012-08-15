@@ -21,7 +21,7 @@ public:
     int get_dealer() const;
     void fold() const;
     void call() const;
-    void raise(double amount) const;
+    void raise(double amount, double fraction) const;
     double get_stack(int player) const;
     double get_bet(int player) const;
     double get_big_blind() const;

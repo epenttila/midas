@@ -301,21 +301,60 @@ int site_888::get_dealer() const
 
 void site_888::fold() const
 {
-    input_.send_keypress(VK_F5);
+    input_.move_mouse(window_, 327, 437, 149, 34);
+    input_.sleep();
+    input_.left_click();
 }
 
 void site_888::call() const
 {
-    input_.send_keypress(VK_F6);
+    input_.move_mouse(window_, 483, 437, 149, 34);
+    input_.sleep();
+    input_.left_click();
 }
 
-void site_888::raise(double amount) const
+void site_888::raise(double amount, double fraction) const
 {
     if (get_buttons() & RAISE_BUTTON)
     {
-        input_.send_string(boost::lexical_cast<std::string>(amount));
+        if (fraction == 0.5)
+        {
+            input_.move_mouse(window_, 540, 477, 56, 17);
+            input_.sleep();
+            input_.left_click();
+        }
+        else if (fraction == 0.75)
+        {
+            input_.move_mouse(window_, 597, 477, 56, 17);
+            input_.sleep();
+            input_.left_click();
+        }
+        else if (fraction == 1.0)
+        {
+            input_.move_mouse(window_, 654, 477, 56, 17);
+            input_.sleep();
+            input_.left_click();
+        }
+        else if (fraction >= 999.0)
+        {
+            input_.move_mouse(window_, 711, 477, 56, 17);
+            input_.sleep();
+            input_.left_click();
+        }
+        else
+        {
+            input_.move_mouse(window_, 716, 500, 65, 15);
+            input_.sleep();
+            input_.left_click();
+            input_.left_click();
+            input_.sleep();
+            input_.send_string(boost::lexical_cast<std::string>(amount));
+            input_.sleep();
+        }
+
+        input_.move_mouse(window_, 639, 437, 149, 34);
         input_.sleep();
-        input_.send_keypress(VK_F7);
+        input_.left_click();
     }
     else
     {
