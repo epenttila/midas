@@ -100,7 +100,7 @@ main_window::main_window()
     toolbar->addWidget(lobby_title_);
     toolbar->addSeparator();
     title_filter_ = new QLineEdit(this);
-    title_filter_->setPlaceholderText("Table title regex");
+    title_filter_->setPlaceholderText("Table title");
     toolbar->addWidget(title_filter_);
     toolbar->addSeparator();
     action = toolbar->addAction(QIcon(":/icons/control_record.png"), "Capture");
@@ -231,17 +231,17 @@ void main_window::capture_changed()
     if (!timer_->isActive())
     {
         timer_->start(int(capture_interval_ * 1000.0));
-        site_list_->setEnabled(false);
-        title_filter_->setEnabled(false);
         window_manager_->set_title_filter(std::string(title_filter_->text().toUtf8().data()));
     }
     else
     {
         timer_->stop();
-        site_list_->setEnabled(true);
-        title_filter_->setEnabled(true);
         window_manager_->clear_window();
     }
+
+    site_list_->setEnabled(!timer_->isActive());
+    title_filter_->setEnabled(!timer_->isActive());
+    lobby_title_->setEnabled(!timer_->isActive());
 }
 
 void main_window::show_strategy_changed()
