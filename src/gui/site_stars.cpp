@@ -189,34 +189,6 @@ namespace
     {
         return std::atof(read_text_type1(image, QRect(336, 11, 124, 15), qRgb(0, 0, 0)).c_str());
     }
-
-    QPixmap screenshot(WId winId)
-    {
-        RECT r;
-        GetClientRect(winId, &r);
-
-        const int w = r.right - r.left;
-        const int h = r.bottom - r.top;
-
-        const HDC display_dc = GetDC(0);
-        const HDC bitmap_dc = CreateCompatibleDC(display_dc);
-        const HBITMAP bitmap = CreateCompatibleBitmap(display_dc, w, h);
-        const HGDIOBJ null_bitmap = SelectObject(bitmap_dc, bitmap);
-
-        const HDC window_dc = GetDC(winId);
-        BitBlt(bitmap_dc, 0, 0, w, h, window_dc, 0, 0, SRCCOPY);
-
-        ReleaseDC(winId, window_dc);
-        SelectObject(bitmap_dc, null_bitmap);
-        DeleteDC(bitmap_dc);
-
-        const QPixmap pixmap = QPixmap::fromWinHBITMAP(bitmap);
-
-        DeleteObject(bitmap);
-        ReleaseDC(0, display_dc);
-
-        return pixmap;
-    }
 }
 
 site_stars::site_stars(WId window)
@@ -246,7 +218,7 @@ void site_stars::update()
     if (std::regex_match(title, match, re))
         big_blind_ = std::atof(match[1].str().c_str());
 
-    const auto image = screenshot(window_).toImage();
+    const auto image = window_manager::screenshot(window_).toImage();
 
     if (image.isNull())
         return;

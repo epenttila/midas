@@ -26,6 +26,7 @@ public:
     static std::string get_class_name(WId window);
     static std::string get_window_text(WId window);
     void clear_window();
+    static QPixmap screenshot(WId winId);
 
 private:
     typedef WId key_type;

@@ -122,3 +122,31 @@ std::string window_manager::get_window_text(WId window)
     GetWindowText(window, &arr[0], int(arr.size()));
     return std::string(arr.data());
 }
+
+QPixmap window_manager::screenshot(WId winId)
+{
+    RECT r;
+    GetClientRect(winId, &r);
+
+    const int w = r.right - r.left;
+    const int h = r.bottom - r.top;
+
+    const HDC display_dc = GetDC(0);
+    const HDC bitmap_dc = CreateCompatibleDC(display_dc);
+    const HBITMAP bitmap = CreateCompatibleBitmap(display_dc, w, h);
+    const HGDIOBJ null_bitmap = SelectObject(bitmap_dc, bitmap);
+
+    const HDC window_dc = GetDC(winId);
+    BitBlt(bitmap_dc, 0, 0, w, h, window_dc, 0, 0, SRCCOPY);
+
+    ReleaseDC(winId, window_dc);
+    SelectObject(bitmap_dc, null_bitmap);
+    DeleteDC(bitmap_dc);
+
+    const QPixmap pixmap = QPixmap::fromWinHBITMAP(bitmap);
+
+    DeleteObject(bitmap);
+    ReleaseDC(0, display_dc);
+
+    return pixmap;
+}

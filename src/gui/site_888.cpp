@@ -200,34 +200,6 @@ namespace
 
         return d;
     }
-
-    QPixmap screenshot(WId winId)
-    {
-        RECT r;
-        GetClientRect(winId, &r);
-
-        const int w = r.right - r.left;
-        const int h = r.bottom - r.top;
-
-        const HDC display_dc = GetDC(0);
-        const HDC bitmap_dc = CreateCompatibleDC(display_dc);
-        const HBITMAP bitmap = CreateCompatibleBitmap(display_dc, w, h);
-        const HGDIOBJ null_bitmap = SelectObject(bitmap_dc, bitmap);
-
-        const HDC window_dc = GetDC(winId);
-        BitBlt(bitmap_dc, 0, 0, w, h, window_dc, 0, 0, SRCCOPY);
-
-        ReleaseDC(winId, window_dc);
-        SelectObject(bitmap_dc, null_bitmap);
-        DeleteDC(bitmap_dc);
-
-        const QPixmap pixmap = QPixmap::fromWinHBITMAP(bitmap);
-
-        DeleteObject(bitmap);
-        ReleaseDC(0, display_dc);
-
-        return pixmap;
-    }
 }
 
 site_888::site_888(input_manager& input_manager, WId window)
@@ -248,7 +220,7 @@ void site_888::update()
     if (!image_)
         image_.reset(new QImage);
 
-    *image_ = screenshot(window_).toImage();
+    *image_ = window_manager::screenshot(window_).toImage();
 
     if (image_->isNull())
     {

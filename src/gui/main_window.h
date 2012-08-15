@@ -18,6 +18,7 @@ class window_manager;
 class holdem_strategy_widget;
 class QComboBox;
 class input_manager;
+class lobby_base;
 
 class main_window : public QMainWindow
 {
@@ -37,6 +38,7 @@ public slots:
     void settings_triggered();
     void step_triggered();
     void play_done_timeout();
+    void lobby_timer_timeout();
 
 private:
     struct strategy_info
@@ -88,4 +90,7 @@ private:
     std::map<std::string, std::unique_ptr<holdem_abstraction>> abstractions_;
     QTimer* play_done_timer_;
     double action_post_delay_;
+    QTimer* lobby_timer_;
+    std::unique_ptr<lobby_base> lobby_;
+    QLineEdit* lobby_title_;
 };

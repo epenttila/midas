@@ -38,6 +38,7 @@
 #include "settings_dialog.h"
 #include "input_manager.h"
 #include "util/card.h"
+#include "lobby_888.h"
 
 namespace
 {
@@ -97,8 +98,12 @@ main_window::main_window()
     action = toolbar->addWidget(site_list_);
 
     toolbar->addSeparator();
+    lobby_title_ = new QLineEdit(this);
+    lobby_title_->setPlaceholderText("Lobby title");
+    toolbar->addWidget(lobby_title_);
+    toolbar->addSeparator();
     title_filter_ = new QLineEdit(this);
-    title_filter_->setPlaceholderText("Window title");
+    title_filter_->setPlaceholderText("Table title regex");
     toolbar->addWidget(title_filter_);
     toolbar->addSeparator();
     action = toolbar->addAction(QIcon(":/icons/control_record.png"), "Capture");
@@ -124,6 +129,8 @@ main_window::main_window()
     connect(timer_, SIGNAL(timeout()), SLOT(timer_timeout()));
     play_timer_ = new QTimer(this);
     connect(play_timer_, SIGNAL(timeout()), SLOT(play_timer_timeout()));
+    lobby_timer_ = new QTimer(this);
+    connect(lobby_timer_, SIGNAL(timeout()), SLOT(lobby_timer_timeout()));
 
     strategy_label_ = new QLabel("No strategy", this);
     statusBar()->addWidget(strategy_label_, 1);
@@ -251,8 +258,15 @@ void main_window::play_changed()
 {
     play_ = !play_;
 
+    if (play_)
+        lobby_timer_->start(100);
+
     if (!play_)
+    {
         play_timer_->stop();
+        lobby_timer_->stop();
+        lobby_.reset();
+    }
 }
 
 void main_window::play_timer_timeout()
@@ -468,6 +482,7 @@ void main_window::process_snapshot()
 
     if (site_->is_opponent_allin())
     {
+        // TODO make sure opponent actually raised in is not just paying his blinds
         log_->appendPlainText("State: Opponent is all-in");
         current_state = current_state->raise(999.0);
     }
@@ -671,4 +686,46 @@ void main_window::play_done_timeout()
 {
     acting_ = false;
     step_action_->setEnabled(acting_);
+}
+
+void main_window::lobby_timer_timeout()
+{
+    if (!lobby_ || !lobby_->is_window())
+    {
+        lobby_.reset();
+
+        const auto filter = lobby_title_->text();
+
+        if (filter.isEmpty())
+            return;
+
+        const auto window = FindWindow(nullptr, filter.toUtf8().data());
+
+        if (!IsWindow(window))
+            return;
+
+        switch (site_list_->itemData(site_list_->currentIndex()).toInt())
+        {
+        /*case SITE_STARS:
+            lobby_.reset(new lobby_stars(window));
+            break;*/
+        case SITE_888:
+            lobby_.reset(new lobby_888(window, *input_manager_));
+            break;
+        default:
+            assert(false);
+        }
+    }
+
+    if (!lobby_)
+        return;
+
+    auto mutex = window_manager_->try_interact();
+
+    //log_->appendPlainText(QString("Registered in %1 tournaments").arg(lobby_->get_registered_sngs()));
+
+    if (lobby_->get_registered_sngs() < 1)
+        lobby_->register_sng();
+
+    lobby_->close_popups();
 }

@@ -1,7 +1,10 @@
 #pragma once
 
+#pragma warning(push, 1)
 #include <utility>
 #include <array>
+#include <QPixmap>
+#pragma warning(pop)
 
 class site_base
 {
