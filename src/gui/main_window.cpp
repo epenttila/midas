@@ -238,6 +238,9 @@ void main_window::capture_changed()
     {
         timer_->start(int(capture_interval_ * 1000.0));
         window_manager_->set_title_filter(std::string(title_filter_->text().toUtf8().data()));
+
+        for (auto it = strategy_infos_.begin(); it != strategy_infos_.end(); ++it)
+            it->second->current_state_ = nullptr;
     }
     else
     {
@@ -398,9 +401,6 @@ void main_window::process_snapshot()
     if (site_->get_stack(0) == 0 || (site_->get_stack(1) == 0 && !site_->is_opponent_allin() && !site_->is_opponent_sitout()))
         return;
 
-    acting_ = true;
-    step_action_->setEnabled(acting_);
-
     snapshot_.round = round;
     snapshot_.bet = site_->get_bet(1);
 
@@ -469,7 +469,10 @@ void main_window::process_snapshot()
     }
 
     if (!current_state)
+    {
+        log_->appendPlainText("Warning: Invalid state");
         return;
+    }
 
     // a new round has started but we did not end the previous one, opponent has called
     if (current_state->get_round() != round)
@@ -478,6 +481,7 @@ void main_window::process_snapshot()
         current_state = current_state->call();
     }
 
+    // TODO detect if we are sitting out and log/click button as a safety measure
     // note: we modify the current state normally as this will be interpreted as a check
     if (site_->is_opponent_sitout())
         log_->appendPlainText("State: Opponent is sitting out");
@@ -626,6 +630,9 @@ void main_window::perform_action()
     log_->appendPlainText(QString("Strategy: %1 (%2)").arg(s.c_str()).arg(probability));
 
     current_state = current_state->get_child(index);
+
+    acting_ = true;
+    step_action_->setEnabled(acting_);
 
     if (play_)
     {
