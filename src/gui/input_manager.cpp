@@ -146,6 +146,15 @@ void input_manager::wind_mouse_impl(double xs, double ys, double xe, double ye, 
 
 void input_manager::move_mouse(int x, int y)
 {
+    // TODO test this on multimonitor
+    const int left = GetSystemMetrics(SM_XVIRTUALSCREEN);
+    const int top = GetSystemMetrics(SM_YVIRTUALSCREEN);
+    const int width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+    const int height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
+    x = boost::algorithm::clamp(x, left, left + width - 1);
+    y = boost::algorithm::clamp(y, top, top + height - 1);
+
     POINT pt;
     GetCursorPos(&pt);
 
