@@ -69,7 +69,7 @@ main_window::main_window()
     , play_(false)
     , input_manager_(new input_manager)
     , acting_(false)
-    , logfile_(QDateTime::currentDateTimeUtc().toString("'midas-'yyyyMMddTHHmmss'.txt'").toUtf8().data())
+    , logfile_(QDateTime::currentDateTimeUtc().toString("'log-'yyyyMMddTHHmmss'.txt'").toUtf8().data())
 {
     auto widget = new QWidget(this);
     widget->setFocus();
@@ -748,6 +748,7 @@ void main_window::lobby_timer_timeout()
 
 void main_window::log(const QString& s)
 {
-    log_->appendPlainText(s);
-    logfile_ << s.toUtf8().data() << std::endl;
+    const auto message = QString("[%1] %2").arg(QDateTime::currentDateTimeUtc().toString("yyyy-MM-dd hh:mm:ss")).arg(s);
+    log_->appendPlainText(message);
+    logfile_ << message.toUtf8().data() << std::endl;
 }
