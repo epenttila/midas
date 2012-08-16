@@ -640,7 +640,7 @@ void main_window::closeEvent(QCloseEvent* event)
     settings.setValue("action_post_delay", action_post_delay_);
     settings.setValue("input_delay_mean", input_manager_->get_delay_mean());
     settings.setValue("input_delay_stddev", input_manager_->get_delay_stddev());
-    settings.setValue("lobby_interval", capture_interval_);
+    settings.setValue("lobby_interval", lobby_interval_);
     event->accept();
 }
 
