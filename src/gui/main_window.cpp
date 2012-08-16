@@ -476,22 +476,20 @@ void main_window::process_snapshot()
         log_->appendPlainText("State: Opponent is sitting out");
 
     if (site_->is_opponent_allin())
-    {
-        // TODO make sure opponent actually raised in is not just paying his blinds
         log_->appendPlainText("State: Opponent is all-in");
-        current_state = current_state->raise(999.0);
-    }
-    else if ((current_state->get_round() == holdem_abstraction::PREFLOP && (site_->get_bet(1) > site_->get_big_blind()))
+
+    if ((current_state->get_round() == holdem_abstraction::PREFLOP && (site_->get_bet(1) > site_->get_big_blind()))
         || (current_state->get_round() > holdem_abstraction::PREFLOP && (site_->get_bet(1) > 0)))
     {
-        const double fraction = (site_->get_bet(1) - site_->get_bet(0))
+        // make sure opponent allin is always terminal on his part and doesnt get translated to something else
+        const double fraction = site_->is_opponent_allin() ? 999.0 : (site_->get_bet(1) - site_->get_bet(0))
             / (site_->get_total_pot() - (site_->get_bet(1) - site_->get_bet(0)));
         assert(fraction > 0);
         log_->appendPlainText(QString("State: Opponent raised %1x pot").arg(fraction));
         current_state = current_state->raise(fraction); // there is an outstanding bet/raise
     }
-    else if ((current_state->get_round() > holdem_abstraction::PREFLOP && site_->get_dealer() == 0 && site_->get_bet(1) == 0)
-        || (current_state->get_round() == holdem_abstraction::PREFLOP && site_->get_dealer() == 1 && site_->get_bet(1) == site_->get_big_blind()))
+    else if ((current_state->get_round() == holdem_abstraction::PREFLOP && site_->get_dealer() == 1 && site_->get_bet(1) <= site_->get_big_blind())
+        || (current_state->get_round() > holdem_abstraction::PREFLOP && site_->get_dealer() == 0 && site_->get_bet(1) == 0))
     {
         // we are in position facing 0 sized bet, opponent has checked
         // we are oop facing big blind sized bet preflop, opponent has called
