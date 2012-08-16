@@ -347,3 +347,14 @@ bool site_stars::is_opponent_sitout() const
     // TODO implement
     return false;
 }
+
+bool site_stars::is_sit_out() const
+{
+    // TODO implement
+    return false;
+}
+
+void site_stars::sit_in() const
+{
+    // TODO implement
+}

@@ -27,4 +27,6 @@ public:
     virtual bool is_opponent_allin() const = 0;
     virtual int get_buttons() const = 0;
     virtual bool is_opponent_sitout() const = 0;
+    virtual bool is_sit_out() const = 0;
+    virtual void sit_in() const = 0;
 };

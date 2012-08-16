@@ -395,6 +395,18 @@ void main_window::process_snapshot()
     visualizer_->set_hole_cards(0, hole_array);
     visualizer_->set_board_cards(board);
 
+    if (site_->is_sit_out())
+    {
+        log_->appendPlainText("Warning: We are sitting out");
+
+        if (play_)
+        {
+            log_->appendPlainText("Player: Sitting in");
+            auto mutex = window_manager_->try_interact();
+            site_->sit_in();
+        }
+    }
+
     // wait until we see buttons
     if (site_->get_buttons() == 0)
         return;
@@ -483,7 +495,6 @@ void main_window::process_snapshot()
         current_state = current_state->call();
     }
 
-    // TODO detect if we are sitting out and log/click button as a safety measure
     // note: we modify the current state normally as this will be interpreted as a check
     if (site_->is_opponent_sitout())
         log_->appendPlainText("State: Opponent is sitting out");

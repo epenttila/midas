@@ -26,6 +26,8 @@ public:
     bool is_opponent_allin() const;
     int get_buttons() const;
     bool is_opponent_sitout() const;
+    bool is_sit_out() const;
+    void sit_in() const;
 
 private:
     int dealer_;

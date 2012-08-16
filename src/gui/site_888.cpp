@@ -289,6 +289,7 @@ void site_888::raise(double amount, double fraction) const
 {
     if (get_buttons() & RAISE_BUTTON)
     {
+        // TODO detect if these buttons are available and act accordingly
         if (fraction == 0.5)
         {
             input_.move_mouse(window_, 540, 477, 56, 17);
@@ -424,4 +425,15 @@ int site_888::get_buttons() const
 bool site_888::is_opponent_sitout() const
 {
     return image_ ? image_->pixel(367, 67) == qRgb(113, 113, 113) : false;
+}
+
+bool site_888::is_sit_out() const
+{
+    return image_ ? image_->pixel(329, 530) == qRgb(0, 0, 0) : false;
+}
+
+void site_888::sit_in() const
+{
+    input_.move_mouse(window_, 328, 526, 9, 9);
+    input_.left_click();
 }
