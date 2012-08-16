@@ -95,4 +95,5 @@ private:
     QLineEdit* lobby_title_;
     double lobby_interval_;
     QSpinBox* table_count_;
+    double action_max_delay_;
 };

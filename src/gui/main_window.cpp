@@ -8,6 +8,7 @@
 #include <boost/signals2.hpp>
 #include <regex>
 #include <boost/timer/timer.hpp>
+#include <boost/algorithm/clamp.hpp>
 #define NOMINMAX
 #include <Windows.h>
 #include <QPlainTextEdit>
@@ -143,6 +144,7 @@ main_window::main_window()
     QSettings settings("settings.ini", QSettings::IniFormat);
     capture_interval_ = settings.value("capture_interval", 0.1).toDouble();
     action_min_delay_ = settings.value("action_min_delay", 0.1).toDouble();
+    action_max_delay_ = settings.value("action_max_delay", 15.0).toDouble();
     action_delay_mean_ = settings.value("action_delay_mean", 5).toDouble();
     action_delay_stddev_ = settings.value("action_delay_stddev", 2).toDouble();
     action_post_delay_ = settings.value("action_post_delay", 1.0).toDouble();
@@ -637,10 +639,16 @@ void main_window::perform_action()
     if (play_)
     {
         std::normal_distribution<> dist(action_delay_mean_, action_delay_stddev_);
-        const double wait = site_->is_opponent_sitout() ? action_min_delay_ : std::max(action_min_delay_, dist(engine_));
+        const double wait = site_->is_opponent_sitout() ? action_min_delay_ : boost::algorithm::clamp(dist(engine_),
+            action_min_delay_, action_max_delay_);
         play_timer_->setSingleShot(true);
         play_timer_->start(int(wait * 1000.0));
         log_->appendPlainText(QString("Player: Waiting %1 seconds...").arg(wait));
+    }
+    else
+    {
+        log_->appendPlainText(QString("Player: Waiting for %1 seconds to continue...").arg(action_max_delay_));
+        QTimer::singleShot(int(action_max_delay_ * 1000.0), this, SLOT(play_done_timeout()));
     }
 }
 
@@ -649,6 +657,7 @@ void main_window::closeEvent(QCloseEvent* event)
     QSettings settings("settings.ini", QSettings::IniFormat);
     settings.setValue("capture_interval", capture_interval_);
     settings.setValue("action_min_delay", action_min_delay_);
+    settings.setValue("action_max_delay", action_max_delay_);
     settings.setValue("action_delay_mean", action_delay_mean_);
     settings.setValue("action_delay_stddev", action_delay_stddev_);
     settings.setValue("action_post_delay", action_post_delay_);
