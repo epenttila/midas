@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <map>
 #include <random>
+#include <fstream>
 #pragma warning(pop)
 
 class QPlainTextEdit;
@@ -62,6 +63,7 @@ private:
     void process_snapshot();
     void perform_action();
     void closeEvent(QCloseEvent* event);
+    void log(const QString& s);
 
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<strategy_info>> strategy_infos_;
@@ -96,4 +98,5 @@ private:
     double lobby_interval_;
     QSpinBox* table_count_;
     double action_max_delay_;
+    std::ofstream logfile_;
 };

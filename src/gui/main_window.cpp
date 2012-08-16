@@ -26,6 +26,7 @@
 #include <QCoreApplication>
 #include <QApplication>
 #include <QSpinBox>
+#include <QDateTime>
 #pragma warning(pop)
 
 #include "site_stars.h"
@@ -68,6 +69,7 @@ main_window::main_window()
     , play_(false)
     , input_manager_(new input_manager)
     , acting_(false)
+    , logfile_(QDateTime::currentDateTimeUtc().toString("'midas-'yyyyMMddTHHmmss'.txt'").toUtf8().data())
 {
     auto widget = new QWidget(this);
     widget->setFocus();
@@ -232,7 +234,7 @@ void main_window::open_strategy()
     QApplication::restoreOverrideCursor();
 
     const auto str = QString("%1 strategy files loaded").arg(filenames.size());
-    log_->appendPlainText(str);
+    log(str);
     strategy_label_->setText(str);
 }
 
@@ -281,18 +283,18 @@ void main_window::play_changed()
 void main_window::play_timer_timeout()
 {
     assert(play_);
-    log_->appendPlainText("Player: Waiting for mutex...");
+    log("Player: Waiting for mutex...");
 
     auto mutex = window_manager_->try_interact();
 
     switch (next_action_)
     {
     case site_base::FOLD:
-        log_->appendPlainText("Player: Fold");
+        log("Player: Fold");
         site_->fold();
         break;
     case site_base::CALL:
-        log_->appendPlainText("Player: Call");
+        log("Player: Call");
         site_->call();
         break;
     case site_base::RAISE:
@@ -304,13 +306,13 @@ void main_window::play_timer_timeout()
             const double to_call = op_bet - my_bet;
             const double amount = int((raise_fraction_ * (total_pot + to_call) + to_call + my_bet) / big_blind) * big_blind;
 
-            log_->appendPlainText(QString("Player: Raise %1 (%2x pot)").arg(amount).arg(raise_fraction_));
+            log(QString("Player: Raise %1 (%2x pot)").arg(amount).arg(raise_fraction_));
             site_->raise(amount, raise_fraction_);
         }
         break;
     }
 
-    log_->appendPlainText(QString("Player: Waiting for %1 seconds after action...").arg(action_post_delay_));
+    log(QString("Player: Waiting for %1 seconds after action...").arg(action_post_delay_));
     QTimer::singleShot(int(action_post_delay_ * 1000.0), this, SLOT(play_done_timeout()));
 }
 
@@ -381,7 +383,7 @@ void main_window::process_snapshot()
         || (site_->get_dealer() == 1 && site_->get_bet(0) == site_->get_big_blind()));
 
 #if !defined(NDEBUG)
-    log_->appendPlainText(QString("new_game:%1 round:%2 bet0:%3 bet1:%4 stack0:%5 stack1:%6 allin:%7 sitout:%8")
+    log(QString("new_game:%1 round:%2 bet0:%3 bet1:%4 stack0:%5 stack1:%6 allin:%7 sitout:%8")
         .arg(new_game)
         .arg(round)
         .arg(site_->get_bet(0))
@@ -399,11 +401,11 @@ void main_window::process_snapshot()
 
     if (site_->is_sit_out())
     {
-        log_->appendPlainText("Warning: We are sitting out");
+        log("Warning: We are sitting out");
 
         if (play_)
         {
-            log_->appendPlainText("Player: Sitting in");
+            log("Player: Sitting in");
             auto mutex = window_manager_->try_interact();
             site_->sit_in();
         }
@@ -447,27 +449,27 @@ void main_window::process_snapshot()
         snapshot_.stack_size = int(std::min(stacks[0], stacks[1]) / site_->get_big_blind() * 2 + 0.5);
     }
 
-    log_->appendPlainText(QString("*** SNAPSHOT (%1 ms) ***").arg(t.elapsed().wall / 1000000.0));
+    log(QString("*** SNAPSHOT (%1 ms) ***").arg(t.elapsed().wall / 1000000.0));
 
     if (hole.first != -1 && hole.second != -1)
     {
-        log_->appendPlainText(QString("Hole: [%1 %2]").arg(get_card_string(hole.first).c_str())
+        log(QString("Hole: [%1 %2]").arg(get_card_string(hole.first).c_str())
            .arg(get_card_string(hole.second).c_str()));
     }
 
     if (board[4] != -1)
     {
-        log_->appendPlainText(QString("Board: [%1 %2 %3 %4] [%5]").arg(get_card_string(board[0]).c_str()).arg(get_card_string(board[1]).c_str())
+        log(QString("Board: [%1 %2 %3 %4] [%5]").arg(get_card_string(board[0]).c_str()).arg(get_card_string(board[1]).c_str())
             .arg(get_card_string(board[2]).c_str()).arg(get_card_string(board[3]).c_str()).arg(get_card_string(board[4]).c_str()));
     }
     else if (board[3] != -1)
     {
-        log_->appendPlainText(QString("Board: [%1 %2 %3] [%4]").arg(get_card_string(board[0]).c_str()).arg(get_card_string(board[1]).c_str())
+        log(QString("Board: [%1 %2 %3] [%4]").arg(get_card_string(board[0]).c_str()).arg(get_card_string(board[1]).c_str())
             .arg(get_card_string(board[2]).c_str()).arg(get_card_string(board[3]).c_str()));
     }
     else if (board[0] != -1)
     {
-        log_->appendPlainText(QString("Board: [%1 %2 %3]").arg(get_card_string(board[0]).c_str()).arg(get_card_string(board[1]).c_str())
+        log(QString("Board: [%1 %2 %3]").arg(get_card_string(board[0]).c_str()).arg(get_card_string(board[1]).c_str())
             .arg(get_card_string(board[2]).c_str()));
     }
 
@@ -480,29 +482,29 @@ void main_window::process_snapshot()
 
     if (new_game && round == 0)
     {
-        log_->appendPlainText(QString("State: New game (%1 SB)").arg(snapshot_.stack_size));
+        log(QString("State: New game (%1 SB)").arg(snapshot_.stack_size));
         current_state = strategy_info.root_state_.get();
     }
 
     if (!current_state)
     {
-        log_->appendPlainText("Warning: Invalid state");
+        log("Warning: Invalid state");
         return;
     }
 
     // a new round has started but we did not end the previous one, opponent has called
     if (current_state->get_round() != round)
     {
-        log_->appendPlainText("State: Opponent called");
+        log("State: Opponent called");
         current_state = current_state->call();
     }
 
     // note: we modify the current state normally as this will be interpreted as a check
     if (site_->is_opponent_sitout())
-        log_->appendPlainText("State: Opponent is sitting out");
+        log("State: Opponent is sitting out");
 
     if (site_->is_opponent_allin())
-        log_->appendPlainText("State: Opponent is all-in");
+        log("State: Opponent is all-in");
 
     if ((current_state->get_round() == holdem_abstraction::PREFLOP && (site_->get_bet(1) > site_->get_big_blind()))
         || (current_state->get_round() > holdem_abstraction::PREFLOP && (site_->get_bet(1) > 0)))
@@ -511,7 +513,7 @@ void main_window::process_snapshot()
         const double fraction = site_->is_opponent_allin() ? 999.0 : (site_->get_bet(1) - site_->get_bet(0))
             / (site_->get_total_pot() - (site_->get_bet(1) - site_->get_bet(0)));
         assert(fraction > 0);
-        log_->appendPlainText(QString("State: Opponent raised %1x pot").arg(fraction));
+        log(QString("State: Opponent raised %1x pot").arg(fraction));
         current_state = current_state->raise(fraction); // there is an outstanding bet/raise
     }
     else if ((current_state->get_round() == holdem_abstraction::PREFLOP && site_->get_dealer() == 1 && site_->get_bet(1) <= site_->get_big_blind())
@@ -519,7 +521,7 @@ void main_window::process_snapshot()
     {
         // we are in position facing 0 sized bet, opponent has checked
         // we are oop facing big blind sized bet preflop, opponent has called
-        log_->appendPlainText("State: Opponent called");
+        log("State: Opponent called");
         current_state = current_state->call();
     }
 
@@ -547,7 +549,7 @@ void main_window::process_snapshot()
 
     std::stringstream ss;
     ss << *current_state;
-    log_->appendPlainText(QString("State: %1").arg(ss.str().c_str()));
+    log(QString("State: %1").arg(ss.str().c_str()));
     strategy_->update(*abstractions_.at(strategy_info.abstraction_), board, *strategy, current_state->get_id(),
         current_state->get_action_count());
 
@@ -642,7 +644,7 @@ void main_window::perform_action()
     }
 
     const double probability = strategy->get(current_state->get_id(), index, bucket);
-    log_->appendPlainText(QString("Strategy: %1 (%2)").arg(s.c_str()).arg(probability));
+    log(QString("Strategy: %1 (%2)").arg(s.c_str()).arg(probability));
 
     current_state = current_state->get_child(index);
 
@@ -656,11 +658,11 @@ void main_window::perform_action()
             action_min_delay_, action_max_delay_);
         play_timer_->setSingleShot(true);
         play_timer_->start(int(wait * 1000.0));
-        log_->appendPlainText(QString("Player: Waiting %1 seconds...").arg(wait));
+        log(QString("Player: Waiting %1 seconds...").arg(wait));
     }
     else
     {
-        log_->appendPlainText(QString("Player: Waiting for %1 seconds to continue...").arg(action_max_delay_));
+        log(QString("Player: Waiting for %1 seconds to continue...").arg(action_max_delay_));
         QTimer::singleShot(int(action_max_delay_ * 1000.0), this, SLOT(play_done_timeout()));
     }
 }
@@ -736,10 +738,16 @@ void main_window::lobby_timer_timeout()
 
     auto mutex = window_manager_->try_interact();
 
-    //log_->appendPlainText(QString("Registered in %1 tournaments").arg(lobby_->get_registered_sngs()));
+    //log(QString("Registered in %1 tournaments").arg(lobby_->get_registered_sngs()));
 
     if (lobby_->get_registered_sngs() < table_count_->value())
         lobby_->register_sng();
 
     lobby_->close_popups();
+}
+
+void main_window::log(const QString& s)
+{
+    log_->appendPlainText(s);
+    logfile_ << s.toUtf8().data() << std::endl;
 }
