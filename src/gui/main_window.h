@@ -19,6 +19,7 @@ class holdem_strategy_widget;
 class QComboBox;
 class input_manager;
 class lobby_base;
+class QSpinBox;
 
 class main_window : public QMainWindow
 {
@@ -93,4 +94,5 @@ private:
     std::unique_ptr<lobby_base> lobby_;
     QLineEdit* lobby_title_;
     double lobby_interval_;
+    QSpinBox* table_count_;
 };

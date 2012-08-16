@@ -1,8 +1,6 @@
 #include "lobby_888.h"
 
 #pragma warning(push, 3)
-#define NOMINMAX
-#include <Windows.h>
 #include <CommCtrl.h>
 #pragma warning(pop)
 
@@ -18,45 +16,65 @@ lobby_888::lobby_888(WId window, input_manager& input_manager)
 
 void lobby_888::close_popups()
 {
-    const auto window = GetForegroundWindow();
+    EnumWindows(callback, reinterpret_cast<LPARAM>(this));
+}
 
-    if (!IsWindow(window))
-        return;
+BOOL CALLBACK lobby_888::callback(HWND window, LPARAM lParam)
+{
+    if (!IsWindowVisible(window))
+        return true;
+
+    lobby_888* lobby = reinterpret_cast<lobby_888*>(lParam);
+
+    RECT rect;
+    GetClientRect(window, &rect);
 
     const auto title = window_manager::get_window_text(window);
 
-    std::regex r_trny_reg("Tournament Registration: #\\d+");
-    std::regex r_trny_reg_failed("Registration to tournament \\d+ failed\\.");
-    std::regex r_trny_id("Tournament ID : \\d+");
+    static std::regex r_trny_reg("Tournament Registration: #\\d+");
+    static std::regex r_trny_reg_failed("Registration to tournament \\d+ failed\\.");
+    static std::regex r_trny_id("Tournament ID : \\d+");
+    static std::regex r_trny_id_unreg("Tournament ID: \\d+");
 
     if (title == "User Message")
     {
-        input_manager_.send_keypress(VK_RETURN);
+        SendMessage(window, WM_CLOSE, 0, 0);
     }
     else if (title == "Member Message")
     {
-        input_manager_.send_keypress(VK_RETURN);
+        SendMessage(window, WM_CLOSE, 0, 0);
     }
     else if (std::regex_match(title, r_trny_reg))
     {
-        input_manager_.send_keypress(VK_RETURN);
+        if (GetForegroundWindow() == window)
+            lobby->input_manager_.send_keypress(VK_RETURN);
+        else
+            SendMessage(window, WM_CLOSE, 0, 0);
     }
     else if (std::regex_match(title, r_trny_id))
     {
-        input_manager_.send_keypress(VK_RETURN);
-        ++registered_;
+        if (rect.right == 328 && rect.bottom == 206)
+            ++lobby->registered_;
+
+        SendMessage(window, WM_CLOSE, 0, 0);
     }
     else if (std::regex_match(title, r_trny_reg_failed))
     {
-        input_manager_.send_keypress(VK_RETURN);
+        SendMessage(window, WM_CLOSE, 0, 0);
     }
     else if (title == "Rematch")
     {
-        input_manager_.send_keypress(VK_ESCAPE);
-        --registered_;
-        assert(registered_ >= 0);
+        SendMessage(window, WM_CLOSE, 0, 0);
+        --lobby->registered_;
+        assert(lobby->registered_ >= 0);
+    }
+    else if (std::regex_match(title, r_trny_id_unreg))
+    {
+        SendMessage(window, WM_CLOSE, 0, 0);
     }
     // TODO close ie windows? CloseWindow
+
+    return true;
 }
 
 bool lobby_888::is_window() const
@@ -66,15 +84,14 @@ bool lobby_888::is_window() const
 
 void lobby_888::register_sng()
 {
-    const auto window = GetForegroundWindow();
-
-    if (!IsWindow(window))
+    if (!IsWindow(window_))
         return;
 
-    if (window != window_)
+    if (IsIconic(window_))
+    {
+        ShowWindowAsync(window_, SW_RESTORE);
         return;
-
-    const auto image = window_manager::screenshot(window).toImage();
+    }
 
     input_manager_.move_mouse(window_, 13, 244, 731, 13);
     input_manager_.sleep();
@@ -82,6 +99,8 @@ void lobby_888::register_sng()
     input_manager_.sleep();
     input_manager_.move_mouse(window_, 767, 565, 108, 28);
     input_manager_.sleep();
+
+    const auto image = window_manager::screenshot(window_).toImage();
 
     if ((image.pixel(767, 565) != qRgb(96, 168, 48) && image.pixel(767, 565) != qRgb(124, 181, 77))
         || image.pixel(786, 576) != qRgb(0, 0, 0))

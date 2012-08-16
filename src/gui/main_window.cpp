@@ -24,6 +24,7 @@
 #include <QSettings>
 #include <QCoreApplication>
 #include <QApplication>
+#include <QSpinBox>
 #pragma warning(pop)
 
 #include "site_stars.h"
@@ -95,13 +96,18 @@ main_window::main_window()
     action = toolbar->addWidget(site_list_);
 
     toolbar->addSeparator();
+    title_filter_ = new QLineEdit(this);
+    title_filter_->setPlaceholderText("Table title");
+    toolbar->addWidget(title_filter_);
+    toolbar->addSeparator();
     lobby_title_ = new QLineEdit(this);
     lobby_title_->setPlaceholderText("Lobby title");
     toolbar->addWidget(lobby_title_);
     toolbar->addSeparator();
-    title_filter_ = new QLineEdit(this);
-    title_filter_->setPlaceholderText("Table title");
-    toolbar->addWidget(title_filter_);
+    table_count_ = new QSpinBox(this);
+    table_count_->setValue(1);
+    table_count_->setRange(1, 100);
+    toolbar->addWidget(table_count_);
     toolbar->addSeparator();
     action = toolbar->addAction(QIcon(":/icons/control_record.png"), "Capture");
     action->setCheckable(true);
@@ -242,6 +248,7 @@ void main_window::capture_changed()
     site_list_->setEnabled(!timer_->isActive());
     title_filter_->setEnabled(!timer_->isActive());
     lobby_title_->setEnabled(!timer_->isActive());
+    table_count_->setEnabled(!timer_->isActive());
 }
 
 void main_window::show_strategy_changed()
@@ -702,7 +709,7 @@ void main_window::lobby_timer_timeout()
 
     //log_->appendPlainText(QString("Registered in %1 tournaments").arg(lobby_->get_registered_sngs()));
 
-    if (lobby_->get_registered_sngs() < 1)
+    if (lobby_->get_registered_sngs() < table_count_->value())
         lobby_->register_sng();
 
     lobby_->close_popups();
