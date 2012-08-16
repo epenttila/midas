@@ -2,6 +2,7 @@
 
 #pragma warning(push, 1)
 #include <string>
+#include <cassert>
 #include <QPainter>
 #include <QApplication>
 #pragma warning(pop)
@@ -110,6 +111,7 @@ void holdem_strategy_widget::update(const holdem_abstraction& abs, const std::ar
                     raise_p += p;
             }
 
+            assert(std::abs(fold_p + call_p + raise_p - 1.0) < 0.0001);
             actions_[i][j] = QColor::fromRgbF(raise_p, call_p, fold_p);
         }
     }
