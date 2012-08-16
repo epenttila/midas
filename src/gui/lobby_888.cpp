@@ -44,16 +44,17 @@ void lobby_888::close_popups()
     else if (std::regex_match(title, r_trny_id))
     {
         input_manager_.send_keypress(VK_RETURN);
+        ++registered_;
     }
     else if (std::regex_match(title, r_trny_reg_failed))
     {
         input_manager_.send_keypress(VK_RETURN);
-        --registered_;
     }
     else if (title == "Rematch")
     {
         input_manager_.send_keypress(VK_ESCAPE);
         --registered_;
+        assert(registered_ >= 0);
     }
     // TODO close ie windows? CloseWindow
 }
@@ -70,25 +71,25 @@ void lobby_888::register_sng()
     if (!IsWindow(window))
         return;
 
-    if (window_manager::get_window_text(window) != "Lobby")
+    if (window != window_)
         return;
 
     const auto image = window_manager::screenshot(window).toImage();
 
-    // TODO maybe move this check after the click on the list item has been made
-    if (image.pixel(767, 565) != qRgb(96, 168, 48))
-        return;
-
-    // TODO sometimes this is not enough, consider checking if the registration confirmation dialog is shown
-    // this happens when the tourney is closed for registration
     input_manager_.move_mouse(window_, 13, 244, 731, 13);
     input_manager_.sleep();
     input_manager_.left_click();
     input_manager_.sleep();
     input_manager_.move_mouse(window_, 767, 565, 108, 28);
     input_manager_.sleep();
+
+    if ((image.pixel(767, 565) != qRgb(96, 168, 48) && image.pixel(767, 565) != qRgb(124, 181, 77))
+        || image.pixel(786, 576) != qRgb(0, 0, 0))
+    {
+        return;
+    }
+
     input_manager_.left_click();
-    ++registered_;
 }
 
 int lobby_888::get_registered_sngs() const
