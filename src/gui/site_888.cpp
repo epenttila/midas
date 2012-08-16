@@ -285,44 +285,23 @@ void site_888::call() const
     input_.left_click();
 }
 
-void site_888::raise(double amount, double fraction) const
+void site_888::raise(double amount, double) const
 {
     if (get_buttons() & RAISE_BUTTON)
     {
-        // TODO detect if these buttons are available and act accordingly
-        if (fraction == 0.5)
-        {
-            input_.move_mouse(window_, 540, 477, 56, 17);
-            input_.sleep();
-            input_.left_click();
-        }
-        else if (fraction == 0.75)
-        {
-            input_.move_mouse(window_, 597, 477, 56, 17);
-            input_.sleep();
-            input_.left_click();
-        }
-        else if (fraction == 1.0)
-        {
-            input_.move_mouse(window_, 654, 477, 56, 17);
-            input_.sleep();
-            input_.left_click();
-        }
-        else if (fraction >= 999.0)
-        {
-            input_.move_mouse(window_, 711, 477, 56, 17);
-            input_.sleep();
-            input_.left_click();
-        }
-        else
+        if (image_ && image_->pixel(716, 500) == qRgb(255, 255, 255))
         {
             input_.move_mouse(window_, 716, 500, 65, 15);
             input_.sleep();
             input_.left_click();
             input_.left_click();
             input_.sleep();
-            input_.send_string(boost::lexical_cast<std::string>(amount));
-            input_.sleep();
+
+            if (GetForegroundWindow() == window_)
+            {
+                input_.send_string(boost::lexical_cast<std::string>(amount));
+                input_.sleep();
+            }
         }
 
         input_.move_mouse(window_, 639, 437, 149, 34);
