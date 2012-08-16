@@ -231,7 +231,9 @@ void main_window::open_strategy()
 
     QApplication::restoreOverrideCursor();
 
-    log_->appendPlainText(QString("%1 strategy files loaded").arg(filenames.size()));
+    const auto str = QString("%1 strategy files loaded").arg(filenames.size());
+    log_->appendPlainText(str);
+    strategy_label_->setText(str);
 }
 
 void main_window::capture_changed()
