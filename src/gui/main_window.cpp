@@ -118,9 +118,6 @@ main_window::main_window()
     action = toolbar->addAction(QIcon(":/icons/control_play.png"), "Play");
     action->setCheckable(true);
     connect(action, SIGNAL(changed()), SLOT(play_changed()));
-    step_action_ = toolbar->addAction(QIcon(":/icons/control_step.png"), "Step");
-    step_action_->setEnabled(false);
-    connect(action, SIGNAL(triggered()), SLOT(step_triggered()));
 
     log_ = new QPlainTextEdit(this);
     log_->setReadOnly(true);
@@ -649,7 +646,6 @@ void main_window::perform_action()
     current_state = current_state->get_child(index);
 
     acting_ = true;
-    step_action_->setEnabled(acting_);
 
     if (play_)
     {
@@ -682,13 +678,6 @@ void main_window::closeEvent(QCloseEvent* event)
     event->accept();
 }
 
-void main_window::step_triggered()
-{
-    // TODO this doesnt work for some reason
-    acting_ = false;
-    step_action_->setEnabled(acting_);
-}
-
 main_window::strategy_info::strategy_info()
     : current_state_(nullptr)
 {
@@ -701,7 +690,6 @@ main_window::strategy_info::~strategy_info()
 void main_window::play_done_timeout()
 {
     acting_ = false;
-    step_action_->setEnabled(acting_);
 }
 
 void main_window::lobby_timer_timeout()

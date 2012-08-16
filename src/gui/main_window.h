@@ -37,7 +37,6 @@ public slots:
     void show_strategy_changed();
     void play_changed();
     void play_timer_timeout();
-    void step_triggered();
     void play_done_timeout();
     void lobby_timer_timeout();
 
@@ -87,7 +86,6 @@ private:
     std::unique_ptr<input_manager> input_manager_;
     snapshot_type snapshot_;
     bool acting_;
-    QAction* step_action_;
     double action_min_delay_;
     std::map<std::string, std::unique_ptr<holdem_abstraction>> abstractions_;
     QTimer* play_done_timer_;
