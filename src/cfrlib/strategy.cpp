@@ -45,7 +45,7 @@ int strategy::get_action(std::size_t state_id, int bucket) const
     {
         const double p = get(state_id, i, bucket);
 
-        if (x < p)
+        if (x < p && p > 0)
             return i;
 
         x -= p;
