@@ -61,8 +61,8 @@ private:
     void find_window();
     void process_snapshot();
     void perform_action();
-    void closeEvent(QCloseEvent* event);
     void log(const QString& s);
+    bool winEvent(MSG* message, long* result);
 
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<strategy_info>> strategy_infos_;
@@ -97,4 +97,6 @@ private:
     QSpinBox* table_count_;
     double action_max_delay_;
     std::ofstream logfile_;
+    int hotkey_;
+    QAction* play_action_;
 };

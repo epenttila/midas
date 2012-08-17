@@ -115,9 +115,9 @@ main_window::main_window()
     action = toolbar->addAction(QIcon(":/icons/control_record.png"), "Capture");
     action->setCheckable(true);
     connect(action, SIGNAL(changed()), SLOT(capture_changed()));
-    action = toolbar->addAction(QIcon(":/icons/control_play.png"), "Play");
-    action->setCheckable(true);
-    connect(action, SIGNAL(changed()), SLOT(play_changed()));
+    play_action_ = toolbar->addAction(QIcon(":/icons/control_play.png"), "Play");
+    play_action_->setCheckable(true);
+    connect(play_action_, SIGNAL(changed()), SLOT(play_changed()));
 
     log_ = new QPlainTextEdit(this);
     log_->setReadOnly(true);
@@ -150,6 +150,14 @@ main_window::main_window()
     input_manager_->set_delay_mean(settings.value("input_delay_mean", 0.1).toDouble());
     input_manager_->set_delay_stddev(settings.value("input_delay_stddev", 0.01).toDouble());
     lobby_interval_ = settings.value("lobby_interval", 0.1).toDouble();
+    hotkey_ = settings.value("hotkey", VK_F1).toInt();
+
+    log(QString("Loaded settings from \"%1\"").arg(settings.fileName()));
+
+    while (!RegisterHotKey(winId(), 0, MOD_ALT | MOD_CONTROL, hotkey_))
+        ++hotkey_;
+
+    log(QString("Registered hot key Ctrl+Alt+%1").arg(hotkey_));
 }
 
 main_window::~main_window()
@@ -663,21 +671,6 @@ void main_window::perform_action()
     }
 }
 
-void main_window::closeEvent(QCloseEvent* event)
-{
-    QSettings settings("settings.ini", QSettings::IniFormat);
-    settings.setValue("capture_interval", capture_interval_);
-    settings.setValue("action_min_delay", action_min_delay_);
-    settings.setValue("action_max_delay", action_max_delay_);
-    settings.setValue("action_delay_mean", action_delay_mean_);
-    settings.setValue("action_delay_stddev", action_delay_stddev_);
-    settings.setValue("action_post_delay", action_post_delay_);
-    settings.setValue("input_delay_mean", input_manager_->get_delay_mean());
-    settings.setValue("input_delay_stddev", input_manager_->get_delay_stddev());
-    settings.setValue("lobby_interval", lobby_interval_);
-    event->accept();
-}
-
 main_window::strategy_info::strategy_info()
     : current_state_(nullptr)
 {
@@ -739,4 +732,15 @@ void main_window::log(const QString& s)
     const auto message = QString("[%1] %2").arg(QDateTime::currentDateTimeUtc().toString("yyyy-MM-dd hh:mm:ss")).arg(s);
     log_->appendPlainText(message);
     logfile_ << message.toUtf8().data() << std::endl;
+}
+
+bool main_window::winEvent(MSG* message, long*)
+{
+    if (message->message == WM_HOTKEY)
+    {
+        play_action_->trigger();
+        return true;
+    }
+
+    return false;
 }
