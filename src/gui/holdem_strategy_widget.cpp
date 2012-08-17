@@ -111,6 +111,10 @@ void holdem_strategy_widget::update(const holdem_abstraction& abs, const std::ar
                     raise_p += p;
             }
 
+            fold_p = std::min(fold_p, 1.0);
+            call_p = std::min(call_p, 1.0);
+            raise_p = std::min(raise_p, 1.0);
+
             assert(std::abs(fold_p + call_p + raise_p - 1.0) < 0.0001);
             actions_[i][j] = QColor::fromRgbF(raise_p, call_p, fold_p);
         }
