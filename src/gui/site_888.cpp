@@ -285,11 +285,35 @@ void site_888::call() const
     input_.left_click();
 }
 
-void site_888::raise(double amount, double) const
+void site_888::raise(double amount, double fraction) const
 {
     if (get_buttons() & RAISE_BUTTON)
     {
-        if (image_ && image_->pixel(716, 500) == qRgb(255, 255, 255))
+        if (fraction == 0.5 && image_ && image_->pixel(540, 477) == qRgb(9, 127, 206))
+        {
+            input_.move_mouse(window_, 540, 477, 56, 17);
+            input_.sleep();
+            input_.left_click();
+        }
+        else if (fraction == 0.75 && image_ && image_->pixel(597, 477) == qRgb(9, 127, 206))
+        {
+            input_.move_mouse(window_, 597, 477, 56, 17);
+            input_.sleep();
+            input_.left_click();
+        }
+        else if (fraction == 1.0 && image_ && image_->pixel(654, 477) == qRgb(9, 127, 206))
+        {
+            input_.move_mouse(window_, 654, 477, 56, 17);
+            input_.sleep();
+            input_.left_click();
+        }
+        else if (fraction >= 999.0 && image_ && image_->pixel(711, 477) == qRgb(9, 127, 206))
+        {
+            input_.move_mouse(window_, 711, 477, 56, 17);
+            input_.sleep();
+            input_.left_click();
+        }
+        else if (image_ && image_->pixel(716, 500) == qRgb(255, 255, 255))
         {
             input_.move_mouse(window_, 716, 500, 65, 15);
             input_.sleep();
