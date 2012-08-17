@@ -242,13 +242,11 @@ void main_window::open_strategy()
 
         const std::string str_filename = i->toUtf8().data();
         si->strategy_.reset(new strategy(str_filename, states, si->root_state_->get_action_count()));
+
+        log(QString("Loaded strategy \"%1\"").arg(*i));
     }
 
     QApplication::restoreOverrideCursor();
-
-    const auto str = QString("%1 strategy files loaded").arg(filenames.size());
-    log(str);
-    strategy_label_->setText(str);
 }
 
 void main_window::capture_changed()
