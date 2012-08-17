@@ -41,6 +41,7 @@
 #include "input_manager.h"
 #include "util/card.h"
 #include "lobby_888.h"
+#include "state_widget.h"
 
 namespace
 {
@@ -79,6 +80,12 @@ main_window::main_window()
     visualizer_ = new table_widget(this);
     strategy_ = new holdem_strategy_widget(this, Qt::Tool);
     strategy_->setVisible(false);
+    state_widget_ = new state_widget(this, Qt::Tool);
+    state_widget_->setVisible(false);
+    connect(state_widget_, SIGNAL(board_changed(const QString&)), SLOT(state_widget_board_changed(const QString&)));
+    connect(state_widget_, SIGNAL(state_reset()), SLOT(state_widget_state_reset()));
+    connect(state_widget_, SIGNAL(called()), SLOT(state_widget_called()));
+    connect(state_widget_, SIGNAL(raised(double)), SLOT(state_widget_raised(double)));
 
     auto toolbar = addToolBar("File");
     toolbar->setMovable(false);
@@ -86,9 +93,10 @@ main_window::main_window()
     action->setIconText("Open strategy...");
     action->setToolTip("Open strategy...");
     connect(action, SIGNAL(triggered()), SLOT(open_strategy()));
-    action = toolbar->addAction(QIcon(":/icons/table.png"), "Show strategy");
-    action->setCheckable(true);
-    connect(action, SIGNAL(changed()), SLOT(show_strategy_changed()));
+    action = toolbar->addAction(QIcon(":/icons/map.png"), "Show strategy");
+    connect(action, SIGNAL(triggered()), SLOT(show_strategy_changed()));
+    action = toolbar->addAction(QIcon(":/icons/chart_organisation.png"), "Modify state");
+    connect(action, SIGNAL(triggered()), SLOT(modify_state_changed()));
     toolbar->addSeparator();
 
     site_list_ = new QComboBox(this);
@@ -555,8 +563,8 @@ void main_window::process_snapshot()
     std::stringstream ss;
     ss << *current_state;
     log(QString("State: %1").arg(ss.str().c_str()));
-    strategy_->update(*abstractions_.at(strategy_info.abstraction_), board, *strategy, current_state->get_id(),
-        current_state->get_action_count());
+
+    update_strategy_widget(strategy_info);
 
     perform_action();
 }
@@ -743,4 +751,101 @@ bool main_window::winEvent(MSG* message, long*)
     }
 
     return false;
+}
+
+void main_window::modify_state_changed()
+{
+    state_widget_->setVisible(!state_widget_->isVisible());
+}
+
+void main_window::state_widget_board_changed(const QString& board)
+{
+    std::string s(board.toUtf8().data());
+    std::array<int, 5> b;
+    b.fill(-1);
+
+    for (auto i = 0; i < b.size(); ++i)
+    {
+        if (s.size() < 2)
+            break;
+
+        b[i] = string_to_card(s);
+        s.erase(s.begin(), s.begin() + 2);
+    }
+
+    visualizer_->set_board_cards(b);
+
+    if (!strategy_infos_.empty())
+        update_strategy_widget(*strategy_infos_.begin()->second);
+}
+
+void main_window::update_strategy_widget(const strategy_info& si)
+{
+    if (!si.current_state_)
+        return;
+
+    std::array<int, 5> board;
+    visualizer_->get_board_cards(board);
+
+    switch (si.current_state_->get_round())
+    {
+    case holdem_game::PREFLOP:
+        board[0] = -1;
+        board[1] = -1;
+        board[2] = -1;
+    case holdem_game::FLOP:
+        board[3] = -1;
+    case holdem_game::TURN:
+        board[4] = -1;
+    }
+
+    strategy_->update(*abstractions_.at(si.abstraction_), board, *si.strategy_, si.current_state_->get_id(), si.current_state_->get_action_count());
+
+    std::stringstream ss;
+    ss << *si.current_state_;
+
+    state_widget_->set_state(ss.str().c_str());
+}
+
+void main_window::state_widget_state_reset()
+{
+    if (strategy_infos_.empty())
+        return;
+
+    auto& si = *strategy_infos_.begin()->second;
+    si.current_state_ = si.root_state_.get();
+    update_strategy_widget(*strategy_infos_.begin()->second);
+}
+
+void main_window::state_widget_called()
+{
+    if (strategy_infos_.empty())
+        return;
+
+    auto& si = *strategy_infos_.begin()->second;
+
+    if (!si.current_state_)
+        return;
+
+    const auto state = si.current_state_->call();
+
+    if (state->is_terminal())
+        return;
+
+    si.current_state_ = state;
+    update_strategy_widget(*strategy_infos_.begin()->second);
+}
+
+void main_window::state_widget_raised(double fraction)
+{
+    if (strategy_infos_.empty())
+        return;
+
+    auto& si = *strategy_infos_.begin()->second;
+
+    if (!si.current_state_)
+        return;
+ 
+    si.current_state_ = si.current_state_->raise(fraction);
+    update_strategy_widget(*strategy_infos_.begin()->second);
 }

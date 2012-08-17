@@ -18,6 +18,8 @@ set(gui_SOURCES
     site_base.h
     site_stars.cpp
     site_stars.h
+    state_widget.cpp
+    state_widget.h
     table_widget.cpp
     table_widget.h
     window_manager.cpp
@@ -27,6 +29,7 @@ set(gui_SOURCES
 set(gui_HEADERS
     holdem_strategy_widget.h
     main_window.h
+    state_widget.h
     table_widget.h
 )
 

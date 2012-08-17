@@ -17,6 +17,7 @@ public:
     void set_hole_cards(int seat, const std::array<int, 2>& cards);
     void set_dealer(int dealer);
     void set_pot(int round, const std::array<int, 2>& pot);
+    void get_board_cards(std::array<int, 5>& board) const;
 
 protected:
     virtual void paintEvent(QPaintEvent* event);

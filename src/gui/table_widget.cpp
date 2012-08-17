@@ -138,3 +138,8 @@ void table_widget::paintEvent(QPaintEvent* event)
 
     QFrame::paintEvent(event);
 }
+
+void table_widget::get_board_cards(std::array<int, 5>& board) const
+{
+    board = board_;
+}

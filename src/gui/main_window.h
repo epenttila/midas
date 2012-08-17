@@ -5,6 +5,7 @@
 #include <map>
 #include <random>
 #include <fstream>
+#include <array>
 #pragma warning(pop)
 
 class QPlainTextEdit;
@@ -21,6 +22,7 @@ class QComboBox;
 class input_manager;
 class lobby_base;
 class QSpinBox;
+class state_widget;
 
 class main_window : public QMainWindow
 {
@@ -39,6 +41,11 @@ public slots:
     void play_timer_timeout();
     void play_done_timeout();
     void lobby_timer_timeout();
+    void modify_state_changed();
+    void state_widget_board_changed(const QString& board);
+    void state_widget_state_reset();
+    void state_widget_called();
+    void state_widget_raised(double fraction);
 
 private:
     struct strategy_info
@@ -63,6 +70,7 @@ private:
     void perform_action();
     void log(const QString& s);
     bool winEvent(MSG* message, long* result);
+    void update_strategy_widget(const strategy_info& si);
 
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<strategy_info>> strategy_infos_;
@@ -99,4 +107,5 @@ private:
     std::ofstream logfile_;
     int hotkey_;
     QAction* play_action_;
+    state_widget* state_widget_;
 };
