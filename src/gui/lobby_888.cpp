@@ -93,6 +93,14 @@ void lobby_888::register_sng()
         return;
     }
 
+    auto image = window_manager::screenshot(window_).toImage();
+
+    if ((image.pixel(767, 565) != qRgb(96, 168, 48) && image.pixel(767, 565) != qRgb(124, 181, 77))
+        || image.pixel(786, 576) != qRgb(0, 0, 0))
+    {
+        return;
+    }
+
     input_manager_.move_mouse(window_, 13, 244, 731, 13);
     input_manager_.sleep();
     input_manager_.left_click();
@@ -100,7 +108,7 @@ void lobby_888::register_sng()
     input_manager_.move_mouse(window_, 767, 565, 108, 28);
     input_manager_.sleep();
 
-    const auto image = window_manager::screenshot(window_).toImage();
+    image = window_manager::screenshot(window_).toImage();
 
     if ((image.pixel(767, 565) != qRgb(96, 168, 48) && image.pixel(767, 565) != qRgb(124, 181, 77))
         || image.pixel(786, 576) != qRgb(0, 0, 0))
