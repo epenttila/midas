@@ -269,6 +269,7 @@ void main_window::capture_changed()
     title_filter_->setEnabled(!timer_->isActive());
     lobby_title_->setEnabled(!timer_->isActive());
     table_count_->setEnabled(!timer_->isActive());
+    play_action_->setEnabled(timer_->isActive());
 }
 
 void main_window::show_strategy_changed()
