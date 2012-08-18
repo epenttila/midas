@@ -70,19 +70,16 @@ void input_manager::sleep()
 
 void input_manager::set_cursor_position(int x, int y)
 {
-    const double width = GetSystemMetrics(SM_CXSCREEN); 
-    const double height = GetSystemMetrics(SM_CYSCREEN); 
-    const double xx = boost::algorithm::clamp(x * 65535.0 / (width - 1), 0.0, 65535.0);
-    const double yy = boost::algorithm::clamp(y * 65535.0 / (height - 1), 0.0, 65535.0);
-
-    assert(xx >= 0 && xx <= 65535.0);
-    assert(yy >= 0 && yy <= 65535.0);
+    const int width = GetSystemMetrics(SM_CXSCREEN); 
+    const int height = GetSystemMetrics(SM_CYSCREEN); 
+    const int xx = boost::math::iround(x * 65535.0 / (width - 1));
+    const int yy = boost::math::iround(y * 65535.0 / (height - 1));
 
     INPUT input = {};
     input.type = INPUT_MOUSE;
     input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
-    input.mi.dx = int(xx + 0.5);
-    input.mi.dy = int(yy + 0.5);
+    input.mi.dx = xx;
+    input.mi.dy = yy;
     SendInput(1, &input, sizeof(input));
 }
 
@@ -131,8 +128,8 @@ void input_manager::wind_mouse_impl(double xs, double ys, double xe, double ye, 
 
         xs += velo_x;
         ys += velo_y;
-        int mx = int(xs + 0.5);
-        int my = int(ys + 0.5);
+        int mx = boost::math::iround(xs);
+        int my = boost::math::iround(ys);
         POINT pt;
         GetCursorPos(&pt);
 
@@ -140,13 +137,12 @@ void input_manager::wind_mouse_impl(double xs, double ys, double xe, double ye, 
             set_cursor_position(mx, my);
 
         const double step = boost::math::hypot(xs - pt.x, ys - pt.y);
-        Sleep(int(((max_wait - min_wait) * (step / max_step) + min_wait) + 0.5));
+        Sleep(boost::math::lround(((max_wait - min_wait) * (step / max_step) + min_wait)));
     }
 }
 
 void input_manager::move_mouse(int x, int y)
 {
-    // TODO test this on multimonitor
     const int left = GetSystemMetrics(SM_XVIRTUALSCREEN);
     const int top = GetSystemMetrics(SM_YVIRTUALSCREEN);
     const int width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
@@ -175,8 +171,8 @@ void input_manager::move_mouse(int x, int y, int width, int height)
     std::normal_distribution<> dist_x(x + width / 2.0, width / 10.0);
     std::normal_distribution<> dist_y(y + height / 2.0, height / 10.0);
 
-    int target_x = int(dist_x(engine_) + 0.5);
-    int target_y = int(dist_y(engine_) + 0.5);
+    int target_x = boost::math::iround(dist_x(engine_));
+    int target_y = boost::math::iround(dist_y(engine_));
 
     target_x = boost::algorithm::clamp(target_x, x, x + width - 1);
     target_y = boost::algorithm::clamp(target_y, y, y + height - 1);
