@@ -35,9 +35,9 @@ public:
 public slots:
     void timer_timeout();
     void open_strategy();
-    void capture_changed();
+    void capture_changed(bool checked);
     void show_strategy_changed();
-    void play_changed();
+    void play_changed(bool checked);
     void play_timer_timeout();
     void play_done_timeout();
     void lobby_timer_timeout();

@@ -122,10 +122,11 @@ main_window::main_window()
     toolbar->addSeparator();
     action = toolbar->addAction(QIcon(":/icons/control_record.png"), "Capture");
     action->setCheckable(true);
-    connect(action, SIGNAL(changed()), SLOT(capture_changed()));
+    connect(action, SIGNAL(toggled(bool)), SLOT(capture_changed(bool)));
     play_action_ = toolbar->addAction(QIcon(":/icons/control_play.png"), "Play");
     play_action_->setCheckable(true);
-    connect(play_action_, SIGNAL(changed()), SLOT(play_changed()));
+    play_action_->setEnabled(false);
+    connect(play_action_, SIGNAL(toggled(bool)), SLOT(play_changed(bool)));
 
     log_ = new QPlainTextEdit(this);
     log_->setReadOnly(true);
@@ -249,9 +250,9 @@ void main_window::open_strategy()
     QApplication::restoreOverrideCursor();
 }
 
-void main_window::capture_changed()
+void main_window::capture_changed(const bool checked)
 {
-    if (!timer_->isActive())
+    if (checked)
     {
         timer_->start(int(capture_interval_ * 1000.0));
         window_manager_->set_title_filter(std::string(title_filter_->text().toUtf8().data()));
@@ -265,11 +266,11 @@ void main_window::capture_changed()
         window_manager_->clear_window();
     }
 
-    site_list_->setEnabled(!timer_->isActive());
-    title_filter_->setEnabled(!timer_->isActive());
-    lobby_title_->setEnabled(!timer_->isActive());
-    table_count_->setEnabled(!timer_->isActive());
-    play_action_->setEnabled(timer_->isActive());
+    site_list_->setEnabled(!checked);
+    title_filter_->setEnabled(!checked);
+    lobby_title_->setEnabled(!checked);
+    table_count_->setEnabled(!checked);
+    play_action_->setEnabled(checked);
 }
 
 void main_window::show_strategy_changed()
@@ -277,9 +278,9 @@ void main_window::show_strategy_changed()
     strategy_->setVisible(!strategy_->isVisible());
 }
 
-void main_window::play_changed()
+void main_window::play_changed(const bool checked)
 {
-    play_ = !play_;
+    play_ = checked;
 
     if (play_)
         lobby_timer_->start(int(lobby_interval_ * 1000.0));
