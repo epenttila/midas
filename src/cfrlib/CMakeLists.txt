@@ -15,8 +15,11 @@ set(cfrlib_SOURCES
     leduc_game.h
     leduc_state.cpp
     leduc_state.h
+    nl_holdem_state.cpp
     nl_holdem_state.h
     nl_holdem_state.ipp
+    nlhe_strategy.h
+    nlhe_strategy.cpp
     pcs_cfr_solver.h
     pcs_cfr_solver.ipp
     solver_base.h

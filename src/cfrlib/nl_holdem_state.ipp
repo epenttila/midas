@@ -1,19 +1,12 @@
 #include <boost/integer/static_log2.hpp>
+#include <random>
+#include "holdem_game.h"
 
 namespace detail
 {
     static const std::array<int, 2> INITIAL_POT = {{1, 2}};
 
-    int soft_translate(const double b1, const double b, const double b2)
-    {
-        assert(b1 <= b && b <= b2);
-        static std::random_device rd;
-        static std::mt19937 engine(rd());
-        static std::uniform_real_distribution<double> dist;
-        const double s1 = (b1 / b - b1 / b2) / (1 - b1 / b2);
-        const double s2 = (b / b2 - b1 / b2) / (1 - b1 / b2);
-        return dist(engine) < (s1 / (s1 + s2)) ? 0 : 1;
-    }
+    int soft_translate(const double b1, const double b, const double b2);
 
     template<unsigned int N>
     struct count_bits
@@ -40,8 +33,6 @@ nl_holdem_state<BITMASK>::nl_holdem_state(const int stack_size)
     , stack_size_(stack_size)
 {
     children_.fill(nullptr);
-    action_to_index_.fill(-1);
-    index_to_action_.fill(-1);
 
     for (int i = 0, j = 0; i < MAX_ACTIONS; ++i)
     {
@@ -49,6 +40,10 @@ nl_holdem_state<BITMASK>::nl_holdem_state(const int stack_size)
         {
             action_to_index_[i] = j;
             index_to_action_[j++] = i;
+        }
+        else
+        {
+            action_to_index_[i] = -1;
         }
     }
 
@@ -382,9 +377,3 @@ std::array<int, nl_holdem_state<BITMASK>::MAX_ACTIONS> nl_holdem_state<BITMASK>:
 
 template<int BITMASK>
 std::array<int, nl_holdem_state<BITMASK>::ACTIONS> nl_holdem_state<BITMASK>::index_to_action_;
-
-std::ostream& operator<<(std::ostream& os, const nlhe_state_base& state)
-{
-    state.print(os);
-    return os;
-}
