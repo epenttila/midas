@@ -132,7 +132,6 @@ void nlhe_game::play(std::size_t game)
 
     //log_ << "Pot: " << pot_ << "\n";
     //log_ << "Bets: " << bets_[0] << " - " << bets_[1] << "\n";
-    log_ << "BR: " << bankroll_ << "\n";
     log_ << "\n\n\n";
 }
 

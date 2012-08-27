@@ -65,6 +65,7 @@ int main(int argc, char* argv[])
         std::array<std::string, 2> strategy_file;
         std::size_t iterations;
         int seed = std::random_device()();
+        std::string history_file;
 
         po::options_description desc("Options");
         desc.add_options()
@@ -74,6 +75,7 @@ int main(int argc, char* argv[])
             ("strategy2", po::value<std::string>(&strategy_file[1])->required(), "strategy for player 2")
             ("iterations", po::value<std::size_t>(&iterations)->required(), "number of iterations")
             ("seed", po::value<int>(&seed), "rng seed")
+            ("history", po::value<std::string>(&history_file), "hand history file name")
             ;
 
         po::variables_map vm;
@@ -106,7 +108,9 @@ int main(int argc, char* argv[])
             nlhe_game g(stack_size, *a1, *a2);
             g.set_dealer(0);
             g.set_seed(seed);
-            g.set_log(std::string("game") + ".txt");
+
+            if (!history_file.empty())
+                g.set_log(history_file);
 
             for (std::int64_t i = 0; i < std::int64_t(iterations); ++i)
             {
