@@ -99,6 +99,11 @@ int main(int argc, char* argv[])
             std::ofstream f(abstraction_file, std::ios::binary);
             abs.save(f);
         }
+        else
+        {
+            std::cerr << "Invalid game\n";
+            return 1;
+        }
 
         return 0;
     }
