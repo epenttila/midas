@@ -66,16 +66,18 @@ int main(int argc, char* argv[])
         std::size_t iterations;
         int seed = std::random_device()();
         std::string history_file;
+        std::string plot_file;
 
         po::options_description desc("Options");
         desc.add_options()
             ("help", "produce help message")
             ("game", po::value<std::string>(&game)->required(), "game to play")
-            ("strategy1", po::value<std::string>(&strategy_file[0])->required(), "strategy for player 1")
-            ("strategy2", po::value<std::string>(&strategy_file[1])->required(), "strategy for player 2")
+            ("strategy1-file", po::value<std::string>(&strategy_file[0])->required(), "strategy for player 1")
+            ("strategy2-file", po::value<std::string>(&strategy_file[1])->required(), "strategy for player 2")
             ("iterations", po::value<std::size_t>(&iterations)->required(), "number of iterations")
             ("seed", po::value<int>(&seed), "rng seed")
-            ("history", po::value<std::string>(&history_file), "hand history file name")
+            ("history-file", po::value<std::string>(&history_file), "hand history file name")
+            ("plot-file", po::value<std::string>(&plot_file), "plotting data file name")
             ;
 
         po::variables_map vm;
@@ -95,6 +97,12 @@ int main(int argc, char* argv[])
         po::notify(vm);
 
         int bankroll = 0;
+
+        std::ofstream plot_stream;
+
+        if (!plot_file.empty())
+            plot_stream.open(plot_file);
+
         boost::timer::auto_cpu_timer t;
 
         std::regex nlhe_regex("nlhe\\.([0-9]+)");
@@ -125,6 +133,8 @@ int main(int argc, char* argv[])
                 }
 
                 g.play(i);
+
+                plot_stream << g.get_bankroll() << "\n";
             }
 
             bankroll = g.get_bankroll();
