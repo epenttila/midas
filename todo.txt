@@ -1,0 +1,17 @@
+Boost.Log logging
+automatic testing? CTest boost.test
+compile on linux with icc
+what is earth mover k-means mentioned in alberta presentation?
+consider minbets as checks IP and when decision is to check  back call them but advance the check game state tree?
+    - facing minbet IP (/r -> /c) -> translate to check and call/check normally (call/check are the same button)
+    - facing minbet OOP (/...r -> /...c) -> translate to check/call and call the minbet
+    - consider case where minbet is close to the smallest real bet size (such as halfpot)
+        - if bet == minbet && bet != halfpot
+input_maanger::left_double_click and use windows setting
+fix use of state::get_child where the child might not exist (i.e. 2 SB game raises preflop)
+    - current_state->get_child(index);
+add checks to never fold nuts on river due to lack of strategy? (iterate over all 52*51 cards and check if we are best)
+add tooltip to strategy popup (hand, action probabilities)
+add tilt factor? (+x% to pots when winning)
+adjust bet sizes to make the real and abstract pots similar
+sng registrations disappear
