@@ -29,7 +29,7 @@ public:
 
     cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr<abstraction_t> abstraction);
     ~cfr_solver();
-    virtual void solve(const std::uint64_t iterations, int threads = -1);
+    virtual void solve(const std::uint64_t iterations, std::int64_t seed, int threads = -1);
     virtual void save_strategy(const std::string& filename) const;
     virtual void init_storage();
     virtual std::vector<int> get_bucket_counts() const;

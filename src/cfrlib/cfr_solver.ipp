@@ -39,7 +39,7 @@ cfr_solver<T, U, Data>::~cfr_solver()
 }
 
 template<class T, class U, class Data>
-void cfr_solver<T, U, Data>::solve(const std::uint64_t iterations, int threads)
+void cfr_solver<T, U, Data>::solve(const std::uint64_t iterations, std::int64_t seed, int threads)
 {
     omp_set_num_threads(threads != -1 ? threads : omp_get_max_threads());
 
@@ -51,7 +51,7 @@ void cfr_solver<T, U, Data>::solve(const std::uint64_t iterations, int threads)
 
 #pragma omp parallel
     {
-        T g(evaluator_, *abstraction_, std::random_device()());
+        T g(evaluator_, *abstraction_, seed);
 
 #pragma omp for schedule(dynamic)
         // TODO make unsigned when OpenMP 3.0 is supported

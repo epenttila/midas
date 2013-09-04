@@ -72,7 +72,8 @@ int main(int argc, char* argv[])
         std::string abstraction;
         std::string variant;
         std::string debug_file;
-        int threads = -1;
+        int threads = omp_get_max_threads();
+        std::int64_t seed = std::random_device()();
 
         po::options_description desc("Options");
         desc.add_options()
@@ -85,6 +86,7 @@ int main(int argc, char* argv[])
             ("variant", po::value<std::string>(&variant)->required(), "solver variant")
             ("debug-file", po::value<std::string>(&debug_file), "debug output file")
             ("threads", po::value<int>(&threads), "number of threads")
+            ("seed", po::value<std::int64_t>(&seed), "initial random seed")
             ;
 
         po::variables_map vm;
@@ -197,8 +199,10 @@ int main(int argc, char* argv[])
                 % i % iterations % pct % ips % to_simple_string(d) % to_simple_string(eta);
         });
 
-        std::cout << "Solving for " << iterations << " iterations using " << threads << " threads\n";
-        solver->solve(iterations, threads);
+        std::cout << "Using random seed: " << seed << "\n";
+        std::cout << "Using threads: " << threads << "\n";
+        std::cout << "Solving for " << iterations << " iterations\n";
+        solver->solve(iterations, seed, threads);
 
         std::cout << "Saving strategy to: " << strategy_file << "\n";
         solver->save_strategy(strategy_file);
