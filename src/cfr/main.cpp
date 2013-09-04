@@ -23,6 +23,7 @@
 #include "abslib/leduc_abstraction.h"
 #include "cfrlib/leduc_game.h"
 #include "cfrlib/cs_cfr_solver.h"
+#include "cfrlib/pure_cfr_solver.h"
 
 namespace
 {
@@ -37,6 +38,22 @@ namespace
             return std::unique_ptr<solver_base>(new cs_cfr_solver<holdem_game, state_type>(std::move(state), std::move(abs)));
         else if (variant == "pcs")
             return std::unique_ptr<solver_base>(new pcs_cfr_solver<holdem_game, state_type>(std::move(state), std::move(abs)));
+        else if (variant == "pure")
+            return std::unique_ptr<solver_base>(new pure_cfr_solver<holdem_game, state_type>(std::move(state), std::move(abs)));
+        else
+            return std::unique_ptr<solver_base>();
+    }
+
+    template<class Game, class State>
+    std::unique_ptr<solver_base> create_solver(const std::string& variant, std::unique_ptr<State> state,
+        std::unique_ptr<typename Game::abstraction_t> abs)
+    {
+        if (variant == "cs")
+            return std::unique_ptr<cs_cfr_solver<Game, State>>(new cs_cfr_solver<Game, State>(std::move(state), std::move(abs)));
+        else if (variant == "pcs")
+            return std::unique_ptr<pcs_cfr_solver<Game, State>>(new pcs_cfr_solver<Game, State>(std::move(state), std::move(abs)));
+        else if (variant == "pure")
+            return std::unique_ptr<pure_cfr_solver<Game, State>>(new pure_cfr_solver<Game, State>(std::move(state), std::move(abs)));
         else
             return std::unique_ptr<solver_base>();
     }
@@ -100,26 +117,22 @@ int main(int argc, char* argv[])
 
             if (variant == "cs")
                 solver.reset(new cs_cfr_solver<kuhn_game, kuhn_state>(std::move(state), std::move(abs)));
+            else if (variant == "pure")
+                solver.reset(new pure_cfr_solver<kuhn_game, kuhn_state>(std::move(state), std::move(abs)));
         }
         else if (game == "leduc")
         {
             std::unique_ptr<leduc_state> state(new leduc_state());
             std::unique_ptr<leduc_abstraction> abs(new leduc_abstraction);
 
-            if (variant == "cs")
-                solver.reset(new cs_cfr_solver<leduc_game, leduc_state>(std::move(state), std::move(abs)));
-            else if (variant == "pcs")
-                solver.reset(new pcs_cfr_solver<leduc_game, leduc_state>(std::move(state), std::move(abs)));
+            solver = create_solver<leduc_game>(variant, std::move(state), std::move(abs));
         }
         else if (game == "holdem")
         {
             std::unique_ptr<holdem_state> state(new holdem_state());
             std::unique_ptr<holdem_abstraction> abs(new holdem_abstraction(abstraction));
 
-            if (variant == "cs")
-                solver.reset(new cs_cfr_solver<holdem_game, holdem_state>(std::move(state), std::move(abs)));
-            else
-                solver.reset(new pcs_cfr_solver<holdem_game, holdem_state>(std::move(state), std::move(abs)));
+            solver = create_solver<holdem_game>(variant, std::move(state), std::move(abs));
         }
         else if (std::regex_match(game, match, nlhe_regex))
         {

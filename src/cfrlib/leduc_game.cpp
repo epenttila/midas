@@ -14,13 +14,11 @@ namespace
     }
 }
 
-leduc_game::leduc_game(const evaluator_t& evaluator, const abstraction_t& abstraction)
+leduc_game::leduc_game(const evaluator_t& evaluator, const abstraction_t& abstraction, std::int64_t seed)
     : evaluator_(evaluator)
     , abstraction_(abstraction)
+    , engine_(static_cast<unsigned long>(seed))
 {
-    std::random_device rd;
-    engine_.seed(rd());
-
     deck_[0] = 0;
     deck_[1] = 1;
     deck_[2] = 2;
@@ -92,4 +90,9 @@ void leduc_game::get_results(const int action, const reaches_type& reaches, resu
             }
         }
     }
+}
+
+std::mt19937& leduc_game::get_random_engine()
+{
+    return engine_;
 }

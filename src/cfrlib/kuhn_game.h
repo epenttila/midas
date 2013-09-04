@@ -1,6 +1,7 @@
 #pragma once
 
 #include <random>
+#include <cstdint>
 #include <boost/noncopyable.hpp>
 #include "evallib/kuhn_evaluator.h"
 #include "abslib/kuhn_abstraction.h"
@@ -19,8 +20,9 @@ public:
     typedef kuhn_evaluator evaluator_t;
     typedef kuhn_abstraction abstraction_t;
 
-    kuhn_game(const evaluator_t& evaluator, const abstraction_t& abstraction);
+    kuhn_game(const evaluator_t& evaluator, const abstraction_t& abstraction, std::int64_t seed);
     int play(bucket_t* buckets);
+    std::mt19937& get_random_engine();
 
 private:
     std::mt19937 engine_;

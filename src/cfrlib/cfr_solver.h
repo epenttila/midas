@@ -25,6 +25,7 @@ public:
     typedef typename T::bucket_t bucket_t;
     typedef typename T::evaluator_t evaluator_t;
     typedef typename T::abstraction_t abstraction_t;
+    typedef typename Data data_t;
 
     cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr<abstraction_t> abstraction);
     ~cfr_solver();

@@ -2,6 +2,7 @@
 
 #include <random>
 #include <array>
+#include <cstdint>
 #include <boost/noncopyable.hpp>
 #include "abslib/leduc_abstraction.h"
 #include "evallib/leduc_evaluator.h"
@@ -28,10 +29,11 @@ public:
     typedef std::array<double, PRIVATE_OUTCOMES> results_type;
     typedef std::array<double, PRIVATE_OUTCOMES> reaches_type;
 
-    leduc_game(const evaluator_t& evaluator, const abstraction_t& abstraction);
+    leduc_game(const evaluator_t& evaluator, const abstraction_t& abstraction, std::int64_t seed);
     int play(bucket_t* buckets);
     void play_public(buckets_type& buckets);
     void get_results(int action, const reaches_type& reaches, results_type& results) const;
+    std::mt19937& get_random_engine();
 
 private:
     std::mt19937 engine_;

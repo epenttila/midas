@@ -1,6 +1,7 @@
 #pragma once
 
 #include <random>
+#include <cstdint>
 #include "evallib/holdem_evaluator.h"
 #include "abslib/holdem_abstraction.h"
 
@@ -26,10 +27,11 @@ public:
     typedef std::array<double, PRIVATE_OUTCOMES> results_type;
     typedef std::array<double, PRIVATE_OUTCOMES> reaches_type;
 
-    holdem_game(const evaluator_t& eval, const abstraction_t& abs);
+    holdem_game(const evaluator_t& eval, const abstraction_t& abs, std::int64_t seed);
     int play(bucket_t* buckets);
     void play_public(buckets_type& buckets);
     void get_results(int action, const reaches_type& reaches, results_type& results) const;
+    std::mt19937& get_random_engine();
 
 private:
     std::mt19937 engine_;

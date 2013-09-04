@@ -14,13 +14,11 @@ namespace
     }
 }
 
-holdem_game::holdem_game(const evaluator_t& evaluator, const abstraction_t& abstraction)
+holdem_game::holdem_game(const evaluator_t& evaluator, const abstraction_t& abstraction, std::int64_t seed)
     : evaluator_(evaluator)
     , abstraction_(abstraction)
+    , engine_(static_cast<unsigned long>(seed))
 {
-    std::random_device rd;
-    engine_.seed(rd());
-
     std::iota(deck_.begin(), deck_.end(), 0);
 
     for (int i = 0; i < 52; ++i)
@@ -252,4 +250,9 @@ void holdem_game::get_results(const int action, const reaches_type& reaches, res
         }
 #endif
     }
+}
+
+std::mt19937& holdem_game::get_random_engine()
+{
+    return engine_;
 }
