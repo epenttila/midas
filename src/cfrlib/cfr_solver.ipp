@@ -51,7 +51,7 @@ void cfr_solver<T, U, Data>::solve(const std::uint64_t iterations, std::int64_t 
 
 #pragma omp parallel
     {
-        T g(evaluator_, *abstraction_, seed);
+        T g(evaluator_, *abstraction_, seed + iterations);
 
 #pragma omp for schedule(dynamic)
         // TODO make unsigned when OpenMP 3.0 is supported
