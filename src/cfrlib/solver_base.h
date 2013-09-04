@@ -6,7 +6,7 @@ class solver_base
 
 public:
     virtual ~solver_base() {}
-    virtual void solve(const std::uint64_t iterations) = 0;
+    virtual void solve(const std::uint64_t iterations, int threads = -1) = 0;
     virtual void save_state(const std::string& filename) const = 0;
     virtual void load_state(const std::string& filename) = 0;
     virtual void save_strategy(const std::string& filename) const = 0;

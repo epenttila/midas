@@ -72,6 +72,7 @@ int main(int argc, char* argv[])
         std::string abstraction;
         std::string variant;
         std::string debug_file;
+        int threads = -1;
 
         po::options_description desc("Options");
         desc.add_options()
@@ -83,6 +84,7 @@ int main(int argc, char* argv[])
             ("state-file", po::value<std::string>(&state_file), "state file")
             ("variant", po::value<std::string>(&variant)->required(), "solver variant")
             ("debug-file", po::value<std::string>(&debug_file), "debug output file")
+            ("threads", po::value<int>(&threads), "number of threads")
             ;
 
         po::variables_map vm;
@@ -195,8 +197,8 @@ int main(int argc, char* argv[])
                 % i % iterations % pct % ips % to_simple_string(d) % to_simple_string(eta);
         });
 
-        std::cout << "Solving for " << iterations << " iterations\n";
-        solver->solve(iterations);
+        std::cout << "Solving for " << iterations << " iterations using " << threads << " threads\n";
+        solver->solve(iterations, threads);
 
         std::cout << "Saving strategy to: " << strategy_file << "\n";
         solver->save_strategy(strategy_file);

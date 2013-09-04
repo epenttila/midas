@@ -39,8 +39,10 @@ cfr_solver<T, U, Data>::~cfr_solver()
 }
 
 template<class T, class U, class Data>
-void cfr_solver<T, U, Data>::solve(const std::uint64_t iterations)
+void cfr_solver<T, U, Data>::solve(const std::uint64_t iterations, int threads)
 {
+    omp_set_num_threads(threads != -1 ? threads : omp_get_max_threads());
+
     const double start_time = omp_get_wtime();
     double time = start_time;
     std::uint64_t iteration = 0;
