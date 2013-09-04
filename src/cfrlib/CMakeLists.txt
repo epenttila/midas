@@ -25,6 +25,8 @@ set(cfrlib_SOURCES
     solver_base.h
     strategy.cpp
     strategy.h
+    cs_cfr_solver.h
+    cs_cfr_solver.ipp
 )
 
 add_library(cfrlib ${cfrlib_SOURCES})

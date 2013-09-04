@@ -22,6 +22,7 @@
 #include "cfrlib/leduc_state.h"
 #include "abslib/leduc_abstraction.h"
 #include "cfrlib/leduc_game.h"
+#include "cfrlib/cs_cfr_solver.h"
 
 namespace
 {
@@ -33,7 +34,7 @@ namespace
         std::unique_ptr<state_type> state(new state_type(stack_size));
 
         if (variant == "cs")
-            return std::unique_ptr<solver_base>(new cfr_solver<holdem_game, state_type>(std::move(state), std::move(abs)));
+            return std::unique_ptr<solver_base>(new cs_cfr_solver<holdem_game, state_type>(std::move(state), std::move(abs)));
         else if (variant == "pcs")
             return std::unique_ptr<solver_base>(new pcs_cfr_solver<holdem_game, state_type>(std::move(state), std::move(abs)));
         else
@@ -98,7 +99,7 @@ int main(int argc, char* argv[])
             std::unique_ptr<kuhn_abstraction> abs(new kuhn_abstraction);
 
             if (variant == "cs")
-                solver.reset(new cfr_solver<kuhn_game, kuhn_state>(std::move(state), std::move(abs)));
+                solver.reset(new cs_cfr_solver<kuhn_game, kuhn_state>(std::move(state), std::move(abs)));
         }
         else if (game == "leduc")
         {
@@ -106,7 +107,7 @@ int main(int argc, char* argv[])
             std::unique_ptr<leduc_abstraction> abs(new leduc_abstraction);
 
             if (variant == "cs")
-                solver.reset(new cfr_solver<leduc_game, leduc_state>(std::move(state), std::move(abs)));
+                solver.reset(new cs_cfr_solver<leduc_game, leduc_state>(std::move(state), std::move(abs)));
             else if (variant == "pcs")
                 solver.reset(new pcs_cfr_solver<leduc_game, leduc_state>(std::move(state), std::move(abs)));
         }
@@ -116,7 +117,7 @@ int main(int argc, char* argv[])
             std::unique_ptr<holdem_abstraction> abs(new holdem_abstraction(abstraction));
 
             if (variant == "cs")
-                solver.reset(new cfr_solver<holdem_game, holdem_state>(std::move(state), std::move(abs)));
+                solver.reset(new cs_cfr_solver<holdem_game, holdem_state>(std::move(state), std::move(abs)));
             else
                 solver.reset(new pcs_cfr_solver<holdem_game, holdem_state>(std::move(state), std::move(abs)));
         }
