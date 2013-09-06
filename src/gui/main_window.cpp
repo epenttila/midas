@@ -62,6 +62,17 @@ namespace
 
         return upper;
     }
+
+    QString get_key_text(unsigned int vk)
+    {
+        const auto scancode = MapVirtualKey(vk, MAPVK_VK_TO_VSC);
+        std::array<char, 100> s;
+
+        if (GetKeyNameText(scancode << 16, s.data(), int(s.size())) != 0)
+            return QString(s.data());
+        else
+            return "[Error]";
+    }
 }
 
 main_window::main_window()
@@ -166,7 +177,7 @@ main_window::main_window()
     while (!RegisterHotKey(winId(), 0, MOD_ALT | MOD_CONTROL, hotkey_))
         ++hotkey_;
 
-    log(QString("Registered hot key Ctrl+Alt+%1").arg(hotkey_));
+    log(QString("Registered hot key Ctrl+Alt+%1").arg(get_key_text(hotkey_)));
 }
 
 main_window::~main_window()
