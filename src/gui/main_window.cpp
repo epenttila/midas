@@ -29,24 +29,20 @@
 #include <QDateTime>
 #pragma warning(pop)
 
-#include "site_stars.h"
 #include "cfrlib/holdem_game.h"
 #include "cfrlib/nl_holdem_state.h"
 #include "cfrlib/strategy.h"
 #include "table_widget.h"
 #include "window_manager.h"
 #include "holdem_strategy_widget.h"
-#include "site_888.h"
-#include "site_base.h"
+#include "table_manager.h"
 #include "input_manager.h"
 #include "util/card.h"
-#include "lobby_888.h"
+#include "lobby_manager.h"
 #include "state_widget.h"
 
 namespace
 {
-    enum { SITE_STARS, SITE_888 };
-
     template<class T>
     typename T::const_iterator find_nearest(const T& map, const typename T::key_type& value)
     {
@@ -100,9 +96,9 @@ main_window::main_window()
 
     auto toolbar = addToolBar("File");
     toolbar->setMovable(false);
-    auto action = toolbar->addAction(QIcon(":/icons/folder_page_white.png"), "&Open strategy...");
-    action->setIconText("Open strategy...");
-    action->setToolTip("Open strategy...");
+    auto action = toolbar->addAction(QIcon(":/icons/folder_page_white.png"), "&Open...");
+    action->setIconText("Open...");
+    action->setToolTip("Open...");
     connect(action, SIGNAL(triggered()), SLOT(open_strategy()));
     action = toolbar->addAction(QIcon(":/icons/map.png"), "Show strategy");
     connect(action, SIGNAL(triggered()), SLOT(show_strategy_changed()));
@@ -110,14 +106,6 @@ main_window::main_window()
     connect(action, SIGNAL(triggered()), SLOT(modify_state_changed()));
     toolbar->addSeparator();
 
-    site_list_ = new QComboBox(this);
-    site_list_->insertItem(SITE_STARS, "PokerStars", SITE_STARS);
-    site_list_->insertItem(SITE_888, "888poker", SITE_888);
-    site_list_->model()->sort(0);
-    site_list_->setCurrentIndex(0);
-    action = toolbar->addWidget(site_list_);
-
-    toolbar->addSeparator();
     title_filter_ = new QLineEdit(this);
     title_filter_->setPlaceholderText("Table title");
     toolbar->addWidget(title_filter_);
@@ -192,10 +180,19 @@ void main_window::timer_timeout()
 
 void main_window::open_strategy()
 {
-    const auto filenames = QFileDialog::getOpenFileNames(this, "Open Strategy", QString(), "Strategy files (*.str)");
+    const auto filenames = QFileDialog::getOpenFileNames(this, "Open", QString(), "Site setting files (*.xml);;Strategy files (*.str)");
 
     if (filenames.empty())
         return;
+
+    if (filenames.size() == 1 && QFileInfo(filenames.at(0)).suffix() == "xml")
+    {
+        const auto filename = filenames.at(0).toStdString();
+        lobby_.reset(new lobby_manager(filename, *input_manager_));
+        site_.reset(new table_manager(filename, *input_manager_));
+        log(QString("Loaded site settings \"%1\"").arg(filename.c_str()));
+        return;
+    }
 
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
@@ -275,9 +272,9 @@ void main_window::capture_changed(const bool checked)
     {
         timer_->stop();
         window_manager_->clear_window();
+        play_action_->setChecked(false);
     }
 
-    site_list_->setEnabled(!checked);
     title_filter_->setEnabled(!checked);
     lobby_title_->setEnabled(!checked);
     table_count_->setEnabled(!checked);
@@ -300,7 +297,6 @@ void main_window::play_changed(const bool checked)
     {
         play_timer_->stop();
         lobby_timer_->stop();
-        lobby_.reset();
     }
 }
 
@@ -313,15 +309,15 @@ void main_window::play_timer_timeout()
 
     switch (next_action_)
     {
-    case site_base::FOLD:
+    case table_manager::FOLD:
         log("Player: Fold");
         site_->fold();
         break;
-    case site_base::CALL:
+    case table_manager::CALL:
         log("Player: Call");
         site_->call();
         break;
-    case site_base::RAISE:
+    case table_manager::RAISE:
         {
             const double total_pot = site_->get_total_pot();
             const double my_bet = site_->get_bet(0);
@@ -345,21 +341,11 @@ void main_window::find_window()
     if (window_manager_->is_window())
         return;
 
+    WId window = 0;
+
     if (window_manager_->find_window())
     {
-        const auto window = window_manager_->get_window();
-
-        switch (site_list_->itemData(site_list_->currentIndex()).toInt())
-        {
-        case SITE_STARS:
-            site_.reset(new site_stars(window));
-            break;
-        case SITE_888:
-            site_.reset(new site_888(*input_manager_, window));
-            break;
-        default:
-            assert(false);
-        }
+        window = window_manager_->get_window();
 
         const std::string title_name = window_manager_->get_title_name();
         capture_label_->setText(QString("%1").arg(title_name.c_str()));
@@ -369,14 +355,16 @@ void main_window::find_window()
     }
     else
     {
-        site_.reset();
         capture_label_->setText("No window");
     }
+
+    if (site_)
+        site_->set_window(window);
 }
 
 void main_window::process_snapshot()
 {
-    if (acting_ || !site_)
+    if (acting_ || !site_ || !site_->is_window())
         return;
 
     boost::timer::cpu_timer t;
@@ -407,7 +395,7 @@ void main_window::process_snapshot()
         || (site_->get_dealer() == 1 && site_->get_bet(0) == site_->get_big_blind()));
 
 #if !defined(NDEBUG)
-    log(QString("new_game:%1 round:%2 bet0:%3 bet1:%4 stack0:%5 stack1:%6 allin:%7 sitout:%8")
+    log(QString("new_game:%1 round:%2 bet0:%3 bet1:%4 stack0:%5 stack1:%6 allin:%7 sitout:%8 pot:%9 buttons:%10")
         .arg(new_game)
         .arg(round)
         .arg(site_->get_bet(0))
@@ -415,7 +403,9 @@ void main_window::process_snapshot()
         .arg(site_->get_stack(0))
         .arg(site_->get_stack(1))
         .arg(site_->is_opponent_allin())
-        .arg(site_->is_opponent_sitout()));
+        .arg(site_->is_opponent_sitout())
+        .arg(site_->get_total_pot())
+        .arg(site_->get_buttons()));
 #endif
 
     visualizer_->set_dealer(site_->get_dealer());
@@ -423,7 +413,7 @@ void main_window::process_snapshot()
     visualizer_->set_hole_cards(0, hole_array);
     visualizer_->set_board_cards(board);
 
-    if (site_->is_sit_out())
+    if (site_->is_sit_out(0))
     {
         log("Warning: We are sitting out");
 
@@ -626,7 +616,7 @@ void main_window::perform_action()
     switch (action)
     {
     case nlhe_state_base::FOLD:
-        next_action_ = site_base::FOLD;
+        next_action_ = table_manager::FOLD;
         s = "FOLD";
         break;
     case nlhe_state_base::CALL:
@@ -637,29 +627,29 @@ void main_window::perform_action()
             // ensure we get allin if the opponent went allin
             if (prev_action == nlhe_state_base::RAISE_A)
             {
-                next_action_ = site_base::RAISE;
+                next_action_ = table_manager::RAISE;
                 raise_fraction_ = 999.0;
             }
             else
             {
-                next_action_ = site_base::CALL;
+                next_action_ = table_manager::CALL;
             }
 
             s = "CALL";
         }
         break;
     case nlhe_state_base::RAISE_H:
-        next_action_ = site_base::RAISE;
+        next_action_ = table_manager::RAISE;
         raise_fraction_ = 0.5;
         s = "RAISE_H";
         break;
     case nlhe_state_base::RAISE_P:
-        next_action_ = site_base::RAISE;
+        next_action_ = table_manager::RAISE;
         raise_fraction_ = 1.0;
         s = "RAISE_P";
         break;
     case nlhe_state_base::RAISE_A:
-        next_action_ = site_base::RAISE;
+        next_action_ = table_manager::RAISE;
         raise_fraction_ = 999.0;
         s = "RAISE_A";
         break;
@@ -706,10 +696,11 @@ void main_window::play_done_timeout()
 
 void main_window::lobby_timer_timeout()
 {
-    if (!lobby_ || !lobby_->is_window())
-    {
-        lobby_.reset();
+    if (!lobby_)
+        return;
 
+    if (!lobby_->is_window())
+    {
         const auto filter = lobby_title_->text();
 
         if (filter.isEmpty())
@@ -720,21 +711,10 @@ void main_window::lobby_timer_timeout()
         if (!IsWindow(window))
             return;
 
-        switch (site_list_->itemData(site_list_->currentIndex()).toInt())
-        {
-        /*case SITE_STARS:
-            lobby_.reset(new lobby_stars(window));
-            break;*/
-        case SITE_888:
-            lobby_.reset(new lobby_888(window, *input_manager_));
-            break;
-        default:
-            assert(false);
-        }
+        lobby_->set_window(window);
     }
 
-    if (!lobby_)
-        return;
+    assert(lobby_ && lobby_->is_window());
 
     auto mutex = window_manager_->try_interact();
 

@@ -11,7 +11,7 @@
 class QPlainTextEdit;
 class holdem_abstraction;
 class nlhe_state_base;
-class site_base;
+class table_manager;
 class strategy;
 class QLabel;
 class table_widget;
@@ -20,7 +20,7 @@ class window_manager;
 class holdem_strategy_widget;
 class QComboBox;
 class input_manager;
-class lobby_base;
+class lobby_manager;
 class QSpinBox;
 class state_widget;
 
@@ -75,11 +75,10 @@ private:
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<strategy_info>> strategy_infos_;
     QTimer* timer_;
-    std::unique_ptr<site_base> site_;
+    std::unique_ptr<table_manager> site_;
     QLabel* strategy_label_;
     QLabel* capture_label_;
     QPlainTextEdit* log_;
-    QComboBox* site_list_;
     QLineEdit* title_filter_;
     std::unique_ptr<window_manager> window_manager_;
     holdem_strategy_widget* strategy_;
@@ -99,7 +98,7 @@ private:
     QTimer* play_done_timer_;
     double action_post_delay_;
     QTimer* lobby_timer_;
-    std::unique_ptr<lobby_base> lobby_;
+    std::unique_ptr<lobby_manager> lobby_;
     QLineEdit* lobby_title_;
     double lobby_interval_;
     QSpinBox* table_count_;

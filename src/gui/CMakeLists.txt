@@ -5,25 +5,21 @@ set(gui_SOURCES
     holdem_strategy_widget.h
     input_manager.cpp
     input_manager.h
-    lobby_888.cpp
-    lobby_888.h
-    lobby_base.cpp
-    lobby_base.h
+    lobby_manager.cpp
+    lobby_manager.h
     main.cpp
     main_window.cpp
     main_window.h
-    site_888.cpp
-    site_888.h
-    site_base.cpp
-    site_base.h
-    site_stars.cpp
-    site_stars.h
+    table_manager.cpp
+    table_manager.h
     state_widget.cpp
     state_widget.h
     table_widget.cpp
     table_widget.h
     window_manager.cpp
     window_manager.h
+	window_utils.cpp
+	window_utils.h
 )
 
 set(gui_HEADERS
