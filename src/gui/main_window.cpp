@@ -96,11 +96,11 @@ main_window::main_window()
 
     auto toolbar = addToolBar("File");
     toolbar->setMovable(false);
-    auto action = toolbar->addAction(QIcon(":/icons/folder_page_white.png"), "&Open...");
-    action->setIconText("Open...");
-    action->setToolTip("Open...");
-    connect(action, SIGNAL(triggered()), SLOT(open_strategy()));
-    action = toolbar->addAction(QIcon(":/icons/map.png"), "Show strategy");
+    open_action_ = toolbar->addAction(QIcon(":/icons/folder_page_white.png"), "&Open...");
+    open_action_->setIconText("Open...");
+    open_action_->setToolTip("Open...");
+    connect(open_action_, SIGNAL(triggered()), SLOT(open_strategy()));
+    auto action = toolbar->addAction(QIcon(":/icons/map.png"), "Show strategy");
     connect(action, SIGNAL(triggered()), SLOT(show_strategy_changed()));
     action = toolbar->addAction(QIcon(":/icons/chart_organisation.png"), "Modify state");
     connect(action, SIGNAL(triggered()), SLOT(modify_state_changed()));
@@ -279,6 +279,8 @@ void main_window::capture_changed(const bool checked)
     lobby_title_->setEnabled(!checked);
     table_count_->setEnabled(!checked);
     play_action_->setEnabled(checked);
+    open_action_->setEnabled(!checked);
+
 }
 
 void main_window::show_strategy_changed()

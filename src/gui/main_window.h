@@ -107,4 +107,5 @@ private:
     int hotkey_;
     QAction* play_action_;
     state_widget* state_widget_;
+    QAction* open_action_;
 };
