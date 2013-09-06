@@ -182,19 +182,10 @@ void main_window::timer_timeout()
 
 void main_window::open_strategy()
 {
-    const auto filenames = QFileDialog::getOpenFileNames(this, "Open", QString(), "Site setting files (*.xml);;Strategy files (*.str)");
+    const auto filenames = QFileDialog::getOpenFileNames(this, "Open", QString(), "All files (*.*);;Site setting files (*.xml);;Strategy files (*.str)");
 
     if (filenames.empty())
         return;
-
-    if (filenames.size() == 1 && QFileInfo(filenames.at(0)).suffix() == "xml")
-    {
-        const auto filename = filenames.at(0).toStdString();
-        lobby_.reset(new lobby_manager(filename, *input_manager_));
-        site_.reset(new table_manager(filename, *input_manager_));
-        log(QString("Loaded site settings \"%1\"").arg(filename.c_str()));
-        return;
-    }
 
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
@@ -208,6 +199,15 @@ void main_window::open_strategy()
 
     for (auto i = filenames.begin(); i != filenames.end(); ++i)
     {
+        if (QFileInfo(*i).suffix() == "xml")
+        {
+            const auto filename = i->toStdString();
+            lobby_.reset(new lobby_manager(filename, *input_manager_));
+            site_.reset(new table_manager(filename, *input_manager_));
+            log(QString("Loaded site settings \"%1\"").arg(filename.c_str()));
+            continue;
+        }
+
         const std::string filename = QFileInfo(*i).fileName().toUtf8().data();
 
         if (!std::regex_match(filename, m, r))
