@@ -108,4 +108,5 @@ private:
     QAction* play_action_;
     state_widget* state_widget_;
     QAction* open_action_;
+    QAction* save_images_;
 };

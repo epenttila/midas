@@ -19,7 +19,7 @@ public:
     enum { FOLD_BUTTON = 0x1, CALL_BUTTON = 0x2, RAISE_BUTTON = 0x4 };
 
     table_manager(const std::string& filename, input_manager& input_manager);
-    void update();
+    void update(bool save);
     void set_window(WId window);
     std::pair<int, int> get_hole_cards() const;
     void get_board_cards(std::array<int, 5>& board) const;

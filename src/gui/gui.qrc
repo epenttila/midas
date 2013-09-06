@@ -59,5 +59,6 @@
     <file>icons/folder_page_white.png</file>
     <file>icons/map.png</file>
     <file>icons/chart_organisation.png</file>
+    <file>icons/picture_save.png</file>
 </qresource>
 </RCC>

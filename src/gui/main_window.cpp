@@ -104,6 +104,8 @@ main_window::main_window()
     connect(action, SIGNAL(triggered()), SLOT(show_strategy_changed()));
     action = toolbar->addAction(QIcon(":/icons/chart_organisation.png"), "Modify state");
     connect(action, SIGNAL(triggered()), SLOT(modify_state_changed()));
+    save_images_ = toolbar->addAction(QIcon(":/icons/picture_save.png"), "Save images");
+    save_images_->setCheckable(true);
     toolbar->addSeparator();
 
     title_filter_ = new QLineEdit(this);
@@ -371,7 +373,7 @@ void main_window::process_snapshot()
 
     boost::timer::cpu_timer t;
 
-    site_->update();
+    site_->update(save_images_->isChecked());
 
     t.stop();
 
