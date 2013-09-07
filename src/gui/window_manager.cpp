@@ -26,6 +26,7 @@ window_manager::window_manager()
     set_ = segment_.find_or_construct<shm_set>("window_list")(std::less<key_type>(),
         shm_allocator(segment_.get_segment_manager()));
     interact_mutex_ = segment_.find_or_construct<interprocess_mutex>("interact_mutex")();
+    stop_ = segment_.find_or_construct<bool>("stop")();
 }
 
 window_manager::~window_manager()
@@ -149,4 +150,14 @@ QPixmap window_manager::screenshot(WId winId)
     ReleaseDC(0, display_dc);
 
     return pixmap;
+}
+
+void window_manager::stop()
+{
+    *stop_ = true;
+}
+
+bool window_manager::is_stop() const
+{
+    return *stop_;
 }

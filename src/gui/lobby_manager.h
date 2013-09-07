@@ -34,6 +34,7 @@ private:
     WId window_;
     input_manager& input_manager_;
     int registered_;
+    bool registering_;
 
     std::vector<std::regex> popup_regexes_;
     std::vector<std::regex> registered_regexes_;

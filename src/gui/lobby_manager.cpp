@@ -14,6 +14,7 @@ lobby_manager::lobby_manager(const std::string& filename, input_manager& input_m
     : window_(0)
     , input_manager_(input_manager)
     , registered_(0)
+    , registering_(false)
 {
     QFile file(filename.c_str());
 
@@ -103,7 +104,12 @@ BOOL CALLBACK lobby_manager::callback(HWND window, LPARAM lParam)
     {
         if (std::regex_match(title, *i))
         {
-            ++lobby->registered_;
+            if (lobby->registering_)
+            {
+                lobby->registering_ = false;
+                ++lobby->registered_;
+            }
+
             SendMessage(window, WM_CLOSE, 0, 0);
         }
     }
@@ -113,13 +119,6 @@ BOOL CALLBACK lobby_manager::callback(HWND window, LPARAM lParam)
         if (std::regex_match(title, *i))
         {
             --lobby->registered_;
-
-            if (lobby->registered_ < 0)
-            {
-                assert(false);
-                lobby->registered_ = 0;
-            }
-
             SendMessage(window, WM_CLOSE, 0, 0);
         }
     }
@@ -150,6 +149,9 @@ bool lobby_manager::is_window() const
 
 void lobby_manager::register_sng()
 {
+    if (registering_)
+        return;
+
     if (!IsWindow(window_))
         return;
 
@@ -169,7 +171,10 @@ void lobby_manager::register_sng()
     if (window_utils::is_any_button(&image, unregister_buttons_))
         return;
 
-    window_utils::click_any_button(&image, input_manager_, window_, register_buttons_);
+    if (!window_utils::click_any_button(&image, input_manager_, window_, register_buttons_))
+        return;
+
+    registering_ = true;
 }
 
 int lobby_manager::get_registered_sngs() const

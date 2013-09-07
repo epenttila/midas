@@ -41,6 +41,8 @@
 #include "lobby_manager.h"
 #include "state_widget.h"
 
+#define INTERNAL_VERIFY(x) verify(x, #x, __LINE__)
+
 namespace
 {
     template<class T>
@@ -121,9 +123,9 @@ main_window::main_window()
     table_count_->setRange(1, 100);
     toolbar->addWidget(table_count_);
     toolbar->addSeparator();
-    action = toolbar->addAction(QIcon(":/icons/control_record.png"), "Capture");
-    action->setCheckable(true);
-    connect(action, SIGNAL(toggled(bool)), SLOT(capture_changed(bool)));
+    capture_action_ = toolbar->addAction(QIcon(":/icons/control_record.png"), "Capture");
+    capture_action_->setCheckable(true);
+    connect(capture_action_, SIGNAL(toggled(bool)), SLOT(capture_changed(bool)));
     play_action_ = toolbar->addAction(QIcon(":/icons/control_play.png"), "Play");
     play_action_->setCheckable(true);
     play_action_->setEnabled(false);
@@ -176,6 +178,12 @@ main_window::~main_window()
 
 void main_window::timer_timeout()
 {
+    if (window_manager_->is_stop())
+    {
+        capture_action_->setChecked(false);
+        return;
+    }
+
     find_window();
     process_snapshot();
 }
@@ -295,7 +303,10 @@ void main_window::play_changed(const bool checked)
     play_ = checked;
 
     if (play_)
+    {
+        capture_action_->setChecked(true);
         lobby_timer_->start(int(lobby_interval_ * 1000.0));
+    }
 
     if (!play_)
     {
@@ -441,9 +452,9 @@ void main_window::process_snapshot()
     snapshot_.bet = site_->get_bet(1);
 
     // our stack size should always be visible
-    assert(site_->get_stack(0) > 0);
+    INTERNAL_VERIFY(site_->get_stack(0) > 0);
     // opponent stack might be obstructed by all-in or sitout statuses
-    assert(site_->get_stack(1) > 0 || site_->is_opponent_allin() || site_->is_opponent_sitout());
+    INTERNAL_VERIFY(site_->get_stack(1) > 0 || site_->is_opponent_allin() || site_->is_opponent_sitout());
 
     if (new_game)
     {
@@ -463,7 +474,7 @@ void main_window::process_snapshot()
                 stacks[1] = site_->get_bet(1); // opponent stack equals his bet
         }
 
-        assert(stacks[0] > 0 && stacks[1] > 0);
+        INTERNAL_VERIFY(stacks[0] > 0 && stacks[1] > 0);
         snapshot_.stack_size = int(std::min(stacks[0], stacks[1]) / site_->get_big_blind() * 2 + 0.5);
     }
 
@@ -530,7 +541,7 @@ void main_window::process_snapshot()
         // make sure opponent allin is always terminal on his part and doesnt get translated to something else
         const double fraction = site_->is_opponent_allin() ? 999.0 : (site_->get_bet(1) - site_->get_bet(0))
             / (site_->get_total_pot() - (site_->get_bet(1) - site_->get_bet(0)));
-        assert(fraction > 0);
+        INTERNAL_VERIFY(fraction > 0);
         log(QString("State: Opponent raised %1x pot").arg(fraction));
         current_state = current_state->raise(fraction); // there is an outstanding bet/raise
     }
@@ -543,10 +554,10 @@ void main_window::process_snapshot()
         current_state = current_state->call();
     }
 
-    assert(current_state);
+    INTERNAL_VERIFY(current_state != nullptr);
 
     // ensure it is our turn
-    assert((site_->get_dealer() == 0 && current_state->get_player() == 0)
+    INTERNAL_VERIFY((site_->get_dealer() == 0 && current_state->get_player() == 0)
             || (site_->get_dealer() == 1 && current_state->get_player() == 1));
 
     // ensure rounds match
@@ -727,7 +738,11 @@ void main_window::lobby_timer_timeout()
     if (lobby_->get_registered_sngs() < table_count_->value())
         lobby_->register_sng();
 
+    const auto old = lobby_->get_registered_sngs();
     lobby_->close_popups();
+
+    if (lobby_->get_registered_sngs() != old)
+        log(QString("Lobby: Registration count changed (%1 -> %2)").arg(old).arg(lobby_->get_registered_sngs()));
 }
 
 void main_window::log(const QString& s)
@@ -843,4 +858,14 @@ void main_window::state_widget_raised(double fraction)
  
     si.current_state_ = si.current_state_->raise(fraction);
     update_strategy_widget(*strategy_infos_.begin()->second);
+}
+
+void main_window::verify(bool expression, const std::string& s, int line)
+{
+    if (expression)
+        return;
+
+    assert(false);
+    log(QString("Error: verification on line %1 failed (%2)").arg(line).arg(s.c_str()));
+    window_manager_->stop();
 }

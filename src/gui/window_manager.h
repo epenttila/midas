@@ -27,6 +27,8 @@ public:
     static std::string get_window_text(WId window);
     void clear_window();
     static QPixmap screenshot(WId winId);
+    void stop();
+    bool is_stop() const;
 
 private:
     typedef WId key_type;
@@ -40,4 +42,5 @@ private:
     shm_set* set_;
     boost::interprocess::interprocess_mutex* mutex_;
     boost::interprocess::interprocess_mutex* interact_mutex_;
+    bool* stop_;
 };
