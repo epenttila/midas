@@ -209,7 +209,9 @@ void table_manager::raise(double amount, double fraction) const
         return;
     }
 
-    if (click_button(image_.get(), input_, window_, size_buttons_.at(fraction)))
+    const auto i = size_buttons_.find(fraction);
+
+    if (i != size_buttons_.end() && click_button(image_.get(), input_, window_, i->second))
     {
         // do nothing
     }
