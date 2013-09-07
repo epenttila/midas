@@ -45,14 +45,6 @@ lobby_manager::lobby_manager(const std::string& filename, input_manager& input_m
         {
             finished_popups_.push_back(window_utils::read_xml_popup(reader));
         }
-        else if (reader.name() == "game-list-button")
-        {
-            game_list_buttons_.push_back(window_utils::read_xml_button(reader));
-        }
-        else if (reader.name() == "unregister-button")
-        {
-            unregister_buttons_.push_back(window_utils::read_xml_button(reader));
-        }
         else if (reader.name() == "register-button")
         {
             register_buttons_.push_back(window_utils::read_xml_button(reader));
@@ -128,14 +120,6 @@ void lobby_manager::register_sng()
     }
 
     auto image = window_manager::screenshot(window_).toImage();
-
-    if (!window_utils::click_any_button(&image, input_manager_, window_, game_list_buttons_))
-        return;
-
-    image = window_manager::screenshot(window_).toImage();
-
-    if (window_utils::is_any_button(&image, unregister_buttons_))
-        return;
 
     if (!window_utils::click_any_button(&image, input_manager_, window_, register_buttons_))
         return;

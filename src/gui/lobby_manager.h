@@ -36,7 +36,5 @@ private:
     std::vector<window_utils::popup_data> reg_success_popups_;
     std::vector<window_utils::popup_data> finished_popups_;
 
-    std::vector<window_utils::button_data> game_list_buttons_;
-    std::vector<window_utils::button_data> unregister_buttons_;
     std::vector<window_utils::button_data> register_buttons_;
 };
