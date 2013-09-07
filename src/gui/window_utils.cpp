@@ -2,6 +2,7 @@
 
 #pragma warning(push, 1)
 #include <QXmlStreamReader>
+#include <QDateTime>
 #define NOMINMAX
 #include <Windows.h>
 #pragma warning(pop)
@@ -276,12 +277,16 @@ bool close_popup(input_manager& input, WId window, const popup_data& popup)
     if (!std::regex_match(title, popup.regex))
         return false;
 
-    const auto image = window_manager::screenshot(window).toImage();
-    window_utils::click_button(&image, input, window, popup.button);
-    input.sleep();
+    // not all windows will be closed when clicking OK, so can't use IsWindow here
+    while (IsWindowVisible(window))
+    {
+        const auto filename = QDateTime::currentDateTimeUtc().toString("'popup-'yyyyMMddTHHmmss'.png'");
+        const auto image = window_manager::screenshot(window).toImage();
+        image.save(filename);
 
-    if (IsWindow(window))
-        SendMessage(window, WM_CLOSE, 0, 0);
+        window_utils::click_button(&image, input, window, popup.button);
+        input.sleep();
+    }
 
     return true;
 }

@@ -75,11 +75,9 @@ BOOL CALLBACK lobby_manager::callback(HWND window, LPARAM lParam)
     {
         if (window_utils::close_popup(lobby->input_manager_, window, *i))
         {
-            if (lobby->registering_)
-            {
-                lobby->registering_ = false;
-                ++lobby->registered_;
-            }
+            assert(lobby->registering_);
+            lobby->registering_ = false;
+            ++lobby->registered_;
         }
     }
 
@@ -92,7 +90,10 @@ BOOL CALLBACK lobby_manager::callback(HWND window, LPARAM lParam)
     for (auto i = lobby->reg_fail_popups_.begin(); i != lobby->reg_fail_popups_.end(); ++i)
     {
         if (window_utils::close_popup(lobby->input_manager_, window, *i))
+        {
+            assert(lobby->registering_);
             lobby->registering_ = false;
+        }
     }
 
     // TODO close ie windows? CloseWindow
