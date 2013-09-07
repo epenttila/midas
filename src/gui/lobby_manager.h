@@ -23,12 +23,6 @@ public:
     void set_window(WId window);
 
 private:
-    struct confirm_data
-    {
-        std::regex regex;
-        QRect rect;
-    };
-
     static BOOL CALLBACK callback(HWND window, LPARAM lParam);
 
     WId window_;
@@ -36,10 +30,10 @@ private:
     int registered_;
     bool registering_;
 
-    std::vector<std::regex> popup_regexes_;
-    std::vector<std::regex> registered_regexes_;
-    std::vector<std::regex> unregistered_regexes_;
-    std::vector<confirm_data> confirm_regexes_;
+    std::vector<window_utils::popup_data> popups_;
+    std::vector<window_utils::popup_data> reg_fail_popups_;
+    std::vector<window_utils::popup_data> reg_success_popups_;
+    std::vector<window_utils::popup_data> finished_popups_;
 
     std::vector<window_utils::button_data> game_list_buttons_;
     std::vector<window_utils::button_data> unregister_buttons_;

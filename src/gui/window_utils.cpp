@@ -2,10 +2,13 @@
 
 #pragma warning(push, 1)
 #include <QXmlStreamReader>
+#define NOMINMAX
+#include <Windows.h>
 #pragma warning(pop)
 
 #include "util/card.h"
 #include "input_manager.h"
+#include "window_manager.h"
 
 namespace window_utils
 {
@@ -146,11 +149,12 @@ bool is_any_button(const QImage* image, const std::vector<button_data>& buttons)
 
 bool click_button(const QImage* image, input_manager& input, WId window, const button_data& button)
 {
+    input.move_mouse(window, button.rect.x(), button.rect.y(), button.rect.width(), button.rect.height());
+    input.sleep();
+
     if (!is_button(image, button))
         return false;
 
-    input.move_mouse(window, button.rect.x(), button.rect.y(), button.rect.width(), button.rect.height());
-    input.sleep();
     input.left_click();
 
     return true;
@@ -231,6 +235,55 @@ button_data read_xml_button(QXmlStreamReader& reader)
     reader.skipCurrentElement();
 
     return button;
+}
+
+popup_data read_xml_popup(QXmlStreamReader& reader)
+{
+    const pixel_data pixel =
+    {
+        QPoint(reader.attributes().value("color-x").toString().toInt(),
+            reader.attributes().value("color-y").toString().toInt()),
+        QColor(reader.attributes().value("color").toString()).rgb()
+    };
+
+    const button_data button =
+    {
+        QRect(reader.attributes().value("x").toString().toInt(),
+            reader.attributes().value("y").toString().toInt(),
+            reader.attributes().value("width").toString().toInt(),
+            reader.attributes().value("height").toString().toInt()),
+        pixel
+    };
+
+    const popup_data popup =
+    {
+        std::regex(reader.attributes().value("pattern").toUtf8()),
+        button
+    };
+
+    reader.skipCurrentElement();
+
+    return popup;
+}
+
+bool close_popup(input_manager& input, WId window, const popup_data& popup)
+{
+    if (!IsWindow(window) || !IsWindowVisible(window))
+        return false;
+
+    const auto title = window_manager::get_window_text(window);
+
+    if (!std::regex_match(title, popup.regex))
+        return false;
+
+    const auto image = window_manager::screenshot(window).toImage();
+    window_utils::click_button(&image, input, window, popup.button);
+    input.sleep();
+
+    if (IsWindow(window))
+        SendMessage(window, WM_CLOSE, 0, 0);
+
+    return true;
 }
 
 }

@@ -29,34 +29,21 @@ lobby_manager::lobby_manager(const std::string& filename, input_manager& input_m
         {
             // do nothing
         }
-        else if (reader.name() == "popup-regex")
+        else if (reader.name() == "popup")
         {
-            popup_regexes_.push_back(std::regex(reader.attributes().value("pattern").toUtf8()));
-            reader.skipCurrentElement();
+            popups_.push_back(window_utils::read_xml_popup(reader));
         }
-        else if (reader.name() == "registered-regex")
+        else if (reader.name() == "reg-success-popup")
         {
-            registered_regexes_.push_back(std::regex(reader.attributes().value("pattern").toUtf8()));
-            reader.skipCurrentElement();
+            reg_success_popups_.push_back(window_utils::read_xml_popup(reader));
         }
-        else if (reader.name() == "unregistered-regex")
+        else if (reader.name() == "reg-fail-popup")
         {
-            unregistered_regexes_.push_back(std::regex(reader.attributes().value("pattern").toUtf8()));
-            reader.skipCurrentElement();
+            reg_fail_popups_.push_back(window_utils::read_xml_popup(reader));
         }
-        else if (reader.name() == "confirm-regex")
+        else if (reader.name() == "finished-popup")
         {
-            const lobby_manager::confirm_data d =
-            {
-                std::regex(reader.attributes().value("pattern").toUtf8()),
-                QRect(reader.attributes().value("x").toString().toInt(),
-                    reader.attributes().value("y").toString().toInt(),
-                    reader.attributes().value("width").toString().toInt(),
-                    reader.attributes().value("height").toString().toInt())
-            };
-
-            confirm_regexes_.push_back(d);
-            reader.skipCurrentElement();
+            finished_popups_.push_back(window_utils::read_xml_popup(reader));
         }
         else if (reader.name() == "game-list-button")
         {
@@ -89,52 +76,31 @@ BOOL CALLBACK lobby_manager::callback(HWND window, LPARAM lParam)
 
     lobby_manager* lobby = reinterpret_cast<lobby_manager*>(lParam);
 
-    RECT rect;
-    GetClientRect(window, &rect);
+    for (auto i = lobby->popups_.begin(); i != lobby->popups_.end(); ++i)
+        window_utils::close_popup(lobby->input_manager_, window, *i);
 
-    const auto title = window_manager::get_window_text(window);
-
-    for (auto i = lobby->popup_regexes_.begin(); i != lobby->popup_regexes_.end(); ++i)
+    for (auto i = lobby->reg_success_popups_.begin(); i != lobby->reg_success_popups_.end(); ++i)
     {
-        if (std::regex_match(title, *i))
-            SendMessage(window, WM_CLOSE, 0, 0);
-    }
-
-    for (auto i = lobby->registered_regexes_.begin(); i != lobby->registered_regexes_.end(); ++i)
-    {
-        if (std::regex_match(title, *i))
+        if (window_utils::close_popup(lobby->input_manager_, window, *i))
         {
             if (lobby->registering_)
             {
                 lobby->registering_ = false;
                 ++lobby->registered_;
             }
-
-            SendMessage(window, WM_CLOSE, 0, 0);
         }
     }
 
-    for (auto i = lobby->unregistered_regexes_.begin(); i != lobby->unregistered_regexes_.end(); ++i)
+    for (auto i = lobby->finished_popups_.begin(); i != lobby->finished_popups_.end(); ++i)
     {
-        if (std::regex_match(title, *i))
-        {
+        if (window_utils::close_popup(lobby->input_manager_, window, *i))
             --lobby->registered_;
-            SendMessage(window, WM_CLOSE, 0, 0);
-        }
     }
 
-    for (auto i = lobby->confirm_regexes_.begin(); i != lobby->confirm_regexes_.end(); ++i)
+    for (auto i = lobby->reg_fail_popups_.begin(); i != lobby->reg_fail_popups_.end(); ++i)
     {
-        if (std::regex_match(title, i->regex))
-        {
-            lobby->input_manager_.move_mouse(window, i->rect.x(), i->rect.y(), i->rect.width(), i->rect.height());
-            lobby->input_manager_.sleep();
-            lobby->input_manager_.left_click();
-            lobby->input_manager_.sleep();
-
-            if (IsWindow(window))
-                SendMessage(window, WM_CLOSE, 0, 0);
-        }
+        if (window_utils::close_popup(lobby->input_manager_, window, *i))
+            lobby->registering_ = false;
     }
 
     // TODO close ie windows? CloseWindow

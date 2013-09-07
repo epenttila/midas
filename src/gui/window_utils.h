@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <array>
 #include <cstdint>
+#include <regex>
 #include <QPoint>
 #include <QColor>
 #include <QRect>
@@ -40,6 +41,12 @@ namespace window_utils
         QRect rect;
     };
 
+    struct popup_data
+    {
+        std::regex regex;
+        button_data button;
+    };
+
     std::uint32_t calculate_mask(const QImage& image, const int x, const int top, const int height, const QRgb& color);
     std::pair<std::string, int> parse_image_char(const QImage& image, const int x, const int y, const int height,
         const QRgb& color, const font_data& font);
@@ -57,4 +64,6 @@ namespace window_utils
     font_data read_xml_font(QXmlStreamReader& reader);
     label_data read_xml_label(QXmlStreamReader& reader);
     button_data read_xml_button(QXmlStreamReader& reader);
+    popup_data read_xml_popup(QXmlStreamReader& reader);
+    bool close_popup(input_manager& input, WId window, const popup_data& popup);
 }
