@@ -152,3 +152,10 @@ void lobby_manager::set_window(WId window)
 {
     window_ = window;
 }
+
+void lobby_manager::reset()
+{
+    registered_ = 0;
+    registering_ = false;
+    window_ = 0;
+}

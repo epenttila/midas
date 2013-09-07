@@ -39,6 +39,7 @@ public:
     bool is_opponent_allin() const;
     bool is_opponent_sitout() const;
     bool is_window() const;
+    void reset();
 
 private:
     WId window_;

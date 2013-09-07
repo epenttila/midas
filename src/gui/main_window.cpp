@@ -116,11 +116,13 @@ main_window::main_window()
     toolbar->addSeparator();
     lobby_title_ = new QLineEdit(this);
     lobby_title_->setPlaceholderText("Lobby title");
+    connect(lobby_title_, SIGNAL(textChanged(const QString&)), SLOT(lobby_title_changed(const QString&)));
     toolbar->addWidget(lobby_title_);
     toolbar->addSeparator();
     table_count_ = new QSpinBox(this);
     table_count_->setValue(1);
     table_count_->setRange(1, 100);
+    table_count_->setEnabled(false);
     toolbar->addWidget(table_count_);
     toolbar->addSeparator();
     capture_action_ = toolbar->addAction(QIcon(":/icons/control_record.png"), "Capture");
@@ -283,6 +285,8 @@ void main_window::capture_changed(const bool checked)
         timer_->stop();
         window_manager_->clear_window();
         play_action_->setChecked(false);
+        site_->reset();
+        lobby_->reset();
     }
 
     title_filter_->setEnabled(!checked);
@@ -868,4 +872,9 @@ void main_window::verify(bool expression, const std::string& s, int line)
     assert(false);
     log(QString("Error: verification on line %1 failed (%2)").arg(line).arg(s.c_str()));
     window_manager_->stop();
+}
+
+void main_window::lobby_title_changed(const QString& str)
+{
+    table_count_->setEnabled(!str.isEmpty());
 }

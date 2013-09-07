@@ -332,3 +332,8 @@ bool table_manager::is_window() const
 {
     return IsWindow(window_) ? true : false;
 }
+
+void table_manager::reset()
+{
+    window_ = 0;
+}

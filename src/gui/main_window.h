@@ -46,6 +46,7 @@ public slots:
     void state_widget_state_reset();
     void state_widget_called();
     void state_widget_raised(double fraction);
+    void lobby_title_changed(const QString& str);
 
 private:
     struct strategy_info

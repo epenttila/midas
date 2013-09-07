@@ -21,6 +21,7 @@ public:
     void register_sng();
     int get_registered_sngs() const;
     void set_window(WId window);
+    void reset();
 
 private:
     static BOOL CALLBACK callback(HWND window, LPARAM lParam);
