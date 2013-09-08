@@ -202,12 +202,12 @@ int table_manager::get_dealer() const
 
 void table_manager::fold() const
 {
-    click_any_button(image_.get(), input_, window_, fold_buttons_);
+    click_any_button(input_, window_, fold_buttons_);
 }
 
 void table_manager::call() const
 {
-    click_any_button(image_.get(), input_, window_, call_buttons_);
+    click_any_button(input_, window_, call_buttons_);
 }
 
 void table_manager::raise(double amount, double fraction) const
@@ -221,17 +221,12 @@ void table_manager::raise(double amount, double fraction) const
 
     const auto i = size_buttons_.find(fraction);
 
-    if (i != size_buttons_.end() && click_button(image_.get(), input_, window_, i->second))
+    if (i != size_buttons_.end() && click_button(input_, window_, i->second))
     {
         // do nothing
     }
-    else if (is_button(image_.get(), bet_input_button_))
+    else if (click_button(input_, window_, bet_input_button_, true))
     {
-        input_.move_mouse(window_, bet_input_button_.rect.x(), bet_input_button_.rect.y(),
-            bet_input_button_.rect.width(), bet_input_button_.rect.height());
-        input_.sleep();
-        input_.left_click();
-        input_.left_click();
         input_.sleep();
 
         if (GetForegroundWindow() == window_)
@@ -241,7 +236,7 @@ void table_manager::raise(double amount, double fraction) const
         }
     }
 
-    click_any_button(image_.get(), input_, window_, raise_buttons_);
+    click_any_button(input_, window_, raise_buttons_);
 }
 
 double table_manager::get_stack(int position) const
@@ -320,7 +315,7 @@ bool table_manager::is_sit_out(int position) const
 
 void table_manager::sit_in() const
 {
-    click_button(image_.get(), input_, window_, sit_in_button_);
+    click_button(input_, window_, sit_in_button_);
 }
 
 void table_manager::set_window(WId window)

@@ -98,9 +98,7 @@ void lobby_manager::register_sng()
     if (registering_)
         return;
 
-    auto image = window_manager::screenshot(window_).toImage();
-
-    if (!window_utils::click_any_button(&image, input_manager_, window_, register_buttons_))
+    if (!window_utils::click_any_button(input_manager_, window_, register_buttons_))
         return;
 
     registering_ = true;

@@ -197,24 +197,36 @@ bool is_any_button(const QImage* image, const std::vector<button_data>& buttons)
     return false;
 }
 
-bool click_button(const QImage* image, input_manager& input, WId window, const button_data& button)
+bool click_button(input_manager& input, WId window, const button_data& button, bool double_click)
 {
+    auto image = window_manager::screenshot(window).toImage();
+
+    // check if button is there
+    if (!is_button(&image, button))
+        return false;
+
     input.move_mouse(window, button.rect.x(), button.rect.y(), button.rect.width(), button.rect.height());
     input.sleep();
 
-    if (!is_button(image, button))
+    image = window_manager::screenshot(window).toImage();
+
+    // check if the button is still there
+    if (!is_button(&image, button))
         return false;
 
     input.left_click();
 
+    if (double_click)
+        input.left_click();
+
     return true;
 }
 
-bool click_any_button(const QImage* image, input_manager& input, WId window, const std::vector<button_data>& buttons)
+bool click_any_button(input_manager& input, WId window, const std::vector<button_data>& buttons)
 {
     for (int i = 0; i < buttons.size(); ++i)
     {
-        if (click_button(image, input, window, buttons[i]))
+        if (click_button(input, window, buttons[i]))
             return true;
     }
 
@@ -346,11 +358,7 @@ bool close_popups(input_manager& input, WId window, const std::vector<popup_data
             if (!std::regex_match(title, i->regex))
                 continue;
 
-            //const auto filename = QDateTime::currentDateTimeUtc().toString("'popup-'yyyyMMddTHHmmss'.png'");
-            const auto image = window_manager::screenshot(window).toImage();
-            //image.save(filename);
-
-            window_utils::click_button(&image, input, window, i->button);
+            click_button(input, window, i->button);
             input.sleep();
         }
     }
