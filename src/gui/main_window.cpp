@@ -285,8 +285,12 @@ void main_window::capture_changed(const bool checked)
         timer_->stop();
         window_manager_->clear_window();
         play_action_->setChecked(false);
-        site_->reset();
-        lobby_->reset();
+
+        if (site_)
+            site_->reset();
+
+        if (lobby_)
+            lobby_->reset();
     }
 
     title_filter_->setEnabled(!checked);
