@@ -63,9 +63,6 @@ void lobby_manager::close_popups()
 
 BOOL CALLBACK lobby_manager::callback(HWND window, LPARAM lParam)
 {
-    if (!IsWindowVisible(window))
-        return true;
-
     lobby_manager* lobby = reinterpret_cast<lobby_manager*>(lParam);
 
     window_utils::close_popups(lobby->input_manager_, window, lobby->popups_);
@@ -101,15 +98,6 @@ void lobby_manager::register_sng()
     if (registering_)
         return;
 
-    if (!IsWindow(window_))
-        return;
-
-    if (IsIconic(window_))
-    {
-        ShowWindowAsync(window_, SW_RESTORE);
-        return;
-    }
-
     auto image = window_manager::screenshot(window_).toImage();
 
     if (!window_utils::click_any_button(&image, input_manager_, window_, register_buttons_))
@@ -133,4 +121,14 @@ void lobby_manager::reset()
     registered_ = 0;
     registering_ = false;
     window_ = 0;
+}
+
+bool lobby_manager::ensure_visible()
+{
+    if (IsWindow(window_) && IsWindowVisible(window_) && !IsIconic(window_))
+        return true;
+
+    ShowWindowAsync(window_, SW_RESTORE);
+
+    return false;
 }

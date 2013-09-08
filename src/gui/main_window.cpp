@@ -743,6 +743,9 @@ void main_window::lobby_timer_timeout()
 
     //log(QString("Registered in %1 tournaments").arg(lobby_->get_registered_sngs()));
 
+    if (!lobby_->ensure_visible())
+        return;
+
     if (lobby_->get_registered_sngs() < table_count_->value())
         lobby_->register_sng();
 

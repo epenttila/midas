@@ -22,6 +22,7 @@ public:
     int get_registered_sngs() const;
     void set_window(WId window);
     void reset();
+    bool ensure_visible();
 
 private:
     static BOOL CALLBACK callback(HWND window, LPARAM lParam);
