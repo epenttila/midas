@@ -798,6 +798,9 @@ void main_window::update_strategy_widget(const strategy_info& si)
     if (!si.current_state_)
         return;
 
+    std::array<int, 2> hole;
+    visualizer_->get_hole_cards(hole);
+
     std::array<int, 5> board;
     visualizer_->get_board_cards(board);
 
@@ -813,7 +816,8 @@ void main_window::update_strategy_widget(const strategy_info& si)
         board[4] = -1;
     }
 
-    strategy_->update(*abstractions_.at(si.abstraction_), board, *si.strategy_, si.current_state_->get_id(), si.current_state_->get_action_count());
+    strategy_->update(*abstractions_.at(si.abstraction_), hole, board, *si.strategy_, si.current_state_->get_id(),
+        si.current_state_->get_action_count());
 
     std::stringstream ss;
     ss << *si.current_state_;

@@ -66,11 +66,21 @@ void holdem_strategy_widget::paintEvent(QPaintEvent*)
         painter.drawText(r, Qt::AlignCenter | Qt::AlignHCenter, QString(cards[i].c_str()));
         painter.drawLine(rect().left(), r.top(), rect().right(), r.top());
     }
+
+    if (hole_[0] != -1 && hole_[1] != -1)
+    {
+        painter.setCompositionMode(QPainter::RasterOp_NotSourceXorDestination);
+        painter.setPen(QPen(Qt::black, 3, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin));
+        painter.drawRect((hole_[0] + 1) * CELL_SIZE, (hole_[1] + 1) * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        painter.drawRect((hole_[1] + 1) * CELL_SIZE, (hole_[0] + 1) * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    }
 }
 
-void holdem_strategy_widget::update(const holdem_abstraction& abs, const std::array<int, 5>& board, const strategy& strategy,
-    std::size_t state_id, const int actions)
+void holdem_strategy_widget::update(const holdem_abstraction& abs, const std::array<int, 2>& hole,
+    const std::array<int, 5>& board, const strategy& strategy, std::size_t state_id, const int actions)
 {
+    hole_ = hole;
+
     for (int i = 0; i < actions_.size(); ++i)
         actions_[i].fill(Qt::transparent);
 

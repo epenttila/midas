@@ -143,3 +143,8 @@ void table_widget::get_board_cards(std::array<int, 5>& board) const
 {
     board = board_;
 }
+
+void table_widget::get_hole_cards(std::array<int, 2>& hole) const
+{
+    hole = hole_[0];
+}
