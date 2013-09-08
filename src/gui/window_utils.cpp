@@ -50,11 +50,34 @@ std::string parse_image_text(const QImage* image, const QRect& rect, const QRgb&
     if (!image)
         return "";
 
+    // adjust y in case poker client moves stuff vertically
+    bool found = false;
+    int y = rect.top();
+
+    for (; y < rect.bottom(); ++y)
+    {
+        for (int x = rect.left(); x < rect.right(); ++x)
+        {
+            // the topmost row should always contain non-background pixels
+            if (image->pixel(x, y) == color)
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (found)
+            break;
+    }
+
+    if (!found)
+        return "";
+
     std::string s;
 
     for (int x = rect.left(); x < rect.right(); )
     {
-        const auto val = parse_image_char(*image, x, rect.top(), rect.height(), color, font);
+        const auto val = parse_image_char(*image, x, y, rect.height(), color, font);
 
         if (val.second > 0)
         {
@@ -70,19 +93,45 @@ std::string parse_image_text(const QImage* image, const QRect& rect, const QRgb&
     return s;
 }
 
-int parse_image_card(const QImage* image, const QRect& rect, const std::array<QRgb, 4>& colors,
-    const font_data& font)
+int parse_image_card(const QImage* image, const QImage* mono, const QRect& rect, const std::array<QRgb, 4>& colors,
+    const QRgb& color, const font_data& font)
 {
     if (!image)
         return -1;
 
-    for (int suit = 0; suit < 4; ++suit)
-    {
-        const auto s = parse_image_text(image, rect, colors[suit], font);
+    int suit = -1;
 
-        if (!s.empty())
-            return get_card(std::stoi(s), suit);
+    for (int y = rect.top(); y < rect.bottom(); ++y)
+    {
+        for (int x = rect.left(); x < rect.right(); ++x)
+        {
+            for (int s = 0; s < colors.size(); ++s)
+            {
+                if (image->pixel(x, y) == colors[s])
+                {
+                    suit = s;
+                    break;
+                }
+            }
+
+            if (suit != -1)
+                break;
+        }
+
+        if (suit != -1)
+            break;
     }
+
+    if (suit == -1)
+    {
+        //assert(false);
+        return -1; // funky colors
+    }
+
+    const auto s = parse_image_text(mono, rect, color, font);
+
+    if (!s.empty())
+        return get_card(string_to_rank(s), suit);
 
     return -1;
 }
@@ -184,6 +233,8 @@ font_data read_xml_font(QXmlStreamReader& reader)
 
             if (reader.attributes().hasAttribute("value"))
             {
+                assert(d.masks.find(mask) == d.masks.end());
+
                 d.masks[mask] = std::make_pair(reader.attributes().value("value").toUtf8(),
                     reader.attributes().value("width").toString().toInt());
 

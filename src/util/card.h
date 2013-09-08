@@ -52,9 +52,9 @@ inline const std::string get_card_string(const int card)
     return s;
 }
 
-inline int string_to_card(const std::string& s)
+inline int string_to_rank(const std::string& s)
 {
-    if (s.size() < 2)
+    if (s.empty())
         return -1;
 
     int rank;
@@ -76,6 +76,16 @@ inline int string_to_card(const std::string& s)
     case 'A': rank = 12; break;
     default: rank = -1;
     }
+
+    return rank;
+}
+
+inline int string_to_card(const std::string& s)
+{
+    if (s.size() < 2)
+        return -1;
+
+    const int rank = string_to_rank(s);
 
     if (rank == -1)
         return -1;

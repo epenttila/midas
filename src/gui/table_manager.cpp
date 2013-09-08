@@ -111,6 +111,11 @@ table_manager::table_manager(const std::string& filename, input_manager& input_m
             suit_colors_[id] = QColor(reader.attributes().value("color").toString()).rgb();
             reader.skipCurrentElement();
         }
+        else if (reader.name() == "card-color")
+        {
+            card_color_ = QColor(reader.attributes().value("color").toString()).rgb();
+            reader.skipCurrentElement();
+        }
         else if (reader.name() == "hole-card")
         {
             const int id = reader.attributes().value("id").toString().toInt();
@@ -169,14 +174,19 @@ void table_manager::update(bool save)
 std::pair<int, int> table_manager::get_hole_cards() const
 {
     return std::make_pair(
-        parse_image_card(image_.get(), hole_card_rects_[0], suit_colors_, fonts_.at("rank")),
-        parse_image_card(image_.get(), hole_card_rects_[1], suit_colors_, fonts_.at("rank")));
+        parse_image_card(image_.get(), mono_image_.get(), hole_card_rects_[0], suit_colors_, card_color_,
+            fonts_.at("rank")),
+        parse_image_card(image_.get(), mono_image_.get(), hole_card_rects_[1], suit_colors_, card_color_,
+            fonts_.at("rank")));
 }
 
 void table_manager::get_board_cards(std::array<int, 5>& board) const
 {
     for (int i = 0; i < board_card_rects_.size(); ++i)
-        board[i] = parse_image_card(image_.get(), board_card_rects_[i], suit_colors_, fonts_.at("rank"));
+    {
+        board[i] = parse_image_card(image_.get(), mono_image_.get(), board_card_rects_[i], suit_colors_,
+            card_color_, fonts_.at("rank"));
+    }
 }
 
 int table_manager::get_dealer() const

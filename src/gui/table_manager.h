@@ -65,6 +65,7 @@ private:
     std::array<QRect, 5> board_card_rects_;
     std::array<QRect, 2> hole_card_rects_;
     std::array<QRgb, 4> suit_colors_;
+    QRgb card_color_;
 
     std::vector<window_utils::button_data> fold_buttons_;
     std::vector<window_utils::button_data> call_buttons_;
