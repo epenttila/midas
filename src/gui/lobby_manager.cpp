@@ -68,32 +68,22 @@ BOOL CALLBACK lobby_manager::callback(HWND window, LPARAM lParam)
 
     lobby_manager* lobby = reinterpret_cast<lobby_manager*>(lParam);
 
-    for (auto i = lobby->popups_.begin(); i != lobby->popups_.end(); ++i)
-        window_utils::close_popup(lobby->input_manager_, window, *i);
+    window_utils::close_popups(lobby->input_manager_, window, lobby->popups_);
 
-    for (auto i = lobby->reg_success_popups_.begin(); i != lobby->reg_success_popups_.end(); ++i)
+    if (window_utils::close_popups(lobby->input_manager_, window, lobby->reg_success_popups_))
     {
-        if (window_utils::close_popup(lobby->input_manager_, window, *i))
-        {
-            assert(lobby->registering_);
-            lobby->registering_ = false;
-            ++lobby->registered_;
-        }
+        assert(lobby->registering_);
+        lobby->registering_ = false;
+        ++lobby->registered_;
     }
 
-    for (auto i = lobby->finished_popups_.begin(); i != lobby->finished_popups_.end(); ++i)
-    {
-        if (window_utils::close_popup(lobby->input_manager_, window, *i))
-            --lobby->registered_;
-    }
+    if (window_utils::close_popups(lobby->input_manager_, window, lobby->finished_popups_))
+        --lobby->registered_;
 
-    for (auto i = lobby->reg_fail_popups_.begin(); i != lobby->reg_fail_popups_.end(); ++i)
+    if (window_utils::close_popups(lobby->input_manager_, window, lobby->reg_fail_popups_))
     {
-        if (window_utils::close_popup(lobby->input_manager_, window, *i))
-        {
-            assert(lobby->registering_);
-            lobby->registering_ = false;
-        }
+        assert(lobby->registering_);
+        lobby->registering_ = false;
     }
 
     // TODO close ie windows? CloseWindow

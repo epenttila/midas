@@ -318,25 +318,41 @@ popup_data read_xml_popup(QXmlStreamReader& reader)
     return popup;
 }
 
-bool close_popup(input_manager& input, WId window, const popup_data& popup)
+bool close_popups(input_manager& input, WId window, const std::vector<popup_data>& popups)
 {
     if (!IsWindow(window) || !IsWindowVisible(window))
         return false;
 
     const auto title = window_manager::get_window_text(window);
+    bool found = false;
 
-    if (!std::regex_match(title, popup.regex))
+    for (auto i = popups.begin(); i != popups.end(); ++i)
+    {
+        if (std::regex_match(title, i->regex))
+        {
+            found = true;
+            break;
+        }
+    }
+
+    if (!found)
         return false;
 
     // not all windows will be closed when clicking OK, so can't use IsWindow here
     while (IsWindowVisible(window))
     {
-        const auto filename = QDateTime::currentDateTimeUtc().toString("'popup-'yyyyMMddTHHmmss'.png'");
-        const auto image = window_manager::screenshot(window).toImage();
-        image.save(filename);
+        for (auto i = popups.begin(); i != popups.end(); ++i)
+        {
+            if (!std::regex_match(title, i->regex))
+                continue;
 
-        window_utils::click_button(&image, input, window, popup.button);
-        input.sleep();
+            //const auto filename = QDateTime::currentDateTimeUtc().toString("'popup-'yyyyMMddTHHmmss'.png'");
+            const auto image = window_manager::screenshot(window).toImage();
+            //image.save(filename);
+
+            window_utils::click_button(&image, input, window, i->button);
+            input.sleep();
+        }
     }
 
     return true;
