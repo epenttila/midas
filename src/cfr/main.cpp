@@ -152,6 +152,12 @@ int main(int argc, char* argv[])
                 solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | P_MASK | A_MASK>(variant, stack_size, std::move(abs));
             else if (actions == "fchqpa")
                 solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | A_MASK>(variant, stack_size, std::move(abs));
+            else if (actions == "fchqpda")
+                solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | D_MASK | A_MASK>(variant, stack_size, std::move(abs));
+            else if (actions == "fchqpdta")
+                solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | D_MASK | T_MASK | A_MASK>(variant, stack_size, std::move(abs));
+            else if (actions == "fchqpwdta")
+                solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | W_MASK | D_MASK | T_MASK | A_MASK>(variant, stack_size, std::move(abs));
             else if (actions == "fchqpwdtea")
                 solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | W_MASK | D_MASK | T_MASK | E_MASK | A_MASK>(variant, stack_size, std::move(abs));
         }
