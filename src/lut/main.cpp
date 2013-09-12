@@ -8,6 +8,7 @@
 #include "lutlib/holdem_turn_lut.h"
 #include "lutlib/holdem_river_lut.h"
 #include "util/partial_shuffle.h"
+#include "lutlib/holdem_river_ochs_lut.h"
 
 namespace
 {
@@ -87,6 +88,13 @@ int main(int argc, char* argv[])
             {
                 holdem_river_lut lut;
                 std::ofstream f("holdem_river_lut.dat", std::ios::binary);
+                lut.save(f);
+            }
+            break;
+        case 4:
+            {
+                holdem_river_ochs_lut lut;
+                std::ofstream f("holdem_river_ochs_lut.dat", std::ios::binary);
                 lut.save(f);
             }
             break;
