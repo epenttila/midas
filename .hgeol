@@ -1,7 +1,0 @@
-[patterns]
-**.cpp = native
-**.h = native
-**.py = native
-**.txt = native
-**.ipp = native
-**.qrc = native
