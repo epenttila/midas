@@ -193,6 +193,7 @@ namespace
                     if (l == i || l == j || l == k || l == a || l == b)
                         continue;
 
+                    // TODO "flop_bucket" doesn't change within this loop
                     const int flop_bucket =
                         get_percentile_bucket(flop_lut.get(a, b, i, j, k).second, flop_percentiles);
                     const int turn_bucket =
@@ -211,7 +212,9 @@ namespace
             }
         }
 
-        return k_means<get_distance>(flops, clusters, kmeans_max_iterations);
+        std::vector<int> c(clusters);
+        k_means<std::vector<double>, int, get_distance>()(flops, clusters, kmeans_max_iterations, OPTIMAL, &c);
+        return c;
     }
 
     std::vector<int> generate_public_turn_buckets(holdem_turn_lut& turn_lut, holdem_river_lut& river_lut,
@@ -233,6 +236,7 @@ namespace
                     if (m == i || m == j || m == k || m == l || m == a || m == b)
                         continue;
 
+                    // TODO "from" doesn't change within this loop
                     const int from = get_percentile_bucket(turn_lut.get(a, b, i, j, k, l).second, turn_percentiles);
                     const int to = get_percentile_bucket(river_lut.get(a, b, i, j, k, l, m), river_percentiles);
                     ++thread_turns[key][from * kmeans_buckets + to];
@@ -249,7 +253,9 @@ namespace
             }
         }
 
-        return k_means<get_distance>(turns, clusters, kmeans_max_iterations);
+        std::vector<int> c(clusters);
+        k_means<std::vector<double>, int, get_distance>()(turns, clusters, kmeans_max_iterations, OPTIMAL, &c);
+        return c;
     }
 }
 
