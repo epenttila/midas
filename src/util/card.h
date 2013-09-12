@@ -1,20 +1,28 @@
 #pragma once
 
-enum { CLUB, DIAMOND, HEART, SPADE };
+#include <cstdint>
+#include <string>
+
+typedef std::uint8_t card_t;
+
+enum { CLUB, DIAMOND, HEART, SPADE, SUITS };
+
+static const int RANKS = 13;
+static const int CARDS = 52;
 
 inline int get_rank(const int card)
 {
-    return card / 4;
+    return card >> 2;
 }
 
 inline int get_suit(const int card)
 {
-    return card % 4;
+    return card & 3;
 }
 
 inline int get_card(const int rank, const int suit)
 {
-    return rank * 4 + suit;
+    return rank << 2 | suit;
 }
 
 inline const std::string get_card_string(const int card)
