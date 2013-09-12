@@ -55,6 +55,7 @@ int main(int argc, char* argv[])
         po::options_description holdem_options("holdem options");
         holdem_options.add_options()
             ("kmeans-max-iterations", po::value<int>(&kmeans_max_iterations), "maximum amount of iterations")
+            ("kmeans-max-iterations", po::value<int>(&kmeans_max_iterations)->default_value(100), "maximum amount of iterations")
             ;
 
         po::options_description desc("Options");
