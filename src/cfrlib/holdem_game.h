@@ -3,8 +3,8 @@
 #include <random>
 #include <cstdint>
 #include "evallib/holdem_evaluator.h"
-#include "abslib/holdem_abstraction.h"
 
+template<class Abstraction>
 class holdem_game : private boost::noncopyable
 {
 public:
@@ -13,7 +13,7 @@ public:
 
     typedef std::array<std::array<int, ROUNDS>, 2> bucket_t;
     typedef holdem_evaluator evaluator_t;
-    typedef holdem_abstraction abstraction_t;
+    typedef Abstraction abstraction_t;
     typedef std::array<int, 5> public_type;
     typedef std::array<std::array<int, PRIVATE_OUTCOMES>, ROUNDS> buckets_type;
     typedef std::array<double, PRIVATE_OUTCOMES> results_type;
@@ -37,3 +37,5 @@ private:
     std::array<std::pair<int, int>, PRIVATE_OUTCOMES> sorted_ranks_;
     int first_rank_;
 };
+
+#include "holdem_game.ipp"

@@ -20,8 +20,7 @@ public:
 
     typedef std::array<int, ROUNDS> bucket_counts_t;
 
-    holdem_abstraction_v2(bool imperfect_recall, const bucket_counts_t& bucket_counts, int kmeans_max_iterations);
-    holdem_abstraction_v2(const std::string& filename);
+    holdem_abstraction_v2();
     void get_buckets(int c0, int c1, int b0, int b1, int b2, int b3, int b4, bucket_type* buckets) const;
     int get_bucket(int c0, int c1) const;
     int get_bucket(int c0, int c1, int b0, int b1, int b2) const;
@@ -29,11 +28,13 @@ public:
     int get_bucket(int c0, int c1, int b0, int b1, int b2, int b3, int b4) const;
     std::size_t get_bucket_count(int round) const;
 
-    void save(std::ostream& os) const;
-    void load(std::istream& is);
+    void write(const std::string& filename) const;
+    void read(const std::string& filename);
+    void generate(const std::string& configuration, const int kmeans_max_iterations);
 
 private:
     void init();
+    void parse_configuration(const std::string& configuration);
 
     int get_preflop_bucket(int c0, int c1) const;
     int get_private_flop_bucket(int c0, int c1, int b0, int b1, int b2) const;
@@ -53,4 +54,6 @@ private:
     std::vector<bucket_idx_t> flop_buckets_;
     std::vector<bucket_idx_t> turn_buckets_;
     std::vector<bucket_idx_t> river_buckets_;
+
+    bucket_counts_t bucket_counts_;
 };

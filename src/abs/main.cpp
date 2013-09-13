@@ -105,27 +105,11 @@ int main(int argc, char* argv[])
         }
         else if (game == "holdem-new")
         {
-            std::smatch m;
-            std::regex r("(pr|ir)-(\\d+)-(\\d+)-(\\d+)-(\\d+)");
-
-            if (!std::regex_match(abstraction, m, r))
-            {
-                std::cout << "Invalid abstraction\n";
-                return 1;
-            }
-
-            const bool imperfect_recall = m[1] == "ir" ? true : false;
-            holdem_abstraction_v2::bucket_counts_t cfgs;
-            cfgs[holdem_abstraction_v2::PREFLOP] = std::stoi(m[2]);
-            cfgs[holdem_abstraction_v2::FLOP] = std::stoi(m[3]);
-            cfgs[holdem_abstraction_v2::TURN] = std::stoi(m[4]);
-            cfgs[holdem_abstraction_v2::RIVER] = std::stoi(m[5]);
-
-            const auto abs = holdem_abstraction_v2(imperfect_recall, cfgs, kmeans_max_iterations);
             const std::string abstraction_file = abstraction + ".abs";
             std::cout << "Saving abstraction to: " << abstraction_file << "\n";
-            std::ofstream f(abstraction_file, std::ios::binary);
-            abs.save(f);
+            holdem_abstraction_v2 abs;
+            abs.generate(abstraction, kmeans_max_iterations);
+            abs.write(abstraction_file);
         }
         else
         {

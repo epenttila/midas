@@ -167,7 +167,7 @@ std::vector<int> cfr_solver<T, U, Data>::get_bucket_counts() const
     std::vector<int> counts;
 
     for (int i = 0; i < ROUNDS; ++i)
-        counts.push_back(abstraction_->get_bucket_count(i));
+        counts.push_back(static_cast<int>(abstraction_->get_bucket_count(i)));
 
     return counts;
 }

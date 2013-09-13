@@ -2,6 +2,7 @@
 #include <fstream>
 #include <omp.h>
 #include <numeric>
+#include <regex>
 #include <boost/assign/list_of.hpp>
 #include "util/k_means.h"
 #include "util/binary_io.h"
@@ -228,51 +229,26 @@ namespace
     }
 }
 
-holdem_abstraction_v2::holdem_abstraction_v2(bool imperfect_recall, const bucket_counts_t& bucket_counts,
-    int kmeans_max_iterations)
-    : imperfect_recall_(imperfect_recall)
+holdem_abstraction_v2::holdem_abstraction_v2()
+    : imperfect_recall_(false)
+    , bucket_counts_()
 {
-    init();
+    std::vector<std::uint8_t> cfg = boost::assign::list_of(2);
+    preflop_indexer_.reset(new hand_indexer(cfg));
 
-    std::unique_ptr<holdem_river_lut> river_lut(new holdem_river_lut(std::ifstream("holdem_river_lut.dat",
-        std::ios::binary)));
-    std::shared_ptr<holdem_river_ochs_lut> river_ochs_lut(new holdem_river_ochs_lut(
-        std::ifstream("holdem_river_ochs_lut.dat", std::ios::binary)));
+    cfg = boost::assign::list_of(2)(3);
+    flop_indexer_.reset(new hand_indexer(cfg));
 
-    preflop_buckets_ = create_buckets(PREFLOP, *preflop_indexer_, *river_lut, *river_ochs_lut,
-        bucket_counts[PREFLOP], kmeans_max_iterations);
-    flop_buckets_ = create_buckets(FLOP, *flop_indexer_, *river_lut, *river_ochs_lut, bucket_counts[FLOP],
-        kmeans_max_iterations);
-    turn_buckets_ = create_buckets(TURN, *turn_indexer_, *river_lut, *river_ochs_lut, bucket_counts[TURN],
-        kmeans_max_iterations);
-    river_buckets_ = create_buckets(RIVER, *river_indexer_, *river_lut, *river_ochs_lut, bucket_counts[RIVER],
-        kmeans_max_iterations);
-}
+    cfg = boost::assign::list_of(2)(4);
+    turn_indexer_.reset(new hand_indexer(cfg));
 
-holdem_abstraction_v2::holdem_abstraction_v2(const std::string& filename)
-{
-    std::ifstream is(filename, std::ios::binary);
-
-    if (!is)
-        throw std::runtime_error("bad istream");
-
-    init();
-    load(is);
-
-    if (!is)
-        throw std::runtime_error("read failed");
+    cfg = boost::assign::list_of(2)(5);
+    river_indexer_.reset(new hand_indexer(cfg));
 }
 
 std::size_t holdem_abstraction_v2::get_bucket_count(const int round) const
 {
-    switch (round)
-    {
-    case PREFLOP: return preflop_buckets_.size();
-    case FLOP: return flop_buckets_.size();
-    case TURN: return turn_buckets_.size();
-    case RIVER: return river_buckets_.size();
-    default: return 0;
-    }
+    return bucket_counts_[round];
 }
 
 void holdem_abstraction_v2::get_buckets(const int c0, const int c1, const int b0, const int b1, const int b2,
@@ -328,8 +304,13 @@ int holdem_abstraction_v2::get_bucket(int c0, int c1, int b0, int b1, int b2, in
     return buckets[RIVER];
 }
 
-void holdem_abstraction_v2::save(std::ostream& os) const
+void holdem_abstraction_v2::write(const std::string& filename) const
 {
+    std::ofstream os(filename, std::ios::binary);
+
+    if (!os)
+        throw std::runtime_error("unable to open file");
+
     binary_write(os, imperfect_recall_);
     binary_write(os, preflop_buckets_);
     binary_write(os, flop_buckets_);
@@ -337,8 +318,15 @@ void holdem_abstraction_v2::save(std::ostream& os) const
     binary_write(os, river_buckets_);
 }
 
-void holdem_abstraction_v2::load(std::istream& is)
+void holdem_abstraction_v2::read(const std::string& filename)
 {
+    parse_configuration(filename);
+
+    std::ifstream is(filename, std::ios::binary);
+
+    if (!is)
+        throw std::runtime_error("unable to open file");
+
     binary_read(is, imperfect_recall_);
     binary_read(is, preflop_buckets_);
     binary_read(is, flop_buckets_);
@@ -346,17 +334,36 @@ void holdem_abstraction_v2::load(std::istream& is)
     binary_read(is, river_buckets_);
 }
 
-void holdem_abstraction_v2::init()
+void holdem_abstraction_v2::generate(const std::string& configuration, const int kmeans_max_iterations)
 {
-    std::vector<std::uint8_t> cfg = boost::assign::list_of(2);
-    preflop_indexer_.reset(new hand_indexer(cfg));
+    parse_configuration(configuration);
 
-    cfg = boost::assign::list_of(2)(3);
-    flop_indexer_.reset(new hand_indexer(cfg));
+    std::unique_ptr<holdem_river_lut> river_lut(new holdem_river_lut(std::ifstream("holdem_river_lut.dat",
+        std::ios::binary)));
+    std::shared_ptr<holdem_river_ochs_lut> river_ochs_lut(new holdem_river_ochs_lut(
+        std::ifstream("holdem_river_ochs_lut.dat", std::ios::binary)));
 
-    cfg = boost::assign::list_of(2)(4);
-    turn_indexer_.reset(new hand_indexer(cfg));
+    preflop_buckets_ = create_buckets(PREFLOP, *preflop_indexer_, *river_lut, *river_ochs_lut,
+        bucket_counts_[PREFLOP], kmeans_max_iterations);
+    flop_buckets_ = create_buckets(FLOP, *flop_indexer_, *river_lut, *river_ochs_lut, bucket_counts_[FLOP],
+        kmeans_max_iterations);
+    turn_buckets_ = create_buckets(TURN, *turn_indexer_, *river_lut, *river_ochs_lut, bucket_counts_[TURN],
+        kmeans_max_iterations);
+    river_buckets_ = create_buckets(RIVER, *river_indexer_, *river_lut, *river_ochs_lut, bucket_counts_[RIVER],
+        kmeans_max_iterations);
+}
 
-    cfg = boost::assign::list_of(2)(5);
-    river_indexer_.reset(new hand_indexer(cfg));
+void holdem_abstraction_v2::parse_configuration(const std::string& configuration)
+{
+    std::regex r("(pr|ir)-(\\d+)-(\\d+)-(\\d+)-(\\d+).*");
+    std::smatch m;
+
+    if (!std::regex_match(configuration, m, r))
+        throw std::runtime_error("invalid abstraction configuration");
+
+    imperfect_recall_ = m[1] == "ir" ? true : false;
+    bucket_counts_[PREFLOP] = std::stoi(m[2]);
+    bucket_counts_[FLOP] = std::stoi(m[3]);
+    bucket_counts_[TURN] = std::stoi(m[4]);
+    bucket_counts_[RIVER] = std::stoi(m[5]);
 }
