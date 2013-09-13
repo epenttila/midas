@@ -45,6 +45,7 @@ public:
         auto& point_clusters = *point_clusters_out;
         point_vector_t cluster_centers;
         const std::size_t max_init_rounds = 5;
+        const double oversampling_factor = 0.5 * cluster_count;
 
         switch (init)
         {
@@ -52,12 +53,12 @@ public:
             cluster_centers = init_k_means_pp(points, cluster_count);
             break;
         case PARALLEL:
-            cluster_centers = init_k_means_parallel(points, cluster_count, max_init_rounds);
+            cluster_centers = init_k_means_parallel(points, cluster_count, max_init_rounds, oversampling_factor);
             break;
         case OPTIMAL:
             cluster_centers = (cluster_count < 5 || (cluster_count < 20 && points.size() < 10000))
                 ? init_k_means_pp(points, cluster_count)
-                : init_k_means_parallel(points, cluster_count, max_init_rounds);
+                : init_k_means_parallel(points, cluster_count, max_init_rounds, oversampling_factor);
             break;
         default:
             cluster_centers = init_random(points, cluster_count);
@@ -190,7 +191,8 @@ private:
         return cluster_centers;
     }
 
-    static const point_vector_t init_k_means_parallel(const point_vector_t& points, const int cluster_count, const std::size_t max_rounds)
+    static const point_vector_t init_k_means_parallel(const point_vector_t& points, const int cluster_count,
+        const std::size_t max_rounds, const double oversampling_factor)
     {
         if (points.size() <= cluster_count)
             return points;
@@ -212,7 +214,6 @@ private:
 
         auto total_cost = std::accumulate(costs.begin(), costs.end(), distance_t());
 
-        const double oversampling_factor = 2.0 * cluster_count;
         const std::size_t iterations_todo = static_cast<std::size_t>(std::ceil(std::log(total_cost)));
 
         for (std::size_t i = 0; i < iterations_todo && (i < max_rounds || cluster_centers.size() < cluster_count) && total_cost > 0; ++i)
