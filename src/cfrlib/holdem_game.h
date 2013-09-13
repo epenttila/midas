@@ -9,15 +9,7 @@ class holdem_game : private boost::noncopyable
 {
 public:
     static const int PRIVATE_OUTCOMES = 1326;
-
-    enum holdem_round
-    {
-        PREFLOP,
-        FLOP,
-        TURN,
-        RIVER,
-        ROUNDS
-    };
+    static const int ROUNDS = RIVER + 1;
 
     typedef std::array<std::array<int, ROUNDS>, 2> bucket_t;
     typedef holdem_evaluator evaluator_t;

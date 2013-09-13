@@ -5,13 +5,15 @@
 #include "lutlib/holdem_turn_lut.h"
 #include "lutlib/holdem_river_lut.h"
 #include "lutlib/holdem_preflop_lut.h"
+#include "util/game.h"
 
 class holdem_abstraction
 {
 public:
     typedef std::array<int, 4> bucket_type;
     typedef holdem_evaluator evaluator;
-    enum holdem_round { PREFLOP, FLOP, TURN, RIVER, ROUNDS };
+
+    static const int ROUNDS = RIVER + 1;
 
     struct bucket_cfg
     {

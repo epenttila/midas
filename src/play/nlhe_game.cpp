@@ -7,6 +7,7 @@
 #include "util/card.h"
 #include "evallib/holdem_evaluator.h"
 #include "cfrlib/holdem_game.h"
+#include "util/game.h"
 
 namespace
 {
@@ -93,13 +94,13 @@ void nlhe_game::play(std::size_t game)
         {
             switch (round_)
             {
-            case holdem_game::FLOP:
+            case FLOP:
                 log_ << "*** FLOP *** [" << get_card_string(b0) << " " << get_card_string(b1) << " " << get_card_string(b2) << "]\n";
                 break;
-            case holdem_game::TURN:
+            case TURN:
                 log_ << "*** TURN *** [" << get_card_string(b0) << " " << get_card_string(b1) << " " << get_card_string(b2) << "] [" << get_card_string(b3) << "]\n";
                 break;
-            case holdem_game::RIVER:
+            case RIVER:
                 log_ << "*** RIVER *** [" << get_card_string(b0) << " " << get_card_string(b1) << " " << get_card_string(b2) << " " << get_card_string(b3) << "] [" << get_card_string(b4) << "]\n";
                 break;
             }

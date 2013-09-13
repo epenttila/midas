@@ -1,5 +1,6 @@
 #include <boost/integer/static_log2.hpp>
 #include <random>
+#include "util/game.h"
 #include "holdem_game.h"
 
 namespace detail
@@ -28,7 +29,7 @@ nl_holdem_state<BITMASK>::nl_holdem_state(const int stack_size)
     , action_index_(-1)
     , player_(0)
     , pot_(detail::INITIAL_POT)
-    , round_(holdem_game::PREFLOP)
+    , round_(PREFLOP)
     , child_count_(0) // sb has all actions
     , stack_size_(stack_size)
 {
@@ -99,7 +100,7 @@ void nl_holdem_state<BITMASK>::create_child(const int action_index, int* id)
 
     if (next_action == FOLD)
         new_terminal = true; // folding always terminates
-    else if (next_action == CALL && round_ == holdem_game::RIVER && parent_->round_ == holdem_game::RIVER)
+    else if (next_action == CALL && round_ == RIVER && parent_->round_ == RIVER)
         new_terminal = true; // river check or call is terminal
     else if (next_action == CALL && opponent_allin)
         new_terminal = true; // calling an all-in bet is terminal

@@ -14,7 +14,7 @@ leduc_state::leduc_state()
     , action_(-1)
     , player_(0)
     , pot_(INITIAL_POT)
-    , round_(leduc_game::PREFLOP)
+    , round_(PREFLOP)
     , raises_(0) // blind counts as raise
     , child_count_(0) // sb has all actions
 {
@@ -60,7 +60,7 @@ void leduc_state::create_child(const int action, int* id)
 
     if (action == FOLD)
         new_terminal = true; // folding always terminates
-    else if (action == CALL && round_ == leduc_game::FLOP && parent_->round_ == leduc_game::FLOP)
+    else if (action == CALL && round_ == FLOP && parent_->round_ == FLOP)
         new_terminal = true; // river check or call is terminal
 
     int new_round = round_;
@@ -75,7 +75,7 @@ void leduc_state::create_child(const int action, int* id)
     if (action == CALL)
         new_pot[player_] = new_pot[1 - player_];
     else if (action == RAISE)
-        new_pot[player_] = new_pot[1 - player_] + ((round_ == leduc_game::PREFLOP) ? 2 : 4);
+        new_pot[player_] = new_pot[1 - player_] + ((round_ == PREFLOP) ? 2 : 4);
 
     int new_player = 1 - player_;
 

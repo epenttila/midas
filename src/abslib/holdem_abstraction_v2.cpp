@@ -213,13 +213,13 @@ namespace
         {
             switch (round)
             {
-            case holdem_abstraction_v2::PREFLOP:
+            case PREFLOP:
                 return create_preflop_buckets<50>(indexer, river_lut, cluster_count, kmeans_max_iterations);
-            case holdem_abstraction_v2::FLOP:
+            case FLOP:
                 return create_flop_buckets<50>(indexer, river_lut, cluster_count, kmeans_max_iterations);
-            case holdem_abstraction_v2::TURN:
+            case TURN:
                 return create_turn_buckets<50>(indexer, river_lut, cluster_count, kmeans_max_iterations);
-            case holdem_abstraction_v2::RIVER:
+            case RIVER:
                 return create_river_buckets<8>(river_ochs_lut, cluster_count, kmeans_max_iterations);
             }
         }

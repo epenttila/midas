@@ -7,6 +7,7 @@
 #include "lutlib/holdem_preflop_lut.h"
 #include "lutlib/hand_indexer.h"
 #include "lutlib/holdem_river_ochs_lut.h"
+#include "util/game.h"
 
 class holdem_abstraction_v2
 {
@@ -14,7 +15,8 @@ public:
     typedef std::int32_t bucket_idx_t;
     typedef std::array<bucket_idx_t, 4> bucket_type;
     typedef holdem_evaluator evaluator;
-    enum holdem_round { PREFLOP, FLOP, TURN, RIVER, ROUNDS };
+
+    static const int ROUNDS = RIVER + 1;
 
     typedef std::array<int, ROUNDS> bucket_counts_t;
 

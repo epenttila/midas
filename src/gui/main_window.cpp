@@ -32,12 +32,13 @@
 #include "cfrlib/holdem_game.h"
 #include "cfrlib/nl_holdem_state.h"
 #include "cfrlib/strategy.h"
+#include "util/card.h"
+#include "abslib/holdem_abstraction.h"
 #include "table_widget.h"
 #include "window_manager.h"
 #include "holdem_strategy_widget.h"
 #include "table_manager.h"
 #include "input_manager.h"
-#include "util/card.h"
 #include "lobby_manager.h"
 #include "state_widget.h"
 
@@ -403,13 +404,13 @@ void main_window::process_snapshot()
     int round;
 
     if (board[4] != -1)
-        round = holdem_abstraction::RIVER;
+        round = RIVER;
     else if (board[3] != -1)
-        round = holdem_abstraction::TURN;
+        round = TURN;
     else if (board[0] != -1)
-        round = holdem_abstraction::FLOP;
+        round = FLOP;
     else if (hole.first != -1 && hole.second != -1)
-        round = holdem_abstraction::PREFLOP;
+        round = PREFLOP;
     else
         round = -1;
 
@@ -543,8 +544,8 @@ void main_window::process_snapshot()
     if (site_->is_opponent_allin())
         log("State: Opponent is all-in");
 
-    if ((current_state->get_round() == holdem_abstraction::PREFLOP && (site_->get_bet(1) > site_->get_big_blind()))
-        || (current_state->get_round() > holdem_abstraction::PREFLOP && (site_->get_bet(1) > 0)))
+    if ((current_state->get_round() == PREFLOP && (site_->get_bet(1) > site_->get_big_blind()))
+        || (current_state->get_round() > PREFLOP && (site_->get_bet(1) > 0)))
     {
         // make sure opponent allin is always terminal on his part and doesnt get translated to something else
         const double fraction = site_->is_opponent_allin() ? 999.0 : (site_->get_bet(1) - site_->get_bet(0))
@@ -553,8 +554,8 @@ void main_window::process_snapshot()
         log(QString("State: Opponent raised %1x pot").arg(fraction));
         current_state = current_state->raise(fraction); // there is an outstanding bet/raise
     }
-    else if ((current_state->get_round() == holdem_abstraction::PREFLOP && site_->get_dealer() == 1 && site_->get_bet(1) <= site_->get_big_blind())
-        || (current_state->get_round() > holdem_abstraction::PREFLOP && site_->get_dealer() == 0 && site_->get_bet(1) == 0))
+    else if ((current_state->get_round() == PREFLOP && site_->get_dealer() == 1 && site_->get_bet(1) <= site_->get_big_blind())
+        || (current_state->get_round() > PREFLOP && site_->get_dealer() == 0 && site_->get_bet(1) == 0))
     {
         // we are in position facing 0 sized bet, opponent has checked
         // we are oop facing big blind sized bet preflop, opponent has called
@@ -813,13 +814,13 @@ void main_window::update_strategy_widget(const strategy_info& si)
 
     switch (si.current_state_->get_round())
     {
-    case holdem_game::PREFLOP:
+    case PREFLOP:
         board[0] = -1;
         board[1] = -1;
         board[2] = -1;
-    case holdem_game::FLOP:
+    case FLOP:
         board[3] = -1;
-    case holdem_game::TURN:
+    case TURN:
         board[4] = -1;
     }
 
