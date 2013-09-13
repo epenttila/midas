@@ -6,47 +6,11 @@
 #include "util/k_means.h"
 #include "util/binary_io.h"
 #include "lutlib/hand_indexer.h"
+#include "util/metric.h"
 
 namespace
 {
     typedef holdem_abstraction_v2::bucket_idx_t bucket_idx_t;
-
-    struct get_emd_distance
-    {
-        template<class T>
-        double operator()(const T& a, const T& b) const
-        {
-            assert(a.size() > 1 && b.size() > 1 && a.size() == b.size());
-
-            double distance = 0;
-            double prev = 0;
-
-            for (std::size_t i = 1; i < a.size(); ++i)
-            {
-                const double cur = (a[i - 1] + prev) - b[i - 1];
-                prev = cur;
-                distance += std::abs(cur);
-            }
-
-            return distance;
-        }
-    };
-
-    struct get_l2_distance
-    {
-        template<class T>
-        double operator()(const T& a, const T& b) const
-        {
-            assert(a.size() == b.size());
-
-            double distance = 0;
-
-            for (std::size_t i = 0; i < a.size(); ++i)
-                distance += (a[i] - b[i]) * (a[i] - b[i]);
-
-            return distance;
-        }
-    };
 
     template<int Dimensions>
     std::vector<bucket_idx_t> create_preflop_buckets(const hand_indexer& indexer, const holdem_river_lut& river_lut,
@@ -108,7 +72,10 @@ namespace
         }
 
         std::vector<bucket_idx_t> buckets;
-        k_means<point_t, bucket_idx_t, get_emd_distance>()(data_points, cluster_count, kmeans_max_iterations, OPTIMAL, &buckets);
+        std::vector<point_t> centers;
+
+        k_means<point_t, bucket_idx_t, get_emd_distance, get_emd_cost>()(data_points, cluster_count,
+            kmeans_max_iterations, OPTIMAL, &buckets, &centers);
 
         return buckets;
     }
@@ -158,7 +125,10 @@ namespace
         }
 
         std::vector<bucket_idx_t> buckets;
-        k_means<point_t, bucket_idx_t, get_emd_distance>()(data_points, cluster_count, kmeans_max_iterations, OPTIMAL, &buckets);
+        std::vector<point_t> centers;
+
+        k_means<point_t, bucket_idx_t, get_emd_distance, get_emd_cost>()(data_points, cluster_count,
+            kmeans_max_iterations, OPTIMAL, &buckets, &centers);
 
         return buckets;
     }
@@ -203,7 +173,10 @@ namespace
         }
 
         std::vector<bucket_idx_t> buckets;
-        k_means<point_t, bucket_idx_t, get_emd_distance>()(data_points, cluster_count, kmeans_max_iterations, OPTIMAL, &buckets);
+        std::vector<point_t> centers;
+
+        k_means<point_t, bucket_idx_t, get_emd_distance, get_emd_cost>()(data_points, cluster_count,
+            kmeans_max_iterations, OPTIMAL, &buckets, &centers);
 
         return buckets;
     }
@@ -215,7 +188,10 @@ namespace
         typedef std::array<float, Dimensions> point_t;
 
         std::vector<bucket_idx_t> buckets;
-        k_means<point_t, bucket_idx_t, get_l2_distance>()(river_lut.get_data(), cluster_count, kmeans_max_iterations, OPTIMAL, &buckets);
+        std::vector<point_t> centers;
+
+        k_means<point_t, bucket_idx_t, get_l2_distance, get_l2_cost>()(river_lut.get_data(), cluster_count,
+            kmeans_max_iterations, OPTIMAL, &buckets, &centers);
 
         return buckets;
     }

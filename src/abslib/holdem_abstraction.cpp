@@ -13,6 +13,7 @@
 #include "util/k_means.h"
 #include "util/holdem_loops.h"
 #include "util/binary_io.h"
+#include "util/metric.h"
 
 namespace
 {
@@ -130,20 +131,6 @@ namespace
         return int(std::distance(percentiles.begin(), it) - 1);
     }
 
-    struct get_distance
-    {
-        template<class T>
-        double operator()(const T& a, const T& b) const
-        {
-            double distance = 0;
-
-            for (auto i = 0; i < a.size(); ++i)
-                distance += (a[i] - b[i]) * (a[i] - b[i]);
-
-            return distance;
-        }
-    };
-
     int index(int i, int j, int j_max)
     {
         return i * j_max + j;
@@ -213,7 +200,9 @@ namespace
         }
 
         std::vector<int> c(clusters);
-        k_means<std::vector<double>, int, get_distance>()(flops, clusters, kmeans_max_iterations, OPTIMAL, &c);
+        std::vector<std::vector<double>> cc(flops.size());
+        k_means<std::vector<double>, int, get_l2_distance, get_l2_cost>()(flops, clusters, kmeans_max_iterations,
+            OPTIMAL, &c, &cc);
         return c;
     }
 
@@ -254,7 +243,9 @@ namespace
         }
 
         std::vector<int> c(clusters);
-        k_means<std::vector<double>, int, get_distance>()(turns, clusters, kmeans_max_iterations, OPTIMAL, &c);
+        std::vector<std::vector<double>> cc(turns.size());
+        k_means<std::vector<double>, int, get_l2_distance, get_l2_cost>()(turns, clusters, kmeans_max_iterations,
+            OPTIMAL, &c, &cc);
         return c;
     }
 }

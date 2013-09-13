@@ -25,7 +25,7 @@ namespace detail
 
 enum init_type { RANDOM, PP, PARALLEL, OPTIMAL };
 
-template<class Point, class ClusterIndex, class DistanceFunction>
+template<class Point, class ClusterIndex, class DistanceFunction, class CostFunction>
 class k_means
 {
 public:
@@ -34,16 +34,18 @@ public:
     typedef double distance_t;
     typedef ClusterIndex cluster_idx_t;
     typedef DistanceFunction distance_fun_t;
+    typedef CostFunction cost_fun_t;
     typedef std::size_t cluster_size_t;
     typedef std::size_t point_idx_t;
     typedef typename point_t::size_type dim_idx_t;
 
-    void operator()(const point_vector_t& points, const int cluster_count, const int max_iterations, init_type init, std::vector<cluster_idx_t>* point_clusters_out)
+    void operator()(const point_vector_t& points, const int cluster_count, const int max_iterations, init_type init,
+        std::vector<cluster_idx_t>* point_clusters_out, point_vector_t* cluster_centers_out)
     {
         assert(cluster_count < points.size());
 
         auto& point_clusters = *point_clusters_out;
-        point_vector_t cluster_centers;
+        auto& cluster_centers = *cluster_centers_out;
         const std::size_t max_init_rounds = 5;
         const double oversampling_factor = 0.5 * cluster_count;
 
@@ -79,14 +81,14 @@ public:
         std::vector<distance_t> intercluster_distances(cluster_count);
 
         int iters = 0;
-        bool converged = false;
+        std::size_t changed = 0;
 
-        while (iters < 2 || !converged)
+        while (iters < 2 || changed > 0)
         {
             if (iters == max_iterations)
                 break;
 
-            converged = true;
+            changed = 0;
 
             update_intercluster_distances(cluster_centers, &intercluster_distances);
 
@@ -96,6 +98,7 @@ public:
             {
                 point_vector_t cluster_point_sums;
                 std::vector<cluster_size_t> cluster_sizes;
+                std::size_t changed;
             };
 
             std::vector<thread_data_t> thread_data(threads);
@@ -104,6 +107,7 @@ public:
             {
                 thread_data[tid].cluster_point_sums.resize(cluster_count);
                 thread_data[tid].cluster_sizes.resize(cluster_count);
+                thread_data[tid].changed = 0;
             }
 
 #pragma omp parallel for
@@ -113,6 +117,7 @@ public:
 
                 if (upper_bounds[point_idx] > max_distance)
                 {
+                    // use d() as this value is used for things other than relative comparison
                     upper_bounds[point_idx] = distance_fun_t()(points[point_idx], cluster_centers[point_clusters[point_idx]]);
 
                     if (upper_bounds[point_idx] > max_distance)
@@ -130,7 +135,7 @@ public:
                             detail::vector_sub(thread_data[tid].cluster_point_sums[old_cluster], points[point_idx]);
                             detail::vector_add(thread_data[tid].cluster_point_sums[point_clusters[point_idx]], points[point_idx]);
 
-                            converged = false;
+                            ++thread_data[tid].changed;
                         }
                     }
                 }
@@ -138,6 +143,7 @@ public:
 
             for (std::size_t tid = 0; tid < thread_data.size(); ++tid)
             {
+                changed += thread_data[tid].changed;
                 detail::vector_add(cluster_sizes, thread_data[tid].cluster_sizes);
 
                 for (cluster_idx_t i = 0; i < cluster_point_sums.size(); ++i)
@@ -159,7 +165,8 @@ private:
 
         for (cluster_idx_t cluster = new_clusters_idx; cluster < cluster_centers.size(); ++cluster)
         {
-            const distance_t d = distance_fun_t()(point, cluster_centers[cluster]);
+            // k-means|| initialization uses d^2()
+            const distance_t d = cost_fun_t()(point, cluster_centers[cluster]);
 
             if (d < distance_min)
             {
@@ -292,11 +299,8 @@ private:
 
             for (point_idx_t point = 0; point < points.size(); ++point)
             {
-                // note that this is the same metric which we are minimizing
-                // normally the metric is squared euclidean distance, i.e., ||x-y||^2, or, D^2 in the k-means++ paper)
-                // this is the reason we use d instead of d*d, as the point is to choose a random cluster proportional
-                // to the contribution it provides
-                const distance_t d = distance_fun_t()(points[point], cluster_centers[cluster - 1]) * (weights.empty() ? 1.0 : weights[point]);
+                // k-means++ uses d^2()
+                const distance_t d = cost_fun_t()(points[point], cluster_centers[cluster - 1]) * (weights.empty() ? 1.0 : weights[point]);
 
                 if (d < distances[point])
                     distances[point] = d;
@@ -333,12 +337,16 @@ private:
 
         for (cluster_idx_t i = 0; i < cluster_centers.size(); ++i)
         {
-            const auto distance = distance_fun_t()(point, cluster_centers[i]);
+            // only relative values matter here so use the cost d^2() instead of possibly expensive distance
+            // the distances to the closest and second closest points are calculated below
+            const auto distance = cost_fun_t()(point, cluster_centers[i]);
 
             assert(distance >= 0);
 
             if (distance < distance_min)
             {
+                assert(distance < second_distance_min && distance_min <= second_distance_min);
+
                 second_cluster_idx = cluster_idx;
                 second_distance_min = distance_min;
 
@@ -347,13 +355,19 @@ private:
             }
             else if (distance < second_distance_min)
             {
+                assert(distance_min < second_distance_min);
+
                 second_cluster_idx = i;
                 second_distance_min = distance;
             }
         }
 
-        *upper_bound = distance_min;
-        *lower_bound = second_distance_min;
+        assert(distance_min <= second_distance_min);
+        assert(cluster_idx != second_cluster_idx);
+
+        // calculate d() to closest and second closest points
+        *upper_bound = distance_fun_t()(point, cluster_centers[cluster_idx]);
+        *lower_bound = distance_fun_t()(point, cluster_centers[second_cluster_idx]);
     }
 
     static void initialize(const point_vector_t& cluster_centers, const point_vector_t& points,
@@ -413,6 +427,7 @@ private:
                 if (i == j)
                     continue;
 
+                // use d() as this value is used for things other than relative comparison
                 const auto d = distance_fun_t()(cluster_centers[i], cluster_centers[j]);
 
                 if (d < (*intercluster_distances)[i])
@@ -435,6 +450,7 @@ private:
             for (dim_idx_t dim_idx = 0; dim_idx < cluster_centers[cluster_idx].size(); ++dim_idx)
                 cluster_centers[cluster_idx][dim_idx] = cluster_point_sums[cluster_idx][dim_idx] / cluster_sizes[cluster_idx];
 
+            // use d() as this value is used for things other than relative comparison
             cluster_move_distances[cluster_idx] = distance_fun_t()(old_cluster_centers[cluster_idx], cluster_centers[cluster_idx]);
         }
     }
