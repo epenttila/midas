@@ -104,12 +104,6 @@ public:
             {
                 thread_data[tid].cluster_point_sums.resize(cluster_count);
                 thread_data[tid].cluster_sizes.resize(cluster_count);
-
-                for (cluster_idx_t cluster_idx = 0; cluster_idx < cluster_sizes.size(); ++cluster_idx)
-                {
-                    thread_data[tid].cluster_sizes[cluster_idx] = cluster_size_t();
-                    //thread_data[tid].cluster_point_sums[cluster_idx].resize(points[0].size());
-                }
             }
 
 #pragma omp parallel for
