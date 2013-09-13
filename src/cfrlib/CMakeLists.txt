@@ -5,8 +5,8 @@ set(cfrlib_SOURCES
     cfr_solver.ipp
     holdem_game.cpp
     holdem_game.h
-    holdem_state.cpp
-    holdem_state.h
+    flhe_state.cpp
+    flhe_state.h
     kuhn_game.cpp
     kuhn_game.h
     kuhn_state.cpp
@@ -15,9 +15,9 @@ set(cfrlib_SOURCES
     leduc_game.h
     leduc_state.cpp
     leduc_state.h
-    nl_holdem_state.cpp
-    nl_holdem_state.h
-    nl_holdem_state.ipp
+    nlhe_state.cpp
+    nlhe_state.h
+    nlhe_state.ipp
     nlhe_strategy.h
     nlhe_strategy.cpp
     pcs_cfr_solver.h

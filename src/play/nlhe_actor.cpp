@@ -2,7 +2,7 @@
 #include <cassert>
 #include "cfrlib/nlhe_strategy.h"
 #include "cfrlib/strategy.h"
-#include "cfrlib/nl_holdem_state.h"
+#include "cfrlib/nlhe_state.h"
 #include "nlhe_game.h"
 
 nlhe_actor::nlhe_actor(const std::string& filename)
@@ -46,7 +46,7 @@ void nlhe_actor::act(nlhe_game& g)
         break;
     default:
         {
-            // TODO combine with main_window and nl_holdem_state
+            // TODO combine with main_window and nlhe_state
             const int to_call = g.get_to_call(id_);
             const int pot = g.get_pot(id_) - to_call;
             double factor;

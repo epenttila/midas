@@ -1,4 +1,4 @@
-#include "holdem_state.h"
+#include "flhe_state.h"
 #include <cassert>
 #include <string>
 #include "util/game.h"
@@ -9,7 +9,7 @@ namespace
     static const std::array<int, 2> INITIAL_POT = {{1, 2}};
 }
 
-holdem_state::holdem_state()
+flhe_state::flhe_state()
     : id_(0)
     , parent_(nullptr)
     , action_(-1)
@@ -27,7 +27,7 @@ holdem_state::holdem_state()
         create_child(i, &id);
 }
 
-holdem_state::holdem_state(const holdem_state* parent, const int action, const int player,
+flhe_state::flhe_state(const flhe_state* parent, const int action, const int player,
     const std::array<int, 2>& pot, const int round, const int raises, int* id)
     : id_(id ? (*id)++ : -1)
     , parent_(parent)
@@ -44,7 +44,7 @@ holdem_state::holdem_state(const holdem_state* parent, const int action, const i
         create_child(i, id);
 }
 
-void holdem_state::create_child(const int action, int* id)
+void flhe_state::create_child(const int action, int* id)
 {
     if (is_terminal())
         return;
@@ -92,13 +92,13 @@ void holdem_state::create_child(const int action, int* id)
 
     assert(children_[action] == nullptr);
 
-    children_[action] = new holdem_state(this, action, new_player, new_pot, new_round, new_raises,
+    children_[action] = new flhe_state(this, action, new_player, new_pot, new_round, new_raises,
         new_terminal ? nullptr : id);
 
     ++child_count_;
 }
 
-int holdem_state::get_terminal_ev(const int result) const
+int flhe_state::get_terminal_ev(const int result) const
 {
     assert(is_terminal());
     assert(action_ != CALL || pot_[0] == pot_[1]);
@@ -112,52 +112,52 @@ int holdem_state::get_terminal_ev(const int result) const
     return 0;
 }
 
-int holdem_state::get_action() const
+int flhe_state::get_action() const
 {
     return action_;
 }
 
-int holdem_state::get_round() const
+int flhe_state::get_round() const
 {
     return round_;
 }
 
-const holdem_state* holdem_state::get_parent() const
+const flhe_state* flhe_state::get_parent() const
 {
     return parent_;
 }
 
-bool holdem_state::is_terminal() const
+bool flhe_state::is_terminal() const
 {
     return id_ == -1;
 }
 
-const holdem_state* holdem_state::get_child(int action) const
+const flhe_state* flhe_state::get_child(int action) const
 {
     return children_[action];
 }
 
-int holdem_state::get_id() const
+int flhe_state::get_id() const
 {
     return id_;
 }
 
-int holdem_state::get_player() const
+int flhe_state::get_player() const
 {
     return player_;
 }
 
-int holdem_state::get_child_count() const
+int flhe_state::get_child_count() const
 {
     return child_count_;
 }
 
-std::ostream& operator<<(std::ostream& os, const holdem_state& state)
+std::ostream& operator<<(std::ostream& os, const flhe_state& state)
 {
-    const char c[2][holdem_state::ACTIONS] = {{'f', 'c', 'r'}, {'F', 'C', 'R'}};
+    const char c[2][flhe_state::ACTIONS] = {{'f', 'c', 'r'}, {'F', 'C', 'R'}};
     std::string line;
 
-    for (const holdem_state* s = &state; s->get_parent() != nullptr; s = s->get_parent())
+    for (const flhe_state* s = &state; s->get_parent() != nullptr; s = s->get_parent())
         line = c[s->get_parent()->get_player()][s->get_action()] + line;
 
     return (os << state.get_id() << ":" << line);

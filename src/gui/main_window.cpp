@@ -30,7 +30,7 @@
 #pragma warning(pop)
 
 #include "cfrlib/holdem_game.h"
-#include "cfrlib/nl_holdem_state.h"
+#include "cfrlib/nlhe_state.h"
 #include "cfrlib/strategy.h"
 #include "util/card.h"
 #include "abslib/holdem_abstraction.h"
@@ -233,9 +233,9 @@ void main_window::open_strategy()
         si.reset(new strategy_info);
 
         if (actions == "fchpa")
-            si->root_state_.reset(new nl_holdem_state<F_MASK | C_MASK | H_MASK | P_MASK | A_MASK>(stack_size));
+            si->root_state_.reset(new nlhe_state<F_MASK | C_MASK | H_MASK | P_MASK | A_MASK>(stack_size));
         else if (actions == "fchqpa")
-            si->root_state_.reset(new nl_holdem_state<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | A_MASK>(stack_size));
+            si->root_state_.reset(new nlhe_state<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | A_MASK>(stack_size));
 
         std::size_t states = 0;
         std::vector<const nlhe_state_base*> stack(1, si->root_state_.get());

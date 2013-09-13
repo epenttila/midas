@@ -1,4 +1,4 @@
-#include "nl_holdem_state.h"
+#include "nlhe_state.h"
 #include <cassert>
 
 namespace detail

@@ -1,7 +1,7 @@
 #include "nlhe_strategy.h"
 #include <boost/filesystem.hpp>
 #include <regex>
-#include "nl_holdem_state.h"
+#include "nlhe_state.h"
 #include "abslib/holdem_abstraction.h"
 #include "strategy.h"
 
@@ -23,9 +23,9 @@ nlhe_strategy::nlhe_strategy(const std::string& filepath)
     const auto stack_size = std::atoi(m_nlhe[2].str().c_str());
 
     if (actions == "fchpa")
-        root_state_.reset(new nl_holdem_state<F_MASK | C_MASK | H_MASK | P_MASK | A_MASK>(stack_size));
+        root_state_.reset(new nlhe_state<F_MASK | C_MASK | H_MASK | P_MASK | A_MASK>(stack_size));
     else if (actions == "fchqpa")
-        root_state_.reset(new nl_holdem_state<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | A_MASK>(stack_size));
+        root_state_.reset(new nlhe_state<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | A_MASK>(stack_size));
 
     std::size_t state_count = 0;
     std::vector<const nlhe_state_base*> stack(1, root_state_.get());

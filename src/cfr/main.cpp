@@ -15,8 +15,8 @@
 #include "cfrlib/holdem_game.h"
 #include "abslib/holdem_abstraction.h"
 #include "cfrlib/kuhn_state.h"
-#include "cfrlib/holdem_state.h"
-#include "cfrlib/nl_holdem_state.h"
+#include "cfrlib/flhe_state.h"
+#include "cfrlib/nlhe_state.h"
 #include "cfrlib/strategy.h"
 #include "cfrlib/pcs_cfr_solver.h"
 #include "cfrlib/leduc_state.h"
@@ -45,7 +45,7 @@ namespace
     template<int BITMASK>
     std::unique_ptr<solver_base> create_nlhe_solver(const std::string& variant, const int stack_size, const std::string& abstraction)
     {
-        typedef nl_holdem_state<BITMASK> state_type;
+        typedef nlhe_state<BITMASK> state_type;
         std::unique_ptr<state_type> state(new state_type(stack_size));
 
         if (abstraction.substr(0, 2) == "pr" || abstraction.substr(0, 2) == "ir")
@@ -138,7 +138,7 @@ int main(int argc, char* argv[])
         }
         else if (game == "holdem")
         {
-            std::unique_ptr<holdem_state> state(new holdem_state());
+            std::unique_ptr<flhe_state> state(new flhe_state());
             std::unique_ptr<holdem_abstraction> abs(new holdem_abstraction(abstraction));
 
             solver = create_solver<holdem_game<holdem_abstraction>>(variant, std::move(state), std::move(abs));

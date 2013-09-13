@@ -23,7 +23,7 @@ namespace detail
 }
 
 template<int BITMASK>
-nl_holdem_state<BITMASK>::nl_holdem_state(const int stack_size)
+nlhe_state<BITMASK>::nlhe_state(const int stack_size)
     : id_(0)
     , parent_(nullptr)
     , action_index_(-1)
@@ -55,7 +55,7 @@ nl_holdem_state<BITMASK>::nl_holdem_state(const int stack_size)
 }
 
 template<int BITMASK>
-nl_holdem_state<BITMASK>::nl_holdem_state(const nl_holdem_state* parent, const int action_index, const int player,
+nlhe_state<BITMASK>::nlhe_state(const nlhe_state* parent, const int action_index, const int player,
     const std::array<int, 2>& pot, const int round, int* id)
     : id_(id ? (*id)++ : -1)
     , parent_(parent)
@@ -73,13 +73,13 @@ nl_holdem_state<BITMASK>::nl_holdem_state(const nl_holdem_state* parent, const i
 }
 
 template<int BITMASK>
-nl_holdem_state<BITMASK>::~nl_holdem_state()
+nlhe_state<BITMASK>::~nlhe_state()
 {
-    std::for_each(children_.begin(), children_.end(), [](nl_holdem_state* p) { delete p; });
+    std::for_each(children_.begin(), children_.end(), [](nlhe_state* p) { delete p; });
 }
 
 template<int BITMASK>
-void nl_holdem_state<BITMASK>::create_child(const int action_index, int* id)
+void nlhe_state<BITMASK>::create_child(const int action_index, int* id)
 {
     if (is_terminal())
         return;
@@ -162,14 +162,14 @@ void nl_holdem_state<BITMASK>::create_child(const int action_index, int* id)
 
     assert(children_[action_index] == nullptr);
 
-    children_[action_index] = new nl_holdem_state(this, action_index, new_player, new_pot, new_round,
+    children_[action_index] = new nlhe_state(this, action_index, new_player, new_pot, new_round,
         new_terminal ? nullptr : id);
 
     ++child_count_;
 }
 
 template<int BITMASK>
-int nl_holdem_state<BITMASK>::get_terminal_ev(const int result) const
+int nlhe_state<BITMASK>::get_terminal_ev(const int result) const
 {
     const int action = index_to_action_[action_index_];
     assert(is_terminal());
@@ -185,60 +185,60 @@ int nl_holdem_state<BITMASK>::get_terminal_ev(const int result) const
 }
 
 template<int BITMASK>
-int nl_holdem_state<BITMASK>::get_action() const
+int nlhe_state<BITMASK>::get_action() const
 {
     return action_index_;
 }
 
 template<int BITMASK>
-int nl_holdem_state<BITMASK>::get_round() const
+int nlhe_state<BITMASK>::get_round() const
 {
     return round_;
 }
 
 template<int BITMASK>
-const nl_holdem_state<BITMASK>* nl_holdem_state<BITMASK>::get_parent() const
+const nlhe_state<BITMASK>* nlhe_state<BITMASK>::get_parent() const
 {
     return parent_;
 }
 
 template<int BITMASK>
-bool nl_holdem_state<BITMASK>::is_terminal() const
+bool nlhe_state<BITMASK>::is_terminal() const
 {
     return id_ == -1;
 }
 
 template<int BITMASK>
-const nl_holdem_state<BITMASK>* nl_holdem_state<BITMASK>::get_child(int index) const
+const nlhe_state<BITMASK>* nlhe_state<BITMASK>::get_child(int index) const
 {
     return children_[index];
 }
 
 template<int BITMASK>
-int nl_holdem_state<BITMASK>::get_id() const
+int nlhe_state<BITMASK>::get_id() const
 {
     return id_;
 }
 
 template<int BITMASK>
-int nl_holdem_state<BITMASK>::get_player() const
+int nlhe_state<BITMASK>::get_player() const
 {
     return player_;
 }
 
 template<int BITMASK>
-int nl_holdem_state<BITMASK>::get_child_count() const
+int nlhe_state<BITMASK>::get_child_count() const
 {
     return child_count_;
 }
 
 template<int BITMASK>
-void nl_holdem_state<BITMASK>::print(std::ostream& os) const
+void nlhe_state<BITMASK>::print(std::ostream& os) const
 {
     static const char actions[nlhe_state_base::MAX_ACTIONS] = {'f', 'c', 'h', 'q', 'p', 'w', 'd', 't', 'e', 'a'};
     std::string line;
 
-    for (const nl_holdem_state<BITMASK>* s = this; s->get_parent() != nullptr; s = s->get_parent())
+    for (const nlhe_state<BITMASK>* s = this; s->get_parent() != nullptr; s = s->get_parent())
     {
         const char c = actions[index_to_action_[s->get_action()]];
         line = char(s->get_parent()->get_player() == 0 ? c : toupper(c)) + line;
@@ -248,13 +248,13 @@ void nl_holdem_state<BITMASK>::print(std::ostream& os) const
 }
 
 template<int BITMASK>
-const nl_holdem_state<BITMASK>* nl_holdem_state<BITMASK>::call() const
+const nlhe_state<BITMASK>* nlhe_state<BITMASK>::call() const
 {
     return children_[action_to_index_[CALL]];
 }
 
 template<int BITMASK>
-const nl_holdem_state<BITMASK>* nl_holdem_state<BITMASK>::raise(double fraction) const
+const nlhe_state<BITMASK>* nlhe_state<BITMASK>::raise(double fraction) const
 {
     if (stack_size_ == pot_[1 - player_])
         return nullptr;
@@ -303,31 +303,31 @@ const nl_holdem_state<BITMASK>* nl_holdem_state<BITMASK>::raise(double fraction)
 }
 
 template<int BITMASK>
-std::array<int, 2> nl_holdem_state<BITMASK>::get_pot() const
+std::array<int, 2> nlhe_state<BITMASK>::get_pot() const
 {
     return pot_;
 }
 
 template<int BITMASK>
-int nl_holdem_state<BITMASK>::get_action_count() const
+int nlhe_state<BITMASK>::get_action_count() const
 {
     return ACTIONS;
 }
 
 template<int BITMASK>
-int nl_holdem_state<BITMASK>::get_action(int index) const
+int nlhe_state<BITMASK>::get_action(int index) const
 {
     return index_to_action_[index];
 }
 
 template<int BITMASK>
-bool nl_holdem_state<BITMASK>::is_raise(int action) const
+bool nlhe_state<BITMASK>::is_raise(int action) const
 {
     return action > CALL && action < MAX_ACTIONS;
 }
 
 template<int BITMASK>
-bool nl_holdem_state<BITMASK>::is_action_enabled(int action) const
+bool nlhe_state<BITMASK>::is_action_enabled(int action) const
 {
     switch (action)
     {
@@ -347,13 +347,13 @@ bool nl_holdem_state<BITMASK>::is_action_enabled(int action) const
 }
 
 template<int BITMASK>
-int nl_holdem_state<BITMASK>::get_max_action() const
+int nlhe_state<BITMASK>::get_max_action() const
 {
     return boost::static_log2<BITMASK>::value;
 }
 
 template<int BITMASK>
-int nl_holdem_state<BITMASK>::get_new_player_pot(const int player_pot, const int to_call, const int in_pot, const int action) const
+int nlhe_state<BITMASK>::get_new_player_pot(const int player_pot, const int to_call, const int in_pot, const int action) const
 {
     double factor;
 
@@ -374,7 +374,7 @@ int nl_holdem_state<BITMASK>::get_new_player_pot(const int player_pot, const int
 }
 
 template<int BITMASK>
-std::array<int, nl_holdem_state<BITMASK>::MAX_ACTIONS> nl_holdem_state<BITMASK>::action_to_index_;
+std::array<int, nlhe_state<BITMASK>::MAX_ACTIONS> nlhe_state<BITMASK>::action_to_index_;
 
 template<int BITMASK>
-std::array<int, nl_holdem_state<BITMASK>::ACTIONS> nl_holdem_state<BITMASK>::index_to_action_;
+std::array<int, nlhe_state<BITMASK>::ACTIONS> nlhe_state<BITMASK>::index_to_action_;
