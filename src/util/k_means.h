@@ -21,6 +21,25 @@ namespace detail
         for (std::size_t i = 0; i < a.size(); ++i)
             a[i] -= b[i];
     }
+
+    template<class T>
+    typename T::value_type mean(const T& x)
+    {
+        return std::accumulate(x.begin(), x.end(), T::value_type()) / x.size();
+    }
+
+    template<class T>
+    typename T::value_type var(const T& x)
+    {
+        const auto mean = detail::mean(x);
+        const auto sum = std::accumulate(x.begin(), x.end(), T::value_type(),
+            [mean](const T::value_type& a, const T::value_type& b)
+            {
+                return a + (b - mean) * (b - mean);
+            });
+
+        return sum / mean;
+    }
 };
 
 enum init_type { RANDOM, PP, PARALLEL, OPTIMAL };
@@ -39,8 +58,36 @@ public:
     typedef std::size_t point_idx_t;
     typedef typename point_t::size_type dim_idx_t;
 
-    void operator()(const point_vector_t& points, const int cluster_count, const int max_iterations, init_type init,
-        std::vector<cluster_idx_t>* point_clusters_out, point_vector_t* cluster_centers_out)
+    distance_t run(const point_vector_t& points, const int cluster_count, const int max_iterations,
+        const distance_t tolerance, init_type init, const int runs, std::vector<cluster_idx_t>* point_clusters_out,
+        point_vector_t* cluster_centers_out)
+    {
+        distance_t min_cost = std::numeric_limits<distance_t>::max();
+        std::vector<cluster_idx_t> iteration_point_clusters;
+        point_vector_t iteration_cluster_centers;
+
+        for (int i = 0; i < runs; ++i)
+        {
+            iteration_point_clusters.clear();
+            iteration_cluster_centers.clear();
+
+            const auto cost = run_single(points, cluster_count, max_iterations, tolerance, init,
+                &iteration_point_clusters, &iteration_cluster_centers);
+
+            if (cost < min_cost)
+            {
+                *point_clusters_out = iteration_point_clusters;
+                *cluster_centers_out = iteration_cluster_centers;
+                min_cost = cost;
+            }
+        }
+
+        return min_cost;
+    }
+
+    distance_t run_single(const point_vector_t& points, const int cluster_count, const int max_iterations,
+        const distance_t tolerance, init_type init, std::vector<cluster_idx_t>* point_clusters_out,
+        point_vector_t* cluster_centers_out)
     {
         assert(cluster_count < points.size());
 
@@ -80,16 +127,16 @@ public:
 
         std::vector<distance_t> intercluster_distances(cluster_count);
 
-        int iters = 0;
-        std::size_t changed = 0;
+        const auto sum_variances = std::accumulate(points.begin(), points.end(), distance_t(),
+            [](const distance_t& a, const point_t& b)
+            {
+                return a + detail::var(b);
+            });
 
-        while (iters < 2 || changed > 0)
+        const auto point_variance_mean = sum_variances / points.size();
+
+        for (std::size_t iters = 0; iters < max_iterations; ++iters)
         {
-            if (iters == max_iterations)
-                break;
-
-            changed = 0;
-
             update_intercluster_distances(cluster_centers, &intercluster_distances);
 
             const auto threads = omp_get_max_threads();
@@ -98,7 +145,6 @@ public:
             {
                 point_vector_t cluster_point_sums;
                 std::vector<cluster_size_t> cluster_sizes;
-                std::size_t changed;
             };
 
             std::vector<thread_data_t> thread_data(threads);
@@ -107,7 +153,6 @@ public:
             {
                 thread_data[tid].cluster_point_sums.resize(cluster_count);
                 thread_data[tid].cluster_sizes.resize(cluster_count);
-                thread_data[tid].changed = 0;
             }
 
 #pragma omp parallel for
@@ -134,8 +179,6 @@ public:
                             ++thread_data[tid].cluster_sizes[point_clusters[point_idx]];
                             detail::vector_sub(thread_data[tid].cluster_point_sums[old_cluster], points[point_idx]);
                             detail::vector_add(thread_data[tid].cluster_point_sums[point_clusters[point_idx]], points[point_idx]);
-
-                            ++thread_data[tid].changed;
                         }
                     }
                 }
@@ -143,7 +186,6 @@ public:
 
             for (std::size_t tid = 0; tid < thread_data.size(); ++tid)
             {
-                changed += thread_data[tid].changed;
                 detail::vector_add(cluster_sizes, thread_data[tid].cluster_sizes);
 
                 for (cluster_idx_t i = 0; i < cluster_point_sums.size(); ++i)
@@ -153,8 +195,23 @@ public:
             move_centers(cluster_point_sums, cluster_sizes, &old_cluster_centers, &cluster_centers, &cluster_move_distances);
             update_bounds(cluster_move_distances, point_clusters, &upper_bounds, &lower_bounds);
 
-            ++iters;
+            const auto inertia = std::accumulate(cluster_move_distances.begin(), cluster_move_distances.end(),
+                distance_t(), [](const distance_t& a, const distance_t& b)
+                {
+                    return a + b * b;
+                });
+
+            if (inertia / point_variance_mean < tolerance)
+                break;
         }
+
+        std::vector<distance_t> costs(points.size(), std::numeric_limits<distance_t>::max());
+
+#pragma omp parallel for
+        for (std::int64_t point = 0; point < static_cast<std::int64_t>(points.size()); ++point)
+            update_cost(points[point], cluster_centers, 0, &costs[point], &point_clusters[point]);
+
+        return std::accumulate(costs.begin(), costs.end(), distance_t());
     }
 
 private:

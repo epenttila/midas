@@ -48,6 +48,8 @@ int main(int argc, char* argv[])
         std::string game;
         std::string abstraction;
         int kmeans_max_iterations;
+        float kmeans_tolerance;
+        int kmeans_runs;
 
         po::options_description generic_options("Generic options");
         generic_options.add_options()
@@ -58,7 +60,12 @@ int main(int argc, char* argv[])
 
         po::options_description holdem_options("holdem options");
         holdem_options.add_options()
-            ("kmeans-max-iterations", po::value<int>(&kmeans_max_iterations)->default_value(100), "maximum amount of iterations")
+            ("kmeans-max-iterations", po::value<int>(&kmeans_max_iterations)->default_value(100),
+                "maximum amount of iterations")
+            ("kmeans-tolerance", po::value<float>(&kmeans_tolerance)->default_value(1e-4f),
+                "relative increment in results to achieve convergence")
+            ("kmeans-runs", po::value<int>(&kmeans_runs)->default_value(1),
+                "number of times to run k-means")
             ;
 
         po::options_description desc("Options");
@@ -106,9 +113,9 @@ int main(int argc, char* argv[])
         else if (game == "holdem-new")
         {
             const std::string abstraction_file = abstraction + ".abs";
-            std::cout << "Saving abstraction to: " << abstraction_file << "\n";
             holdem_abstraction_v2 abs;
-            abs.generate(abstraction, kmeans_max_iterations);
+            abs.generate(abstraction, kmeans_max_iterations, kmeans_tolerance, kmeans_runs);
+            std::cout << "Saving abstraction to: " << abstraction_file << "\n";
             abs.write(abstraction_file);
         }
         else

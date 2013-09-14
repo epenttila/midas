@@ -201,8 +201,8 @@ namespace
 
         std::vector<int> c(clusters);
         std::vector<std::vector<double>> cc(flops.size());
-        k_means<std::vector<double>, int, get_l2_distance, get_l2_cost>()(flops, clusters, kmeans_max_iterations,
-            OPTIMAL, &c, &cc);
+        k_means<std::vector<double>, int, get_l2_distance, get_l2_cost>().run_single(flops, clusters,
+            kmeans_max_iterations, 1e-4, OPTIMAL, &c, &cc);
         return c;
     }
 
@@ -244,8 +244,8 @@ namespace
 
         std::vector<int> c(clusters);
         std::vector<std::vector<double>> cc(turns.size());
-        k_means<std::vector<double>, int, get_l2_distance, get_l2_cost>()(turns, clusters, kmeans_max_iterations,
-            OPTIMAL, &c, &cc);
+        k_means<std::vector<double>, int, get_l2_distance, get_l2_cost>().run_single(turns, clusters,
+            kmeans_max_iterations, 1e-4, OPTIMAL, &c, &cc);
         return c;
     }
 }

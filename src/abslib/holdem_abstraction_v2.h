@@ -30,7 +30,7 @@ public:
 
     void write(const std::string& filename) const;
     void read(const std::string& filename);
-    void generate(const std::string& configuration, const int kmeans_max_iterations);
+    void generate(const std::string& configuration, const int kmeans_max_iterations, float tolerance, int runs);
 
 private:
     void init();

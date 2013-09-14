@@ -15,7 +15,7 @@ namespace
 
     template<int Dimensions>
     std::vector<bucket_idx_t> create_preflop_buckets(const hand_indexer& indexer, const holdem_river_lut& river_lut,
-        int cluster_count, int kmeans_max_iterations)
+        int cluster_count, int kmeans_max_iterations, float tolerance, int runs)
     {
         typedef std::array<float, Dimensions> point_t;
         std::vector<point_t> data_points(indexer.get_size(indexer.get_rounds() - 1));
@@ -75,15 +75,15 @@ namespace
         std::vector<bucket_idx_t> buckets;
         std::vector<point_t> centers;
 
-        k_means<point_t, bucket_idx_t, get_emd_distance, get_emd_cost>()(data_points, cluster_count,
-            kmeans_max_iterations, OPTIMAL, &buckets, &centers);
+        k_means<point_t, bucket_idx_t, get_emd_distance, get_emd_cost>().run(data_points, cluster_count,
+            kmeans_max_iterations, tolerance, OPTIMAL, runs, &buckets, &centers);
 
         return buckets;
     }
 
     template<int Dimensions>
     std::vector<bucket_idx_t> create_flop_buckets(const hand_indexer& indexer, const holdem_river_lut& river_lut,
-        int cluster_count, int kmeans_max_iterations)
+        int cluster_count, int kmeans_max_iterations, float tolerance, int runs)
     {
         typedef std::array<float, Dimensions> point_t;
         std::vector<point_t> data_points(indexer.get_size(indexer.get_rounds() - 1));
@@ -128,15 +128,15 @@ namespace
         std::vector<bucket_idx_t> buckets;
         std::vector<point_t> centers;
 
-        k_means<point_t, bucket_idx_t, get_emd_distance, get_emd_cost>()(data_points, cluster_count,
-            kmeans_max_iterations, OPTIMAL, &buckets, &centers);
+        k_means<point_t, bucket_idx_t, get_emd_distance, get_emd_cost>().run(data_points, cluster_count,
+            kmeans_max_iterations, tolerance, OPTIMAL, runs, &buckets, &centers);
 
         return buckets;
     }
 
     template<int Dimensions>
     std::vector<bucket_idx_t> create_turn_buckets(const hand_indexer& indexer, const holdem_river_lut& river_lut,
-        int cluster_count, int kmeans_max_iterations)
+        int cluster_count, int kmeans_max_iterations, float tolerance, int runs)
     {
         typedef std::array<float, Dimensions> point_t;
         std::vector<point_t> data_points(indexer.get_size(indexer.get_rounds() - 1));
@@ -176,29 +176,30 @@ namespace
         std::vector<bucket_idx_t> buckets;
         std::vector<point_t> centers;
 
-        k_means<point_t, bucket_idx_t, get_emd_distance, get_emd_cost>()(data_points, cluster_count,
-            kmeans_max_iterations, OPTIMAL, &buckets, &centers);
+        k_means<point_t, bucket_idx_t, get_emd_distance, get_emd_cost>().run(data_points, cluster_count,
+            kmeans_max_iterations, tolerance, OPTIMAL, runs, &buckets, &centers);
 
         return buckets;
     }
 
     template<int Dimensions>
     std::vector<bucket_idx_t> create_river_buckets(const holdem_river_ochs_lut& river_lut, int cluster_count,
-        int kmeans_max_iterations)
+        int kmeans_max_iterations, float tolerance, int runs)
     {
         typedef std::array<float, Dimensions> point_t;
 
         std::vector<bucket_idx_t> buckets;
         std::vector<point_t> centers;
 
-        k_means<point_t, bucket_idx_t, get_l2_distance, get_l2_cost>()(river_lut.get_data(), cluster_count,
-            kmeans_max_iterations, OPTIMAL, &buckets, &centers);
+        k_means<point_t, bucket_idx_t, get_l2_distance, get_l2_cost>().run(river_lut.get_data(), cluster_count,
+            kmeans_max_iterations, tolerance, OPTIMAL, runs, &buckets, &centers);
 
         return buckets;
     }
 
     std::vector<bucket_idx_t> create_buckets(const int round, const hand_indexer& indexer, const holdem_river_lut& river_lut,
-        const holdem_river_ochs_lut& river_ochs_lut, int cluster_count, int kmeans_max_iterations)
+        const holdem_river_ochs_lut& river_ochs_lut, int cluster_count, int kmeans_max_iterations, float tolerance,
+        int runs)
     {
         const auto index_count = indexer.get_size(indexer.get_rounds() - 1);
 
@@ -215,13 +216,17 @@ namespace
             switch (round)
             {
             case PREFLOP:
-                return create_preflop_buckets<50>(indexer, river_lut, cluster_count, kmeans_max_iterations);
+                return create_preflop_buckets<50>(indexer, river_lut, cluster_count, kmeans_max_iterations, tolerance,
+                    runs);
             case FLOP:
-                return create_flop_buckets<50>(indexer, river_lut, cluster_count, kmeans_max_iterations);
+                return create_flop_buckets<50>(indexer, river_lut, cluster_count, kmeans_max_iterations, tolerance,
+                    runs);
             case TURN:
-                return create_turn_buckets<50>(indexer, river_lut, cluster_count, kmeans_max_iterations);
+                return create_turn_buckets<50>(indexer, river_lut, cluster_count, kmeans_max_iterations, tolerance,
+                    runs);
             case RIVER:
-                return create_river_buckets<8>(river_ochs_lut, cluster_count, kmeans_max_iterations);
+                return create_river_buckets<8>(river_ochs_lut, cluster_count, kmeans_max_iterations, tolerance,
+                    runs);
             }
         }
 
@@ -334,7 +339,8 @@ void holdem_abstraction_v2::read(const std::string& filename)
     binary_read(is, river_buckets_);
 }
 
-void holdem_abstraction_v2::generate(const std::string& configuration, const int kmeans_max_iterations)
+void holdem_abstraction_v2::generate(const std::string& configuration, const int kmeans_max_iterations, float tolerance,
+    int runs)
 {
     parse_configuration(configuration);
 
@@ -344,13 +350,13 @@ void holdem_abstraction_v2::generate(const std::string& configuration, const int
         std::ifstream("holdem_river_ochs_lut.dat", std::ios::binary)));
 
     preflop_buckets_ = create_buckets(PREFLOP, *preflop_indexer_, *river_lut, *river_ochs_lut,
-        bucket_counts_[PREFLOP], kmeans_max_iterations);
+        bucket_counts_[PREFLOP], kmeans_max_iterations, tolerance, runs);
     flop_buckets_ = create_buckets(FLOP, *flop_indexer_, *river_lut, *river_ochs_lut, bucket_counts_[FLOP],
-        kmeans_max_iterations);
+        kmeans_max_iterations, tolerance, runs);
     turn_buckets_ = create_buckets(TURN, *turn_indexer_, *river_lut, *river_ochs_lut, bucket_counts_[TURN],
-        kmeans_max_iterations);
+        kmeans_max_iterations, tolerance, runs);
     river_buckets_ = create_buckets(RIVER, *river_indexer_, *river_lut, *river_ochs_lut, bucket_counts_[RIVER],
-        kmeans_max_iterations);
+        kmeans_max_iterations, tolerance, runs);
 }
 
 void holdem_abstraction_v2::parse_configuration(const std::string& configuration)
