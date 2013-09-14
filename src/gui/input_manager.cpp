@@ -183,7 +183,7 @@ void input_manager::move_mouse(int x, int y, int width, int height)
 void input_manager::move_mouse(WId window, int x, int y, int width, int height)
 {
     POINT point = {x, y};
-    ClientToScreen(window, &point);
+    ClientToScreen(reinterpret_cast<HWND>(window), &point);
     move_mouse(point.x, point.y, width, height);
 }
 

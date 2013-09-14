@@ -12,7 +12,7 @@ namespace
     BOOL CALLBACK callback(HWND hwnd, LPARAM object)
     {
         window_manager* wm = reinterpret_cast<window_manager*>(object);
-        return !wm->try_window(hwnd);
+        return !wm->try_window(reinterpret_cast<WId>(hwnd));
     }
 }
 
@@ -36,7 +36,7 @@ window_manager::~window_manager()
 
 bool window_manager::is_window() const
 {
-    return IsWindow(window_) ? true : false;
+    return IsWindow(reinterpret_cast<HWND>(window_)) ? true : false;
 }
 
 bool window_manager::find_window()
@@ -113,21 +113,25 @@ boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> window
 std::string window_manager::get_class_name(WId window)
 {
     std::array<char, 256> arr;
-    GetClassName(window, &arr[0], int(arr.size()));
+    GetClassName(reinterpret_cast<HWND>(window), &arr[0], int(arr.size()));
     return std::string(arr.data());
 }
 
 std::string window_manager::get_window_text(WId window)
 {
     std::array<char, 256> arr;
-    GetWindowText(window, &arr[0], int(arr.size()));
+    GetWindowText(reinterpret_cast<HWND>(window), &arr[0], int(arr.size()));
     return std::string(arr.data());
 }
 
-QPixmap window_manager::screenshot(WId winId)
+Q_GUI_EXPORT QPixmap qt_pixmapFromWinHBITMAP(HBITMAP, int hbitmapFormat = 0);
+
+QPixmap window_manager::screenshot(WId window)
 {
+    const auto hwnd = reinterpret_cast<HWND>(window);
+
     RECT r;
-    GetClientRect(winId, &r);
+    GetClientRect(hwnd, &r);
 
     const int w = r.right - r.left;
     const int h = r.bottom - r.top;
@@ -137,14 +141,14 @@ QPixmap window_manager::screenshot(WId winId)
     const HBITMAP bitmap = CreateCompatibleBitmap(display_dc, w, h);
     const HGDIOBJ null_bitmap = SelectObject(bitmap_dc, bitmap);
 
-    const HDC window_dc = GetDC(winId);
+    const HDC window_dc = GetDC(hwnd);
     BitBlt(bitmap_dc, 0, 0, w, h, window_dc, 0, 0, SRCCOPY);
 
-    ReleaseDC(winId, window_dc);
+    ReleaseDC(hwnd, window_dc);
     SelectObject(bitmap_dc, null_bitmap);
     DeleteDC(bitmap_dc);
 
-    const QPixmap pixmap = QPixmap::fromWinHBITMAP(bitmap);
+    const QPixmap pixmap = qt_pixmapFromWinHBITMAP(bitmap);
 
     DeleteObject(bitmap);
     ReleaseDC(0, display_dc);

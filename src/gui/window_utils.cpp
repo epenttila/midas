@@ -332,7 +332,9 @@ popup_data read_xml_popup(QXmlStreamReader& reader)
 
 bool close_popups(input_manager& input, WId window, const std::vector<popup_data>& popups)
 {
-    if (!IsWindow(window) || !IsWindowVisible(window))
+    const auto hwnd = reinterpret_cast<HWND>(window);
+
+    if (!IsWindow(hwnd) || !IsWindowVisible(hwnd))
         return false;
 
     const auto title = window_manager::get_window_text(window);
@@ -351,7 +353,7 @@ bool close_popups(input_manager& input, WId window, const std::vector<popup_data
         return false;
 
     // not all windows will be closed when clicking OK, so can't use IsWindow here
-    while (IsWindowVisible(window))
+    while (IsWindowVisible(hwnd))
     {
         for (auto i = popups.begin(); i != popups.end(); ++i)
         {

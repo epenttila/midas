@@ -2,6 +2,7 @@
 
 #pragma warning(push, 3)
 #include <array>
+#include <memory>
 #include <QFrame>
 #pragma warning(pop)
 

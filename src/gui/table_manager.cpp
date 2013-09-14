@@ -139,7 +139,9 @@ table_manager::table_manager(const std::string& filename, input_manager& input_m
 
 void table_manager::update(bool save)
 {
-    if (!IsWindow(window_))
+    const auto hwnd = reinterpret_cast<HWND>(window_);
+
+    if (!IsWindow(hwnd))
     {
         image_.reset();
         mono_image_.reset();
@@ -229,7 +231,7 @@ void table_manager::raise(double amount, double fraction) const
     {
         input_.sleep();
 
-        if (GetForegroundWindow() == window_)
+        if (GetForegroundWindow() == reinterpret_cast<HWND>(window_))
         {
             input_.send_string(std::to_string(static_cast<long double>(amount)));
             input_.sleep();
@@ -335,7 +337,7 @@ bool table_manager::is_opponent_sitout() const
 
 bool table_manager::is_window() const
 {
-    return IsWindow(window_) ? true : false;
+    return IsWindow(reinterpret_cast<HWND>(window_)) ? true : false;
 }
 
 void table_manager::reset()

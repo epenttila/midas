@@ -61,9 +61,10 @@ void lobby_manager::close_popups()
     EnumWindows(callback, reinterpret_cast<LPARAM>(this));
 }
 
-BOOL CALLBACK lobby_manager::callback(HWND window, LPARAM lParam)
+BOOL CALLBACK lobby_manager::callback(HWND hwnd, LPARAM lParam)
 {
     lobby_manager* lobby = reinterpret_cast<lobby_manager*>(lParam);
+    const auto window = reinterpret_cast<WId>(hwnd);
 
     window_utils::close_popups(lobby->input_manager_, window, lobby->popups_);
 
@@ -90,7 +91,7 @@ BOOL CALLBACK lobby_manager::callback(HWND window, LPARAM lParam)
 
 bool lobby_manager::is_window() const
 {
-    return IsWindow(window_) ? true : false;
+    return IsWindow(reinterpret_cast<HWND>(window_)) ? true : false;
 }
 
 void lobby_manager::register_sng()
@@ -123,10 +124,12 @@ void lobby_manager::reset()
 
 bool lobby_manager::ensure_visible()
 {
-    if (IsWindow(window_) && IsWindowVisible(window_) && !IsIconic(window_))
+    const auto hwnd = reinterpret_cast<HWND>(window_);
+
+    if (IsWindow(hwnd) && IsWindowVisible(hwnd) && !IsIconic(hwnd))
         return true;
 
-    ShowWindowAsync(window_, SW_RESTORE);
+    ShowWindowAsync(hwnd, SW_RESTORE);
 
     return false;
 }

@@ -3,6 +3,7 @@
 #include <istream>
 #include <vector>
 #include <array>
+#include <memory>
 #include "hand_indexer.h"
 
 class holdem_river_ochs_lut
@@ -18,6 +19,6 @@ public:
     hand_indexer::hand_index_t get_key(const std::array<card_t, 7>& cards) const;
 
 private:
-    mutable std::vector<data_type> data_;
+    std::vector<data_type> data_;
     std::unique_ptr<hand_indexer> indexer_;
 };

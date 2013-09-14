@@ -3,6 +3,7 @@
 #include <array>
 #include <vector>
 #include <random>
+#include <memory>
 
 class strategy
 {

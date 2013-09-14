@@ -33,10 +33,12 @@ set(gui_RESOURCES
     gui.qrc
 )
 
-qt4_wrap_cpp(gui_HEADERS_MOC ${gui_HEADERS})
-qt4_add_resources(gui_RESOURCES_RCC ${gui_RESOURCES})
-add_executable(gui WIN32 ${gui_SOURCES} ${gui_HEADERS_MOC} ${gui_RESOURCES_RCC})
-target_link_libraries(gui ${Boost_LIBRARIES} ${QT_LIBRARIES} cfrlib lutlib evallib abslib)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_AUTOMOC ON)
+
+qt5_add_resources(gui_RESOURCES_RCC ${gui_RESOURCES})
+add_executable(gui WIN32 ${gui_SOURCES} ${gui_RESOURCES_RCC})
+target_link_libraries(gui ${Boost_LIBRARIES} Qt5::Widgets cfrlib lutlib evallib abslib)
 
 file(COPY ${evallib_SOURCE_DIR}/ranks.dat DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${lutlib_SOURCE_DIR}/holdem_preflop_lut.dat DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

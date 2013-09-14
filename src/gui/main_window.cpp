@@ -169,7 +169,7 @@ main_window::main_window()
 
     log(QString("Loaded settings from \"%1\"").arg(settings.fileName()));
 
-    while (!RegisterHotKey(winId(), 0, MOD_ALT | MOD_CONTROL, hotkey_))
+    while (!RegisterHotKey(reinterpret_cast<HWND>(winId()), 0, MOD_ALT | MOD_CONTROL, hotkey_))
         ++hotkey_;
 
     log(QString("Registered hot key Ctrl+Alt+%1").arg(get_key_text(hotkey_)));
@@ -735,7 +735,7 @@ void main_window::lobby_timer_timeout()
         if (!IsWindow(window))
             return;
 
-        lobby_->set_window(window);
+        lobby_->set_window(reinterpret_cast<WId>(window));
     }
 
     assert(lobby_ && lobby_->is_window());

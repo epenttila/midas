@@ -4,6 +4,7 @@
 //#include <utility>
 #include <array>
 #include <regex>
+#include <memory>
 #include <boost/noncopyable.hpp>
 #include <QImage>
 #pragma warning(pop)

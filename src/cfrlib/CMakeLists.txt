@@ -3,7 +3,6 @@ project(cfrlib)
 set(cfrlib_SOURCES
     cfr_solver.h
     cfr_solver.ipp
-    holdem_game.cpp
     holdem_game.h
     flhe_state.cpp
     flhe_state.h

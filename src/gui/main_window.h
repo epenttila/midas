@@ -6,6 +6,7 @@
 #include <random>
 #include <fstream>
 #include <array>
+#include <memory>
 #pragma warning(pop)
 
 class QPlainTextEdit;
