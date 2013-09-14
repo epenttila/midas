@@ -3,7 +3,6 @@
 #pragma warning(push, 1)
 #include <boost/math/special_functions.hpp>
 #include <boost/algorithm/clamp.hpp>
-#define NOMINMAX
 #include <Windows.h>
 #pragma warning(pop)
 

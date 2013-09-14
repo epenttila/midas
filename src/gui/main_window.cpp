@@ -9,7 +9,6 @@
 #include <regex>
 #include <boost/timer/timer.hpp>
 #include <boost/algorithm/clamp.hpp>
-#define NOMINMAX
 #include <Windows.h>
 #include <QPlainTextEdit>
 #include <QVBoxLayout>

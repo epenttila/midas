@@ -4,7 +4,6 @@
 #include <regex>
 #include <boost/noncopyable.hpp>
 #include <QWidget>
-#define NOMINMAX
 #include <Windows.h>
 #pragma warning(pop)
 

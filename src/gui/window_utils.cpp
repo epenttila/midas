@@ -3,7 +3,6 @@
 #pragma warning(push, 1)
 #include <QXmlStreamReader>
 #include <QDateTime>
-#define NOMINMAX
 #include <Windows.h>
 #pragma warning(pop)
 

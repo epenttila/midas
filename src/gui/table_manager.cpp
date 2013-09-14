@@ -5,7 +5,6 @@
 #include <QXmlStreamReader>
 #include <QFile>
 #include <QDateTime>
-#define NOMINMAX
 #include <Windows.h>
 #pragma warning(pop)
 
