@@ -32,6 +32,7 @@
 #include "cfrlib/nlhe_state.h"
 #include "cfrlib/strategy.h"
 #include "util/card.h"
+#include "cfrlib/nlhe_strategy.h"
 #include "abslib/holdem_abstraction.h"
 #include "table_widget.h"
 #include "window_manager.h"
