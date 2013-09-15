@@ -9,6 +9,7 @@ set(util_SOURCES
     partial_shuffle.h
     sort.h
     metric.h
+    game.h
 )
 
 add_custom_target(util SOURCES ${util_SOURCES})
