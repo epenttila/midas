@@ -29,16 +29,29 @@ namespace detail
     }
 
     template<class T>
-    typename T::value_type var(const T& x)
+    double calculate_variance_mean(const T& points)
     {
-        const auto mean = detail::mean(x);
-        const auto sum = std::accumulate(x.begin(), x.end(), T::value_type(),
-            [mean](const T::value_type& a, const T::value_type& b)
-            {
-                return a + (b - mean) * (b - mean);
-            });
+        const auto dimensions = points[0].size();
+        std::vector<double> variances(dimensions);
 
-        return sum / mean;
+        for (std::size_t dim = 0; dim < dimensions; ++dim)
+        {
+            double mean = 0;
+            
+            for (std::size_t point = 0; point < points.size(); ++point)
+                mean += points[point][dim];
+
+            mean /= points.size();
+
+            variances[dim] = 0;
+
+            for (std::size_t point = 0; point < points.size(); ++point)
+                variances[dim] += (points[point][dim] - mean) * (points[point][dim] - mean);
+
+            variances[dim] /= points.size();
+        }
+
+        return mean(variances);
     }
 };
 
@@ -127,13 +140,7 @@ public:
 
         std::vector<distance_t> intercluster_distances(cluster_count);
 
-        const auto sum_variances = std::accumulate(points.begin(), points.end(), distance_t(),
-            [](const distance_t& a, const point_t& b)
-            {
-                return a + detail::var(b);
-            });
-
-        const auto point_variance_mean = sum_variances / points.size();
+        const auto point_variance_mean = detail::calculate_variance_mean(points);
 
         for (std::size_t iters = 0; iters < max_iterations; ++iters)
         {
@@ -201,7 +208,9 @@ public:
                     return a + b * b;
                 });
 
-            if (inertia / point_variance_mean < tolerance)
+            const auto norm_inertia = inertia / point_variance_mean;
+
+            if (norm_inertia < tolerance)
                 break;
         }
 
