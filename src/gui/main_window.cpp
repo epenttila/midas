@@ -329,7 +329,7 @@ void main_window::play_timer_timeout()
             const double op_bet = site_->get_bet(1);
             const double big_blind = site_->get_big_blind();
             const double to_call = op_bet - my_bet;
-            const double amount = int((raise_fraction_ * (total_pot + to_call) + to_call + my_bet) / big_blind) * big_blind;
+            const double amount = raise_fraction_ * (total_pot + to_call) + to_call + my_bet;
 
             log(QString("Player: Raise %1 (%2x pot)").arg(amount).arg(raise_fraction_));
             site_->raise(amount, raise_fraction_);

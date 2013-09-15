@@ -232,7 +232,9 @@ void table_manager::raise(double amount, double fraction) const
 
         if (GetForegroundWindow() == reinterpret_cast<HWND>(window_))
         {
-            input_.send_string(std::to_string(static_cast<long double>(amount)));
+            // TODO support decimal point
+            amount = std::max(std::min<double>(amount, std::numeric_limits<int>::max()), 0.0);
+            input_.send_string(std::to_string(static_cast<int>(amount)));
             input_.sleep();
         }
     }
