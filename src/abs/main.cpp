@@ -6,6 +6,10 @@
 #include <fstream>
 #include <regex>
 #include <boost/tokenizer.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/utility/setup/file.hpp>
+#include <boost/log/utility/setup/console.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
@@ -40,6 +44,18 @@ int main(int argc, char* argv[])
 {
     try
     {
+        namespace log = boost::log;
+
+        log::add_common_attributes();
+
+        static const char* log_format = "[%TimeStamp%] %Message%";
+
+        log::add_console_log
+        (
+            std::clog,
+            log::keywords::format = log_format
+        );
+
         _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
         _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
 
@@ -50,12 +66,14 @@ int main(int argc, char* argv[])
         int kmeans_max_iterations;
         float kmeans_tolerance;
         int kmeans_runs;
+        std::string log_file;
 
         po::options_description generic_options("Generic options");
         generic_options.add_options()
             ("help", "produce help message")
-            ("game", po::value<std::string>(&game), "game")
-            ("abstraction", po::value<std::string>(&abstraction), "abstraction")
+            ("game", po::value<std::string>(&game)->required(), "game")
+            ("abstraction", po::value<std::string>(&abstraction)->required(), "abstraction")
+            ("log-file", po::value<std::string>(&log_file), "log file")
             ;
 
         po::options_description holdem_options("holdem options");
@@ -73,15 +91,24 @@ int main(int argc, char* argv[])
 
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, desc), vm);
-        po::notify(vm);
 
-        if (vm.empty() || vm.count("help"))
+        if (vm.count("help"))
         {
             std::cout << desc << "\n";
             return 1;
         }
 
-        std::cout << "Generating abstraction: " << abstraction << "\n";
+        po::notify(vm);
+
+        if (!log_file.empty())
+        {
+            log::add_file_log
+            (
+                log::keywords::file_name = log_file,
+                log::keywords::auto_flush = true,
+                log::keywords::format = log_format
+            );
+        }
 
         if (game == "holdem")
         {
@@ -92,7 +119,7 @@ int main(int argc, char* argv[])
 
             if (!std::regex_match(abstraction, m, r))
             {
-                std::cout << "Invalid abstraction\n";
+                BOOST_LOG_TRIVIAL(error) << "Invalid abstraction";
                 return 1;
             }
 
@@ -106,7 +133,7 @@ int main(int argc, char* argv[])
 
             const auto abs = holdem_abstraction(cfgs, kmeans_max_iterations);
             const std::string abstraction_file = abstraction + ".abs";
-            std::cout << "Saving abstraction to: " << abstraction_file << "\n";
+            BOOST_LOG_TRIVIAL(info) << "Saving abstraction to: " << abstraction_file;
             std::ofstream f(abstraction_file, std::ios::binary);
             abs.save(f);
         }
@@ -115,12 +142,11 @@ int main(int argc, char* argv[])
             const std::string abstraction_file = abstraction + ".abs";
             holdem_abstraction_v2 abs;
             abs.generate(abstraction, kmeans_max_iterations, kmeans_tolerance, kmeans_runs);
-            std::cout << "Saving abstraction to: " << abstraction_file << "\n";
             abs.write(abstraction_file);
         }
         else
         {
-            std::cerr << "Invalid game\n";
+            BOOST_LOG_TRIVIAL(error) << "Invalid game";
             return 1;
         }
 
@@ -128,7 +154,7 @@ int main(int argc, char* argv[])
     }
     catch (const std::exception& e)
     {
-        std::cerr << e.what();
+        BOOST_LOG_TRIVIAL(error) << e.what();
         return 1;
     }
 }

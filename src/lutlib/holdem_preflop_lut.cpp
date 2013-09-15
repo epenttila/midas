@@ -1,8 +1,11 @@
 #include "holdem_preflop_lut.h"
+#pragma warning(push, 1)
 #include <bitset>
 #include <omp.h>
 #include <iostream>
 #include <boost/format.hpp>
+#include <boost/log/trivial.hpp>
+#pragma warning(pop)
 #include "evallib/holdem_evaluator.h"
 #include "util/card.h"
 
@@ -55,6 +58,8 @@ holdem_preflop_lut::holdem_preflop_lut()
 
 holdem_preflop_lut::holdem_preflop_lut(std::istream&& is)
 {
+    BOOST_LOG_TRIVIAL(info) << "Loading preflop lut from TODO";
+
     if (!is)
         throw std::runtime_error("bad istream");
 

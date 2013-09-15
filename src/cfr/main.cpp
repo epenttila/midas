@@ -1,12 +1,17 @@
 #ifdef _MSC_VER
 #pragma warning(push, 3)
 #endif
-#include <boost/program_options.hpp>
 #include <iostream>
 #include <fstream>
+#include <regex>
+#include <boost/program_options.hpp>
 #include <boost/format.hpp>
 #include <boost/date_time.hpp>
-#include <regex>
+#include <boost/log/trivial.hpp>
+#include <boost/log/utility/setup/file.hpp>
+#include <boost/log/utility/setup/console.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+#include <boost/algorithm/string.hpp>
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
@@ -68,6 +73,18 @@ int main(int argc, char* argv[])
 {
     try
     {
+        namespace log = boost::log;
+
+        log::add_common_attributes();
+
+        static const char* log_format = "[%TimeStamp%] %Message%";
+
+        log::add_console_log
+        (
+            std::clog,
+            log::keywords::format = log_format
+        );
+
         namespace po = boost::program_options;
 
         std::string state_file;
@@ -77,8 +94,9 @@ int main(int argc, char* argv[])
         std::string abstraction;
         std::string variant;
         std::string debug_file;
-        int threads = omp_get_max_threads();
-        std::int64_t seed = std::random_device()();
+        int threads;
+        std::int64_t seed;
+        std::string log_file;
 
         po::options_description desc("Options");
         desc.add_options()
@@ -90,19 +108,15 @@ int main(int argc, char* argv[])
             ("state-file", po::value<std::string>(&state_file), "state file")
             ("variant", po::value<std::string>(&variant)->required(), "solver variant")
             ("debug-file", po::value<std::string>(&debug_file), "debug output file")
-            ("threads", po::value<int>(&threads), "number of threads")
-            ("seed", po::value<std::int64_t>(&seed), "initial random seed")
+            ("threads", po::value<int>(&threads)->default_value(omp_get_max_threads()), "number of threads")
+            ("seed", po::value<std::int64_t>(&seed)->default_value(std::random_device()()), "initial random seed")
+            ("log-file", po::value<std::string>(&log_file), "log file")
             ;
 
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, desc), vm);
 
-        if (vm.empty())
-        {
-            std::cerr << desc << "\n";
-            return 1;
-        }
-        else if (vm.count("help"))
+        if (vm.count("help"))
         {
             std::cout << desc << "\n";
             return 1;
@@ -110,11 +124,21 @@ int main(int argc, char* argv[])
 
         po::notify(vm);
 
+        if (!log_file.empty())
+        {
+            log::add_file_log
+            (
+                log::keywords::file_name = log_file,
+                log::keywords::auto_flush = true,
+                log::keywords::format = log_format
+            );
+        }
+
         std::unique_ptr<solver_base> solver;
 
-        std::cout << "Creating solver for game: " << game << "\n";
-        std::cout << "Using solver variant: " << variant << "\n";
-        std::cout << "Using abstraction: " << abstraction << "\n";
+        BOOST_LOG_TRIVIAL(info) << "Creating solver for game: " << game;
+        BOOST_LOG_TRIVIAL(info) << "Using solver variant: " << variant;
+        BOOST_LOG_TRIVIAL(info) << "Using abstraction: " << abstraction;
 
         std::regex nlhe_regex("nlhe\\.([a-z]+)\\.([0-9]+)");
         std::smatch match;
@@ -168,32 +192,30 @@ int main(int argc, char* argv[])
 
         if (!solver)
         {
-            std::cout << "Unknown game\n";
+            BOOST_LOG_TRIVIAL(error) << "Unknown game";
             return 1;
         }
 
-        const auto bucket_counts = solver->get_bucket_counts();
-        std::cout << "Buckets per round: ";
+        std::string s;
+
+        for (auto i : solver->get_bucket_counts())
+            s += (s.empty() ? "" : ", " ) + std::to_string(i);
+
+        BOOST_LOG_TRIVIAL(info) << "Buckets per round: " << s;
+
+        s.clear();
+
+        for (auto i : solver->get_state_counts())
+            s += (s.empty() ? "" : ", " ) + std::to_string(i);
+
+        BOOST_LOG_TRIVIAL(info) << "States per round: " << s;
         
-        for (auto i = bucket_counts.begin(); i != bucket_counts.end(); ++i)
-            std::cout << (i != bucket_counts.begin() ? ", " : "") << *i;
-
-        std::cout << "\n";
-
-        const auto state_counts = solver->get_state_counts();
-        std::cout << "States per round: ";
-        
-        for (auto i = state_counts.begin(); i != state_counts.end(); ++i)
-            std::cout << (i != state_counts.begin() ? ", " : "") << *i;
-
-        std::cout << "\n";
-
-        std::cout << "Initializing storage: " << solver->get_required_memory() << " bytes\n";
+        BOOST_LOG_TRIVIAL(info) << "Initializing storage: " << solver->get_required_memory() << " bytes";
         solver->init_storage();
 
         if (!state_file.empty())
         {
-            std::cout << "Loading state from: " << state_file << "\n";
+            BOOST_LOG_TRIVIAL(info) << "Loading state from: " << state_file;
             solver->load_state(state_file);
         }
 
@@ -205,27 +227,27 @@ int main(int argc, char* argv[])
             const double ips = d.total_milliseconds() > 0 ? i / double(d.total_milliseconds()) * 1000.0 : 0;
             const auto eta = seconds(ips > 0 ? int((iterations - i) / ips) : 0);
             const double pct = double(i) / iterations * 100.0;
-            std::cout << boost::format("%d/%d (%.1f%%) ips: %.1f elapsed: %s eta: %s\n")
+            BOOST_LOG_TRIVIAL(info) << boost::format("%d/%d (%.1f%%) ips: %.1f elapsed: %s eta: %s")
                 % i % iterations % pct % ips % to_simple_string(d) % to_simple_string(eta);
         });
 
-        std::cout << "Using random seed: " << seed << "\n";
-        std::cout << "Using threads: " << threads << "\n";
-        std::cout << "Solving for " << iterations << " iterations\n";
+        BOOST_LOG_TRIVIAL(info) << "Using random seed: " << seed;
+        BOOST_LOG_TRIVIAL(info) << "Using threads: " << threads;
+        BOOST_LOG_TRIVIAL(info) << "Solving for " << iterations;
         solver->solve(iterations, seed, threads);
 
-        std::cout << "Saving strategy to: " << strategy_file << "\n";
+        BOOST_LOG_TRIVIAL(info) << "Saving strategy to: " << strategy_file;
         solver->save_strategy(strategy_file);
 
         if (!state_file.empty())
         {
-            std::cout << "Saving state to: " << state_file << "\n";
+            BOOST_LOG_TRIVIAL(info) << "Saving state to: " << state_file;
             solver->save_state(state_file);
         }
 
         if (!debug_file.empty())
         {
-            std::cout << "Saving debug output to: " << debug_file << "\n";
+            BOOST_LOG_TRIVIAL(info) << "Saving debug output to: " << debug_file;
             std::ofstream f(debug_file);
             f << *solver;
         }
@@ -234,7 +256,7 @@ int main(int argc, char* argv[])
     }
     catch (const std::exception& e)
     {
-        std::cerr << e.what() << "\n";
+        BOOST_LOG_TRIVIAL(error) << e.what();
         return 1;
     }
 }

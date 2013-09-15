@@ -1,6 +1,10 @@
 #pragma once
+
+#pragma warning(push, 1)
 #include <random>
 #include <cassert>
+#include <boost/log/trivial.hpp>
+#pragma warning(pop)
 
 namespace detail
 {
@@ -75,6 +79,8 @@ public:
         const distance_t tolerance, init_type init, const int runs, std::vector<cluster_idx_t>* point_clusters_out,
         point_vector_t* cluster_centers_out)
     {
+        BOOST_LOG_TRIVIAL(info) << "Running k-means " << runs << " times";
+
         distance_t min_cost = std::numeric_limits<distance_t>::max();
         std::vector<cluster_idx_t> iteration_point_clusters;
         point_vector_t iteration_cluster_centers;
@@ -95,6 +101,8 @@ public:
             }
         }
 
+        BOOST_LOG_TRIVIAL(info) << "Best run: cost " << min_cost;
+
         return min_cost;
     }
 
@@ -102,6 +110,8 @@ public:
         const distance_t tolerance, init_type init, std::vector<cluster_idx_t>* point_clusters_out,
         point_vector_t* cluster_centers_out)
     {
+        BOOST_LOG_TRIVIAL(info) << "Calculating k-means";
+
         assert(cluster_count < points.size());
 
         auto& point_clusters = *point_clusters_out;
@@ -210,8 +220,13 @@ public:
 
             const auto norm_inertia = inertia / point_variance_mean;
 
+            BOOST_LOG_TRIVIAL(info) << "Iteration " << iters << " done: inertia " << norm_inertia;
+
             if (norm_inertia < tolerance)
+            {
+                BOOST_LOG_TRIVIAL(info) << "Converged with tolerance (" << norm_inertia << " < " << tolerance << ")";
                 break;
+            }
         }
 
         std::vector<distance_t> costs(points.size(), std::numeric_limits<distance_t>::max());
@@ -220,7 +235,11 @@ public:
         for (std::int64_t point = 0; point < static_cast<std::int64_t>(points.size()); ++point)
             update_cost(points[point], cluster_centers, 0, &costs[point], &point_clusters[point]);
 
-        return std::accumulate(costs.begin(), costs.end(), distance_t());
+        const auto cost = std::accumulate(costs.begin(), costs.end(), distance_t());
+
+        BOOST_LOG_TRIVIAL(info) << "K-means finished: cost " << cost;
+
+        return cost;
     }
 
 private:
@@ -244,6 +263,8 @@ private:
 
     static const point_vector_t init_random(const point_vector_t& points, const int cluster_count)
     {
+        BOOST_LOG_TRIVIAL(info) << "Performing random initialization";
+
         if (points.size() <= cluster_count)
             return points;
 
@@ -261,6 +282,8 @@ private:
     static const point_vector_t init_k_means_parallel(const point_vector_t& points, const int cluster_count,
         const std::size_t max_rounds, const double oversampling_factor)
     {
+        BOOST_LOG_TRIVIAL(info) << "Performing k-means|| initialization";
+
         if (points.size() <= cluster_count)
             return points;
 
@@ -347,6 +370,8 @@ private:
     static const point_vector_t init_k_means_pp(const point_vector_t& points, const cluster_idx_t cluster_count,
         const std::vector<std::size_t> weights = std::vector<std::size_t>())
     {
+        BOOST_LOG_TRIVIAL(info) << "Performing k-means++ initialization";
+
         if (points.size() <= cluster_count)
             return points;
 

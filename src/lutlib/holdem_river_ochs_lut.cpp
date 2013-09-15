@@ -1,9 +1,12 @@
 #include "holdem_river_ochs_lut.h"
+#pragma warning(push, 1)
 #include <omp.h>
 #include <iostream>
 #include <numeric>
 #include <boost/format.hpp>
 #include <boost/assign.hpp>
+#include <boost/log/trivial.hpp>
+#pragma warning(pop)
 #include "evallib/holdem_evaluator.h"
 #include "util/sort.h"
 #include "util/card.h"
@@ -103,6 +106,8 @@ holdem_river_ochs_lut::holdem_river_ochs_lut()
 holdem_river_ochs_lut::holdem_river_ochs_lut(std::istream&& is)
     : indexer_(create())
 {
+    BOOST_LOG_TRIVIAL(info) << "Loading river OCHS lut from TODO";
+
     data_.resize(indexer_->get_size(indexer_->get_rounds() - 1));
 
     if (!is)

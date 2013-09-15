@@ -1,9 +1,12 @@
 #include "holdem_abstraction_v2.h"
+#pragma warning(push, 1)
 #include <fstream>
 #include <omp.h>
 #include <numeric>
 #include <regex>
 #include <boost/assign/list_of.hpp>
+#include <boost/log/trivial.hpp>
+#pragma warning(pop)
 #include "util/k_means.h"
 #include "util/binary_io.h"
 #include "lutlib/hand_indexer.h"
@@ -17,6 +20,8 @@ namespace
     std::vector<bucket_idx_t> create_preflop_buckets(const hand_indexer& indexer, const holdem_river_lut& river_lut,
         int cluster_count, int kmeans_max_iterations, float tolerance, int runs)
     {
+        BOOST_LOG_TRIVIAL(info) << "Creating preflop buckets";
+
         typedef std::array<float, Dimensions> point_t;
         std::vector<point_t> data_points(indexer.get_size(indexer.get_rounds() - 1));
 
@@ -85,6 +90,8 @@ namespace
     std::vector<bucket_idx_t> create_flop_buckets(const hand_indexer& indexer, const holdem_river_lut& river_lut,
         int cluster_count, int kmeans_max_iterations, float tolerance, int runs)
     {
+        BOOST_LOG_TRIVIAL(info) << "Creating flop buckets";
+
         typedef std::array<float, Dimensions> point_t;
         std::vector<point_t> data_points(indexer.get_size(indexer.get_rounds() - 1));
 
@@ -138,6 +145,8 @@ namespace
     std::vector<bucket_idx_t> create_turn_buckets(const hand_indexer& indexer, const holdem_river_lut& river_lut,
         int cluster_count, int kmeans_max_iterations, float tolerance, int runs)
     {
+        BOOST_LOG_TRIVIAL(info) << "Creating turn buckets";
+
         typedef std::array<float, Dimensions> point_t;
         std::vector<point_t> data_points(indexer.get_size(indexer.get_rounds() - 1));
 
@@ -186,6 +195,8 @@ namespace
     std::vector<bucket_idx_t> create_river_buckets(const holdem_river_ochs_lut& river_lut, int cluster_count,
         int kmeans_max_iterations, float tolerance, int runs)
     {
+        BOOST_LOG_TRIVIAL(info) << "Creating river buckets";
+
         typedef std::array<float, Dimensions> point_t;
 
         std::vector<bucket_idx_t> buckets;
@@ -311,10 +322,12 @@ int holdem_abstraction_v2::get_bucket(int c0, int c1, int b0, int b1, int b2, in
 
 void holdem_abstraction_v2::write(const std::string& filename) const
 {
+    BOOST_LOG_TRIVIAL(info) << "Saving abstraction: " << filename;
+
     std::ofstream os(filename, std::ios::binary);
 
     if (!os)
-        throw std::runtime_error("unable to open file");
+        throw std::runtime_error("Unable to open file");
 
     binary_write(os, imperfect_recall_);
     binary_write(os, preflop_buckets_);
@@ -325,12 +338,14 @@ void holdem_abstraction_v2::write(const std::string& filename) const
 
 void holdem_abstraction_v2::read(const std::string& filename)
 {
+    BOOST_LOG_TRIVIAL(info) << "Reading abstraction: " << filename;
+
     parse_configuration(filename);
 
     std::ifstream is(filename, std::ios::binary);
 
     if (!is)
-        throw std::runtime_error("unable to open file");
+        throw std::runtime_error("Unable to open file");
 
     binary_read(is, imperfect_recall_);
     binary_read(is, preflop_buckets_);
@@ -342,6 +357,8 @@ void holdem_abstraction_v2::read(const std::string& filename)
 void holdem_abstraction_v2::generate(const std::string& configuration, const int kmeans_max_iterations, float tolerance,
     int runs)
 {
+    BOOST_LOG_TRIVIAL(info) << "Generating abstraction: " << configuration;
+
     parse_configuration(configuration);
 
     std::unique_ptr<holdem_river_lut> river_lut(new holdem_river_lut(std::ifstream("holdem_river_lut.dat",
@@ -365,7 +382,7 @@ void holdem_abstraction_v2::parse_configuration(const std::string& configuration
     std::smatch m;
 
     if (!std::regex_match(configuration, m, r))
-        throw std::runtime_error("invalid abstraction configuration");
+        throw std::runtime_error("Invalid abstraction configuration");
 
     imperfect_recall_ = m[1] == "ir" ? true : false;
     bucket_counts_[PREFLOP] = std::stoi(m[2]);

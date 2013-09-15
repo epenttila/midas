@@ -1,17 +1,21 @@
 #ifdef _MSC_VER
 #pragma warning(push, 3)
 #endif
-#include <boost/program_options.hpp>
 #include <iostream>
 #include <fstream>
-#include <boost/format.hpp>
-#include <boost/date_time.hpp>
 #include <regex>
 #include <numeric>
-#include <boost/filesystem.hpp>
 #include <cstdint>
+#include <boost/program_options.hpp>
+#include <boost/format.hpp>
+#include <boost/date_time.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/algorithm/clamp.hpp>
 #include <boost/timer/timer.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/utility/setup/file.hpp>
+#include <boost/log/utility/setup/console.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
@@ -59,14 +63,27 @@ int main(int argc, char* argv[])
 {
     try
     {
+        namespace log = boost::log;
+
+        log::add_common_attributes();
+
+        static const char* log_format = "[%TimeStamp%] %Message%";
+
+        log::add_console_log
+        (
+            std::clog,
+            log::keywords::format = log_format
+        );
+
         namespace po = boost::program_options;
 
         std::string game;
         std::array<std::string, 2> strategy_file;
         std::size_t iterations;
-        int seed = std::random_device()();
+        int seed;
         std::string history_file;
         std::string plot_file;
+        std::string log_file;
 
         po::options_description desc("Options");
         desc.add_options()
@@ -75,20 +92,16 @@ int main(int argc, char* argv[])
             ("strategy1-file", po::value<std::string>(&strategy_file[0])->required(), "strategy for player 1")
             ("strategy2-file", po::value<std::string>(&strategy_file[1])->required(), "strategy for player 2")
             ("iterations", po::value<std::size_t>(&iterations)->required(), "number of iterations")
-            ("seed", po::value<int>(&seed), "rng seed")
+            ("seed", po::value<int>(&seed)->default_value(std::random_device()()), "rng seed")
             ("history-file", po::value<std::string>(&history_file), "hand history file name")
             ("plot-file", po::value<std::string>(&plot_file), "plotting data file name")
+            ("log-file", po::value<std::string>(&log_file), "log file")
             ;
 
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, desc), vm);
 
-        if (vm.empty())
-        {
-            std::cerr << desc << "\n";
-            return 1;
-        }
-        else if (vm.count("help"))
+        if (vm.count("help"))
         {
             std::cout << desc << "\n";
             return 1;
@@ -96,14 +109,22 @@ int main(int argc, char* argv[])
 
         po::notify(vm);
 
+        if (!log_file.empty())
+        {
+            log::add_file_log
+            (
+                log::keywords::file_name = log_file,
+                log::keywords::auto_flush = true,
+                log::keywords::format = log_format
+            );
+        }
+
         int bankroll = 0;
 
         std::ofstream plot_stream;
 
         if (!plot_file.empty())
             plot_stream.open(plot_file);
-
-        boost::timer::auto_cpu_timer t;
 
         std::regex nlhe_regex("nlhe\\.([0-9]+)");
         std::smatch match;
@@ -123,11 +144,11 @@ int main(int argc, char* argv[])
             for (std::int64_t i = 0; i < std::int64_t(iterations); ++i)
             {
                 if (i > 0 && i % 1000 == 0)
-                    std::cerr << "Game #" << i << ": " << (g.get_bankroll() / 2.0 / i * 1000.0) << "\n";
+                    BOOST_LOG_TRIVIAL(info) << "Game #" << i << ": " << (g.get_bankroll() / 2.0 / i * 1000.0);
 
                 if (i == std::int64_t(iterations / 2))
                 {
-                    std::cerr << "Resetting seed at game #" << i << "\n";
+                    BOOST_LOG_TRIVIAL(info) << "Resetting seed at game #" << i;
                     g.set_seed(seed);
                     g.set_dealer(1);
                 }
@@ -141,19 +162,19 @@ int main(int argc, char* argv[])
         }
         else
         {
-            std::cerr << "Unknown game\n";
+            BOOST_LOG_TRIVIAL(error) << "Unknown game";
             return 1;
         }
 
         double performance = (bankroll / 2.0 / iterations * 1000.0);
-        std::clog << "\"" << strategy_file[0] << "\": " << performance << " mb/h\n";
-        std::clog << "\"" << strategy_file[1] << "\": " << -performance << " mb/h\n";
+        BOOST_LOG_TRIVIAL(info) << "\"" << strategy_file[0] << "\": " << performance << " mb/h";
+        BOOST_LOG_TRIVIAL(info) << "\"" << strategy_file[1] << "\": " << -performance << " mb/h";
 
         return 0;
     }
     catch (const std::exception& e)
     {
-        std::cerr << e.what() << "\n";
+        BOOST_LOG_TRIVIAL(error) << e.what();
         return 1;
     }
 }

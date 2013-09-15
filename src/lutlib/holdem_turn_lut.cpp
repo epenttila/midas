@@ -1,7 +1,10 @@
 #include "holdem_turn_lut.h"
+#pragma warning(push, 1)
 #include <omp.h>
 #include <iostream>
 #include <boost/format.hpp>
+#include <boost/log/trivial.hpp>
+#pragma warning(pop)
 #include "evallib/holdem_evaluator.h"
 #include "util/sort.h"
 #include "util/card.h"
@@ -90,6 +93,8 @@ holdem_turn_lut::holdem_turn_lut()
 
 holdem_turn_lut::holdem_turn_lut(std::istream&& is)
 {
+    BOOST_LOG_TRIVIAL(info) << "Loading turn lut from TODO";
+
     if (!is)
         throw std::runtime_error("bad istream");
 
