@@ -187,7 +187,14 @@ void main_window::timer_timeout()
     }
 
     find_window();
-    process_snapshot();
+
+    try
+    {
+        process_snapshot();
+    }
+    catch (const std::runtime_error&)
+    {
+    }
 }
 
 void main_window::open_strategy()
@@ -833,6 +840,8 @@ void main_window::verify(bool expression, const std::string& s, int line)
     assert(false);
     log(QString("Error: verification on line %1 failed (%2)").arg(line).arg(s.c_str()));
     window_manager_->stop();
+
+    throw std::runtime_error(s.c_str());
 }
 
 void main_window::lobby_title_changed(const QString& str)
