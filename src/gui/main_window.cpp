@@ -301,6 +301,7 @@ void main_window::play_changed(const bool checked)
         log("Stopping autoplay");
         play_timer_->stop();
         lobby_timer_->stop();
+        acting_ = false;
     }
 }
 
