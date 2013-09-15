@@ -69,7 +69,7 @@ private:
     void process_snapshot();
     void perform_action();
     void log(const QString& s);
-    bool winEvent(MSG* message, long* result);
+    bool nativeEvent(const QByteArray& eventType, void* message, long* result);
     void update_strategy_widget(const strategy_info& si);
     void verify(bool expression, const std::string& s, int line);
 

@@ -713,9 +713,9 @@ void main_window::log(const QString& s)
     logfile_ << message.toUtf8().data() << std::endl;
 }
 
-bool main_window::winEvent(MSG* message, long*)
+bool main_window::nativeEvent(const QByteArray& /*eventType*/, void* message, long* /*result*/)
 {
-    if (message->message == WM_HOTKEY)
+    if (reinterpret_cast<MSG*>(message)->message == WM_HOTKEY)
     {
         play_action_->trigger();
         return true;
