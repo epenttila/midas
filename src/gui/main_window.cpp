@@ -249,6 +249,8 @@ void main_window::capture_changed(const bool checked)
 {
     if (checked)
     {
+        log("Starting capture");
+
         timer_->start(int(capture_interval_ * 1000.0));
         window_manager_->set_title_filter(std::string(title_filter_->text().toUtf8().data()));
 
@@ -257,6 +259,8 @@ void main_window::capture_changed(const bool checked)
     }
     else
     {
+        log("Stopping capture");
+
         timer_->stop();
         window_manager_->clear_window();
         play_action_->setChecked(false);
@@ -287,12 +291,14 @@ void main_window::play_changed(const bool checked)
 
     if (play_)
     {
+        log("Starting autoplay");
         capture_action_->setChecked(true);
         lobby_timer_->start(int(lobby_interval_ * 1000.0));
     }
 
     if (!play_)
     {
+        log("Stopping autoplay");
         play_timer_->stop();
         lobby_timer_->stop();
     }
@@ -604,7 +610,7 @@ void main_window::perform_action()
     const int index = site_->is_opponent_sitout() ? nlhe_state_base::CALL + 1
         : strategy->get_strategy().get_action(current_state->get_id(), bucket);
     const int action = current_state->get_action(index);
-    std::string s = "n/a";
+    QString s = "n/a";
 
     switch (action)
     {
@@ -634,12 +640,12 @@ void main_window::perform_action()
     default:
         next_action_ = table_manager::RAISE;
         raise_fraction_ = current_state->get_raise_factor(action);
-        s = (boost::format("RAISE %1x pot") % raise_fraction_).str();
+        s = QString("RAISE %1x pot").arg(raise_fraction_);
         break;
     }
 
     const double probability = strategy->get_strategy().get(current_state->get_id(), index, bucket);
-    log(QString("Strategy: %1 (%2)").arg(s.c_str()).arg(probability));
+    log(QString("Strategy: %1 (%2)").arg(s).arg(probability));
 
     current_state = current_state->get_child(index);
 
@@ -656,7 +662,7 @@ void main_window::perform_action()
     }
     else
     {
-        log(QString("Player: Waiting for %1 seconds to continue...").arg(action_max_delay_));
+        log(QString("Player: Manual play: waiting %1 seconds for user action...").arg(action_max_delay_));
         QTimer::singleShot(int(action_max_delay_ * 1000.0), this, SLOT(play_done_timeout()));
     }
 }
