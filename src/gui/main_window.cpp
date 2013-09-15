@@ -459,7 +459,7 @@ void main_window::process_snapshot()
         else
         {
             if (site_->is_opponent_sitout())
-                stacks[1] = 9999; // can't see stack due to sitout, assume worst case
+                stacks[1] = ALLIN_BET_SIZE; // can't see stack due to sitout, assume worst case
             else if (site_->is_opponent_allin())
                 stacks[1] = site_->get_bet(1); // opponent stack equals his bet
         }
@@ -529,7 +529,7 @@ void main_window::process_snapshot()
         || (current_state->get_round() > PREFLOP && (site_->get_bet(1) > 0)))
     {
         // make sure opponent allin is always terminal on his part and doesnt get translated to something else
-        const double fraction = site_->is_opponent_allin() ? 999.0 : (site_->get_bet(1) - site_->get_bet(0))
+        const double fraction = site_->is_opponent_allin() ? ALLIN_BET_SIZE : (site_->get_bet(1) - site_->get_bet(0))
             / (site_->get_total_pot() - (site_->get_bet(1) - site_->get_bet(0)));
         INTERNAL_VERIFY(fraction > 0);
         log(QString("State: Opponent raised %1x pot").arg(fraction));
@@ -628,7 +628,7 @@ void main_window::perform_action()
             if (prev_action == nlhe_state_base::RAISE_A)
             {
                 next_action_ = table_manager::RAISE;
-                raise_fraction_ = 999.0;
+                raise_fraction_ = ALLIN_BET_SIZE;
             }
             else
             {

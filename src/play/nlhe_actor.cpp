@@ -40,7 +40,7 @@ void nlhe_actor::act(nlhe_game& g)
         break;
     case nlhe_state_base::CALL:
         if (prev_action == nlhe_state_base::RAISE_A)
-            g.raise(99999);
+            g.raise(ALLIN_BET_SIZE);
         else
             g.call();
         break;
@@ -60,7 +60,7 @@ void nlhe_actor::act(nlhe_game& g)
             case nlhe_state_base::RAISE_D: factor = 2.0; break;
             case nlhe_state_base::RAISE_T: factor = 10.0; break;
             case nlhe_state_base::RAISE_E: factor = 11.0; break;
-            case nlhe_state_base::RAISE_A: factor = 99999.0; break;
+            case nlhe_state_base::RAISE_A: factor = ALLIN_BET_SIZE; break;
             default: assert(false); factor = 1.0;
             }
 

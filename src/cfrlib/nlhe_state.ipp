@@ -371,7 +371,7 @@ double nlhe_state<BITMASK>::get_raise_factor(const int action) const
     case RAISE_D: return 2.0;
     case RAISE_T: return 10.0;
     case RAISE_E: return 11.0;
-    case RAISE_A: return 99999.0;
+    case RAISE_A: return ALLIN_BET_SIZE;
     default: assert(false); return 1.0;
     }
 }
