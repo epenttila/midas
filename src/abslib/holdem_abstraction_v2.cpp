@@ -6,6 +6,7 @@
 #include <regex>
 #include <boost/assign/list_of.hpp>
 #include <boost/log/trivial.hpp>
+#include <boost/filesystem.hpp>
 #pragma warning(pop)
 #include "util/k_means.h"
 #include "util/binary_io.h"
@@ -243,6 +244,24 @@ namespace
 
         return std::vector<bucket_idx_t>();
     }
+
+    void parse_configuration(const std::string& filename, bool* imperfect_recall,
+        holdem_abstraction_v2::bucket_counts_t* counts)
+    {
+        const auto configuration = boost::filesystem::path(filename).stem().string();
+
+        std::regex r("(pr|ir)-(\\d+)-(\\d+)-(\\d+)-(\\d+).*");
+        std::smatch m;
+
+        if (!std::regex_match(configuration, m, r))
+            throw std::runtime_error("Invalid abstraction configuration");
+
+        *imperfect_recall = m[1] == "ir" ? true : false;
+        (*counts)[PREFLOP] = std::stoi(m[2]);
+        (*counts)[FLOP] = std::stoi(m[3]);
+        (*counts)[TURN] = std::stoi(m[4]);
+        (*counts)[RIVER] = std::stoi(m[5]);
+    }
 }
 
 holdem_abstraction_v2::holdem_abstraction_v2()
@@ -340,7 +359,7 @@ void holdem_abstraction_v2::read(const std::string& filename)
 {
     BOOST_LOG_TRIVIAL(info) << "Reading abstraction: " << filename;
 
-    parse_configuration(filename);
+    parse_configuration(filename, &imperfect_recall_, &bucket_counts_);
 
     std::ifstream is(filename, std::ios::binary);
 
@@ -359,7 +378,7 @@ void holdem_abstraction_v2::generate(const std::string& configuration, const int
 {
     BOOST_LOG_TRIVIAL(info) << "Generating abstraction: " << configuration;
 
-    parse_configuration(configuration);
+    parse_configuration(configuration, &imperfect_recall_, &bucket_counts_);
 
     std::unique_ptr<holdem_river_lut> river_lut(new holdem_river_lut(std::ifstream("holdem_river_lut.dat",
         std::ios::binary)));
@@ -374,19 +393,4 @@ void holdem_abstraction_v2::generate(const std::string& configuration, const int
         kmeans_max_iterations, tolerance, runs);
     river_buckets_ = create_buckets(RIVER, *river_indexer_, *river_lut, *river_ochs_lut, bucket_counts_[RIVER],
         kmeans_max_iterations, tolerance, runs);
-}
-
-void holdem_abstraction_v2::parse_configuration(const std::string& configuration)
-{
-    std::regex r("(pr|ir)-(\\d+)-(\\d+)-(\\d+)-(\\d+).*");
-    std::smatch m;
-
-    if (!std::regex_match(configuration, m, r))
-        throw std::runtime_error("Invalid abstraction configuration");
-
-    imperfect_recall_ = m[1] == "ir" ? true : false;
-    bucket_counts_[PREFLOP] = std::stoi(m[2]);
-    bucket_counts_[FLOP] = std::stoi(m[3]);
-    bucket_counts_[TURN] = std::stoi(m[4]);
-    bucket_counts_[RIVER] = std::stoi(m[5]);
 }

@@ -9,6 +9,7 @@ set(abslib_SOURCES
     leduc_abstraction.h
     holdem_abstraction_v2.cpp
     holdem_abstraction_v2.h
+    holdem_abstraction_base.h
 )
 
 add_library(abslib ${abslib_SOURCES})

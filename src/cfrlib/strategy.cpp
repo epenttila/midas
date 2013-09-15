@@ -11,6 +11,9 @@ strategy::strategy(const std::string& filename, std::size_t states, int actions)
     , file_(fopen(filename.c_str(), "rb"), fclose)
     , filename_(filename)
 {
+    if (!file_)
+        throw std::runtime_error("Unable to open strategy file");
+
     _fseeki64(file_.get(), -std::int64_t(states) * sizeof(positions_[0]), SEEK_END);
     fread(&positions_[0], sizeof(positions_[0]), positions_.size(), file_.get());
 }

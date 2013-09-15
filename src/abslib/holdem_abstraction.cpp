@@ -6,6 +6,10 @@
 #include <numeric>
 #include <string>
 #include <unordered_map>
+#include <fstream>
+#include <regex>
+#include <boost/tokenizer.hpp>
+#include <boost/filesystem.hpp>
 #include "util/card.h"
 #include "lutlib/holdem_preflop_lut.h"
 #include "util/sort.h"
@@ -248,6 +252,49 @@ namespace
             kmeans_max_iterations, 1e-4, OPTIMAL, &c, &cc);
         return c;
     }
+
+    void parse_buckets(const std::string& s, int* hs2, int* pub, bool* forget_hs2, bool* forget_pub)
+    {
+        boost::tokenizer<boost::char_separator<char>> tok(s, boost::char_separator<char>("x"));
+
+        for (auto j = tok.begin(); j != tok.end(); ++j)
+        {
+            const bool forget = (j->at(j->size() - 1) == 'i');
+
+            if (j->at(0) == 'p')
+            {
+                *pub = std::atoi(j->substr(1).c_str());
+                *forget_pub = forget;
+            }
+            else
+            {
+                *hs2 = std::atoi(j->c_str());
+                *forget_hs2 = forget;
+            }
+        }
+    }
+
+    holdem_abstraction::bucket_cfg_type parse_configuration(const std::string& filename)
+    {
+        const auto abstraction = boost::filesystem::path(filename).stem().string();
+
+        std::smatch m;
+        std::regex r("([a-z0-9]+)-([a-z0-9]+)-([a-z0-9]+)-([a-z0-9]+).*");
+
+        if (!std::regex_match(abstraction, m, r))
+            throw std::runtime_error("Invalid abstraction configuration");
+
+        int round = 0;
+        holdem_abstraction::bucket_cfg_type cfgs;
+
+        for (auto i = m.begin() + 1; i != m.end(); ++i)
+        {
+            auto& cfg = cfgs[round++];
+            parse_buckets(*i, &cfg.hs2, &cfg.pub, &cfg.forget_hs2, &cfg.forget_pub);
+        }
+
+        return cfgs;
+    }
 }
 
 holdem_abstraction::bucket_cfg::bucket_cfg()
@@ -258,10 +305,19 @@ holdem_abstraction::bucket_cfg::bucket_cfg()
 {
 }
 
-holdem_abstraction::holdem_abstraction(const bucket_cfg_type& bucket_cfgs, int kmeans_max_iterations)
-    : bucket_cfgs_(bucket_cfgs)
+holdem_abstraction::holdem_abstraction()
 {
-    init();
+    evaluator_.reset(new evaluator);
+    preflop_lut_.reset(new holdem_preflop_lut(std::ifstream("holdem_preflop_lut.dat", std::ios::binary)));
+    flop_lut_.reset(new holdem_flop_lut(std::ifstream("holdem_flop_lut.dat", std::ios::binary)));
+    turn_lut_.reset(new holdem_turn_lut(std::ifstream("holdem_turn_lut.dat", std::ios::binary)));
+    river_lut_.reset(new holdem_river_lut(std::ifstream("holdem_river_lut.dat", std::ios::binary)));
+}
+
+void holdem_abstraction::generate(const std::string& configuration, const int kmeans_max_iterations,
+    float /*tolerance*/, int /*runs*/)
+{
+    bucket_cfgs_ = parse_configuration(configuration);
 
     preflop_ehs2_percentiles_.resize(bucket_cfgs_[PREFLOP].hs2);
     flop_ehs2_percentiles_.resize(bucket_cfgs_[FLOP].hs2);
@@ -294,21 +350,7 @@ holdem_abstraction::holdem_abstraction(const bucket_cfg_type& bucket_cfgs, int k
             bucket_cfgs_[TURN].pub);
     }
 }
-
-holdem_abstraction::holdem_abstraction(const std::string& filename)
-{
-    std::ifstream is(filename, std::ios::binary);
-
-    if (!is)
-        throw std::runtime_error("bad istream");
-
-    init();
-    load(is);
-
-    if (!is)
-        throw std::runtime_error("read failed");
-}
-
+    
 int holdem_abstraction::get_bucket_count(const int round) const
 {
     const int remember_preflop =
@@ -519,8 +561,15 @@ int holdem_abstraction::get_public_turn_bucket(int b0, int b1, int b2, int b3) c
     }
 }
 
-void holdem_abstraction::save(std::ostream& os) const
+void holdem_abstraction::write(const std::string& filename) const
 {
+    BOOST_LOG_TRIVIAL(info) << "Saving abstraction: " << filename;
+
+    std::ofstream os(filename, std::ios::binary);
+
+    if (!os)
+        throw std::runtime_error("Unable to open file");
+
     binary_write(os, bucket_cfgs_);
     binary_write(os, preflop_ehs2_percentiles_);
     binary_write(os, flop_ehs2_percentiles_);
@@ -530,8 +579,17 @@ void holdem_abstraction::save(std::ostream& os) const
     binary_write(os, public_turn_buckets_);
 }
 
-void holdem_abstraction::load(std::istream& is)
+void holdem_abstraction::read(const std::string& filename)
 {
+    BOOST_LOG_TRIVIAL(info) << "Reading abstraction: " << filename;
+
+    parse_configuration(filename);
+
+    std::ifstream is(filename, std::ios::binary);
+
+    if (!is)
+        throw std::runtime_error("Unable to open file");
+
     binary_read(is, bucket_cfgs_);
     binary_read(is, preflop_ehs2_percentiles_);
     binary_read(is, flop_ehs2_percentiles_);
@@ -539,13 +597,4 @@ void holdem_abstraction::load(std::istream& is)
     binary_read(is, river_ehs_percentiles_);
     binary_read(is, public_flop_buckets_);
     binary_read(is, public_turn_buckets_);
-}
-
-void holdem_abstraction::init()
-{
-    evaluator_.reset(new evaluator);
-    preflop_lut_.reset(new holdem_preflop_lut(std::ifstream("holdem_preflop_lut.dat", std::ios::binary)));
-    flop_lut_.reset(new holdem_flop_lut(std::ifstream("holdem_flop_lut.dat", std::ios::binary)));
-    turn_lut_.reset(new holdem_turn_lut(std::ifstream("holdem_turn_lut.dat", std::ios::binary)));
-    river_lut_.reset(new holdem_river_lut(std::ifstream("holdem_river_lut.dat", std::ios::binary)));
 }

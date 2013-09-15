@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
         if (!plot_file.empty())
             plot_stream.open(plot_file);
 
-        std::regex nlhe_regex("nlhe\\.([0-9]+)");
+        std::regex nlhe_regex("nlhe-([0-9]+)");
         std::smatch match;
 
         if (std::regex_match(game, match, nlhe_regex))

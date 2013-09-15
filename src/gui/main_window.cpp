@@ -259,7 +259,10 @@ void main_window::open_strategy()
         si->abstraction_ = abs_filename;
 
         if (!abstractions_.count(abs_filename))
-            abstractions_[abs_filename].reset(new holdem_abstraction(abs_filename));
+        {
+            abstractions_[abs_filename].reset(new holdem_abstraction);
+            abstractions_[abs_filename]->read(abs_filename);
+        }
 
         const std::string str_filename = i->toUtf8().data();
         si->strategy_.reset(new strategy(str_filename, states, si->root_state_->get_action_count()));

@@ -8,12 +8,11 @@
 #include "lutlib/hand_indexer.h"
 #include "lutlib/holdem_river_ochs_lut.h"
 #include "util/game.h"
+#include "holdem_abstraction_base.h"
 
-class holdem_abstraction_v2
+class holdem_abstraction_v2 : public holdem_abstraction_base
 {
 public:
-    typedef std::int32_t bucket_idx_t;
-    typedef std::array<bucket_idx_t, 4> bucket_type;
     typedef holdem_evaluator evaluator;
 
     static const int ROUNDS = RIVER + 1;
@@ -33,9 +32,6 @@ public:
     void generate(const std::string& configuration, const int kmeans_max_iterations, float tolerance, int runs);
 
 private:
-    void init();
-    void parse_configuration(const std::string& configuration);
-
     int get_preflop_bucket(int c0, int c1) const;
     int get_private_flop_bucket(int c0, int c1, int b0, int b1, int b2) const;
     int get_private_turn_bucket(int c0, int c1, int b0, int b1, int b2, int b3) const;

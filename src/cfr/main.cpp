@@ -48,23 +48,25 @@ namespace
     }
 
     template<int BITMASK>
-    std::unique_ptr<solver_base> create_nlhe_solver(const std::string& variant, const int stack_size, const std::string& abstraction)
+    std::unique_ptr<solver_base> create_nlhe_solver(const std::string& variant, const int stack_size, const std::string& filename)
     {
         typedef nlhe_state<BITMASK> state_type;
         std::unique_ptr<state_type> state(new state_type(stack_size));
+        const auto abs_config = boost::filesystem::path(filename).stem().string();
 
-        if (abstraction.substr(0, 2) == "pr" || abstraction.substr(0, 2) == "ir")
+        if (abs_config.substr(0, 2) == "pr" || abs_config.substr(0, 2) == "ir")
         {
             typedef holdem_abstraction_v2 abstraction_t;
             std::unique_ptr<abstraction_t> abs(new abstraction_t);
-            abs->read(abstraction);
+            abs->read(filename);
             return create_solver<holdem_game<abstraction_t>>(variant, std::move(state), std::move(abs));
         }
         else
         {
             typedef holdem_abstraction abstraction_t;
-            return create_solver<holdem_game<abstraction_t>>(variant, std::move(state),
-                std::unique_ptr<abstraction_t>(new abstraction_t(abstraction)));
+            std::unique_ptr<abstraction_t> abs(new abstraction_t);
+            abs->read(filename);
+            return create_solver<holdem_game<abstraction_t>>(variant, std::move(state), std::move(abs));
         }
     }
 }
@@ -140,7 +142,7 @@ int main(int argc, char* argv[])
         BOOST_LOG_TRIVIAL(info) << "Using solver variant: " << variant;
         BOOST_LOG_TRIVIAL(info) << "Using abstraction: " << abstraction;
 
-        std::regex nlhe_regex("nlhe\\.([a-z]+)\\.([0-9]+)");
+        std::regex nlhe_regex("nlhe-([a-z]+)-([0-9]+)");
         std::smatch match;
 
         if (game == "kuhn")
@@ -163,7 +165,8 @@ int main(int argc, char* argv[])
         else if (game == "holdem")
         {
             std::unique_ptr<flhe_state> state(new flhe_state());
-            std::unique_ptr<holdem_abstraction> abs(new holdem_abstraction(abstraction));
+            std::unique_ptr<holdem_abstraction> abs(new holdem_abstraction);
+            abs->read(abstraction);
 
             solver = create_solver<holdem_game<holdem_abstraction>>(variant, std::move(state), std::move(abs));
         }
