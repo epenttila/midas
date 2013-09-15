@@ -47,6 +47,7 @@ public:
     virtual void print(std::ostream& os) const = 0;
     virtual int get_action() const = 0;
     virtual int get_player() const = 0;
+    virtual double get_raise_factor(int action) const = 0;
 };
 
 template<int BITMASK>
@@ -73,6 +74,7 @@ public:
     std::array<int, 2> get_pot() const;
     int get_action_count() const;
     int get_action(int index) const;
+    double get_raise_factor(int action) const;
 
 private:
     nlhe_state(const nlhe_state* parent, const int action_index, const int player,

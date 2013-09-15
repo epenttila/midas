@@ -311,34 +311,6 @@ void holdem_abstraction_v2::get_buckets(const int c0, const int c1, const int b0
     (*buckets)[RIVER] = river_buckets_[river_indexer_->hand_index_last(cards.data())];
 }
 
-int holdem_abstraction_v2::get_bucket(int c0, int c1) const
-{
-    bucket_type buckets;
-    get_buckets(c0, c1, -1, -1, -1, -1, -1, &buckets);
-    return buckets[PREFLOP];
-}
-
-int holdem_abstraction_v2::get_bucket(int c0, int c1, int b0, int b1, int b2) const
-{
-    bucket_type buckets;
-    get_buckets(c0, c1, b0, b1, b2, -1, -1, &buckets);
-    return buckets[FLOP];
-}
-
-int holdem_abstraction_v2::get_bucket(int c0, int c1, int b0, int b1, int b2, int b3) const
-{
-    bucket_type buckets;
-    get_buckets(c0, c1, b0, b1, b2, b3, -1, &buckets);
-    return buckets[TURN];
-}
-
-int holdem_abstraction_v2::get_bucket(int c0, int c1, int b0, int b1, int b2, int b3, int b4) const
-{
-    bucket_type buckets;
-    get_buckets(c0, c1, b0, b1, b2, b3, b4, &buckets);
-    return buckets[RIVER];
-}
-
 void holdem_abstraction_v2::write(const std::string& filename) const
 {
     BOOST_LOG_TRIVIAL(info) << "Saving abstraction: " << filename;

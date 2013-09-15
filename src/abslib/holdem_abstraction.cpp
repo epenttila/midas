@@ -464,34 +464,6 @@ void holdem_abstraction::get_buckets(const int c0, const int c1, const int b0, c
         turn_pub, turn_pub_size, river_hs, river_hs_size);
 }
 
-int holdem_abstraction::get_bucket(int c0, int c1) const
-{
-    bucket_type buckets;
-    get_buckets(c0, c1, -1, -1, -1, -1, -1, &buckets);
-    return buckets[PREFLOP];
-}
-
-int holdem_abstraction::get_bucket(int c0, int c1, int b0, int b1, int b2) const
-{
-    bucket_type buckets;
-    get_buckets(c0, c1, b0, b1, b2, -1, -1, &buckets);
-    return buckets[FLOP];
-}
-
-int holdem_abstraction::get_bucket(int c0, int c1, int b0, int b1, int b2, int b3) const
-{
-    bucket_type buckets;
-    get_buckets(c0, c1, b0, b1, b2, b3, -1, &buckets);
-    return buckets[TURN];
-}
-
-int holdem_abstraction::get_bucket(int c0, int c1, int b0, int b1, int b2, int b3, int b4) const
-{
-    bucket_type buckets;
-    get_buckets(c0, c1, b0, b1, b2, b3, b4, &buckets);
-    return buckets[RIVER];
-}
-
 int holdem_abstraction::get_preflop_bucket(const int c0, const int c1) const
 {
     if (bucket_cfgs_[PREFLOP].hs2 == 1)

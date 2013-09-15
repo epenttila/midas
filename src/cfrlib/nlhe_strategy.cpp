@@ -30,18 +30,18 @@ nlhe_strategy::nlhe_strategy(const std::string& filepath)
 
     BOOST_LOG_TRIVIAL(info) << "Actions: " << actions;
 
-    const auto stack_size = std::atoi(m_nlhe[2].str().c_str());
+    stack_size_ = std::atoi(m_nlhe[2].str().c_str());
 
-    BOOST_LOG_TRIVIAL(info) << "Stack size: " << stack_size;
+    BOOST_LOG_TRIVIAL(info) << "Stack size: " << stack_size_;
 
     if (actions == "fchpa")
-        root_state_.reset(new nlhe_state<F_MASK | C_MASK | H_MASK | P_MASK | A_MASK>(stack_size));
+        root_state_.reset(new nlhe_state<F_MASK | C_MASK | H_MASK | P_MASK | A_MASK>(stack_size_));
     else if (actions == "fchqpa")
-        root_state_.reset(new nlhe_state<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | A_MASK>(stack_size));
+        root_state_.reset(new nlhe_state<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | A_MASK>(stack_size_));
     else if (actions == "fchqpwdta")
     {
         root_state_.reset(new nlhe_state<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | W_MASK | D_MASK | T_MASK
-            | A_MASK>(stack_size));
+            | A_MASK>(stack_size_));
     }
     else
         throw std::runtime_error("Unknown action abstraction");
@@ -91,4 +91,9 @@ const nlhe_state_base& nlhe_strategy::get_root_state() const
 const strategy& nlhe_strategy::get_strategy() const
 {
     return *strategy_;
+}
+
+int nlhe_strategy::get_stack_size() const
+{
+    return stack_size_;
 }

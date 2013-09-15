@@ -21,10 +21,6 @@ public:
 
     holdem_abstraction_v2();
     void get_buckets(int c0, int c1, int b0, int b1, int b2, int b3, int b4, bucket_type* buckets) const;
-    int get_bucket(int c0, int c1) const;
-    int get_bucket(int c0, int c1, int b0, int b1, int b2) const;
-    int get_bucket(int c0, int c1, int b0, int b1, int b2, int b3) const;
-    int get_bucket(int c0, int c1, int b0, int b1, int b2, int b3, int b4) const;
     std::size_t get_bucket_count(int round) const;
 
     void write(const std::string& filename) const;

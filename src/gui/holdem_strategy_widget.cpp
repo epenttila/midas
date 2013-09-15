@@ -8,7 +8,8 @@
 #pragma warning(pop)
 
 #include "cfrlib/strategy.h"
-#include "abslib/holdem_abstraction.h"
+#include "abslib/holdem_abstraction_base.h"
+#include "util/game.h"
 
 namespace
 {
@@ -76,7 +77,7 @@ void holdem_strategy_widget::paintEvent(QPaintEvent*)
     }
 }
 
-void holdem_strategy_widget::update(const holdem_abstraction& abs, const std::array<int, 2>& hole,
+void holdem_strategy_widget::update(const holdem_abstraction_base& abs, const std::array<int, 2>& hole,
     const std::array<int, 5>& board, const strategy& strategy, std::size_t state_id, const int actions)
 {
     hole_ = hole;
@@ -96,14 +97,17 @@ void holdem_strategy_widget::update(const holdem_abstraction& abs, const std::ar
 
             int bucket = -1;
 
+            holdem_abstraction_base::bucket_type buckets;
+            abs.get_buckets(i, j, board[0], board[1], board[2], board[3], board[4], &buckets);
+
             if (board[4] != -1)
-                bucket = abs.get_bucket(i, j, board[0], board[1], board[2], board[3], board[4]);
+                bucket = buckets[RIVER];
             else if (board[3] != -1)
-                bucket = abs.get_bucket(i, j, board[0], board[1], board[2], board[3]);
+                bucket = buckets[TURN];
             else if (board[2] != -1)
-                bucket = abs.get_bucket(i, j, board[0], board[1], board[2]);
+                bucket = buckets[FLOP];
             else
-                bucket = abs.get_bucket(i, j);
+                bucket = buckets[PREFLOP];
 
             double fold_p = 0;
             double call_p = 0;

@@ -355,22 +355,25 @@ int nlhe_state<BITMASK>::get_max_action() const
 template<int BITMASK>
 int nlhe_state<BITMASK>::get_new_player_pot(const int player_pot, const int to_call, const int in_pot, const int action) const
 {
-    double factor;
+    const auto factor = get_raise_factor(action);
+    return std::min(player_pot + int(to_call + (2 * to_call + in_pot) * factor), stack_size_);
+}
 
+template<int BITMASK>
+double nlhe_state<BITMASK>::get_raise_factor(const int action) const
+{
     switch (action)
     {
-    case RAISE_H: factor = 0.5; break;
-    case RAISE_Q: factor = 0.75; break;
-    case RAISE_P: factor = 1.0; break;
-    case RAISE_W: factor = 1.5; break;
-    case RAISE_D: factor = 2.0; break;
-    case RAISE_T: factor = 10.0; break;
-    case RAISE_E: factor = 11.0; break;
-    case RAISE_A: factor = 99999.0; break;
-    default: assert(false); factor = 1.0;
+    case RAISE_H: return 0.5;
+    case RAISE_Q: return 0.75;
+    case RAISE_P: return 1.0;
+    case RAISE_W: return 1.5;
+    case RAISE_D: return 2.0;
+    case RAISE_T: return 10.0;
+    case RAISE_E: return 11.0;
+    case RAISE_A: return 99999.0;
+    default: assert(false); return 1.0;
     }
-
-    return std::min(player_pot + int(to_call + (2 * to_call + in_pot) * factor), stack_size_);
 }
 
 template<int BITMASK>

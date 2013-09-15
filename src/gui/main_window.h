@@ -13,7 +13,7 @@ class QPlainTextEdit;
 class holdem_abstraction;
 class nlhe_state_base;
 class table_manager;
-class strategy;
+class nlhe_strategy;
 class QLabel;
 class table_widget;
 class QLineEdit;
@@ -54,10 +54,8 @@ private:
     {
         strategy_info();
         ~strategy_info();
-        std::unique_ptr<nlhe_state_base> root_state_;
         const nlhe_state_base* current_state_;
-        std::unique_ptr<strategy> strategy_;
-        std::string abstraction_;
+        std::unique_ptr<nlhe_strategy> strategy_;
     };
 
     struct snapshot_type
@@ -97,7 +95,6 @@ private:
     snapshot_type snapshot_;
     bool acting_;
     double action_min_delay_;
-    std::map<std::string, std::unique_ptr<holdem_abstraction>> abstractions_;
     QTimer* play_done_timer_;
     double action_post_delay_;
     QTimer* lobby_timer_;

@@ -200,7 +200,6 @@ void main_window::open_strategy()
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
     strategy_infos_.clear();
-    abstractions_.clear();
 
     std::regex r("([^-]+)-([^-]+)-[0-9]+\\.str");
     std::regex r_nlhe("nlhe\\.([a-z]+)\\.([0-9]+)");
@@ -220,52 +219,17 @@ void main_window::open_strategy()
 
         const std::string filename = QFileInfo(*i).fileName().toUtf8().data();
 
-        if (!std::regex_match(filename, m, r))
-            continue;
-
-        if (!std::regex_match(m[1].first, m[1].second, m_nlhe, r_nlhe))
-            continue;
-
-        const std::string actions = m_nlhe[1];
-        const auto stack_size = boost::lexical_cast<int>(m_nlhe[2]);
-        auto& si = strategy_infos_[stack_size];
-        si.reset(new strategy_info);
-
-        if (actions == "fchpa")
-            si->root_state_.reset(new nlhe_state<F_MASK | C_MASK | H_MASK | P_MASK | A_MASK>(stack_size));
-        else if (actions == "fchqpa")
-            si->root_state_.reset(new nlhe_state<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | A_MASK>(stack_size));
-
-        std::size_t states = 0;
-        std::vector<const nlhe_state_base*> stack(1, si->root_state_.get());
-
-        while (!stack.empty())
+        try
         {
-            const nlhe_state_base* s = stack.back();
-            stack.pop_back();
-
-            if (!s->is_terminal())
-                ++states;
-
-            for (int i = s->get_action_count() - 1; i >= 0; --i)
-            {
-                if (const nlhe_state_base* child = s->get_child(i))
-                    stack.push_back(child);
-            }
+            std::unique_ptr<nlhe_strategy> p(new nlhe_strategy(i->toUtf8().data()));
+            auto& si = strategy_infos_[p->get_stack_size()];
+            si.reset(new strategy_info);
+            si->strategy_ = std::move(p);
         }
-
-        const auto dir = QFileInfo(*i).dir();
-        const std::string abs_filename = dir.filePath(QString(m[2].str().data()) + ".abs").toUtf8().data();
-        si->abstraction_ = abs_filename;
-
-        if (!abstractions_.count(abs_filename))
+        catch (const std::runtime_error&)
         {
-            abstractions_[abs_filename].reset(new holdem_abstraction);
-            abstractions_[abs_filename]->read(abs_filename);
+            continue;
         }
-
-        const std::string str_filename = i->toUtf8().data();
-        si->strategy_.reset(new strategy(str_filename, states, si->root_state_->get_action_count()));
 
         log(QString("Loaded strategy \"%1\"").arg(*i));
     }
@@ -523,7 +487,7 @@ void main_window::process_snapshot()
     if (new_game && round == 0)
     {
         log(QString("State: New game (%1 SB)").arg(snapshot_.stack_size));
-        current_state = strategy_info.root_state_.get();
+        current_state = &strategy_info.strategy_->get_root_state();
     }
 
     if (!current_state)
@@ -582,7 +546,7 @@ void main_window::process_snapshot()
     visualizer_->set_pot(current_state->get_round(), pot);
 
     const auto& strategy = strategy_info.strategy_;
-    strategy_label_->setText(QString("%1").arg(QFileInfo(strategy->get_filename().c_str()).fileName()));
+    strategy_label_->setText(QString("%1").arg(QFileInfo(strategy->get_strategy().get_filename().c_str()).fileName()));
 
     // we should never reach terminal states when we have a pending action
     assert(current_state->get_id() != -1);
@@ -615,18 +579,13 @@ void main_window::perform_action()
     const int b3 = board[3];
     const int b4 = board[4];
     int bucket = -1;
-    const auto abstraction = *abstractions_.at(strategy_info.abstraction_);
+    const auto& abstraction = strategy_info.strategy_->get_abstraction();
 
     if (c0 != -1 && c1 != -1)
     {
-        if (b4 != -1)
-            bucket = abstraction.get_bucket(c0, c1, b0, b1, b2, b3, b4);
-        else if (b3 != -1)
-            bucket = abstraction.get_bucket(c0, c1, b0, b1, b2, b3);
-        else if (b0 != -1)
-            bucket = abstraction.get_bucket(c0, c1, b0, b1, b2);
-        else
-            bucket = abstraction.get_bucket(c0, c1);
+        holdem_abstraction_base::bucket_type buckets;
+        abstraction.get_buckets(c0, c1, b0, b1, b2, b3, b4, &buckets);
+        bucket = buckets[strategy_info.current_state_->get_round()];
     }
 
     auto& current_state = strategy_info.current_state_;
@@ -635,7 +594,7 @@ void main_window::perform_action()
 
     const auto& strategy = strategy_info.strategy_;
     const int index = site_->is_opponent_sitout() ? nlhe_state_base::CALL + 1
-        : strategy->get_action(current_state->get_id(), bucket);
+        : strategy->get_strategy().get_action(current_state->get_id(), bucket);
     const int action = current_state->get_action(index);
     std::string s = "n/a";
 
@@ -664,26 +623,14 @@ void main_window::perform_action()
             s = "CALL";
         }
         break;
-    case nlhe_state_base::RAISE_H:
-        next_action_ = table_manager::RAISE;
-        raise_fraction_ = 0.5;
-        s = "RAISE_H";
-        break;
-    case nlhe_state_base::RAISE_P:
-        next_action_ = table_manager::RAISE;
-        raise_fraction_ = 1.0;
-        s = "RAISE_P";
-        break;
-    case nlhe_state_base::RAISE_A:
-        next_action_ = table_manager::RAISE;
-        raise_fraction_ = 999.0;
-        s = "RAISE_A";
-        break;
     default:
-        assert(false);
+        next_action_ = table_manager::RAISE;
+        raise_fraction_ = current_state->get_raise_factor(action);
+        s = (boost::format("RAISE %1x pot") % raise_fraction_).str();
+        break;
     }
 
-    const double probability = strategy->get(current_state->get_id(), index, bucket);
+    const double probability = strategy->get_strategy().get(current_state->get_id(), index, bucket);
     log(QString("Strategy: %1 (%2)").arg(s.c_str()).arg(probability));
 
     current_state = current_state->get_child(index);
@@ -826,8 +773,8 @@ void main_window::update_strategy_widget(const strategy_info& si)
         board[4] = -1;
     }
 
-    strategy_->update(*abstractions_.at(si.abstraction_), hole, board, *si.strategy_, si.current_state_->get_id(),
-        si.current_state_->get_action_count());
+    strategy_->update(si.strategy_->get_abstraction(), hole, board, si.strategy_->get_strategy(),
+        si.current_state_->get_id(), si.current_state_->get_action_count());
 
     std::stringstream ss;
     ss << *si.current_state_;
@@ -841,8 +788,8 @@ void main_window::state_widget_state_reset()
         return;
 
     auto& si = *strategy_infos_.begin()->second;
-    si.current_state_ = si.root_state_.get();
-    update_strategy_widget(*strategy_infos_.begin()->second);
+    si.current_state_ = &si.strategy_->get_root_state();
+    update_strategy_widget(si);
 }
 
 void main_window::state_widget_called()
@@ -861,7 +808,7 @@ void main_window::state_widget_called()
         return;
 
     si.current_state_ = state;
-    update_strategy_widget(*strategy_infos_.begin()->second);
+    update_strategy_widget(si);
 }
 
 void main_window::state_widget_raised(double fraction)
@@ -875,7 +822,7 @@ void main_window::state_widget_raised(double fraction)
         return;
  
     si.current_state_ = si.current_state_->raise(fraction);
-    update_strategy_widget(*strategy_infos_.begin()->second);
+    update_strategy_widget(si);
 }
 
 void main_window::verify(bool expression, const std::string& s, int line)
