@@ -327,7 +327,6 @@ void main_window::play_timer_timeout()
             const double total_pot = site_->get_total_pot();
             const double my_bet = site_->get_bet(0);
             const double op_bet = site_->get_bet(1);
-            const double big_blind = site_->get_big_blind();
             const double to_call = op_bet - my_bet;
             const double amount = raise_fraction_ * (total_pot + to_call) + to_call + my_bet;
 
