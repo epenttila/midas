@@ -48,6 +48,9 @@ public slots:
     void state_widget_called();
     void state_widget_raised(double fraction);
     void lobby_title_changed(const QString& str);
+    void schedule_changed(bool checked);
+    void break_timer_timeout();
+    void schedule_timer_timeout();
 
 private:
     struct strategy_info
@@ -77,7 +80,6 @@ private:
     std::map<int, std::unique_ptr<strategy_info>> strategy_infos_;
     QTimer* timer_;
     std::unique_ptr<table_manager> site_;
-    QLabel* strategy_label_;
     QLabel* capture_label_;
     QPlainTextEdit* log_;
     QLineEdit* title_filter_;
@@ -110,4 +112,14 @@ private:
     QAction* open_action_;
     QAction* save_images_;
     QAction* capture_action_;
+    int day_start_;
+    int day_finish_;
+    int break_interval_;
+    int break_length_;
+    QAction* schedule_action_;
+    bool schedule_active_;
+    QTimer* break_timer_;
+    QTimer* schedule_timer_;
+    bool break_active_;
+    QLabel* schedule_label_;
 };

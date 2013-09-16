@@ -60,5 +60,6 @@
     <file>icons/map.png</file>
     <file>icons/chart_organisation.png</file>
     <file>icons/picture_save.png</file>
+    <file>icons/time.png</file>
 </qresource>
 </RCC>

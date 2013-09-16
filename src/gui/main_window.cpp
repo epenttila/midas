@@ -72,6 +72,17 @@ namespace
         else
             return "[Error]";
     }
+
+    QString to_hms(int seconds)
+    {
+        const auto hours = seconds / 60 / 60;
+        seconds -= hours;
+
+        const auto minutes = seconds / 60;
+        seconds -= minutes * 60;
+
+        return QString("%1:%2:%3").arg(hours).arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 10, QChar('0'));
+    }
 }
 
 main_window::main_window()
@@ -81,6 +92,8 @@ main_window::main_window()
     , input_manager_(new input_manager)
     , acting_(false)
     , logfile_(QDateTime::currentDateTimeUtc().toString("'log-'yyyyMMddTHHmmss'.txt'").toUtf8().data())
+    , break_active_(false)
+    , schedule_active_(false)
 {
     auto widget = new QWidget(this);
     widget->setFocus();
@@ -133,6 +146,9 @@ main_window::main_window()
     play_action_->setCheckable(true);
     play_action_->setEnabled(false);
     connect(play_action_, SIGNAL(toggled(bool)), SLOT(play_changed(bool)));
+    schedule_action_ = toolbar->addAction(QIcon(":/icons/time.png"), "Schedule");
+    schedule_action_->setCheckable(true);
+    connect(schedule_action_, SIGNAL(toggled(bool)), SLOT(schedule_changed(bool)));
 
     log_ = new QPlainTextEdit(this);
     log_->setReadOnly(true);
@@ -149,11 +165,15 @@ main_window::main_window()
     connect(play_timer_, SIGNAL(timeout()), SLOT(play_timer_timeout()));
     lobby_timer_ = new QTimer(this);
     connect(lobby_timer_, SIGNAL(timeout()), SLOT(lobby_timer_timeout()));
+    break_timer_ = new QTimer(this);
+    connect(break_timer_, SIGNAL(timeout()), SLOT(break_timer_timeout()));
+    schedule_timer_ = new QTimer(this);
+    connect(schedule_timer_, SIGNAL(timeout()), SLOT(schedule_timer_timeout()));
 
-    strategy_label_ = new QLabel("No strategy", this);
-    statusBar()->addWidget(strategy_label_, 1);
     capture_label_ = new QLabel("No window", this);
     statusBar()->addWidget(capture_label_, 1);
+    schedule_label_ = new QLabel("Scheduler off", this);
+    statusBar()->addWidget(schedule_label_, 1);
 
     QSettings settings("settings.ini", QSettings::IniFormat);
     capture_interval_ = settings.value("capture_interval", 0.1).toDouble();
@@ -166,6 +186,10 @@ main_window::main_window()
     input_manager_->set_delay_stddev(settings.value("input_delay_stddev", 0.01).toDouble());
     lobby_interval_ = settings.value("lobby_interval", 0.1).toDouble();
     hotkey_ = settings.value("hotkey", VK_F1).toInt();
+    day_start_ = settings.value("day-start", 10).toInt();
+    day_finish_ = settings.value("day-finish", 18).toInt();
+    break_interval_ = settings.value("break-interval", 60).toInt();
+    break_length_ = settings.value("break-length", 10).toInt();
 
     log(QString("Loaded settings from \"%1\"").arg(settings.fileName()));
 
@@ -559,9 +583,6 @@ void main_window::process_snapshot()
 
     visualizer_->set_pot(current_state->get_round(), pot);
 
-    const auto& strategy = strategy_info.strategy_;
-    strategy_label_->setText(QString("%1").arg(QFileInfo(strategy->get_strategy().get_filename().c_str()).fileName()));
-
     // we should never reach terminal states when we have a pending action
     assert(current_state->get_id() != -1);
 
@@ -710,8 +731,11 @@ void main_window::lobby_timer_timeout()
     if (!lobby_->ensure_visible())
         return;
 
-    if (lobby_->get_registered_sngs() < table_count_->value())
+    if (lobby_->get_registered_sngs() < table_count_->value()
+        && (!schedule_action_->isChecked() || (schedule_active_ && !break_active_)))
+    {
         lobby_->register_sng();
+    }
 
     const auto old = lobby_->get_registered_sngs();
     lobby_->close_popups();
@@ -854,4 +878,92 @@ void main_window::verify(bool expression, const std::string& s, int line)
 void main_window::lobby_title_changed(const QString& str)
 {
     table_count_->setEnabled(!str.isEmpty());
+}
+
+void main_window::schedule_changed(const bool checked)
+{
+    if (checked)
+    {
+        log("Scheduler: Enabling");
+        schedule_timer_->setInterval(1000);
+        schedule_timer_->start();
+    }
+    else
+    {
+        log("Scheduler: Disabling");
+        schedule_timer_->stop();
+        break_timer_->stop();
+    }
+
+    schedule_label_->setText(checked ? "Scheduler on" : "Scheduler off");
+}
+
+void main_window::break_timer_timeout()
+{
+    if (!break_active_)
+    {
+        break_active_ = true;
+
+        std::normal_distribution<> dist(break_length_, action_delay_stddev_);
+        const auto duration = dist(engine_);
+
+        log(QString("Scheduler: Break for %1").arg(to_hms(static_cast<int>(duration * 60))));
+
+        break_timer_->setSingleShot(true);
+        break_timer_->start(int(duration * 60.0 * 1000.0));
+    }
+    else
+    {
+        break_active_ = false;
+
+        std::normal_distribution<> dist(break_interval_, action_delay_stddev_);
+        const auto duration = dist(engine_);
+
+        log(QString("Scheduler: Next break in %1 minutes").arg(to_hms(static_cast<int>(duration * 60))));
+
+        break_timer_->setSingleShot(true);
+        break_timer_->start(int(duration * 60.0 * 1000.0));
+    }
+}
+
+void main_window::schedule_timer_timeout()
+{
+    const auto now = QDateTime::currentDateTime();
+    const auto hour = now.toString("H").toInt();
+    const bool active = (hour >= day_start_ && hour < day_finish_);
+
+    if (active && !schedule_active_)
+    {
+        log(QString("Scheduler: Enabling registration: hour is %1 [%2, %3]").arg(hour).arg(day_start_)
+            .arg(day_finish_));
+
+        schedule_active_ = true;
+        break_active_ = true; // make sure we don't start with a break
+
+        break_timer_->start();
+    }
+    else if (!active && schedule_active_)
+    {
+        log(QString("Scheduler: Disabling registration: hour is %1 [%2, %3]").arg(hour).arg(day_start_)
+            .arg(day_finish_));
+
+        schedule_active_ = false;
+        break_active_ = false;
+
+        break_timer_->stop();
+    }
+
+    QString s;
+
+    if (active)
+    {
+        if (break_active_)
+            s = QString("Break for %1").arg(to_hms(break_timer_->remainingTime() / 1000));
+        else
+            s = QString("Next break in %1").arg(to_hms(break_timer_->remainingTime() / 1000));
+    }
+    else
+        s = QString("Inactive until: %1:00-%2:00").arg(day_start_, 2).arg(day_finish_, 2);
+
+    schedule_label_->setText(s);
 }
