@@ -51,7 +51,7 @@ namespace
     {
         auto upper = map.lower_bound(value);
 
-        if (upper == map.begin() || upper->first == value)
+        if (upper == map.begin() || (upper != map.end() && upper->first == value))
             return upper;
 
         auto lower = boost::prior(upper);
