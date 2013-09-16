@@ -422,24 +422,16 @@ void main_window::process_snapshot()
         && ((site_->get_dealer() == 0 && site_->get_bet(0) < site_->get_big_blind())
         || (site_->get_dealer() == 1 && site_->get_bet(0) == site_->get_big_blind()));
 
-#if !defined(NDEBUG)
-    log(QString("new_game:%1 round:%2 bet0:%3 bet1:%4 stack0:%5 stack1:%6 allin:%7 sitout:%8 pot:%9 buttons:%10")
-        .arg(new_game)
-        .arg(round)
-        .arg(site_->get_bet(0))
-        .arg(site_->get_bet(1))
-        .arg(site_->get_stack(0))
-        .arg(site_->get_stack(1))
-        .arg(site_->is_opponent_allin())
-        .arg(site_->is_opponent_sitout())
-        .arg(site_->get_total_pot())
-        .arg(site_->get_buttons()));
-#endif
-
     visualizer_->set_dealer(site_->get_dealer());
     std::array<int, 2> hole_array = {{ hole.first, hole.second }};
     visualizer_->set_hole_cards(0, hole_array);
     visualizer_->set_board_cards(board);
+    visualizer_->set_big_blind(site_->get_big_blind());
+    visualizer_->set_real_pot(site_->get_total_pot());
+    visualizer_->set_real_bets(site_->get_bet(0), site_->get_bet(1));
+    visualizer_->set_sit_out(site_->is_sit_out(0), site_->is_sit_out(1));
+    visualizer_->set_stacks(site_->get_stack(0), site_->get_stack(1));
+    visualizer_->set_buttons(site_->get_buttons());
 
     if (site_->is_sit_out(0))
     {

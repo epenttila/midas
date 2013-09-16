@@ -10,6 +10,7 @@
 #pragma warning(pop)
 
 #include "util/card.h"
+#include "util/game.h"
 
 namespace
 {
@@ -33,6 +34,9 @@ table_widget::table_widget(QWidget* parent)
     , dealer_(-1)
     , round_(-1)
     , empty_image_(new QPixmap(":/images/card_empty.png"))
+    , big_blind_(-1)
+    , real_pot_(-1)
+    , buttons_(-1)
 {
     // TODO make editable and feed back to game state
     hole_[0].fill(-1);
@@ -40,6 +44,9 @@ table_widget::table_widget(QWidget* parent)
     board_.fill(-1);
     bets_.fill(0);
     pot_.fill(0);
+    real_bets_.fill(0);
+    sit_out_.fill(false);
+    stacks_.fill(0);
 
     for (int i = 0; i < 52; ++i)
         card_images_[i].reset(new QPixmap(QString(":/images/card_%1.png").arg(get_card_string(i).c_str())));
@@ -111,22 +118,57 @@ void table_widget::paintEvent(QPaintEvent* event)
 
     painter.setFont(QFont("Helvetica", 16, QFont::Bold));
 
+    const QRect left_pod(CARD_MARGIN, y, 2 * CARD_WIDTH + CARD_MARGIN, CARD_HEIGHT);
+    const QRect right_pod(rect().right() - 2 * (CARD_WIDTH + CARD_MARGIN), y, 2 * CARD_WIDTH + CARD_MARGIN,
+        CARD_HEIGHT);
+
+    painter.drawText(left_pod, Qt::AlignCenter | Qt::AlignVCenter, QString("%1")
+        .arg(sit_out_[0] ? "Sit out" : format_money(stacks_[0]).c_str()));
+    painter.drawRect(left_pod);
+
+    painter.drawText(right_pod, Qt::AlignCenter | Qt::AlignVCenter, QString("%1")
+        .arg(sit_out_[1] ? "Sit out" : format_money(stacks_[1]).c_str()));
+    painter.drawRect(right_pod);
+
+    const QRect left_bet(left_pod.right() + CARD_MARGIN, y, left_pod.width(), left_pod.height());
+    const QRect right_bet(right_pod.left() - CARD_MARGIN - right_pod.width(), y, right_pod.width(), right_pod.height());
+
+    const QRect center_pot(rect().center().x() - 200, y, 400, CARD_HEIGHT);
+
+    if (real_bets_[0] > 0)
+    {
+        painter.drawText(left_bet, Qt::AlignHCenter | Qt::AlignTop, QString("%1")
+            .arg(format_money(real_bets_[0]).c_str()));
+    }
+
+    if (real_bets_[1] > 0)
+    {
+        painter.drawText(right_bet, Qt::AlignHCenter | Qt::AlignTop, QString("%1")
+            .arg(format_money(real_bets_[1]).c_str()));
+    }
+
+    if (real_pot_ > 0)
+    {
+        painter.drawText(center_pot, Qt::AlignHCenter | Qt::AlignTop, QString("%1")
+            .arg(format_money(real_pot_).c_str()));
+    }
+
     if (bets_[0] > 0)
     {
-        QRect rect(CARD_MARGIN, y, 2 * CARD_WIDTH + CARD_MARGIN, CARD_HEIGHT);
-        painter.drawText(rect, Qt::AlignCenter, QString::number(bets_[0]));
+        painter.drawText(left_bet, Qt::AlignHCenter | Qt::AlignBottom, QString("(%1)")
+            .arg(format_money(bets_[0] * big_blind_ / 2.0).c_str()));
     }
 
     if (bets_[1] > 0)
     {
-        QRect rect(rect().right() - 2 * (CARD_WIDTH + CARD_MARGIN), y, 2 * CARD_WIDTH + CARD_MARGIN, CARD_HEIGHT);
-        painter.drawText(rect, Qt::AlignCenter, QString::number(bets_[1]));
+        painter.drawText(right_bet, Qt::AlignHCenter | Qt::AlignBottom, QString("(%1)")
+            .arg(format_money(bets_[1] * big_blind_ / 2.0).c_str()));
     }
 
     if (pot_[0] > 0)
     {
-        QRect rect(rect().center().x() - 200, y, 400, CARD_HEIGHT);
-        painter.drawText(rect, Qt::AlignCenter, QString::number(pot_[0] + pot_[1]));
+        painter.drawText(center_pot, Qt::AlignHCenter | Qt::AlignBottom, QString("(%1)")
+            .arg(format_money((pot_[0] + pot_[1]) * big_blind_ / 2.0).c_str()));
     }
 
     y += CARD_HEIGHT + CARD_MARGIN;
@@ -147,4 +189,37 @@ void table_widget::get_board_cards(std::array<int, 5>& board) const
 void table_widget::get_hole_cards(std::array<int, 2>& hole) const
 {
     hole = hole_[0];
+}
+
+void table_widget::set_big_blind(double big_blind)
+{
+    big_blind_ = big_blind;
+}
+
+void table_widget::set_sit_out(bool sitout1, bool sitout2)
+{
+    sit_out_[0] = sitout1;
+    sit_out_[1] = sitout2;
+}
+
+void table_widget::set_stacks(double stack1, double stack2)
+{
+    stacks_[0] = stack1;
+    stacks_[1] = stack2;
+}
+
+void table_widget::set_buttons(int buttons)
+{
+    buttons_ = buttons;
+}
+
+void table_widget::set_real_bets(double bet1, double bet2)
+{
+    real_bets_[0] = bet1;
+    real_bets_[1] = bet2;
+}
+
+void table_widget::set_real_pot(double pot)
+{
+    real_pot_ = pot;
 }
