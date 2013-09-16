@@ -6,6 +6,7 @@
 #include <regex>
 #include <numeric>
 #include <cstdint>
+#include <omp.h>
 #include <boost/program_options.hpp>
 #include <boost/format.hpp>
 #include <boost/date_time.hpp>
@@ -84,6 +85,7 @@ int main(int argc, char* argv[])
         std::string history_file;
         std::string plot_file;
         std::string log_file;
+        int threads;
 
         po::options_description desc("Options");
         desc.add_options()
@@ -96,6 +98,7 @@ int main(int argc, char* argv[])
             ("history-file", po::value<std::string>(&history_file), "hand history file name")
             ("plot-file", po::value<std::string>(&plot_file), "plotting data file name")
             ("log-file", po::value<std::string>(&log_file), "log file")
+            ("threads", po::value<int>(&threads)->default_value(omp_get_max_threads()), "number of threads")
             ;
 
         po::variables_map vm;
@@ -119,8 +122,6 @@ int main(int argc, char* argv[])
             );
         }
 
-        int bankroll = 0;
-
         std::ofstream plot_stream;
 
         if (!plot_file.empty())
@@ -129,44 +130,66 @@ int main(int argc, char* argv[])
         std::regex nlhe_regex("nlhe-([0-9]+)");
         std::smatch match;
 
-        if (std::regex_match(game, match, nlhe_regex))
-        {
-            const int stack_size = std::atoi(match[1].str().c_str());
-            auto a1 = create_actor(strategy_file[0]);
-            auto a2 = create_actor(strategy_file[1]);
-            nlhe_game g(stack_size, *a1, *a2);
-            g.set_dealer(0);
-            g.set_seed(seed);
-
-            if (!history_file.empty())
-                g.set_log(history_file);
-
-            for (std::int64_t i = 0; i < std::int64_t(iterations); ++i)
-            {
-                if (i > 0 && i % 1000 == 0)
-                    BOOST_LOG_TRIVIAL(info) << "Game #" << i << ": " << (g.get_bankroll() / 2.0 / i * 1000.0);
-
-                if (i == std::int64_t(iterations / 2))
-                {
-                    BOOST_LOG_TRIVIAL(info) << "Resetting seed at game #" << i;
-                    g.set_seed(seed);
-                    g.set_dealer(1);
-                }
-
-                g.play(i);
-
-                plot_stream << g.get_bankroll() << "\n";
-            }
-
-            bankroll = g.get_bankroll();
-        }
-        else
+        if (!std::regex_match(game, match, nlhe_regex))
         {
             BOOST_LOG_TRIVIAL(error) << "Unknown game";
             return 1;
         }
 
-        double performance = (bankroll / 2.0 / iterations * 1000.0);
+        const int stack_size = std::atoi(match[1].str().c_str());
+
+        BOOST_LOG_TRIVIAL(info) << "Playing " << 2 * iterations << " games";
+
+        omp_set_num_threads(threads);
+
+        std::vector<std::vector<int>> plot(threads);
+
+#pragma omp parallel
+        {
+            const auto thread = omp_get_thread_num();
+
+            auto a1 = create_actor(strategy_file[0]);
+            auto a2 = create_actor(strategy_file[1]);
+            nlhe_game g(stack_size, *a1, *a2);
+
+            if (!history_file.empty())
+                g.set_log(history_file + "." + std::to_string(thread));
+
+            g.set_dealer(0);
+            g.set_seed(seed + thread);
+
+#pragma omp for
+            for (std::int64_t i = 0; i < std::int64_t(iterations); ++i)
+            {
+                g.play(i);
+                plot[thread].push_back(g.get_bankroll());
+            }
+
+            BOOST_LOG_TRIVIAL(info) << "Resetting seed and swapping positions";
+
+            g.set_seed(seed + thread);
+            g.set_dealer(1);
+
+#pragma omp for
+            for (std::int64_t i = 0; i < std::int64_t(iterations); ++i)
+            {
+                g.play(i);
+                plot[thread].push_back(g.get_bankroll());
+            }
+        }
+
+        int bankroll = 0;
+
+        for (int i = 0; i < threads; ++i)
+        {
+            for (auto x : plot[i])
+                plot_stream << (bankroll + x) << "\n";
+
+            bankroll += plot[i].back();
+        }
+
+        const double performance = (bankroll / 2.0 / iterations * 1000.0);
+
         BOOST_LOG_TRIVIAL(info) << "\"" << strategy_file[0] << "\": " << performance << " mb/h";
         BOOST_LOG_TRIVIAL(info) << "\"" << strategy_file[1] << "\": " << -performance << " mb/h";
 
