@@ -267,6 +267,7 @@ namespace
 holdem_abstraction_v2::holdem_abstraction_v2()
     : imperfect_recall_(false)
     , bucket_counts_()
+    , file_(nullptr, fclose)
 {
     std::vector<std::uint8_t> cfg = boost::assign::list_of(2);
     preflop_indexer_.reset(new hand_indexer(cfg));
@@ -293,38 +294,22 @@ void holdem_abstraction_v2::get_buckets(const int c0, const int c1, const int b0
 
     std::array<card_t, 7> cards = { card_t(c0), card_t(c1), card_t(b0), card_t(b1), card_t(b2), card_t(b3), card_t(b4) };
 
-    (*buckets)[PREFLOP] = preflop_buckets_[preflop_indexer_->hand_index_last(cards.data())];
+    (*buckets)[PREFLOP] = read(PREFLOP, preflop_indexer_->hand_index_last(cards.data()));
 
     if (b0 == -1)
         return;
 
-    (*buckets)[FLOP] = flop_buckets_[flop_indexer_->hand_index_last(cards.data())];
+    (*buckets)[FLOP] = read(FLOP, flop_indexer_->hand_index_last(cards.data()));
 
     if (b3 == -1)
         return;
 
-    (*buckets)[TURN] = turn_buckets_[turn_indexer_->hand_index_last(cards.data())];
+    (*buckets)[TURN] = read(TURN, turn_indexer_->hand_index_last(cards.data()));
 
     if (b4 == -1)
         return;
 
-    (*buckets)[RIVER] = river_buckets_[river_indexer_->hand_index_last(cards.data())];
-}
-
-void holdem_abstraction_v2::write(const std::string& filename) const
-{
-    BOOST_LOG_TRIVIAL(info) << "Saving abstraction: " << filename;
-
-    std::ofstream os(filename, std::ios::binary);
-
-    if (!os)
-        throw std::runtime_error("Unable to open file");
-
-    binary_write(os, imperfect_recall_);
-    binary_write(os, preflop_buckets_);
-    binary_write(os, flop_buckets_);
-    binary_write(os, turn_buckets_);
-    binary_write(os, river_buckets_);
+    (*buckets)[RIVER] = read(RIVER, river_indexer_->hand_index_last(cards.data()));
 }
 
 void holdem_abstraction_v2::read(const std::string& filename)
@@ -333,36 +318,76 @@ void holdem_abstraction_v2::read(const std::string& filename)
 
     parse_configuration(filename, &imperfect_recall_, &bucket_counts_);
 
-    std::ifstream is(filename, std::ios::binary);
+    file_ = file_ptr(fopen(filename.c_str(), "rb"), fclose);
 
-    if (!is)
+    if (!file_)
         throw std::runtime_error("Unable to open file");
-
-    binary_read(is, imperfect_recall_);
-    binary_read(is, preflop_buckets_);
-    binary_read(is, flop_buckets_);
-    binary_read(is, turn_buckets_);
-    binary_read(is, river_buckets_);
 }
 
-void holdem_abstraction_v2::generate(const std::string& configuration, const int kmeans_max_iterations, float tolerance,
+void holdem_abstraction_v2::write(const std::string& filename, const int kmeans_max_iterations, float tolerance,
     int runs)
 {
-    BOOST_LOG_TRIVIAL(info) << "Generating abstraction: " << configuration;
+    BOOST_LOG_TRIVIAL(info) << "Generating abstraction: " << filename;
 
-    parse_configuration(configuration, &imperfect_recall_, &bucket_counts_);
+    parse_configuration(filename, &imperfect_recall_, &bucket_counts_);
 
     std::unique_ptr<holdem_river_lut> river_lut(new holdem_river_lut(std::ifstream("holdem_river_lut.dat",
         std::ios::binary)));
     std::shared_ptr<holdem_river_ochs_lut> river_ochs_lut(new holdem_river_ochs_lut(
         std::ifstream("holdem_river_ochs_lut.dat", std::ios::binary)));
 
-    preflop_buckets_ = create_buckets(PREFLOP, *preflop_indexer_, *river_lut, *river_ochs_lut,
+    const auto preflop_buckets = create_buckets(PREFLOP, *preflop_indexer_, *river_lut, *river_ochs_lut,
         bucket_counts_[PREFLOP], kmeans_max_iterations, tolerance, runs);
-    flop_buckets_ = create_buckets(FLOP, *flop_indexer_, *river_lut, *river_ochs_lut, bucket_counts_[FLOP],
+    const auto flop_buckets = create_buckets(FLOP, *flop_indexer_, *river_lut, *river_ochs_lut, bucket_counts_[FLOP],
         kmeans_max_iterations, tolerance, runs);
-    turn_buckets_ = create_buckets(TURN, *turn_indexer_, *river_lut, *river_ochs_lut, bucket_counts_[TURN],
+    const auto turn_buckets = create_buckets(TURN, *turn_indexer_, *river_lut, *river_ochs_lut, bucket_counts_[TURN],
         kmeans_max_iterations, tolerance, runs);
-    river_buckets_ = create_buckets(RIVER, *river_indexer_, *river_lut, *river_ochs_lut, bucket_counts_[RIVER],
-        kmeans_max_iterations, tolerance, runs);
+    const auto river_buckets = create_buckets(RIVER, *river_indexer_, *river_lut, *river_ochs_lut,
+        bucket_counts_[RIVER], kmeans_max_iterations, tolerance, runs);
+
+    BOOST_LOG_TRIVIAL(info) << "Saving abstraction: " << filename;
+
+    std::ofstream os(filename, std::ios::binary);
+
+    if (!os)
+        throw std::runtime_error("Unable to open file");
+
+    binary_write(os, imperfect_recall_);
+    binary_write(os, preflop_buckets);
+    binary_write(os, flop_buckets);
+    binary_write(os, turn_buckets);
+    binary_write(os, river_buckets);
+}
+
+holdem_abstraction_v2::bucket_idx_t holdem_abstraction_v2::read(int round, hand_indexer::hand_index_t index) const
+{
+    if (round < 0 || round > RIVER || index < 0)
+    {
+        assert(false);
+        return 0;
+    }
+
+    std::size_t pos = sizeof(imperfect_recall_);
+
+    switch (round)
+    {
+    case RIVER:
+        pos += sizeof(std::uint64_t) + turn_indexer_->get_size(turn_indexer_->get_rounds() - 1) * sizeof(bucket_idx_t);
+    case TURN:
+        pos += sizeof(std::uint64_t) + flop_indexer_->get_size(flop_indexer_->get_rounds() - 1) * sizeof(bucket_idx_t);
+    case FLOP:
+        pos += sizeof(std::uint64_t) + preflop_indexer_->get_size(preflop_indexer_->get_rounds() - 1)
+            * sizeof(bucket_idx_t);
+    case PREFLOP:
+        pos += sizeof(std::uint64_t);
+    }
+
+    pos += index * sizeof(bucket_idx_t);
+
+    _fseeki64(file_.get(), pos, SEEK_SET);
+
+    bucket_idx_t value;
+    fread(&value, sizeof(value), 1, file_.get());
+
+    return value;
 }

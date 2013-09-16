@@ -8,6 +8,7 @@
 #include "lutlib/hand_indexer.h"
 #include "lutlib/holdem_river_ochs_lut.h"
 #include "util/game.h"
+#include "lutlib/hand_indexer.h"
 #include "holdem_abstraction_base.h"
 
 class holdem_abstraction_v2 : public holdem_abstraction_base
@@ -23,18 +24,11 @@ public:
     void get_buckets(int c0, int c1, int b0, int b1, int b2, int b3, int b4, bucket_type* buckets) const;
     std::size_t get_bucket_count(int round) const;
 
-    void write(const std::string& filename) const;
     void read(const std::string& filename);
-    void generate(const std::string& configuration, const int kmeans_max_iterations, float tolerance, int runs);
+    void write(const std::string& filename, const int kmeans_max_iterations, float tolerance, int runs);
 
 private:
-    int get_preflop_bucket(int c0, int c1) const;
-    int get_private_flop_bucket(int c0, int c1, int b0, int b1, int b2) const;
-    int get_private_turn_bucket(int c0, int c1, int b0, int b1, int b2, int b3) const;
-    int get_private_river_bucket(int c0, int c1, int b0, int b1, int b2, int b3, int b4) const;
-
-    int get_public_flop_bucket(int b0, int b1, int b2) const;
-    int get_public_turn_bucket(int b0, int b1, int b2, int b3) const;
+    bucket_idx_t read(int round, hand_indexer::hand_index_t index) const;
 
     std::unique_ptr<hand_indexer> preflop_indexer_;
     std::unique_ptr<hand_indexer> flop_indexer_;
@@ -42,10 +36,8 @@ private:
     std::unique_ptr<hand_indexer> river_indexer_;
 
     bool imperfect_recall_;
-    std::vector<bucket_idx_t> preflop_buckets_;
-    std::vector<bucket_idx_t> flop_buckets_;
-    std::vector<bucket_idx_t> turn_buckets_;
-    std::vector<bucket_idx_t> river_buckets_;
-
     bucket_counts_t bucket_counts_;
+
+    typedef std::unique_ptr<FILE, int (*)(FILE*)> file_ptr;
+    file_ptr file_;
 };

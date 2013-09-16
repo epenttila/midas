@@ -91,8 +91,7 @@ int main(int argc, char* argv[])
         else if (game == "holdem-new")
         {
             holdem_abstraction_v2 abs;
-            abs.generate(abstraction, kmeans_max_iterations, kmeans_tolerance, kmeans_runs);
-            abs.write(abstraction + ".abs");
+            abs.write(abstraction + ".abs", kmeans_max_iterations, kmeans_tolerance, kmeans_runs);
         }
         else
         {
