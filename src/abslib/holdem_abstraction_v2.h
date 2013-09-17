@@ -31,10 +31,10 @@ public:
 private:
     bucket_idx_t read(int round, hand_indexer::hand_index_t index) const;
 
-    std::unique_ptr<hand_indexer> preflop_indexer_;
-    std::unique_ptr<hand_indexer> flop_indexer_;
-    std::unique_ptr<hand_indexer> turn_indexer_;
-    std::unique_ptr<hand_indexer> river_indexer_;
+    static const hand_indexer preflop_indexer_;
+    static const hand_indexer flop_indexer_;
+    static const hand_indexer turn_indexer_;
+    static const hand_indexer river_indexer_;
 
     bool imperfect_recall_;
     bucket_counts_t bucket_counts_;
