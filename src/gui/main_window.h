@@ -51,6 +51,7 @@ public slots:
     void schedule_changed(bool checked);
     void break_timer_timeout();
     void schedule_timer_timeout();
+    void registration_timer_timeout();
 
 private:
     struct strategy_info
@@ -121,4 +122,6 @@ private:
     QTimer* schedule_timer_;
     bool break_active_;
     QLabel* schedule_label_;
+    QTimer* registration_timer_;
+    QLabel* registered_label_;
 };

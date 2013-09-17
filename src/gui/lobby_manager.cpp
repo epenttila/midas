@@ -1,6 +1,7 @@
 #include "lobby_manager.h"
 
 #pragma warning(push, 3)
+#include <boost/log/trivial.hpp>
 #include <QXmlStreamReader>
 #include <QFile>
 #include <CommCtrl.h>
@@ -16,6 +17,8 @@ lobby_manager::lobby_manager(const std::string& filename, input_manager& input_m
     , registered_(0)
     , registering_(false)
 {
+    BOOST_LOG_TRIVIAL(info) << "Lobby: Opening settings: " << filename;
+
     QFile file(filename.c_str());
 
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -56,9 +59,13 @@ lobby_manager::lobby_manager(const std::string& filename, input_manager& input_m
     }
 }
 
-void lobby_manager::close_popups()
+bool lobby_manager::close_popups()
 {
+    const bool old = registering_;
+
     EnumWindows(callback, reinterpret_cast<LPARAM>(this));
+
+    return registering_ != old;
 }
 
 BOOL CALLBACK lobby_manager::callback(HWND hwnd, LPARAM lParam)
@@ -73,15 +80,23 @@ BOOL CALLBACK lobby_manager::callback(HWND hwnd, LPARAM lParam)
         assert(lobby->registering_);
         lobby->registering_ = false;
         ++lobby->registered_;
+
+        BOOST_LOG_TRIVIAL(info) << "Lobby: Registration success (" << lobby->registered_ << " active)";
     }
 
     if (window_utils::close_popups(lobby->input_manager_, window, lobby->finished_popups_))
+    {
         --lobby->registered_;
+
+        BOOST_LOG_TRIVIAL(info) << "Lobby: Tournament finished (" << lobby->registered_ << " active)";
+    }
 
     if (window_utils::close_popups(lobby->input_manager_, window, lobby->reg_fail_popups_))
     {
         assert(lobby->registering_);
         lobby->registering_ = false;
+
+        BOOST_LOG_TRIVIAL(info) << "Lobby: Registration failed (" << lobby->registered_ << " active)";
     }
 
     // TODO close ie windows? CloseWindow
@@ -94,15 +109,19 @@ bool lobby_manager::is_window() const
     return IsWindow(reinterpret_cast<HWND>(window_)) ? true : false;
 }
 
-void lobby_manager::register_sng()
+bool lobby_manager::register_sng()
 {
     if (registering_)
-        return;
+        return false;
 
     if (!window_utils::click_any_button(input_manager_, window_, register_buttons_))
-        return;
+        return false;
 
     registering_ = true;
+
+    BOOST_LOG_TRIVIAL(info) << "Lobby: Registering... (" << registered_ << " active)";
+
+    return true;
 }
 
 int lobby_manager::get_registered_sngs() const
@@ -120,6 +139,8 @@ void lobby_manager::reset()
     registered_ = 0;
     registering_ = false;
     window_ = 0;
+
+    BOOST_LOG_TRIVIAL(info) << "Lobby: Resetting (" << registered_ << " active)";
 }
 
 bool lobby_manager::ensure_visible()
@@ -132,4 +153,11 @@ bool lobby_manager::ensure_visible()
     ShowWindowAsync(hwnd, SW_RESTORE);
 
     return false;
+}
+
+void lobby_manager::cancel_registration()
+{
+    registering_ = false;
+
+    BOOST_LOG_TRIVIAL(info) << "Lobby: Registration cancelled (" << registered_ << " active)";
 }

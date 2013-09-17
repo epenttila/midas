@@ -198,11 +198,15 @@ main_window::main_window()
     connect(break_timer_, SIGNAL(timeout()), SLOT(break_timer_timeout()));
     schedule_timer_ = new QTimer(this);
     connect(schedule_timer_, SIGNAL(timeout()), SLOT(schedule_timer_timeout()));
+    registration_timer_ = new QTimer(this);
+    connect(registration_timer_, SIGNAL(timeout()), SLOT(registration_timer_timeout()));
 
     capture_label_ = new QLabel("No window", this);
     statusBar()->addWidget(capture_label_, 1);
     schedule_label_ = new QLabel("Scheduler off", this);
     statusBar()->addWidget(schedule_label_, 1);
+    registered_label_ = new QLabel("0/0", this);
+    statusBar()->addWidget(registered_label_, 1);
 
     QSettings settings("settings.ini", QSettings::IniFormat);
     capture_interval_ = settings.value("capture_interval", 0.1).toDouble();
@@ -728,6 +732,8 @@ void main_window::lobby_timer_timeout()
     if (!lobby_)
         return;
 
+    registered_label_->setText(QString("%1/%2").arg(lobby_->get_registered_sngs()).arg(table_count_->value()));
+
     if (!lobby_->is_window())
     {
         const auto filter = lobby_title_->text();
@@ -755,11 +761,21 @@ void main_window::lobby_timer_timeout()
     if (lobby_->get_registered_sngs() < table_count_->value()
         && (!schedule_action_->isChecked() || (schedule_active_ && !break_active_)))
     {
-        lobby_->register_sng();
+        if (lobby_->register_sng())
+        {
+            const int wait = 5000;
+            BOOST_LOG_TRIVIAL(info) << "Waiting " << wait << " ms for registration to complete";
+            registration_timer_->start(wait);
+        }
     }
 
     const auto old = lobby_->get_registered_sngs();
-    lobby_->close_popups();
+
+    if (lobby_->close_popups())
+    {
+        BOOST_LOG_TRIVIAL(info) << "Stopping registration timeout timer";
+        registration_timer_->stop();
+    }
 
     if (lobby_->get_registered_sngs() != old)
         log(QString("Lobby: Registration count changed (%1 -> %2)").arg(old).arg(lobby_->get_registered_sngs()));
@@ -985,4 +1001,9 @@ void main_window::schedule_timer_timeout()
         s = QString("Inactive until: %1:00-%2:00").arg(day_start_, 2).arg(day_finish_, 2);
 
     schedule_label_->setText(s);
+}
+
+void main_window::registration_timer_timeout()
+{
+    lobby_->cancel_registration();
 }

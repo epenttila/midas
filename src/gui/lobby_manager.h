@@ -15,13 +15,14 @@ class lobby_manager : private boost::noncopyable
 {
 public:
     lobby_manager(const std::string& filename, input_manager& input_manager);
-    void close_popups();
+    bool close_popups();
     bool is_window() const;
-    void register_sng();
+    bool register_sng();
     int get_registered_sngs() const;
     void set_window(WId window);
     void reset();
     bool ensure_visible();
+    void cancel_registration();
 
 private:
     static BOOL CALLBACK callback(HWND window, LPARAM lParam);

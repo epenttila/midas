@@ -1,14 +1,27 @@
 #include "window_utils.h"
 
 #pragma warning(push, 1)
+#include <boost/log/trivial.hpp>
 #include <QXmlStreamReader>
 #include <QDateTime>
+#include <QTime>
 #include <Windows.h>
 #pragma warning(pop)
 
 #include "util/card.h"
 #include "input_manager.h"
 #include "window_manager.h"
+
+namespace
+{
+    // TODO combine with one in window_manager
+    std::string get_window_text(HWND hwnd)
+    {
+        std::array<char, 256> arr;
+        GetWindowText(hwnd, &arr[0], int(arr.size()));
+        return std::string(arr.data());
+    }
+}
 
 namespace window_utils
 {
@@ -351,7 +364,14 @@ bool close_popups(input_manager& input, WId window, const std::vector<popup_data
     if (!found)
         return false;
 
+    const auto text = get_window_text(hwnd);
+
     // not all windows will be closed when clicking OK, so can't use IsWindow here
+    QTime t;
+    t.start();
+
+    const int wait = 5000;
+
     while (IsWindowVisible(hwnd))
     {
         for (auto i = popups.begin(); i != popups.end(); ++i)
@@ -361,6 +381,21 @@ bool close_popups(input_manager& input, WId window, const std::vector<popup_data
 
             click_button(input, window, i->button);
             input.sleep();
+        }
+
+        if (t.elapsed() > wait)
+        {
+            BOOST_LOG_TRIVIAL(warning) << "Windows: Forcing window to close after " << t.elapsed() << " ms ("
+                << text << ")";
+            SendMessage(hwnd, WM_CLOSE, 0, 0);
+            input.sleep();
+        }
+
+        if (t.elapsed() > 2 * wait)
+        {
+            BOOST_LOG_TRIVIAL(warning) << "Windows: Failed to close window after " << t.elapsed() << " ms ("
+                << text << ")";
+            return false;
         }
     }
 
