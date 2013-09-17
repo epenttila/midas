@@ -20,6 +20,8 @@ set(gui_SOURCES
     window_manager.h
 	window_utils.cpp
 	window_utils.h
+    qt_log_sink.cpp
+    qt_log_sink.h
 )
 
 set(gui_HEADERS
