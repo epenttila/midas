@@ -976,7 +976,12 @@ void main_window::table_title_changed(const QString& str)
 void main_window::autolobby_changed(bool checked)
 {
     if (checked)
+    {
         autolobby_timer_->start(int(lobby_interval_ * 1000.0));
+    }
     else
+    {
         autolobby_timer_->stop();
+        lobby_->reset();
+    }
 }
