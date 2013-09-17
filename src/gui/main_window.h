@@ -34,24 +34,24 @@ public:
     ~main_window();
 
 public slots:
-    void timer_timeout();
+    void capture_timer_timeout();
     void open_strategy();
-    void capture_changed(bool checked);
     void show_strategy_changed();
-    void play_changed(bool checked);
-    void play_timer_timeout();
-    void play_done_timeout();
-    void lobby_timer_timeout();
+    void autoplay_changed(bool checked);
+    void action_start_timeout();
+    void action_finish_timeout();
+    void autolobby_timer_timeout();
     void modify_state_changed();
     void state_widget_board_changed(const QString& board);
     void state_widget_state_reset();
     void state_widget_called();
     void state_widget_raised(double fraction);
-    void lobby_title_changed(const QString& str);
     void schedule_changed(bool checked);
     void break_timer_timeout();
     void schedule_timer_timeout();
     void registration_timer_timeout();
+    void autolobby_changed(bool checked);
+    void table_title_changed(const QString& str);
 
 private:
     struct strategy_info
@@ -79,15 +79,13 @@ private:
 
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<strategy_info>> strategy_infos_;
-    QTimer* timer_;
+    QTimer* capture_timer_;
     std::unique_ptr<table_manager> site_;
     QLabel* capture_label_;
     QPlainTextEdit* log_;
     QLineEdit* title_filter_;
     std::unique_ptr<window_manager> window_manager_;
     holdem_strategy_widget* strategy_;
-    bool play_;
-    QTimer* play_timer_;
     int next_action_;
     std::mt19937 engine_;
     double raise_fraction_;
@@ -96,19 +94,16 @@ private:
     snapshot_type snapshot_;
     bool acting_;
     std::array<double, 2> action_delay_;
-    QTimer* play_done_timer_;
     double action_post_delay_;
-    QTimer* lobby_timer_;
+    QTimer* autolobby_timer_;
     std::unique_ptr<lobby_manager> lobby_;
     QLineEdit* lobby_title_;
     double lobby_interval_;
     QSpinBox* table_count_;
-    int hotkey_;
-    QAction* play_action_;
+    QAction* autoplay_action_;
     state_widget* state_widget_;
     QAction* open_action_;
     QAction* save_images_;
-    QAction* capture_action_;
     int day_start_;
     int day_finish_;
     std::array<double, 2> break_interval_;
@@ -121,5 +116,5 @@ private:
     QLabel* schedule_label_;
     QTimer* registration_timer_;
     QLabel* registered_label_;
-    double user_action_delay_;
+    QAction* autolobby_action_;
 };

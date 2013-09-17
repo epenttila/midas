@@ -96,7 +96,6 @@ namespace
 main_window::main_window()
     : window_manager_(new window_manager)
     , engine_(std::random_device()())
-    , play_(false)
     , input_manager_(new input_manager)
     , acting_(false)
     , break_active_(false)
@@ -149,27 +148,26 @@ main_window::main_window()
     toolbar->addSeparator();
 
     title_filter_ = new QLineEdit(this);
-    title_filter_->setPlaceholderText("Table title");
+    title_filter_->setPlaceholderText("Table title (regex)");
+    connect(title_filter_, SIGNAL(textChanged(const QString&)), SLOT(table_title_changed(const QString&)));
     toolbar->addWidget(title_filter_);
     toolbar->addSeparator();
     lobby_title_ = new QLineEdit(this);
-    lobby_title_->setPlaceholderText("Lobby title");
+    lobby_title_->setPlaceholderText("Lobby title (exact)");
     connect(lobby_title_, SIGNAL(textChanged(const QString&)), SLOT(lobby_title_changed(const QString&)));
     toolbar->addWidget(lobby_title_);
     toolbar->addSeparator();
     table_count_ = new QSpinBox(this);
     table_count_->setValue(1);
     table_count_->setRange(1, 100);
-    table_count_->setEnabled(false);
     toolbar->addWidget(table_count_);
     toolbar->addSeparator();
-    capture_action_ = toolbar->addAction(QIcon(":/icons/control_record.png"), "Capture");
-    capture_action_->setCheckable(true);
-    connect(capture_action_, SIGNAL(toggled(bool)), SLOT(capture_changed(bool)));
-    play_action_ = toolbar->addAction(QIcon(":/icons/control_play.png"), "Play");
-    play_action_->setCheckable(true);
-    play_action_->setEnabled(false);
-    connect(play_action_, SIGNAL(toggled(bool)), SLOT(play_changed(bool)));
+    autoplay_action_ = toolbar->addAction(QIcon(":/icons/control_play.png"), "Autoplay");
+    autoplay_action_->setCheckable(true);
+    connect(autoplay_action_, SIGNAL(toggled(bool)), SLOT(play_changed(bool)));
+    autolobby_action_ = toolbar->addAction(QIcon(":/icons/layout.png"), "Autolobby");
+    autolobby_action_->setCheckable(true);
+    connect(autolobby_action_, SIGNAL(toggled(bool)), SLOT(autolobby_changed(bool)));
     schedule_action_ = toolbar->addAction(QIcon(":/icons/time.png"), "Schedule");
     schedule_action_->setCheckable(true);
     connect(schedule_action_, SIGNAL(toggled(bool)), SLOT(schedule_changed(bool)));
@@ -189,17 +187,16 @@ main_window::main_window()
     layout->addWidget(log_);
     widget->setLayout(layout);
 
-    timer_ = new QTimer(this);
-    connect(timer_, SIGNAL(timeout()), SLOT(timer_timeout()));
-    play_timer_ = new QTimer(this);
-    connect(play_timer_, SIGNAL(timeout()), SLOT(play_timer_timeout()));
-    lobby_timer_ = new QTimer(this);
-    connect(lobby_timer_, SIGNAL(timeout()), SLOT(lobby_timer_timeout()));
+    capture_timer_ = new QTimer(this);
+    connect(capture_timer_, SIGNAL(timeout()), SLOT(capture_timer_timeout()));
+    autolobby_timer_ = new QTimer(this);
+    connect(autolobby_timer_, SIGNAL(timeout()), SLOT(autolobby_timer_timeout()));
     break_timer_ = new QTimer(this);
     connect(break_timer_, SIGNAL(timeout()), SLOT(break_timer_timeout()));
     schedule_timer_ = new QTimer(this);
     connect(schedule_timer_, SIGNAL(timeout()), SLOT(schedule_timer_timeout()));
     registration_timer_ = new QTimer(this);
+    registration_timer_->setSingleShot(true);
     connect(registration_timer_, SIGNAL(timeout()), SLOT(registration_timer_timeout()));
 
     capture_label_ = new QLabel("No window", this);
@@ -210,17 +207,16 @@ main_window::main_window()
     statusBar()->addWidget(registered_label_, 1);
 
     QSettings settings("settings.ini", QSettings::IniFormat);
-    capture_interval_ = settings.value("capture_interval", 0.1).toDouble();
-    action_delay_[0] = settings.value("action_delay_min", 0.1).toDouble();
-    action_delay_[1] = settings.value("action_delay_max", 15.0).toDouble();
-    user_action_delay_ = settings.value("user_action_delay", 15.0).toDouble();
-    action_post_delay_ = settings.value("post_action_delay", 1.0).toDouble();
-    input_manager_->set_delay(settings.value("input_delay_min", 0.1).toDouble(),
-        settings.value("input_delay_max", 0.01).toDouble());
-    lobby_interval_ = settings.value("lobby_interval", 0.1).toDouble();
-    hotkey_ = settings.value("hotkey", VK_F1).toInt();
+    capture_interval_ = settings.value("capture-interval", 1).toDouble();
+    action_delay_[0] = settings.value("action-delay-min", 0.5).toDouble();
+    action_delay_[1] = settings.value("action-delay-max", 2.0).toDouble();
+    action_post_delay_ = settings.value("post-action-delay", 1.0).toDouble();
+    input_manager_->set_delay(settings.value("input-delay-min", 0.5).toDouble(),
+        settings.value("input-delay-max", 1.0).toDouble());
+    lobby_interval_ = settings.value("lobby-interval", 1.0).toDouble();
+    const auto autolobby_hotkey = settings.value("autolobby-hotkey", VK_F1).toInt();
     day_start_ = settings.value("day-start", 10).toInt();
-    day_finish_ = settings.value("day-finish", 18).toInt();
+    day_finish_ = settings.value("day-finish", 20).toInt();
     break_interval_[0] = settings.value("break-interval-min", 60).toDouble();
     break_interval_[1] = settings.value("break-interval-max", 60).toDouble();
     break_length_[0] = settings.value("break-length-min", 10).toDouble();
@@ -228,32 +224,36 @@ main_window::main_window()
 
     log(QString("Loaded settings from \"%1\"").arg(settings.fileName()));
 
-    while (!RegisterHotKey(reinterpret_cast<HWND>(winId()), 0, MOD_ALT | MOD_CONTROL, hotkey_))
-        ++hotkey_;
+    if (RegisterHotKey(reinterpret_cast<HWND>(winId()), 0, MOD_ALT | MOD_CONTROL, autolobby_hotkey))
+    {
+        BOOST_LOG_TRIVIAL(info) << QString("Registered autolobby hotkey Ctrl+Alt+%1")
+            .arg(get_key_text(autolobby_hotkey)).toStdString();
+    }
+    else
+    {
+        BOOST_LOG_TRIVIAL(info) << QString("Unable to register hotkey Ctrl+Alt+%1")
+            .arg(get_key_text(autolobby_hotkey)).toStdString();
+    }
 
-    log(QString("Registered hot key Ctrl+Alt+%1").arg(get_key_text(hotkey_)));
+    BOOST_LOG_TRIVIAL(info) << "Starting capture";
+
+    capture_timer_->start(int(capture_interval_ * 1000.0));
 }
 
 main_window::~main_window()
 {
 }
 
-void main_window::timer_timeout()
+void main_window::capture_timer_timeout()
 {
-    if (window_manager_->is_stop())
-    {
-        capture_action_->setChecked(false);
-        return;
-    }
-
-    find_window();
-
     try
     {
+        find_window();
         process_snapshot();
     }
-    catch (const std::runtime_error&)
+    catch (const std::exception& e)
     {
+        BOOST_LOG_TRIVIAL(error) << "Exception: " << e.what();
     }
 }
 
@@ -284,11 +284,11 @@ void main_window::open_strategy()
             continue;
         }
 
-        const std::string filename = QFileInfo(*i).fileName().toUtf8().data();
+        const std::string filename = QFileInfo(*i).fileName().toStdString();
 
         try
         {
-            std::unique_ptr<nlhe_strategy> p(new nlhe_strategy(i->toUtf8().data()));
+            std::unique_ptr<nlhe_strategy> p(new nlhe_strategy(i->toStdString()));
             auto& si = strategy_infos_[p->get_stack_size()];
             si.reset(new strategy_info);
             si->strategy_ = std::move(p);
@@ -304,70 +304,28 @@ void main_window::open_strategy()
     QApplication::restoreOverrideCursor();
 }
 
-void main_window::capture_changed(const bool checked)
-{
-    if (checked)
-    {
-        log("Starting capture");
-
-        timer_->start(int(capture_interval_ * 1000.0));
-        window_manager_->set_title_filter(std::string(title_filter_->text().toUtf8().data()));
-
-        for (auto it = strategy_infos_.begin(); it != strategy_infos_.end(); ++it)
-            it->second->current_state_ = nullptr;
-    }
-    else
-    {
-        log("Stopping capture");
-
-        timer_->stop();
-        window_manager_->clear_window();
-        play_action_->setChecked(false);
-
-        if (site_)
-            site_->reset();
-
-        if (lobby_)
-            lobby_->reset();
-    }
-
-    title_filter_->setEnabled(!checked);
-    lobby_title_->setEnabled(!checked);
-    table_count_->setEnabled(!checked);
-    play_action_->setEnabled(checked);
-    open_action_->setEnabled(!checked);
-
-}
-
 void main_window::show_strategy_changed()
 {
     strategy_->setVisible(!strategy_->isVisible());
 }
 
-void main_window::play_changed(const bool checked)
+void main_window::autoplay_changed(const bool checked)
 {
-    play_ = checked;
-
-    if (play_)
+    if (checked)
     {
-        log("Starting autoplay");
-        capture_action_->setChecked(true);
-        lobby_timer_->start(int(lobby_interval_ * 1000.0));
+        log("Autoplay: Starting");
     }
-
-    if (!play_)
+    else
     {
-        log("Stopping autoplay");
-        play_timer_->stop();
-        lobby_timer_->stop();
+        log("Autoplay: Stopping");
         acting_ = false;
     }
 }
 
-void main_window::play_timer_timeout()
+void main_window::action_start_timeout()
 {
-    assert(play_);
-    log("Player: Waiting for mutex...");
+    //assert(autoplay_action_->isChecked());
+    log("Autoplay: Waiting for mutex...");
 
     auto mutex = window_manager_->try_interact();
 
@@ -389,18 +347,21 @@ void main_window::play_timer_timeout()
             const double to_call = op_bet - my_bet;
             const double amount = raise_fraction_ * (total_pot + to_call) + to_call + my_bet;
 
-            log(QString("Player: Raise %1 (%2x pot)").arg(amount).arg(raise_fraction_));
+            log(QString("Autoplay: Raise %1 (%2x pot)").arg(amount).arg(raise_fraction_));
             site_->raise(amount, raise_fraction_);
         }
         break;
     }
 
-    log(QString("Player: Waiting for %1 seconds after action...").arg(action_post_delay_));
-    QTimer::singleShot(int(action_post_delay_ * 1000.0), this, SLOT(play_done_timeout()));
+    log(QString("Autoplay: Waiting for %1 s after action...").arg(action_post_delay_));
+    QTimer::singleShot(int(action_post_delay_ * 1000.0), this, SLOT(action_finish_timeout()));
 }
 
 void main_window::find_window()
 {
+    if (site_)
+        site_->set_window(window_manager_->get_window());
+
     if (window_manager_->is_window())
         return;
 
@@ -420,9 +381,6 @@ void main_window::find_window()
     {
         capture_label_->setText("No window");
     }
-
-    if (site_)
-        site_->set_window(window);
 }
 
 void main_window::process_snapshot()
@@ -430,11 +388,7 @@ void main_window::process_snapshot()
     if (acting_ || !site_ || !site_->is_window())
         return;
 
-    boost::timer::cpu_timer t;
-
     site_->update(save_images_->isChecked());
-
-    t.stop();
 
     const auto hole = site_->get_hole_cards();
     std::array<int, 5> board;
@@ -468,11 +422,14 @@ void main_window::process_snapshot()
     visualizer_->set_stacks(site_->get_stack(0), site_->get_stack(1));
     visualizer_->set_buttons(site_->get_buttons());
 
+    if (!autoplay_action_->isChecked())
+        return;
+
     if (site_->is_sit_out(0))
     {
         log("Warning: We are sitting out");
 
-        if (play_)
+        if (autoplay_action_->isChecked())
         {
             log("Player: Sitting in");
             auto mutex = window_manager_->try_interact();
@@ -518,7 +475,7 @@ void main_window::process_snapshot()
         snapshot_.stack_size = int(std::min(stacks[0], stacks[1]) / site_->get_big_blind() * 2 + 0.5);
     }
 
-    log(QString("*** SNAPSHOT (%1 ms) ***").arg(t.elapsed().wall / 1000000.0));
+    BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
 
     if (hole.first != -1 && hole.second != -1)
     {
@@ -601,7 +558,7 @@ void main_window::process_snapshot()
             || (site_->get_dealer() == 1 && current_state->get_player() == 1));
 
     // ensure rounds match
-    assert(current_state->get_round() == round);
+    INTERNAL_VERIFY(current_state->get_round() == round);
 
     std::array<int, 2> pot = current_state->get_pot();
         
@@ -611,7 +568,7 @@ void main_window::process_snapshot()
     visualizer_->set_pot(current_state->get_round(), pot);
 
     // we should never reach terminal states when we have a pending action
-    assert(current_state->get_id() != -1);
+    INTERNAL_VERIFY(current_state->get_id() != -1);
 
     std::stringstream ss;
     ss << *current_state;
@@ -624,7 +581,7 @@ void main_window::process_snapshot()
 
 void main_window::perform_action()
 {
-    assert(site_ && !strategy_infos_.empty() && !play_timer_->isActive());
+    assert(site_ && !strategy_infos_.empty());
 
     auto it = find_nearest(strategy_infos_, snapshot_.stack_size);
     auto& strategy_info = *it->second;
@@ -699,19 +656,14 @@ void main_window::perform_action()
 
     acting_ = true;
 
-    if (play_)
-    {
-        const double wait = site_->is_opponent_sitout() ? action_delay_[0] : get_normal_random(engine_,
-            action_delay_[0], action_delay_[1]);
-        play_timer_->setSingleShot(true);
-        play_timer_->start(int(wait * 1000.0));
-        log(QString("Player: Waiting %1 seconds...").arg(wait));
-    }
-    else
-    {
-        log(QString("Player: Manual play: waiting %1 seconds for user action...").arg(user_action_delay_));
-        QTimer::singleShot(int(user_action_delay_ * 1000.0), this, SLOT(play_done_timeout()));
-    }
+    assert(autoplay_action_->isChecked());
+
+    const double wait = site_->is_opponent_sitout() ? action_delay_[0] : get_normal_random(engine_,
+        action_delay_[0], action_delay_[1]);
+
+    QTimer::singleShot(static_cast<int>(wait * 1000.0), this, SLOT(action_start_timeout()));
+
+    BOOST_LOG_TRIVIAL(info) << QString("Autoplay: Waiting %1 s before action").arg(wait).toStdString();
 }
 
 main_window::strategy_info::strategy_info()
@@ -723,13 +675,20 @@ main_window::strategy_info::~strategy_info()
 {
 }
 
-void main_window::play_done_timeout()
+void main_window::action_finish_timeout()
 {
     acting_ = false;
 }
 
-void main_window::lobby_timer_timeout()
+void main_window::autolobby_timer_timeout()
 {
+    if (window_manager_->is_stop())
+    {
+        BOOST_LOG_TRIVIAL(warning) << "Autolobby: Stopping due to global stop";
+        autolobby_action_->setChecked(false);
+        return;
+    }
+
     if (!lobby_)
         return;
 
@@ -791,7 +750,7 @@ bool main_window::nativeEvent(const QByteArray& /*eventType*/, void* message, lo
 {
     if (reinterpret_cast<MSG*>(message)->message == WM_HOTKEY)
     {
-        play_action_->trigger();
+        autolobby_action_->trigger();
         return true;
     }
 
@@ -805,7 +764,7 @@ void main_window::modify_state_changed()
 
 void main_window::state_widget_board_changed(const QString& board)
 {
-    std::string s(board.toUtf8().data());
+    std::string s(board.toStdString());
     std::array<int, 5> b;
     b.fill(-1);
 
@@ -915,11 +874,6 @@ void main_window::verify(bool expression, const std::string& s, int line)
     throw std::runtime_error(s.c_str());
 }
 
-void main_window::lobby_title_changed(const QString& str)
-{
-    table_count_->setEnabled(!str.isEmpty());
-}
-
 void main_window::schedule_changed(const bool checked)
 {
     if (checked)
@@ -933,6 +887,7 @@ void main_window::schedule_changed(const bool checked)
         log("Scheduler: Disabling");
         schedule_timer_->stop();
         break_timer_->stop();
+        schedule_active_ = false;
     }
 
     schedule_label_->setText(checked ? "Scheduler on" : "Scheduler off");
@@ -1009,4 +964,17 @@ void main_window::schedule_timer_timeout()
 void main_window::registration_timer_timeout()
 {
     lobby_->cancel_registration();
+}
+
+void main_window::table_title_changed(const QString& str)
+{
+    window_manager_->set_title_filter(str.toStdString());
+}
+
+void main_window::autolobby_changed(bool checked)
+{
+    if (checked)
+        autolobby_timer_->start(int(lobby_interval_ * 1000.0));
+    else
+        autolobby_timer_->stop();
 }
