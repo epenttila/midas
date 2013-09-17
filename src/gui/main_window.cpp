@@ -83,7 +83,7 @@ namespace
     QString to_hms(int seconds)
     {
         const auto hours = seconds / 60 / 60;
-        seconds -= hours;
+        seconds -= hours * 60 * 60;
 
         const auto minutes = seconds / 60;
         seconds -= minutes * 60;
