@@ -4,6 +4,7 @@
 #include <vector>
 #include <random>
 #include <memory>
+#include <boost/iostreams/device/mapped_file.hpp>
 
 class strategy
 {
@@ -18,6 +19,6 @@ private:
     int actions_;
     mutable std::mt19937 engine_;
     std::vector<std::size_t> positions_;
-    std::unique_ptr<FILE, int (*)(FILE*)> file_;
+    boost::iostreams::mapped_file_source file_;
     std::string filename_;
 };

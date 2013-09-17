@@ -267,7 +267,7 @@ namespace
 holdem_abstraction_v2::holdem_abstraction_v2()
     : imperfect_recall_(false)
     , bucket_counts_()
-    , file_(nullptr, fclose)
+    , file_()
 {
     std::vector<std::uint8_t> cfg = boost::assign::list_of(2);
     preflop_indexer_.reset(new hand_indexer(cfg));
@@ -318,7 +318,7 @@ void holdem_abstraction_v2::read(const std::string& filename)
 
     parse_configuration(filename, &imperfect_recall_, &bucket_counts_);
 
-    file_ = file_ptr(fopen(filename.c_str(), "rb"), fclose);
+    file_.open(filename);
 
     if (!file_)
         throw std::runtime_error("Unable to open file");
@@ -384,10 +384,5 @@ holdem_abstraction_v2::bucket_idx_t holdem_abstraction_v2::read(int round, hand_
 
     pos += index * sizeof(bucket_idx_t);
 
-    _fseeki64(file_.get(), pos, SEEK_SET);
-
-    bucket_idx_t value;
-    fread(&value, sizeof(value), 1, file_.get());
-
-    return value;
+    return *reinterpret_cast<const bucket_idx_t*>(file_.data() + pos);
 }

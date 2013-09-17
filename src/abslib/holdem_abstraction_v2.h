@@ -1,5 +1,6 @@
 #pragma once
 
+#include <boost/iostreams/device/mapped_file.hpp>
 #include "evallib/holdem_evaluator.h"
 #include "lutlib/holdem_flop_lut.h"
 #include "lutlib/holdem_turn_lut.h"
@@ -38,6 +39,5 @@ private:
     bool imperfect_recall_;
     bucket_counts_t bucket_counts_;
 
-    typedef std::unique_ptr<FILE, int (*)(FILE*)> file_ptr;
-    file_ptr file_;
+    boost::iostreams::mapped_file_source file_;
 };

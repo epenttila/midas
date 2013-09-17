@@ -8,14 +8,16 @@ strategy::strategy(const std::string& filename, std::size_t states, int actions)
     , actions_(actions)
     , engine_(std::random_device()())
     , positions_(states)
-    , file_(fopen(filename.c_str(), "rb"), fclose)
+    , file_(filename)
     , filename_(filename)
 {
     if (!file_)
         throw std::runtime_error("Unable to open strategy file");
 
-    _fseeki64(file_.get(), -std::int64_t(states) * sizeof(positions_[0]), SEEK_END);
-    fread(&positions_[0], sizeof(positions_[0]), positions_.size(), file_.get());
+    const auto pos = file_.size() - std::int64_t(states) * sizeof(positions_[0]);
+    const auto p = reinterpret_cast<const std::uint64_t*>(file_.data() + pos);
+
+    positions_.assign(p, p + positions_.size());
 }
 
 double strategy::get(std::size_t state_id, int action, int bucket) const
@@ -26,11 +28,10 @@ double strategy::get(std::size_t state_id, int action, int bucket) const
         return 0;
     }
 
-    std::size_t pos = positions_[state_id] + (bucket * actions_ + action) * sizeof(double);
-    _fseeki64(file_.get(), pos, SEEK_SET);
-    double value;
-    fread(&value, sizeof(value), 1, file_.get());
-    return value;
+    const auto pos = positions_[state_id] + (bucket * actions_ + action) * sizeof(double);
+    const auto p = reinterpret_cast<const double*>(file_.data() + pos);
+
+    return *p;
 }
 
 int strategy::get_action(std::size_t state_id, int bucket) const

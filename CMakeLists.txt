@@ -27,7 +27,7 @@ set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
 
-find_package(Boost 1.54.0 COMPONENTS program_options timer system chrono filesystem log_setup log thread REQUIRED)
+find_package(Boost 1.54.0 COMPONENTS program_options timer system chrono filesystem log_setup log thread iostreams REQUIRED)
 
 include_directories(${Boost_INCLUDE_DIRS})
 
