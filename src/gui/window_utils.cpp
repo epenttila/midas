@@ -226,9 +226,9 @@ bool click_button(input_manager& input, WId window, const button_data& button, b
     if (!is_button(&image, button))
         return false;
 
-    input.left_click();
-
     if (double_click)
+        input.left_double_click();
+    else
         input.left_click();
 
     return true;

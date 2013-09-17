@@ -20,6 +20,7 @@ public:
     void move_mouse(int x, int y, int width, int height);
     void move_mouse(WId window, int x, int y, int width, int height);
     void left_click();
+    void left_double_click();
 
 private:
     void wind_mouse_impl(double xs, double ys, double xe, double ye, double gravity, double wind, double min_wait,

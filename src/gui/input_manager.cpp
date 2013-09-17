@@ -184,6 +184,17 @@ void input_manager::left_click()
     SendInput(1, &input, sizeof(INPUT));
 }
 
+void input_manager::left_double_click()
+{
+    left_click();
+
+    const auto max = GetDoubleClickTime();
+
+    Sleep(static_cast<DWORD>(get_normal_random(engine_, max * 0.5, max * 0.75)));
+
+    left_click();
+}
+
 double input_manager::get_random_delay()
 {
     return get_normal_random(engine_, delay_[0], delay_[1]);
