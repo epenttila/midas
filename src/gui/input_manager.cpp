@@ -6,9 +6,10 @@
 #include <Windows.h>
 #pragma warning(pop)
 
+#include "util/random.h"
+
 input_manager::input_manager()
     : engine_(std::random_device()())
-    , dist_(0.1, 0.01)
 {
 }
 
@@ -42,29 +43,15 @@ void input_manager::send_string(const std::string& s)
     }
 }
 
-void input_manager::set_delay_mean(double mean)
+void input_manager::set_delay(double min, double max)
 {
-    dist_ = std::normal_distribution<>(mean, dist_.stddev());
-}
-
-void input_manager::set_delay_stddev(double stddev)
-{
-    dist_ = std::normal_distribution<>(dist_.mean(), stddev);
-}
-
-double input_manager::get_delay_mean() const
-{
-    return dist_.mean();
-}
-
-double input_manager::get_delay_stddev() const
-{
-    return dist_.stddev();
+    delay_[0] = min;
+    delay_[1] = max;
 }
 
 void input_manager::sleep()
 {
-    Sleep(int(dist_(engine_) * 1000.0));
+    Sleep(int(get_random_delay() * 1000.0));
 }
 
 void input_manager::set_cursor_position(int x, int y)
@@ -167,11 +154,8 @@ void input_manager::move_mouse(int x, int y)
 
 void input_manager::move_mouse(int x, int y, int width, int height)
 {
-    std::normal_distribution<> dist_x(x + width / 2.0, width / 10.0);
-    std::normal_distribution<> dist_y(y + height / 2.0, height / 10.0);
-
-    int target_x = boost::math::iround(dist_x(engine_));
-    int target_y = boost::math::iround(dist_y(engine_));
+    int target_x = boost::math::iround(get_normal_random(engine_, x, x + width));
+    int target_y = boost::math::iround(get_normal_random(engine_, y, y + height));
 
     target_x = boost::algorithm::clamp(target_x, x, x + width - 1);
     target_y = boost::algorithm::clamp(target_y, y, y + height - 1);
@@ -198,4 +182,9 @@ void input_manager::left_click()
     input.type = INPUT_MOUSE;
     input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
     SendInput(1, &input, sizeof(INPUT));
+}
+
+double input_manager::get_random_delay()
+{
+    return get_normal_random(engine_, delay_[0], delay_[1]);
 }

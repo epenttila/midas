@@ -40,6 +40,7 @@
 #include "util/card.h"
 #include "cfrlib/nlhe_strategy.h"
 #include "abslib/holdem_abstraction.h"
+#include "util/random.h"
 #include "table_widget.h"
 #include "window_manager.h"
 #include "holdem_strategy_widget.h"
@@ -210,19 +211,20 @@ main_window::main_window()
 
     QSettings settings("settings.ini", QSettings::IniFormat);
     capture_interval_ = settings.value("capture_interval", 0.1).toDouble();
-    action_min_delay_ = settings.value("action_min_delay", 0.1).toDouble();
-    action_max_delay_ = settings.value("action_max_delay", 15.0).toDouble();
-    action_delay_mean_ = settings.value("action_delay_mean", 5).toDouble();
-    action_delay_stddev_ = settings.value("action_delay_stddev", 2).toDouble();
-    action_post_delay_ = settings.value("action_post_delay", 1.0).toDouble();
-    input_manager_->set_delay_mean(settings.value("input_delay_mean", 0.1).toDouble());
-    input_manager_->set_delay_stddev(settings.value("input_delay_stddev", 0.01).toDouble());
+    action_delay_[0] = settings.value("action_delay_min", 0.1).toDouble();
+    action_delay_[1] = settings.value("action_delay_max", 15.0).toDouble();
+    user_action_delay_ = settings.value("user_action_delay", 15.0).toDouble();
+    action_post_delay_ = settings.value("post_action_delay", 1.0).toDouble();
+    input_manager_->set_delay(settings.value("input_delay_min", 0.1).toDouble(),
+        settings.value("input_delay_max", 0.01).toDouble());
     lobby_interval_ = settings.value("lobby_interval", 0.1).toDouble();
     hotkey_ = settings.value("hotkey", VK_F1).toInt();
     day_start_ = settings.value("day-start", 10).toInt();
     day_finish_ = settings.value("day-finish", 18).toInt();
-    break_interval_ = settings.value("break-interval", 60).toInt();
-    break_length_ = settings.value("break-length", 10).toInt();
+    break_interval_[0] = settings.value("break-interval-min", 60).toDouble();
+    break_interval_[1] = settings.value("break-interval-max", 60).toDouble();
+    break_length_[0] = settings.value("break-length-min", 10).toDouble();
+    break_length_[0] = settings.value("break-length-max", 10).toDouble();
 
     log(QString("Loaded settings from \"%1\"").arg(settings.fileName()));
 
@@ -699,17 +701,16 @@ void main_window::perform_action()
 
     if (play_)
     {
-        std::normal_distribution<> dist(action_delay_mean_, action_delay_stddev_);
-        const double wait = site_->is_opponent_sitout() ? action_min_delay_ : boost::algorithm::clamp(dist(engine_),
-            action_min_delay_, action_max_delay_);
+        const double wait = site_->is_opponent_sitout() ? action_delay_[0] : get_normal_random(engine_,
+            action_delay_[0], action_delay_[1]);
         play_timer_->setSingleShot(true);
         play_timer_->start(int(wait * 1000.0));
         log(QString("Player: Waiting %1 seconds...").arg(wait));
     }
     else
     {
-        log(QString("Player: Manual play: waiting %1 seconds for user action...").arg(action_max_delay_));
-        QTimer::singleShot(int(action_max_delay_ * 1000.0), this, SLOT(play_done_timeout()));
+        log(QString("Player: Manual play: waiting %1 seconds for user action...").arg(user_action_delay_));
+        QTimer::singleShot(int(user_action_delay_ * 1000.0), this, SLOT(play_done_timeout()));
     }
 }
 
@@ -943,8 +944,7 @@ void main_window::break_timer_timeout()
     {
         break_active_ = true;
 
-        std::normal_distribution<> dist(break_length_, action_delay_stddev_);
-        const auto duration = dist(engine_);
+        const auto duration = get_normal_random(engine_, break_length_[0], break_length_[1]);
 
         log(QString("Scheduler: Break for %1").arg(to_hms(static_cast<int>(duration * 60))));
 
@@ -955,8 +955,7 @@ void main_window::break_timer_timeout()
     {
         break_active_ = false;
 
-        std::normal_distribution<> dist(break_interval_, action_delay_stddev_);
-        const auto duration = dist(engine_);
+        const auto duration = get_normal_random(engine_, break_interval_[0], break_interval_[1]);
 
         log(QString("Scheduler: Next break in %1 minutes").arg(to_hms(static_cast<int>(duration * 60))));
 

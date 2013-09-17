@@ -92,12 +92,10 @@ private:
     std::mt19937 engine_;
     double raise_fraction_;
     double capture_interval_;
-    double action_delay_mean_;
-    double action_delay_stddev_;
     std::unique_ptr<input_manager> input_manager_;
     snapshot_type snapshot_;
     bool acting_;
-    double action_min_delay_;
+    std::array<double, 2> action_delay_;
     QTimer* play_done_timer_;
     double action_post_delay_;
     QTimer* lobby_timer_;
@@ -105,7 +103,6 @@ private:
     QLineEdit* lobby_title_;
     double lobby_interval_;
     QSpinBox* table_count_;
-    double action_max_delay_;
     int hotkey_;
     QAction* play_action_;
     state_widget* state_widget_;
@@ -114,8 +111,8 @@ private:
     QAction* capture_action_;
     int day_start_;
     int day_finish_;
-    int break_interval_;
-    int break_length_;
+    std::array<double, 2> break_interval_;
+    std::array<double, 2> break_length_;
     QAction* schedule_action_;
     bool schedule_active_;
     QTimer* break_timer_;
@@ -124,4 +121,5 @@ private:
     QLabel* schedule_label_;
     QTimer* registration_timer_;
     QLabel* registered_label_;
+    double user_action_delay_;
 };
