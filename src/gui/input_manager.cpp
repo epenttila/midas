@@ -140,8 +140,7 @@ void input_manager::move_mouse(int x, int y)
     POINT pt;
     GetCursorPos(&pt);
 
-    std::uniform_real_distribution<> d(1.5, 3.0);
-    const double speed = d(engine_);
+    const double speed = get_normal_random(engine_, mouse_speed_[0], mouse_speed_[1]);
 
     wind_mouse_impl(pt.x, pt.y, x, y, 9, 3, 5.0 / speed, 10.0 / speed, 10.0 * speed, 8.0 * speed);
     set_cursor_position(x, y);
@@ -198,4 +197,10 @@ void input_manager::left_double_click()
 double input_manager::get_random_delay()
 {
     return get_normal_random(engine_, delay_[0], delay_[1]);
+}
+
+void input_manager::set_mouse_speed(double min, double max)
+{
+    mouse_speed_[0] = min;
+    mouse_speed_[1] = max;
 }

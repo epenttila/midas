@@ -21,6 +21,7 @@ public:
     void move_mouse(WId window, int x, int y, int width, int height);
     void left_click();
     void left_double_click();
+    void set_mouse_speed(double min, double max);
 
 private:
     void wind_mouse_impl(double xs, double ys, double xe, double ye, double gravity, double wind, double min_wait,
@@ -29,4 +30,5 @@ private:
 
     std::mt19937 engine_;
     std::array<double, 2> delay_;
+    std::array<double, 2> mouse_speed_;
 };

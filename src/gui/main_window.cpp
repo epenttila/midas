@@ -221,6 +221,8 @@ main_window::main_window()
     break_interval_[1] = settings.value("break-interval-max", 60).toDouble();
     break_length_[0] = settings.value("break-length-min", 10).toDouble();
     break_length_[0] = settings.value("break-length-max", 10).toDouble();
+    input_manager_->set_mouse_speed(settings.value("mouse-speed-min", 1.5).toDouble(),
+        settings.value("mouse-speed-max", 2.5).toDouble());
 
     log(QString("Loaded settings from \"%1\"").arg(settings.fileName()));
 
