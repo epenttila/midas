@@ -4,11 +4,17 @@
 #include <array>
 #include <fstream>
 #include <sstream>
+#include <regex>
 #include <boost/lexical_cast.hpp>
 #include <boost/signals2.hpp>
-#include <regex>
 #include <boost/timer/timer.hpp>
 #include <boost/algorithm/clamp.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/utility/setup/file.hpp>
+#include <boost/log/utility/setup/console.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+#include <boost/log/sinks/sync_frontend.hpp>
+#include <boost/log/utility/setup/formatter_parser.hpp>
 #include <Windows.h>
 #include <QPlainTextEdit>
 #include <QVBoxLayout>
@@ -41,6 +47,7 @@
 #include "input_manager.h"
 #include "lobby_manager.h"
 #include "state_widget.h"
+#include "qt_log_sink.h"
 
 #define INTERNAL_VERIFY(x) verify(x, #x, __LINE__)
 
@@ -91,10 +98,26 @@ main_window::main_window()
     , play_(false)
     , input_manager_(new input_manager)
     , acting_(false)
-    , logfile_(QDateTime::currentDateTimeUtc().toString("'log-'yyyyMMddTHHmmss'.txt'").toUtf8().data())
     , break_active_(false)
     , schedule_active_(false)
 {
+    boost::log::add_common_attributes();
+
+    static const char* log_format = "[%TimeStamp%] %Message%";
+
+    boost::log::add_console_log
+    (
+        std::clog,
+        boost::log::keywords::format = log_format
+    );
+
+    boost::log::add_file_log
+    (
+        boost::log::keywords::file_name = QDateTime::currentDateTimeUtc().toString("'log-'yyyyMMddTHHmmss'.txt'").toUtf8().data(),
+        boost::log::keywords::auto_flush = true,
+        boost::log::keywords::format = log_format
+    );
+
     auto widget = new QWidget(this);
     widget->setFocus();
 
@@ -153,6 +176,12 @@ main_window::main_window()
     log_ = new QPlainTextEdit(this);
     log_->setReadOnly(true);
     log_->setMaximumBlockCount(1000);
+
+    typedef boost::log::sinks::synchronous_sink<qt_log_sink> sink_t;
+    boost::shared_ptr<qt_log_sink> sink_backend(new qt_log_sink(log_));
+    boost::shared_ptr<sink_t> sink_frontend(new sink_t(sink_backend));
+    sink_frontend->set_formatter(boost::log::parse_formatter(log_format));
+    boost::log::core::get()->add_sink(sink_frontend);
 
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->addWidget(visualizer_);
@@ -738,9 +767,7 @@ void main_window::lobby_timer_timeout()
 
 void main_window::log(const QString& s)
 {
-    const auto message = QString("[%1] %2").arg(QDateTime::currentDateTimeUtc().toString("yyyy-MM-dd hh:mm:ss")).arg(s);
-    log_->appendPlainText(message);
-    logfile_ << message.toUtf8().data() << std::endl;
+    BOOST_LOG_TRIVIAL(info) << s.toStdString();
 }
 
 bool main_window::nativeEvent(const QByteArray& /*eventType*/, void* message, long* /*result*/)

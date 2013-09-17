@@ -105,7 +105,6 @@ private:
     double lobby_interval_;
     QSpinBox* table_count_;
     double action_max_delay_;
-    std::ofstream logfile_;
     int hotkey_;
     QAction* play_action_;
     state_widget* state_widget_;
