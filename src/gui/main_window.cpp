@@ -907,6 +907,10 @@ void main_window::verify(bool expression, const std::string& s, int line)
     log(QString("Error: verification on line %1 failed (%2)").arg(line).arg(s.c_str()));
     window_manager_->stop();
 
+    BOOST_LOG_TRIVIAL(info) << "Saving current snapshot";
+
+    site_->save_snapshot();
+
     throw std::runtime_error(s.c_str());
 }
 

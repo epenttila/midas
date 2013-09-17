@@ -165,11 +165,7 @@ void table_manager::update(bool save)
     *mono_image_ = image_->convertToFormat(QImage::Format_Mono, Qt::ThresholdDither);
 
     if (save)
-    {
-        const auto filename = QDateTime::currentDateTimeUtc().toString("'snapshot-'yyyyMMddTHHmmss'.png'");
-        image_->save(filename);
-        mono_image_->save("mono-" + filename);
-    }
+        save_snapshot();
 }
 
 std::pair<int, int> table_manager::get_hole_cards() const
@@ -344,4 +340,11 @@ bool table_manager::is_window() const
 void table_manager::reset()
 {
     window_ = 0;
+}
+
+void table_manager::save_snapshot() const
+{
+    const auto filename = QDateTime::currentDateTimeUtc().toString("'snapshot-'yyyy-MM-ddTHHmmss.zzz'.png'");
+    image_->save(filename);
+    mono_image_->save("mono-" + filename);
 }

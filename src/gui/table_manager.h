@@ -41,6 +41,7 @@ public:
     bool is_opponent_sitout() const;
     bool is_window() const;
     void reset();
+    void save_snapshot() const;
 
 private:
     WId window_;
