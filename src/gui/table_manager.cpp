@@ -73,7 +73,7 @@ table_manager::table_manager(const std::string& filename, input_manager& input_m
         else if (reader.name() == "bet-size-button")
         {
             const double fraction = reader.attributes().value("fraction").toString().toDouble();
-            size_buttons_[fraction] = window_utils::read_xml_button(reader);
+            size_buttons_.insert(std::make_pair(fraction, window_utils::read_xml_button(reader)));
         }
         else if (reader.name() == "font")
         {
@@ -216,13 +216,20 @@ void table_manager::raise(double amount, double fraction) const
         return;
     }
 
-    const auto i = size_buttons_.find(fraction);
+    bool ok = false;
 
-    if (i != size_buttons_.end() && click_button(input_, window_, i->second))
+    const auto range = size_buttons_.equal_range(fraction);
+
+    for (auto i = range.first; i != range.second; ++i)
     {
-        // do nothing
+        if (click_button(input_, window_, i->second))
+        {
+            ok = true;
+            break;
+        }
     }
-    else if (click_button(input_, window_, bet_input_button_, true))
+
+    if (!ok && click_button(input_, window_, bet_input_button_, true))
     {
         input_.sleep();
 

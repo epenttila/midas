@@ -74,5 +74,5 @@ private:
     std::vector<window_utils::button_data> raise_buttons_;
     window_utils::button_data sit_in_button_;
     window_utils::button_data bet_input_button_;
-    std::unordered_map<double, window_utils::button_data> size_buttons_;
+    std::unordered_multimap<double, window_utils::button_data> size_buttons_;
 };
