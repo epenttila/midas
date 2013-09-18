@@ -158,8 +158,8 @@ main_window::main_window()
     toolbar->addWidget(lobby_title_);
     toolbar->addSeparator();
     table_count_ = new QSpinBox(this);
-    table_count_->setValue(1);
-    table_count_->setRange(1, 100);
+    table_count_->setValue(0);
+    table_count_->setRange(0, 100);
     toolbar->addWidget(table_count_);
     toolbar->addSeparator();
     autoplay_action_ = toolbar->addAction(QIcon(":/icons/control_play.png"), "Autoplay");
