@@ -138,7 +138,7 @@ int main(int argc, char* argv[])
 
         const int stack_size = std::atoi(match[1].str().c_str());
 
-        BOOST_LOG_TRIVIAL(info) << "Playing " << 2 * iterations << " games";
+        BOOST_LOG_TRIVIAL(info) << "Playing " << iterations << " games";
 
         omp_set_num_threads(threads);
 
@@ -159,7 +159,7 @@ int main(int argc, char* argv[])
             g.set_seed(seed + thread);
 
 #pragma omp for
-            for (std::int64_t i = 0; i < std::int64_t(iterations); ++i)
+            for (std::int64_t i = 0; i < std::int64_t(iterations / 2); ++i)
             {
                 g.play(i);
                 plot[thread].push_back(g.get_bankroll());
@@ -171,7 +171,7 @@ int main(int argc, char* argv[])
             g.set_dealer(1);
 
 #pragma omp for
-            for (std::int64_t i = 0; i < std::int64_t(iterations); ++i)
+            for (std::int64_t i = 0; i < std::int64_t(iterations / 2); ++i)
             {
                 g.play(i);
                 plot[thread].push_back(g.get_bankroll());
