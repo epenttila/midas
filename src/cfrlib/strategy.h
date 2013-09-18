@@ -10,7 +10,7 @@ class strategy
 {
 public:
     strategy(const std::string& filename, std::size_t states, int actions);
-    double get(std::size_t state_id, int action, int bucket) const;
+    double get(std::size_t state_id, int action_index, int bucket) const;
     int get_action(std::size_t state_id, int bucket) const;
     std::string get_filename() const;
 

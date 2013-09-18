@@ -48,6 +48,7 @@ public:
     virtual int get_action() const = 0;
     virtual int get_player() const = 0;
     virtual double get_raise_factor(int action) const = 0;
+    virtual std::string get_action_name(int action) const = 0;
 };
 
 template<int BITMASK>
@@ -75,6 +76,7 @@ public:
     int get_action_count() const;
     int get_action(int index) const;
     double get_raise_factor(int action) const;
+    std::string get_action_name(int action) const;
 
 private:
     nlhe_state(const nlhe_state* parent, const int action_index, const int player,

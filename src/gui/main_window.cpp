@@ -617,13 +617,12 @@ void main_window::perform_action()
     const int index = site_->is_opponent_sitout() ? nlhe_state_base::CALL + 1
         : strategy->get_strategy().get_action(current_state->get_id(), bucket);
     const int action = current_state->get_action(index);
-    QString s = "n/a";
+    const QString s = current_state->get_action_name(action).c_str();
 
     switch (action)
     {
     case nlhe_state_base::FOLD:
         next_action_ = table_manager::FOLD;
-        s = "FOLD";
         break;
     case nlhe_state_base::CALL:
         {
@@ -640,14 +639,10 @@ void main_window::perform_action()
             {
                 next_action_ = table_manager::CALL;
             }
-
-            s = "CALL";
         }
         break;
     default:
         next_action_ = table_manager::RAISE;
-        raise_fraction_ = current_state->get_raise_factor(action);
-        s = QString("RAISE %1x pot").arg(raise_fraction_);
         break;
     }
 
@@ -808,8 +803,7 @@ void main_window::update_strategy_widget(const strategy_info& si)
         board[4] = -1;
     }
 
-    strategy_->update(si.strategy_->get_abstraction(), hole, board, si.strategy_->get_strategy(),
-        si.current_state_->get_id(), si.current_state_->get_action_count());
+    strategy_->update(*si.strategy_, hole, board, si.current_state_->get_id());
 
     std::stringstream ss;
     ss << *si.current_state_;

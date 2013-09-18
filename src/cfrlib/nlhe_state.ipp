@@ -377,6 +377,25 @@ double nlhe_state<BITMASK>::get_raise_factor(const int action) const
 }
 
 template<int BITMASK>
+std::string nlhe_state<BITMASK>::get_action_name(int action) const
+{
+    switch (action)
+    {
+    case FOLD: return "FOLD";
+    case CALL: return "CALL";
+    case RAISE_H: return "RAISE_H";
+    case RAISE_Q: return "RAISE_Q";
+    case RAISE_P: return "RAISE_P";
+    case RAISE_W: return "RAISE_W";
+    case RAISE_D: return "RAISE_D";
+    case RAISE_T: return "RAISE_T";
+    case RAISE_E: return "RAISE_E";
+    case RAISE_A: return "RAISE_A";
+    default: assert(false); return "INVALID_ACTION";
+    }
+}
+
+template<int BITMASK>
 std::array<int, nlhe_state<BITMASK>::MAX_ACTIONS> nlhe_state<BITMASK>::action_to_index_;
 
 template<int BITMASK>
