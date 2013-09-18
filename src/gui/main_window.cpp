@@ -643,6 +643,7 @@ void main_window::perform_action()
         break;
     default:
         next_action_ = table_manager::RAISE;
+        raise_fraction_ = current_state->get_raise_factor(action);
         break;
     }
 
