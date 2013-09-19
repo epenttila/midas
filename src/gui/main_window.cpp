@@ -647,14 +647,14 @@ void main_window::perform_action()
         break;
     case nlhe_state_base::CALL:
         {
-            const int prev_action_index = current_state->get_action();
-            const int prev_action = prev_action_index != -1 ? current_state->get_action(prev_action_index) : -1;
+            ENSURE(current_state->call() != nullptr);
 
-            // ensure we get allin if the opponent went allin
-            if (prev_action == nlhe_state_base::RAISE_A)
+            // ensure the hand really terminates if our abstraction says so
+            if (current_state->call()->is_terminal())
             {
                 next_action_ = table_manager::RAISE;
                 raise_fraction_ = ALLIN_BET_SIZE;
+                BOOST_LOG_TRIVIAL(info) << "Strategy: Translating call to all-in to ensure hand terminates";
             }
             else
             {
