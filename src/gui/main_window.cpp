@@ -877,7 +877,7 @@ void main_window::ensure(bool expression, const std::string& s, int line)
 
     assert(false);
     log(QString("Error: verification on line %1 failed (%2)").arg(line).arg(s.c_str()));
-    window_manager_->stop();
+    window_manager_->set_stop(true);
 
     BOOST_LOG_TRIVIAL(info) << "Saving current snapshot";
 
@@ -987,6 +987,7 @@ void main_window::autolobby_changed(bool checked)
 {
     if (checked)
     {
+        window_manager_->set_stop(false);
         autolobby_timer_->start(int(lobby_interval_ * 1000.0));
     }
     else

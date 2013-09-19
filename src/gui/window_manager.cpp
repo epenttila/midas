@@ -164,9 +164,9 @@ QPixmap window_manager::screenshot(WId window)
     return pixmap;
 }
 
-void window_manager::stop()
+void window_manager::set_stop(bool stop)
 {
-    *stop_ = true;
+    *stop_ = stop;
 }
 
 bool window_manager::is_stop() const

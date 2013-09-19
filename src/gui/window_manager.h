@@ -28,7 +28,7 @@ public:
     static std::string get_window_text(WId window);
     void clear_window();
     static QPixmap screenshot(WId winId);
-    void stop();
+    void set_stop(bool stop);
     bool is_stop() const;
     std::unordered_set<WId> get_tables() const;
 
