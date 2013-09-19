@@ -395,18 +395,37 @@ void main_window::process_snapshot()
     std::array<int, 5> board;
     site_->get_board_cards(board);
 
-    int round;
+    int round = -1;
 
-    if (board[4] != -1)
-        round = RIVER;
-    else if (board[3] != -1)
-        round = TURN;
-    else if (board[0] != -1)
-        round = FLOP;
-    else if (hole.first != -1 && hole.second != -1)
-        round = PREFLOP;
+    if (hole.first != -1 && hole.second != -1)
+    {
+        if (board[0] != -1 && board[1] != -1 && board[2] != -1)
+        {
+            if (board[3] != -1)
+            {
+                if (board[4] != -1)
+                    round = RIVER;
+                else
+                    round = TURN;
+            }
+            else
+            {
+                round = FLOP;
+            }
+        }
+        else if (board[0] == -1 && board[1] == -1 && board[2] == -1)
+        {
+            round = PREFLOP;
+        }
+        else
+        {
+            round = -1;
+        }
+    }
     else
+    {
         round = -1;
+    }
 
     const bool new_game = round == 0
         && ((site_->get_dealer() == 0 && site_->get_bet(0) < site_->get_big_blind())
@@ -441,6 +460,9 @@ void main_window::process_snapshot()
     // wait until we see buttons
     if (site_->get_buttons() == 0)
         return;
+
+    // this will most likely fail if we can't read the cards
+    ENSURE(round != -1);
 
     // wait until we see stack sizes
     if (site_->get_stack(0) == 0 || (site_->get_stack(1) == 0 && !site_->is_opponent_allin() && !site_->is_opponent_sitout()))
