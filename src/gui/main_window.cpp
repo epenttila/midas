@@ -650,11 +650,11 @@ void main_window::perform_action()
             ENSURE(current_state->call() != nullptr);
 
             // ensure the hand really terminates if our abstraction says so
-            if (current_state->call()->is_terminal())
+            if (current_state->get_round() < RIVER && current_state->call()->is_terminal())
             {
                 next_action_ = table_manager::RAISE;
                 raise_fraction_ = ALLIN_BET_SIZE;
-                BOOST_LOG_TRIVIAL(info) << "Strategy: Translating call to all-in to ensure hand terminates";
+                BOOST_LOG_TRIVIAL(info) << "Strategy: Translating pre-river call to all-in to ensure hand terminates";
             }
             else
             {
