@@ -50,7 +50,7 @@
 #include "state_widget.h"
 #include "qt_log_sink.h"
 
-#define INTERNAL_VERIFY(x) verify(x, #x, __LINE__)
+#define ENSURE(x) ensure(x, #x, __LINE__)
 
 namespace
 {
@@ -326,7 +326,6 @@ void main_window::autoplay_changed(const bool checked)
 
 void main_window::action_start_timeout()
 {
-    //assert(autoplay_action_->isChecked());
     log("Autoplay: Waiting for mutex...");
 
     auto mutex = window_manager_->try_interact();
@@ -451,9 +450,9 @@ void main_window::process_snapshot()
     snapshot_.bet = site_->get_bet(1);
 
     // our stack size should always be visible
-    INTERNAL_VERIFY(site_->get_stack(0) > 0);
+    ENSURE(site_->get_stack(0) > 0);
     // opponent stack might be obstructed by all-in or sitout statuses
-    INTERNAL_VERIFY(site_->get_stack(1) > 0 || site_->is_opponent_allin() || site_->is_opponent_sitout());
+    ENSURE(site_->get_stack(1) > 0 || site_->is_opponent_allin() || site_->is_opponent_sitout());
 
     if (new_game)
     {
@@ -473,7 +472,7 @@ void main_window::process_snapshot()
                 stacks[1] = site_->get_bet(1); // opponent stack equals his bet
         }
 
-        INTERNAL_VERIFY(stacks[0] > 0 && stacks[1] > 0);
+        ENSURE(stacks[0] > 0 && stacks[1] > 0);
         snapshot_.stack_size = int(std::min(stacks[0], stacks[1]) / site_->get_big_blind() * 2 + 0.5);
     }
 
@@ -540,7 +539,7 @@ void main_window::process_snapshot()
         // make sure opponent allin is always terminal on his part and doesnt get translated to something else
         const double fraction = site_->is_opponent_allin() ? ALLIN_BET_SIZE : (site_->get_bet(1) - site_->get_bet(0))
             / (site_->get_total_pot() - (site_->get_bet(1) - site_->get_bet(0)));
-        INTERNAL_VERIFY(fraction > 0);
+        ENSURE(fraction > 0);
         log(QString("State: Opponent raised %1x pot").arg(fraction));
         current_state = current_state->raise(fraction); // there is an outstanding bet/raise
     }
@@ -553,14 +552,14 @@ void main_window::process_snapshot()
         current_state = current_state->call();
     }
 
-    INTERNAL_VERIFY(current_state != nullptr);
+    ENSURE(current_state != nullptr);
 
     // ensure it is our turn
-    INTERNAL_VERIFY((site_->get_dealer() == 0 && current_state->get_player() == 0)
+    ENSURE((site_->get_dealer() == 0 && current_state->get_player() == 0)
             || (site_->get_dealer() == 1 && current_state->get_player() == 1));
 
     // ensure rounds match
-    INTERNAL_VERIFY(current_state->get_round() == round);
+    ENSURE(current_state->get_round() == round);
 
     std::array<int, 2> pot = current_state->get_pot();
         
@@ -570,7 +569,7 @@ void main_window::process_snapshot()
     visualizer_->set_pot(current_state->get_round(), pot);
 
     // we should never reach terminal states when we have a pending action
-    INTERNAL_VERIFY(current_state->get_id() != -1);
+    ENSURE(current_state->get_id() != -1);
 
     std::stringstream ss;
     ss << *current_state;
@@ -583,7 +582,7 @@ void main_window::process_snapshot()
 
 void main_window::perform_action()
 {
-    assert(site_ && !strategy_infos_.empty());
+    ENSURE(site_ && !strategy_infos_.empty());
 
     auto it = find_nearest(strategy_infos_, snapshot_.stack_size);
     auto& strategy_info = *it->second;
@@ -611,7 +610,7 @@ void main_window::perform_action()
 
     auto& current_state = strategy_info.current_state_;
 
-    assert(current_state && !current_state->is_terminal() && bucket != -1);
+    ENSURE(current_state && !current_state->is_terminal() && bucket != -1);
 
     const auto& strategy = strategy_info.strategy_;
     const int index = site_->is_opponent_sitout() ? nlhe_state_base::CALL + 1
@@ -855,7 +854,7 @@ void main_window::state_widget_raised(double fraction)
     update_strategy_widget(si);
 }
 
-void main_window::verify(bool expression, const std::string& s, int line)
+void main_window::ensure(bool expression, const std::string& s, int line)
 {
     if (expression)
         return;

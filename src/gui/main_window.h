@@ -75,7 +75,7 @@ private:
     void log(const QString& s);
     bool nativeEvent(const QByteArray& eventType, void* message, long* result);
     void update_strategy_widget(const strategy_info& si);
-    void verify(bool expression, const std::string& s, int line);
+    void ensure(bool expression, const std::string& s, int line);
 
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<strategy_info>> strategy_infos_;
