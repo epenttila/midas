@@ -2,6 +2,7 @@
 
 #pragma warning(push, 1)
 #include <regex>
+#include <unordered_set>
 #include <boost/interprocess/managed_windows_shared_memory.hpp>
 #include <boost/interprocess/containers/set.hpp>
 #include <boost/interprocess/allocators/allocator.hpp>
@@ -29,6 +30,7 @@ public:
     static QPixmap screenshot(WId winId);
     void stop();
     bool is_stop() const;
+    std::unordered_set<WId> get_tables() const;
 
 private:
     typedef WId key_type;

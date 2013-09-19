@@ -2,6 +2,7 @@
 
 #pragma warning(push, 3)
 #include <regex>
+#include <unordered_set>
 #include <boost/noncopyable.hpp>
 #include <QWidget>
 #include <Windows.h>
@@ -10,11 +11,12 @@
 #include "window_utils.h"
 
 class input_manager;
+class window_manager;
 
 class lobby_manager : private boost::noncopyable
 {
 public:
-    lobby_manager(const std::string& filename, input_manager& input_manager);
+    lobby_manager(const std::string& filename, input_manager& input_manager, const window_manager& window_manager);
     bool close_popups();
     bool is_window() const;
     bool register_sng();
@@ -23,6 +25,8 @@ public:
     void reset();
     bool ensure_visible();
     void cancel_registration();
+    bool detect_closed_tables();
+    int get_table_count() const;
 
 private:
     static BOOL CALLBACK callback(HWND window, LPARAM lParam);
@@ -31,6 +35,7 @@ private:
     input_manager& input_manager_;
     int registered_;
     bool registering_;
+    const window_manager& window_manager_;
 
     std::vector<window_utils::popup_data> popups_;
     std::vector<window_utils::popup_data> reg_fail_popups_;
@@ -38,4 +43,6 @@ private:
     std::vector<window_utils::popup_data> finished_popups_;
 
     std::vector<window_utils::button_data> register_buttons_;
+
+    std::unordered_set<WId> tables_;
 };

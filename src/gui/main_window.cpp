@@ -280,7 +280,7 @@ void main_window::open_strategy()
         if (QFileInfo(*i).suffix() == "xml")
         {
             const auto filename = i->toStdString();
-            lobby_.reset(new lobby_manager(filename, *input_manager_));
+            lobby_.reset(new lobby_manager(filename, *input_manager_, *window_manager_));
             site_.reset(new table_manager(filename, *input_manager_));
             log(QString("Loaded site settings \"%1\"").arg(filename.c_str()));
             continue;
@@ -366,12 +366,8 @@ void main_window::find_window()
     if (window_manager_->is_window())
         return;
 
-    WId window = 0;
-
     if (window_manager_->find_window())
     {
-        window = window_manager_->get_window();
-
         const std::string title_name = window_manager_->get_title_name();
         capture_label_->setText(QString("%1").arg(title_name.c_str()));
 
@@ -711,7 +707,8 @@ void main_window::autolobby_timer_timeout()
     if (!lobby_)
         return;
 
-    registered_label_->setText(QString("%1/%2").arg(lobby_->get_registered_sngs()).arg(table_count_->value()));
+    registered_label_->setText(QString("Regs: %1/%2 - Tables: %3/%2").arg(lobby_->get_registered_sngs())
+        .arg(table_count_->value()).arg(lobby_->get_table_count()));
 
     if (!lobby_->is_window())
     {
@@ -737,7 +734,9 @@ void main_window::autolobby_timer_timeout()
     if (!lobby_->ensure_visible())
         return;
 
-    if (lobby_->get_registered_sngs() < table_count_->value()
+    const auto table_count_ok = lobby_->detect_closed_tables();
+
+    if (table_count_ok && lobby_->get_registered_sngs() < table_count_->value()
         && (!schedule_action_->isChecked() || (schedule_active_ && !break_active_)))
     {
         if (lobby_->register_sng())
@@ -748,16 +747,11 @@ void main_window::autolobby_timer_timeout()
         }
     }
 
-    const auto old = lobby_->get_registered_sngs();
-
     if (lobby_->close_popups())
     {
         BOOST_LOG_TRIVIAL(info) << "Stopping registration timeout timer";
         registration_timer_->stop();
     }
-
-    if (lobby_->get_registered_sngs() != old)
-        log(QString("Lobby: Registration count changed (%1 -> %2)").arg(old).arg(lobby_->get_registered_sngs()));
 }
 
 void main_window::log(const QString& s)

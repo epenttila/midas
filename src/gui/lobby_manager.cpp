@@ -11,11 +11,12 @@
 #include "input_manager.h"
 #include "table_manager.h"
 
-lobby_manager::lobby_manager(const std::string& filename, input_manager& input_manager)
+lobby_manager::lobby_manager(const std::string& filename, input_manager& input_manager, const window_manager& wm)
     : window_(0)
     , input_manager_(input_manager)
     , registered_(0)
     , registering_(false)
+    , window_manager_(wm)
 {
     BOOST_LOG_TRIVIAL(info) << "Lobby: Opening settings: " << filename;
 
@@ -84,12 +85,7 @@ BOOL CALLBACK lobby_manager::callback(HWND hwnd, LPARAM lParam)
         BOOST_LOG_TRIVIAL(info) << "Lobby: Registration success (" << lobby->registered_ << " active)";
     }
 
-    if (window_utils::close_popups(lobby->input_manager_, window, lobby->finished_popups_))
-    {
-        --lobby->registered_;
-
-        BOOST_LOG_TRIVIAL(info) << "Lobby: Tournament finished (" << lobby->registered_ << " active)";
-    }
+    window_utils::close_popups(lobby->input_manager_, window, lobby->finished_popups_);
 
     if (window_utils::close_popups(lobby->input_manager_, window, lobby->reg_fail_popups_))
     {
@@ -139,6 +135,7 @@ void lobby_manager::reset()
     registered_ = 0;
     registering_ = false;
     window_ = 0;
+    tables_.clear();
 
     BOOST_LOG_TRIVIAL(info) << "Lobby: Resetting (" << registered_ << " active)";
 }
@@ -160,4 +157,45 @@ void lobby_manager::cancel_registration()
     registering_ = false;
 
     BOOST_LOG_TRIVIAL(info) << "Lobby: Registration cancelled (" << registered_ << " active)";
+}
+
+bool lobby_manager::detect_closed_tables()
+{
+    const auto tables = window_manager_.get_tables();
+    bool ret = false;
+
+    if (registered_ >= tables_.size())
+    {
+        for (const auto i : tables_)
+        {
+            if (tables.find(i) == tables.end())
+            {
+                --registered_;
+                BOOST_LOG_TRIVIAL(info) << "Lobby: Tournament finished (" << registered_ << " active)";
+            }
+        }
+
+        if (registered_ < 0)
+        {
+            BOOST_LOG_TRIVIAL(warning) << "Warning: Negative registrations";
+            registered_ = 0;
+        }
+
+        ret = true;
+    }
+    else
+    {
+        // wait until we get rid of the extra tables
+        BOOST_LOG_TRIVIAL(warning) << "Warning: There are more tables than registrations";
+        ret = false;
+    }
+
+    tables_ = tables;
+
+    return ret;
+}
+
+int lobby_manager::get_table_count() const
+{
+    return static_cast<int>(tables_.size());
 }

@@ -41,7 +41,16 @@ bool window_manager::is_window() const
 
 bool window_manager::find_window()
 {
+    if (is_window())
+        return false; // consider the function result a failure if we already have a window
+
+    boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> lock(*mutex_);
+
+    set_->erase(window_);
+    window_ = 0;
+
     EnumWindows(callback, reinterpret_cast<LPARAM>(this));
+
     return is_window();
 }
 
@@ -73,8 +82,7 @@ bool window_manager::try_window(WId window)
     if (!is_window_good(window))
         return false;
 
-    boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> lock(*mutex_);
-
+    // called from find_window() where the mutex is locked
     if (set_->find(window) != set_->end())
         return false;
 
@@ -164,4 +172,11 @@ void window_manager::stop()
 bool window_manager::is_stop() const
 {
     return *stop_;
+}
+
+std::unordered_set<WId> window_manager::get_tables() const
+{
+    boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> lock(*mutex_);
+
+    return std::unordered_set<WId>(set_->begin(), set_->end());
 }
