@@ -62,13 +62,6 @@ private:
         std::unique_ptr<nlhe_strategy> strategy_;
     };
 
-    struct snapshot_type
-    {
-        int round;
-        double bet;
-        int stack_size;
-    };
-
     void find_window();
     void process_snapshot();
     void perform_action();
@@ -91,7 +84,6 @@ private:
     double raise_fraction_;
     double capture_interval_;
     std::unique_ptr<input_manager> input_manager_;
-    snapshot_type snapshot_;
     bool acting_;
     std::array<double, 2> action_delay_;
     double action_post_delay_;
@@ -117,4 +109,5 @@ private:
     QTimer* registration_timer_;
     QLabel* registered_label_;
     QAction* autolobby_action_;
+    int stack_size_;
 };

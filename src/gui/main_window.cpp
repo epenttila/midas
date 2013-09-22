@@ -100,6 +100,7 @@ main_window::main_window()
     , acting_(false)
     , break_active_(false)
     , schedule_active_(false)
+    , stack_size_(-1)
 {
     boost::log::add_common_attributes();
 
@@ -370,9 +371,6 @@ void main_window::find_window()
     {
         const std::string title_name = window_manager_->get_title_name();
         capture_label_->setText(QString("%1").arg(title_name.c_str()));
-
-        snapshot_.round = -1;
-        snapshot_.bet = -1;
     }
     else
     {
@@ -464,9 +462,6 @@ void main_window::process_snapshot()
     if (site_->get_stack(0) == 0 || (site_->get_stack(1) == 0 && !site_->is_opponent_allin() && !site_->is_opponent_sitout()))
         return;
 
-    snapshot_.round = round;
-    snapshot_.bet = site_->get_bet(1);
-
     // our stack size should always be visible
     ENSURE(site_->get_stack(0) > 0);
     // opponent stack might be obstructed by all-in or sitout statuses
@@ -491,8 +486,10 @@ void main_window::process_snapshot()
         }
 
         ENSURE(stacks[0] > 0 && stacks[1] > 0);
-        snapshot_.stack_size = int(std::min(stacks[0], stacks[1]) / site_->get_big_blind() * 2 + 0.5);
+        stack_size_ = int(std::min(stacks[0], stacks[1]) / site_->get_big_blind() * 2 + 0.5);
     }
+
+    ENSURE(stack_size_ > 0);
 
     BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
 
@@ -521,13 +518,13 @@ void main_window::process_snapshot()
     if (strategy_infos_.empty())
         return;
 
-    auto it = find_nearest(strategy_infos_, snapshot_.stack_size);
+    auto it = find_nearest(strategy_infos_, stack_size_);
     auto& strategy_info = *it->second;
     auto& current_state = strategy_info.current_state_;
 
     if (new_game && round == 0)
     {
-        log(QString("State: New game (%1 SB)").arg(snapshot_.stack_size));
+        log(QString("State: New game (%1 SB)").arg(stack_size_));
         current_state = &strategy_info.strategy_->get_root_state();
     }
 
@@ -602,7 +599,7 @@ void main_window::perform_action()
 {
     ENSURE(site_ && !strategy_infos_.empty());
 
-    auto it = find_nearest(strategy_infos_, snapshot_.stack_size);
+    auto it = find_nearest(strategy_infos_, stack_size_);
     auto& strategy_info = *it->second;
 
     auto hole = site_->get_hole_cards();
