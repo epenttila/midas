@@ -13,3 +13,11 @@ double get_normal_random(T& engine, double min, double max)
 
     return boost::algorithm::clamp(x, min, max);
 }
+
+template<class T>
+double get_uniform_random(T& engine, double min, double max)
+{
+    const auto x = std::uniform_real_distribution<>(min, max)(engine);
+
+    return boost::algorithm::clamp(x, min, max);
+}

@@ -47,7 +47,6 @@ public slots:
     void state_widget_called();
     void state_widget_raised(double fraction);
     void schedule_changed(bool checked);
-    void break_timer_timeout();
     void schedule_timer_timeout();
     void registration_timer_timeout();
     void autolobby_changed(bool checked);
@@ -96,18 +95,14 @@ private:
     state_widget* state_widget_;
     QAction* open_action_;
     QAction* save_images_;
-    int day_start_;
-    int day_finish_;
-    std::array<double, 2> break_interval_;
-    std::array<double, 2> break_length_;
+    std::vector<std::pair<double, double>> activity_spans_;
     QAction* schedule_action_;
     bool schedule_active_;
-    QTimer* break_timer_;
     QTimer* schedule_timer_;
-    bool break_active_;
     QLabel* schedule_label_;
     QTimer* registration_timer_;
     QLabel* registered_label_;
     QAction* autolobby_action_;
     int stack_size_;
+    double activity_variance_;
 };

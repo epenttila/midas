@@ -91,6 +91,48 @@ namespace
 
         return QString("%1:%2:%3").arg(hours).arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 10, QChar('0'));
     }
+
+    int get_time_to_activity(std::mt19937& engine, const double var,
+        const std::vector<std::pair<double, double>>& spans, const bool upper_bound)
+    {
+        if (spans.empty())
+            return -1;
+
+        const auto now = QDateTime::currentDateTime();
+        const auto hour = now.toString("H").toInt() + now.toString("m").toInt() / 60.0 + now.toString("s").toInt()
+            / 3600.0;
+
+        double time = -1;
+
+        for (std::size_t i = 0; i < spans.size(); ++i)
+        {
+            if (hour >= spans[i].first && hour < spans[i].second)
+            {
+                if (!upper_bound)
+                    time = 0;
+                else
+                    time = spans[i].second - hour;
+
+                break;
+            }
+
+            if (hour < spans[i].first)
+                time = spans[i].first - hour;
+        }
+
+        if (time == -1)
+            time = spans[0].first - (hour - 24);
+
+        if (time == -1)
+        {
+            assert(false);
+            return -1;
+        }
+
+        time = std::max(0.0, get_uniform_random(engine, time - var / 3600.0, time + var / 3600.0));
+
+        return static_cast<int>(time * 60 * 60 * 1000);
+    }
 }
 
 main_window::main_window()
@@ -98,7 +140,6 @@ main_window::main_window()
     , engine_(std::random_device()())
     , input_manager_(new input_manager)
     , acting_(false)
-    , break_active_(false)
     , schedule_active_(false)
     , stack_size_(-1)
 {
@@ -192,8 +233,6 @@ main_window::main_window()
     connect(capture_timer_, SIGNAL(timeout()), SLOT(capture_timer_timeout()));
     autolobby_timer_ = new QTimer(this);
     connect(autolobby_timer_, SIGNAL(timeout()), SLOT(autolobby_timer_timeout()));
-    break_timer_ = new QTimer(this);
-    connect(break_timer_, SIGNAL(timeout()), SLOT(break_timer_timeout()));
     schedule_timer_ = new QTimer(this);
     connect(schedule_timer_, SIGNAL(timeout()), SLOT(schedule_timer_timeout()));
     registration_timer_ = new QTimer(this);
@@ -216,14 +255,22 @@ main_window::main_window()
         settings.value("input-delay-max", 1.0).toDouble());
     lobby_interval_ = settings.value("lobby-interval", 1.0).toDouble();
     const auto autolobby_hotkey = settings.value("autolobby-hotkey", VK_F1).toInt();
-    day_start_ = settings.value("day-start", 10).toInt();
-    day_finish_ = settings.value("day-finish", 20).toInt();
-    break_interval_[0] = settings.value("break-interval-min", 60).toDouble();
-    break_interval_[1] = settings.value("break-interval-max", 60).toDouble();
-    break_length_[0] = settings.value("break-length-min", 10).toDouble();
-    break_length_[1] = settings.value("break-length-max", 10).toDouble();
     input_manager_->set_mouse_speed(settings.value("mouse-speed-min", 1.5).toDouble(),
         settings.value("mouse-speed-max", 2.5).toDouble());
+    activity_variance_ = settings.value("activity-variance", 0.0).toDouble();
+
+    for (auto i : settings.value("activity-spans").toStringList())
+    {
+        const auto j = i.split(QChar('-'));
+
+        if (j.size() != 2)
+        {
+            BOOST_LOG_TRIVIAL(error) << "Settings: Invalid activity span";
+            continue;
+        }
+
+        activity_spans_.push_back(std::make_pair(j.at(0).toDouble(), j.at(1).toDouble()));
+    }
 
     log(QString("Loaded settings from \"%1\"").arg(settings.fileName()));
 
@@ -258,6 +305,20 @@ void main_window::capture_timer_timeout()
     {
         BOOST_LOG_TRIVIAL(error) << "Exception: " << e.what();
     }
+
+    QString s;
+
+    if (schedule_action_->isChecked())
+    {
+        if (schedule_active_)
+            s = QString("Active for %1").arg(to_hms(schedule_timer_->remainingTime() / 1000));
+        else
+            s = QString("Inactive for %1").arg(to_hms(schedule_timer_->remainingTime() / 1000));
+    }
+    else
+        s = "Scheduler off";
+
+    schedule_label_->setText(s);
 }
 
 void main_window::open_strategy()
@@ -734,7 +795,7 @@ void main_window::autolobby_timer_timeout()
     const auto table_count_ok = lobby_->detect_closed_tables();
 
     if (table_count_ok && lobby_->get_registered_sngs() < table_count_->value()
-        && (!schedule_action_->isChecked() || (schedule_active_ && !break_active_)))
+        && (!schedule_action_->isChecked() || schedule_active_))
     {
         if (lobby_->register_sng())
         {
@@ -888,86 +949,52 @@ void main_window::schedule_changed(const bool checked)
     if (checked)
     {
         log("Scheduler: Enabling");
-        schedule_timer_->setInterval(1000);
-        schedule_timer_->start();
+
+        const auto time = get_time_to_activity(engine_, activity_variance_, activity_spans_, false);
+
+        if (time == -1)
+        {
+            BOOST_LOG_TRIVIAL(error) << "Scheduler: Unable to determine time to next activity";
+            return;
+        }
+
+        schedule_active_ = false;
+
+        schedule_timer_->setSingleShot(true);
+        schedule_timer_->start(time);
+
+        BOOST_LOG_TRIVIAL(info) << QString("Scheduler: Next activity in %1")
+            .arg(to_hms(static_cast<int>(schedule_timer_->remainingTime() / 1000))).toStdString();
     }
     else
     {
         log("Scheduler: Disabling");
         schedule_timer_->stop();
-        break_timer_->stop();
         schedule_active_ = false;
-    }
-
-    schedule_label_->setText(checked ? "Scheduler on" : "Scheduler off");
-}
-
-void main_window::break_timer_timeout()
-{
-    if (!break_active_)
-    {
-        break_active_ = true;
-
-        const auto duration = get_normal_random(engine_, break_length_[0], break_length_[1]);
-
-        log(QString("Scheduler: Break for %1").arg(to_hms(static_cast<int>(duration * 60))));
-
-        break_timer_->setSingleShot(true);
-        break_timer_->start(int(duration * 60.0 * 1000.0));
-    }
-    else
-    {
-        break_active_ = false;
-
-        const auto duration = get_normal_random(engine_, break_interval_[0], break_interval_[1]);
-
-        log(QString("Scheduler: Next break in %1 minutes").arg(to_hms(static_cast<int>(duration * 60))));
-
-        break_timer_->setSingleShot(true);
-        break_timer_->start(int(duration * 60.0 * 1000.0));
     }
 }
 
 void main_window::schedule_timer_timeout()
 {
-    const auto now = QDateTime::currentDateTime();
-    const auto hour = now.toString("H").toInt();
-    const bool active = (hour >= day_start_ && hour < day_finish_);
+    schedule_active_ = !schedule_active_;
 
-    if (active && !schedule_active_)
+    const auto time = get_time_to_activity(engine_, activity_variance_, activity_spans_, true);
+
+    if (time == -1)
     {
-        log(QString("Scheduler: Enabling registration: hour is %1 [%2, %3]").arg(hour).arg(day_start_)
-            .arg(day_finish_));
-
-        schedule_active_ = true;
-        break_active_ = true; // make sure we don't start with a break
-
-        break_timer_->start();
-    }
-    else if (!active && schedule_active_)
-    {
-        log(QString("Scheduler: Disabling registration: hour is %1 [%2, %3]").arg(hour).arg(day_start_)
-            .arg(day_finish_));
-
-        schedule_active_ = false;
-        break_active_ = false;
-
-        break_timer_->stop();
+        BOOST_LOG_TRIVIAL(error) << "Scheduler: Unable to determine time to next activity";
+        return;
     }
 
-    QString s;
+    schedule_timer_->start(time);
 
-    if (active)
-    {
-        if (break_active_)
-            s = QString("Break for %1").arg(to_hms(break_timer_->remainingTime() / 1000));
-        else
-            s = QString("Next break in %1").arg(to_hms(break_timer_->remainingTime() / 1000));
-    }
+    if (schedule_active_)
+        log(QString("Scheduler: Enabling registration"));
     else
-        s = QString("Inactive until: %1:00-%2:00").arg(day_start_, 2).arg(day_finish_, 2);
+        log(QString("Scheduler: Disabling registration"));
 
-    schedule_label_->setText(s);
+    BOOST_LOG_TRIVIAL(info) << QString("Scheduler: Next %1 in %2").arg(schedule_active_ ? "break" : "activity")
+        .arg(to_hms(static_cast<int>(schedule_timer_->remainingTime() / 1000))).toStdString();
 }
 
 void main_window::registration_timer_timeout()
