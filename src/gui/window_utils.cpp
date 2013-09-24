@@ -342,7 +342,7 @@ popup_data read_xml_popup(QXmlStreamReader& reader)
     return popup;
 }
 
-bool close_popups(input_manager& input, WId window, const std::vector<popup_data>& popups)
+bool close_popups(input_manager& input, WId window, const std::vector<popup_data>& popups, const double w)
 {
     const auto hwnd = reinterpret_cast<HWND>(window);
 
@@ -370,7 +370,7 @@ bool close_popups(input_manager& input, WId window, const std::vector<popup_data
     QTime t;
     t.start();
 
-    const int wait = 5000;
+    const int wait = static_cast<int>(w * 1000);
 
     while (IsWindowVisible(hwnd))
     {

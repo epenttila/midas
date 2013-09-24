@@ -27,6 +27,7 @@ public:
     void cancel_registration();
     bool detect_closed_tables();
     int get_table_count() const;
+    double get_registration_wait() const;
 
 private:
     static BOOL CALLBACK callback(HWND window, LPARAM lParam);
@@ -36,6 +37,8 @@ private:
     int registered_;
     bool registering_;
     const window_manager& window_manager_;
+    double registration_wait_;
+    double popup_wait_;
 
     std::vector<window_utils::popup_data> popups_;
     std::vector<window_utils::popup_data> reg_fail_popups_;

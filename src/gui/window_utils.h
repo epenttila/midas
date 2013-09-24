@@ -65,5 +65,5 @@ namespace window_utils
     label_data read_xml_label(QXmlStreamReader& reader);
     button_data read_xml_button(QXmlStreamReader& reader);
     popup_data read_xml_popup(QXmlStreamReader& reader);
-    bool close_popups(input_manager& input, WId window, const std::vector<popup_data>& popups);
+    bool close_popups(input_manager& input, WId window, const std::vector<popup_data>& popups, double wait);
 }

@@ -738,7 +738,7 @@ void main_window::autolobby_timer_timeout()
     {
         if (lobby_->register_sng())
         {
-            const int wait = 5000;
+            const int wait = static_cast<int>(lobby_->get_registration_wait() * 1000);
             BOOST_LOG_TRIVIAL(info) << "Waiting " << wait << " ms for registration to complete";
             registration_timer_->start(wait);
         }

@@ -17,6 +17,8 @@ lobby_manager::lobby_manager(const std::string& filename, input_manager& input_m
     , registered_(0)
     , registering_(false)
     , window_manager_(wm)
+    , registration_wait_(5.0)
+    , popup_wait_(5.0)
 {
     BOOST_LOG_TRIVIAL(info) << "Lobby: Opening settings: " << filename;
 
@@ -53,6 +55,16 @@ lobby_manager::lobby_manager(const std::string& filename, input_manager& input_m
         {
             register_buttons_.push_back(window_utils::read_xml_button(reader));
         }
+        else if (reader.name() == "popup-wait")
+        {
+            popup_wait_ = reader.attributes().value("time").toDouble();
+            reader.skipCurrentElement();
+        }
+        else if (reader.name() == "registration-wait")
+        {
+            registration_wait_ = reader.attributes().value("time").toDouble();
+            reader.skipCurrentElement();
+        }
         else
         {
             reader.skipCurrentElement();
@@ -74,9 +86,9 @@ BOOL CALLBACK lobby_manager::callback(HWND hwnd, LPARAM lParam)
     lobby_manager* lobby = reinterpret_cast<lobby_manager*>(lParam);
     const auto window = reinterpret_cast<WId>(hwnd);
 
-    window_utils::close_popups(lobby->input_manager_, window, lobby->popups_);
+    window_utils::close_popups(lobby->input_manager_, window, lobby->popups_, lobby->popup_wait_);
 
-    if (window_utils::close_popups(lobby->input_manager_, window, lobby->reg_success_popups_))
+    if (window_utils::close_popups(lobby->input_manager_, window, lobby->reg_success_popups_, lobby->popup_wait_))
     {
         assert(lobby->registering_);
         lobby->registering_ = false;
@@ -85,9 +97,9 @@ BOOL CALLBACK lobby_manager::callback(HWND hwnd, LPARAM lParam)
         BOOST_LOG_TRIVIAL(info) << "Lobby: Registration success (" << lobby->registered_ << " active)";
     }
 
-    window_utils::close_popups(lobby->input_manager_, window, lobby->finished_popups_);
+    window_utils::close_popups(lobby->input_manager_, window, lobby->finished_popups_, lobby->popup_wait_);
 
-    if (window_utils::close_popups(lobby->input_manager_, window, lobby->reg_fail_popups_))
+    if (window_utils::close_popups(lobby->input_manager_, window, lobby->reg_fail_popups_, lobby->popup_wait_))
     {
         assert(lobby->registering_);
         lobby->registering_ = false;
@@ -198,4 +210,9 @@ bool lobby_manager::detect_closed_tables()
 int lobby_manager::get_table_count() const
 {
     return static_cast<int>(tables_.size());
+}
+
+double lobby_manager::get_registration_wait() const
+{
+    return registration_wait_;
 }
