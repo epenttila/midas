@@ -17,6 +17,8 @@ table_manager::table_manager(const std::string& filename, input_manager& input_m
     : window_(0)
     , input_(input_manager)
 {
+    window_size_.fill(0);
+
     QFile file(filename.c_str());
 
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -130,6 +132,12 @@ table_manager::table_manager(const std::string& filename, input_manager& input_m
         {
             bet_input_button_ = window_utils::read_xml_button(reader);
         }
+        else if (reader.name() == "window-size")
+        {
+            window_size_[0] = reader.attributes().value("width").toString().toInt();
+            window_size_[1] = reader.attributes().value("height").toString().toInt();
+            reader.skipCurrentElement();
+        }
         else
         {
             reader.skipCurrentElement();
@@ -167,6 +175,12 @@ void table_manager::update(bool save)
 
     if (save)
         save_snapshot();
+
+    if (image_->width() != window_size_[0] || image_->height() != window_size_[1])
+    {
+        throw std::runtime_error(QString("Invalid window size (%1x%2); need (%3x%4)").arg(image_->width())
+            .arg(image_->height()).arg(window_size_[0]).arg(window_size_[1]).toStdString());
+    }
 }
 
 std::pair<int, int> table_manager::get_hole_cards() const

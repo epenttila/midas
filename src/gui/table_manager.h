@@ -75,4 +75,6 @@ private:
     window_utils::button_data sit_in_button_;
     window_utils::button_data bet_input_button_;
     std::unordered_multimap<double, window_utils::button_data> size_buttons_;
+
+    std::array<int, 2> window_size_;
 };
