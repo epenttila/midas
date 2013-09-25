@@ -1,6 +1,7 @@
 #include "table_manager.h"
 
 #pragma warning(push, 1)
+#include <boost/log/trivial.hpp>
 #include <QImage>
 #include <QXmlStreamReader>
 #include <QFile>
@@ -199,12 +200,14 @@ int table_manager::get_dealer() const
 
 void table_manager::fold() const
 {
-    click_any_button(input_, window_, fold_buttons_);
+    if (!click_any_button(input_, window_, fold_buttons_))
+        throw std::runtime_error("Warning: Unable to press fold button");
 }
 
 void table_manager::call() const
 {
-    click_any_button(input_, window_, call_buttons_);
+    if (!click_any_button(input_, window_, call_buttons_))
+        throw std::runtime_error("Warning: Unable to press call button");
 }
 
 void table_manager::raise(double amount, double fraction) const
@@ -212,6 +215,7 @@ void table_manager::raise(double amount, double fraction) const
     if ((get_buttons() & RAISE_BUTTON) != RAISE_BUTTON)
     {
         // TODO move this out of here?
+        BOOST_LOG_TRIVIAL(info) << "No raise button, calling instead";
         call();
         return;
     }
@@ -229,20 +233,28 @@ void table_manager::raise(double amount, double fraction) const
         }
     }
 
-    if (!ok && click_button(input_, window_, bet_input_button_, true))
+    if (!ok)
     {
-        input_.sleep();
-
-        if (GetForegroundWindow() == reinterpret_cast<HWND>(window_))
+        if (click_button(input_, window_, bet_input_button_, true))
         {
-            // TODO support decimal point
-            amount = std::max(std::min<double>(amount, std::numeric_limits<int>::max()), 0.0);
-            input_.send_string(std::to_string(static_cast<int>(amount)));
             input_.sleep();
+
+            if (GetForegroundWindow() == reinterpret_cast<HWND>(window_))
+            {
+                // TODO support decimal point
+                amount = std::max(std::min<double>(amount, std::numeric_limits<int>::max()), 0.0);
+                input_.send_string(std::to_string(static_cast<int>(amount)));
+                input_.sleep();
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Unable to specify pot size");
         }
     }
 
-    click_any_button(input_, window_, raise_buttons_);
+    if (!click_any_button(input_, window_, raise_buttons_))
+        throw std::runtime_error("Unable to press raise button");
 }
 
 double table_manager::get_stack(int position) const
@@ -321,7 +333,8 @@ bool table_manager::is_sit_out(int position) const
 
 void table_manager::sit_in() const
 {
-    click_button(input_, window_, sit_in_button_);
+    if (!click_button(input_, window_, sit_in_button_))
+        throw std::runtime_error("Unable to press sit in button");
 }
 
 void table_manager::set_window(WId window)

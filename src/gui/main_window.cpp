@@ -319,6 +319,14 @@ void main_window::capture_timer_timeout()
     catch (const std::exception& e)
     {
         BOOST_LOG_TRIVIAL(error) << "Exception: " << e.what();
+
+        window_manager_->set_stop(true);
+
+        if (site_)
+        {
+            BOOST_LOG_TRIVIAL(info) << "Saving current snapshot";
+            site_->save_snapshot();
+        }
     }
 
     QString s;
@@ -407,28 +415,43 @@ void main_window::action_start_timeout()
 
     auto mutex = window_manager_->try_interact();
 
-    switch (next_action_)
+    try
     {
-    case table_manager::FOLD:
-        log("Player: Fold");
-        site_->fold();
-        break;
-    case table_manager::CALL:
-        log("Player: Call");
-        site_->call();
-        break;
-    case table_manager::RAISE:
+        switch (next_action_)
         {
-            const double total_pot = site_->get_total_pot();
-            const double my_bet = site_->get_bet(0);
-            const double op_bet = site_->get_bet(1);
-            const double to_call = op_bet - my_bet;
-            const double amount = raise_fraction_ * (total_pot + to_call) + to_call + my_bet;
+        case table_manager::FOLD:
+            log("Player: Fold");
+            site_->fold();
+            break;
+        case table_manager::CALL:
+            log("Player: Call");
+            site_->call();
+            break;
+        case table_manager::RAISE:
+            {
+                const double total_pot = site_->get_total_pot();
+                const double my_bet = site_->get_bet(0);
+                const double op_bet = site_->get_bet(1);
+                const double to_call = op_bet - my_bet;
+                const double amount = raise_fraction_ * (total_pot + to_call) + to_call + my_bet;
 
-            log(QString("Autoplay: Raise %1 (%2x pot)").arg(amount).arg(raise_fraction_));
-            site_->raise(amount, raise_fraction_);
+                log(QString("Autoplay: Raise %1 (%2x pot)").arg(amount).arg(raise_fraction_));
+                site_->raise(amount, raise_fraction_);
+            }
+            break;
         }
-        break;
+    }
+    catch (const std::exception& e)
+    {
+        BOOST_LOG_TRIVIAL(error) << "Exception: " << e.what();
+
+        window_manager_->set_stop(true);
+
+        if (site_)
+        {
+            BOOST_LOG_TRIVIAL(info) << "Saving current snapshot";
+            site_->save_snapshot();
+        }
     }
 
     log(QString("Autoplay: Waiting for %1 s after action...").arg(action_post_delay_));
@@ -460,6 +483,10 @@ void main_window::process_snapshot()
         return;
 
     site_->update(save_images_->isChecked());
+
+    // don't parse screen capture if we are playing and can't see buttons as that might throw exceptions
+    if (autoplay_action_->isChecked() && site_->get_buttons() == 0)
+        return;
 
     const auto hole = site_->get_hole_cards();
     std::array<int, 5> board;
@@ -950,11 +977,6 @@ void main_window::ensure(bool expression, const std::string& s, int line)
 
     assert(false);
     log(QString("Error: verification on line %1 failed (%2)").arg(line).arg(s.c_str()));
-    window_manager_->set_stop(true);
-
-    BOOST_LOG_TRIVIAL(info) << "Saving current snapshot";
-
-    site_->save_snapshot();
 
     throw std::runtime_error(s.c_str());
 }
