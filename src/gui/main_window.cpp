@@ -1017,6 +1017,8 @@ void main_window::autolobby_changed(bool checked)
     else
     {
         autolobby_timer_->stop();
-        lobby_->reset();
+
+        if (lobby_)
+            lobby_->reset();
     }
 }
