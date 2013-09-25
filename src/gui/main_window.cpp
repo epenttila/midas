@@ -93,7 +93,7 @@ namespace
     }
 
     int get_time_to_activity(std::mt19937& engine, const double var,
-        const std::vector<std::pair<double, double>>& spans, const bool upper_bound)
+        const std::vector<std::pair<double, double>>& spans, const bool next, bool* active)
     {
         if (spans.empty())
             return -1;
@@ -102,34 +102,40 @@ namespace
         const auto hour = now.toString("H").toInt() + now.toString("m").toInt() / 60.0 + now.toString("s").toInt()
             / 3600.0;
 
+        *active = false;
         double time = -1;
 
         for (std::size_t i = 0; i < spans.size(); ++i)
         {
-            if (hour >= spans[i].first && hour < spans[i].second)
+            if (hour < spans[i].first)
             {
-                if (!upper_bound)
+                // not in a span, return start of next span
+                time = spans[i].first - hour;
+                break;
+            }
+            else if (hour >= spans[i].first && hour < spans[i].second)
+            {
+                // in a span, return start (0) or end of current span
+                *active = true;
+
+                if (!next)
                     time = 0;
                 else
                     time = spans[i].second - hour;
 
                 break;
             }
-
-            if (hour < spans[i].first)
-                time = spans[i].first - hour;
         }
 
+        // wrap to start of span next day
         if (time == -1)
             time = spans[0].first - (hour - 24);
 
-        if (time == -1)
-        {
-            assert(false);
-            return -1;
-        }
+        assert(time >= 0);
 
-        time = std::max(0.0, get_uniform_random(engine, time - var / 3600.0, time + var / 3600.0));
+        // randomize time to next activity (only increase the time, decreasing leads to double activations)
+        if (time > 0)
+            time = std::max(0.0, get_uniform_random(engine, time, time + var / 3600.0));
 
         return static_cast<int>(time * 60 * 60 * 1000);
     }
@@ -950,15 +956,15 @@ void main_window::schedule_changed(const bool checked)
     {
         log("Scheduler: Enabling");
 
-        const auto time = get_time_to_activity(engine_, activity_variance_, activity_spans_, false);
+        schedule_active_ = false;
+
+        const auto time = get_time_to_activity(engine_, activity_variance_, activity_spans_, false, &schedule_active_);
 
         if (time == -1)
         {
             BOOST_LOG_TRIVIAL(error) << "Scheduler: Unable to determine time to next activity";
             return;
         }
-
-        schedule_active_ = false;
 
         schedule_timer_->setSingleShot(true);
         schedule_timer_->start(time);
@@ -976,9 +982,7 @@ void main_window::schedule_changed(const bool checked)
 
 void main_window::schedule_timer_timeout()
 {
-    schedule_active_ = !schedule_active_;
-
-    const auto time = get_time_to_activity(engine_, activity_variance_, activity_spans_, true);
+    const auto time = get_time_to_activity(engine_, activity_variance_, activity_spans_, true, &schedule_active_);
 
     if (time == -1)
     {
