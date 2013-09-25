@@ -637,6 +637,8 @@ void main_window::process_snapshot()
         return;
     }
 
+    ENSURE(!current_state->is_terminal());
+
     // a new round has started but we did not end the previous one, opponent has called
     if (current_state->get_round() != round)
     {
