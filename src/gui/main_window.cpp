@@ -81,15 +81,16 @@ namespace
             return "[Error]";
     }
 
-    QString to_hms(int seconds)
+    QString secs_to_hms(double seconds)
     {
-        const auto hours = seconds / 60 / 60;
-        seconds -= hours * 60 * 60;
+        const auto hours = static_cast<int>(seconds / 3600);
+        seconds -= hours * 3600;
 
-        const auto minutes = seconds / 60;
+        const auto minutes = static_cast<int>(seconds / 60);
         seconds -= minutes * 60;
 
-        return QString("%1:%2:%3").arg(hours).arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 10, QChar('0'));
+        return QString("%1:%2:%3").arg(hours).arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 'f', 0, QChar('0'));
+    }
     }
 
     int get_time_to_activity(std::mt19937& engine, const double var,
@@ -317,9 +318,9 @@ void main_window::capture_timer_timeout()
     if (schedule_action_->isChecked())
     {
         if (schedule_active_)
-            s = QString("Active for %1").arg(to_hms(schedule_timer_->remainingTime() / 1000));
+            s = QString("Active for %1").arg(secs_to_hms(schedule_timer_->remainingTime() / 1000.0));
         else
-            s = QString("Inactive for %1").arg(to_hms(schedule_timer_->remainingTime() / 1000));
+            s = QString("Inactive for %1").arg(secs_to_hms(schedule_timer_->remainingTime() / 1000.0));
     }
     else
         s = "Scheduler off";
@@ -970,7 +971,7 @@ void main_window::schedule_changed(const bool checked)
         schedule_timer_->start(time);
 
         BOOST_LOG_TRIVIAL(info) << QString("Scheduler: Next activity in %1")
-            .arg(to_hms(static_cast<int>(schedule_timer_->remainingTime() / 1000))).toStdString();
+            .arg(secs_to_hms(schedule_timer_->remainingTime() / 1000.0)).toStdString();
     }
     else
     {
@@ -998,7 +999,7 @@ void main_window::schedule_timer_timeout()
         log(QString("Scheduler: Disabling registration"));
 
     BOOST_LOG_TRIVIAL(info) << QString("Scheduler: Next %1 in %2").arg(schedule_active_ ? "break" : "activity")
-        .arg(to_hms(static_cast<int>(schedule_timer_->remainingTime() / 1000))).toStdString();
+        .arg(secs_to_hms(schedule_timer_->remainingTime() / 1000.0)).toStdString();
 }
 
 void main_window::registration_timer_timeout()
