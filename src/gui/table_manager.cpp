@@ -10,6 +10,7 @@
 #pragma warning(pop)
 
 #include "util/card.h"
+#include "util/game.h"
 #include "input_manager.h"
 #include "window_manager.h"
 
@@ -261,7 +262,7 @@ void table_manager::raise(double amount, double fraction) const
                 input_.sleep();
             }
         }
-        else
+        else if (fraction != ALLIN_BET_SIZE)
         {
             throw std::runtime_error("Unable to specify pot size");
         }
