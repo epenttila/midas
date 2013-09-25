@@ -91,6 +91,16 @@ namespace
 
         return QString("%1:%2:%3").arg(hours).arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 'f', 0, QChar('0'));
     }
+
+    double datetime_to_secs(const QDateTime& dt)
+    {
+        return dt.toString("H").toInt() * 3600 + dt.toString("m").toInt() * 60 + dt.toString("s").toInt()
+            + dt.toString("z").toInt() / 1000.0;
+    }
+
+    double hms_to_secs(const QString& str)
+    {
+        return datetime_to_secs(QDateTime::fromString(str, "HH:mm:ss"));
     }
 
     int get_time_to_activity(std::mt19937& engine, const double var,
@@ -99,22 +109,20 @@ namespace
         if (spans.empty())
             return -1;
 
-        const auto now = QDateTime::currentDateTime();
-        const auto hour = now.toString("H").toInt() + now.toString("m").toInt() / 60.0 + now.toString("s").toInt()
-            / 3600.0;
+        const auto now = datetime_to_secs(QDateTime::currentDateTime());
 
         *active = false;
         double time = -1;
 
         for (std::size_t i = 0; i < spans.size(); ++i)
         {
-            if (hour < spans[i].first)
+            if (now < spans[i].first)
             {
                 // not in a span, return start of next span
-                time = spans[i].first - hour;
+                time = spans[i].first - now;
                 break;
             }
-            else if (hour >= spans[i].first && hour < spans[i].second)
+            else if (now >= spans[i].first && now < spans[i].second)
             {
                 // in a span, return start (0) or end of current span
                 *active = true;
@@ -122,7 +130,7 @@ namespace
                 if (!next)
                     time = 0;
                 else
-                    time = spans[i].second - hour;
+                    time = spans[i].second - now;
 
                 break;
             }
@@ -130,15 +138,15 @@ namespace
 
         // wrap to start of span next day
         if (time == -1)
-            time = spans[0].first - (hour - 24);
+            time = spans[0].first - (now - 24 * 3600);
 
         assert(time >= 0);
 
         // randomize time to next activity (only increase the time, decreasing leads to double activations)
         if (time > 0)
-            time = std::max(0.0, get_uniform_random(engine, time, time + var / 3600.0));
+            time = std::max(0.0, get_uniform_random(engine, time, time + var));
 
-        return static_cast<int>(time * 60 * 60 * 1000);
+        return static_cast<int>(time * 1000);
     }
 }
 
@@ -276,7 +284,7 @@ main_window::main_window()
             continue;
         }
 
-        activity_spans_.push_back(std::make_pair(j.at(0).toDouble(), j.at(1).toDouble()));
+        activity_spans_.push_back(std::make_pair(hms_to_secs(j.at(0)), hms_to_secs(j.at(1))));
     }
 
     log(QString("Loaded settings from \"%1\"").arg(settings.fileName()));
