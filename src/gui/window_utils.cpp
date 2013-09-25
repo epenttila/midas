@@ -44,6 +44,9 @@ std::pair<std::string, int> parse_image_char(const QImage& image, const int x, c
 {
     const auto mask = calculate_mask(image, x, y, height, color);
 
+    if (mask == 0)
+        return std::make_pair("", 0);
+
     const auto i = font.masks.find(mask);
 
     if (i != font.masks.end())
@@ -54,7 +57,8 @@ std::pair<std::string, int> parse_image_char(const QImage& image, const int x, c
     if (j != font.children.end())
         return parse_image_char(image, x + 1, y, height, color, j->second);
 
-    return std::make_pair("", 0);
+    throw std::runtime_error(QString("Unable to parse non-zero mask (%1) at (%2,%3)").arg(mask).arg(x).arg(y)
+        .toStdString());
 }
 
 std::string parse_image_text(const QImage* image, const QRect& rect, const QRgb& color, const font_data& font)
