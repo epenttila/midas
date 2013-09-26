@@ -802,10 +802,10 @@ void main_window::action_finish_timeout()
 
 void main_window::autolobby_timer_timeout()
 {
-    if (window_manager_->is_stop())
+    if (window_manager_->is_stop() && table_count_->value() > 0)
     {
-        BOOST_LOG_TRIVIAL(warning) << "Autolobby: Stopping due to global stop";
-        autolobby_action_->setChecked(false);
+        BOOST_LOG_TRIVIAL(warning) << "Autolobby: Setting table count to zero due to global stop";
+        table_count_->setValue(0);
         return;
     }
 
