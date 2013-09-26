@@ -320,8 +320,6 @@ void main_window::capture_timer_timeout()
     {
         BOOST_LOG_TRIVIAL(error) << "Exception: " << e.what();
 
-        window_manager_->set_stop(true);
-
         if (site_)
         {
             BOOST_LOG_TRIVIAL(info) << "Saving current snapshot";
@@ -447,8 +445,6 @@ void main_window::action_start_timeout()
     {
         BOOST_LOG_TRIVIAL(error) << "Exception: " << e.what();
 
-        window_manager_->set_stop(true);
-
         if (site_)
         {
             BOOST_LOG_TRIVIAL(info) << "Saving current snapshot";
@@ -486,17 +482,16 @@ void main_window::process_snapshot()
 
     site_->update(save_images_->isChecked());
 
+    // consider sitout fatal
     if (site_->is_sit_out(0))
     {
-        log("Warning: We are sitting out");
-
-        if (autoplay_action_->isChecked())
+        if (!window_manager_->is_stop())
         {
-            log("Player: Sitting in");
-            auto mutex = window_manager_->try_interact();
-            site_->sit_in();
-            return;
+            BOOST_LOG_TRIVIAL(error) << "We are sitting out; stopping registrations";
+            window_manager_->set_stop(true);
         }
+
+        return;
     }
 
     // don't parse screen capture if we are playing and can't see buttons as that might throw exceptions
