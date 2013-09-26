@@ -486,6 +486,19 @@ void main_window::process_snapshot()
 
     site_->update(save_images_->isChecked());
 
+    if (site_->is_sit_out(0))
+    {
+        log("Warning: We are sitting out");
+
+        if (autoplay_action_->isChecked())
+        {
+            log("Player: Sitting in");
+            auto mutex = window_manager_->try_interact();
+            site_->sit_in();
+            return;
+        }
+    }
+
     // don't parse screen capture if we are playing and can't see buttons as that might throw exceptions
     if (autoplay_action_->isChecked() && site_->get_buttons() == 0)
         return;
@@ -543,18 +556,6 @@ void main_window::process_snapshot()
 
     if (!autoplay_action_->isChecked())
         return;
-
-    if (site_->is_sit_out(0))
-    {
-        log("Warning: We are sitting out");
-
-        if (autoplay_action_->isChecked())
-        {
-            log("Player: Sitting in");
-            auto mutex = window_manager_->try_interact();
-            site_->sit_in();
-        }
-    }
 
     // wait until we see buttons
     if (site_->get_buttons() == 0)
