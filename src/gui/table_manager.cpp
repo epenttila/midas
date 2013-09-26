@@ -225,7 +225,7 @@ void table_manager::call() const
         throw std::runtime_error("Warning: Unable to press call button");
 }
 
-void table_manager::raise(double amount, double fraction) const
+void table_manager::raise(double amount, double fraction, double minbet) const
 {
     if ((get_buttons() & RAISE_BUTTON) != RAISE_BUTTON)
     {
@@ -235,19 +235,24 @@ void table_manager::raise(double amount, double fraction) const
         return;
     }
 
-    bool ok = false;
+    bool ok = (amount == minbet) ? true : false;
 
-    const auto range = size_buttons_.equal_range(fraction);
-
-    for (auto i = range.first; i != range.second; ++i)
+    // press bet size buttons
+    if (!ok)
     {
-        if (click_button(input_, window_, i->second))
+        const auto range = size_buttons_.equal_range(fraction);
+
+        for (auto i = range.first; i != range.second; ++i)
         {
-            ok = true;
-            break;
+            if (click_button(input_, window_, i->second))
+            {
+                ok = true;
+                break;
+            }
         }
     }
 
+    // type bet size manually
     if (!ok)
     {
         if (click_button(input_, window_, bet_input_button_, true))

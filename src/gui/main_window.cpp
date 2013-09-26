@@ -435,8 +435,10 @@ void main_window::action_start_timeout()
                 const double to_call = op_bet - my_bet;
                 const double amount = raise_fraction_ * (total_pot + to_call) + to_call + my_bet;
 
-                log(QString("Autoplay: Raise %1 (%2x pot)").arg(amount).arg(raise_fraction_));
-                site_->raise(amount, raise_fraction_);
+                const double minbet = std::max(site_->get_big_blind(), to_call) + to_call + my_bet;
+
+                log(QString("Autoplay: Raise %1 (%2x pot) (min: %3)").arg(amount).arg(raise_fraction_).arg(minbet));
+                site_->raise(amount, raise_fraction_, minbet);
             }
             break;
         }

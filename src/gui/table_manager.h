@@ -27,7 +27,7 @@ public:
     int get_dealer() const;
     void fold() const;
     void call() const;
-    void raise(double amount, double fraction) const;
+    void raise(double amount, double fraction, double minbet) const;
     double get_stack(int position) const;
     double get_bet(int position) const;
     double get_big_blind() const;
