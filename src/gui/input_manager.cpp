@@ -153,8 +153,14 @@ void input_manager::move_mouse(int x, int y)
 
 void input_manager::move_mouse(int x, int y, int width, int height)
 {
-    int target_x = boost::math::iround(get_normal_random(engine_, x, x + width));
-    int target_y = boost::math::iround(get_normal_random(engine_, y, y + height));
+    POINT pt;
+    GetCursorPos(&pt);
+
+    if (pt.x >= x && pt.x < x + width && pt.y >= y && pt.y < y + height)
+        return;
+
+    int target_x = boost::math::iround(get_normal_random(engine_, x, x + width - 1));
+    int target_y = boost::math::iround(get_normal_random(engine_, y, y + height - 1));
 
     target_x = boost::algorithm::clamp(target_x, x, x + width - 1);
     target_y = boost::algorithm::clamp(target_y, y, y + height - 1);
