@@ -319,27 +319,30 @@ button_data read_xml_button(QXmlStreamReader& reader)
 
 popup_data read_xml_popup(QXmlStreamReader& reader)
 {
-    const pixel_data pixel =
-    {
-        QPoint(reader.attributes().value("color-x").toString().toInt(),
-            reader.attributes().value("color-y").toString().toInt()),
-        QColor(reader.attributes().value("color").toString()).rgb()
-    };
+    popup_data popup = {};
 
-    const button_data button =
-    {
-        QRect(reader.attributes().value("x").toString().toInt(),
-            reader.attributes().value("y").toString().toInt(),
-            reader.attributes().value("width").toString().toInt(),
-            reader.attributes().value("height").toString().toInt()),
-        pixel
-    };
+    popup.regex = std::regex(reader.attributes().value("pattern").toUtf8());
 
-    const popup_data popup =
+    if (reader.attributes().hasAttribute("x"))
     {
-        std::regex(reader.attributes().value("pattern").toUtf8()),
-        button
-    };
+        const pixel_data pixel =
+        {
+            QPoint(reader.attributes().value("color-x").toString().toInt(),
+                reader.attributes().value("color-y").toString().toInt()),
+            QColor(reader.attributes().value("color").toString()).rgb()
+        };
+
+        const button_data button =
+        {
+            QRect(reader.attributes().value("x").toString().toInt(),
+                reader.attributes().value("y").toString().toInt(),
+                reader.attributes().value("width").toString().toInt(),
+                reader.attributes().value("height").toString().toInt()),
+            pixel
+        };
+
+        popup.button = button;
+    }
 
     reader.skipCurrentElement();
 
@@ -383,8 +386,15 @@ bool close_popups(input_manager& input, WId window, const std::vector<popup_data
             if (!std::regex_match(title, i->regex))
                 continue;
 
-            click_button(input, window, i->button);
-            input.sleep();
+            if (i->button.rect.isValid())
+            {
+                click_button(input, window, i->button);
+                input.sleep();
+            }
+            else
+            {
+                SendMessage(hwnd, WM_CLOSE, 0, 0);
+            }
         }
 
         if (t.elapsed() > wait)
@@ -392,7 +402,6 @@ bool close_popups(input_manager& input, WId window, const std::vector<popup_data
             BOOST_LOG_TRIVIAL(warning) << "Windows: Forcing window to close after " << t.elapsed() << " ms ("
                 << text << ")";
             SendMessage(hwnd, WM_CLOSE, 0, 0);
-            input.sleep();
         }
 
         if (t.elapsed() > 2 * wait)
