@@ -618,18 +618,16 @@ void main_window::process_snapshot()
     auto& strategy_info = *it->second;
     auto& current_state = strategy_info.current_state_;
 
+    BOOST_LOG_TRIVIAL(info) << QString("Strategy: %1")
+        .arg(QFileInfo(strategy_info.strategy_->get_strategy().get_filename().c_str()).fileName()).toStdString();
+
     if (new_game && round == 0)
     {
         log(QString("State: New game (%1 SB)").arg(stack_size_));
         current_state = &strategy_info.strategy_->get_root_state();
     }
 
-    if (!current_state)
-    {
-        log("Warning: Invalid state");
-        return;
-    }
-
+    ENSURE(current_state != nullptr);
     ENSURE(!current_state->is_terminal());
 
     // a new round has started but we did not end the previous one, opponent has called
@@ -638,6 +636,7 @@ void main_window::process_snapshot()
         log("State: Opponent called");
         current_state = current_state->call();
     }
+    ENSURE(current_state != nullptr);
 
     // note: we modify the current state normally as this will be interpreted as a check
     if (site_->is_opponent_sitout())
@@ -656,12 +655,16 @@ void main_window::process_snapshot()
         log(QString("State: Opponent raised %1x pot").arg(fraction));
         current_state = current_state->raise(fraction); // there is an outstanding bet/raise
     }
-    else if ((current_state->get_round() == PREFLOP && site_->get_dealer() == 1 && site_->get_bet(1) <= site_->get_big_blind())
-        || (current_state->get_round() > PREFLOP && site_->get_dealer() == 0 && site_->get_bet(1) == 0))
+    else if (current_state->get_round() == PREFLOP && site_->get_dealer() == 1 && site_->get_bet(1) <= site_->get_big_blind())
+    {
+        BOOST_LOG_TRIVIAL(info) << "State: Facing big blind sized bet out of position preflop; opponent called";
+        current_state = current_state->call();
+    }
+    else if (current_state->get_round() > PREFLOP && site_->get_dealer() == 0 && site_->get_bet(1) == 0)
     {
         // we are in position facing 0 sized bet, opponent has checked
         // we are oop facing big blind sized bet preflop, opponent has called
-        log("State: Opponent called");
+        BOOST_LOG_TRIVIAL(info) << "State: Facing 0-sized bet in position postflop; opponent checked";
         current_state = current_state->call();
     }
 
