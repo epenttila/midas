@@ -57,17 +57,8 @@ namespace
     template<class T>
     typename T::const_iterator find_nearest(const T& map, const typename T::key_type& value)
     {
-        auto upper = map.lower_bound(value);
-
-        if (upper == map.begin() || (upper != map.end() && upper->first == value))
-            return upper;
-
-        auto lower = boost::prior(upper);
-
-        if (upper == map.end() || (value - lower->first) < (upper->first - value))
-            return lower;
-
-        return upper;
+        const auto it = map.lower_bound(value);
+        return it != map.end() ? it : boost::prior(map.end());
     }
 
     QString get_key_text(unsigned int vk)
@@ -591,7 +582,7 @@ void main_window::process_snapshot()
         }
 
         ENSURE(stacks[0] > 0 && stacks[1] > 0);
-        stack_size_ = int(std::min(stacks[0], stacks[1]) / site_->get_big_blind() * 2 + 0.5);
+        stack_size_ = int(std::ceil(std::min(stacks[0], stacks[1]) / site_->get_big_blind() * 2.0));
     }
 
     ENSURE(stack_size_ > 0);
