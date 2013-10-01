@@ -551,8 +551,10 @@ void main_window::process_snapshot()
     ENSURE(round != -1);
 
     // make sure we read everything fine
-    ENSURE(site_->get_big_blind() != -1 && site_->get_total_pot() != -1 && site_->get_bet(0) != -1
-        && site_->get_bet(1) != -1);
+    ENSURE(site_->get_big_blind() != -1);
+    ENSURE(site_->get_total_pot() != -1);
+    ENSURE(site_->get_bet(0) != -1);
+    ENSURE(site_->get_bet(1) != -1);
 
     // wait until we see stack sizes
     if (site_->get_stack(0) == 0 || (site_->get_stack(1) == 0 && !site_->is_opponent_allin() && !site_->is_opponent_sitout()))
