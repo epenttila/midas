@@ -15,6 +15,7 @@
 #include <boost/log/utility/setup/common_attributes.hpp>
 #include <boost/log/sinks/sync_frontend.hpp>
 #include <boost/log/utility/setup/formatter_parser.hpp>
+#include <boost/scope_exit.hpp>
 #include <Windows.h>
 #include <QPlainTextEdit>
 #include <QVBoxLayout>
@@ -466,6 +467,9 @@ void main_window::find_window()
     }
 }
 
+#pragma warning(push)
+#pragma warning(disable: 4512)
+
 void main_window::process_snapshot()
 {
     if (acting_ || !site_ || !site_->is_window())
@@ -629,15 +633,30 @@ void main_window::process_snapshot()
         current_state = &strategy_info.strategy_->get_root_state();
     }
 
+    auto original_state = current_state;
+    bool commit = false;
+
+    BOOST_SCOPE_EXIT(&strategy_info, &original_state, &commit)
+    {
+        if (!commit)
+        {
+            BOOST_LOG_TRIVIAL(warning) << "Warning: Reverting state";
+            strategy_info.current_state_ = original_state;
+        }
+    } BOOST_SCOPE_EXIT_END
+
     ENSURE(current_state != nullptr);
     ENSURE(!current_state->is_terminal());
 
+    ENSURE(round >= current_state->get_round());
+
     // a new round has started but we did not end the previous one, opponent has called
-    if (current_state->get_round() != round)
+    if (round > current_state->get_round())
     {
-        log("State: Opponent called");
+        BOOST_LOG_TRIVIAL(info) << "State: Round changed; opponent called";
         current_state = current_state->call();
     }
+
     ENSURE(current_state != nullptr);
 
     // note: we modify the current state normally as this will be interpreted as a check
@@ -696,7 +715,11 @@ void main_window::process_snapshot()
     update_strategy_widget(strategy_info);
 
     perform_action();
+
+    commit = true;
 }
+
+#pragma warning(pop)
 
 void main_window::perform_action()
 {
