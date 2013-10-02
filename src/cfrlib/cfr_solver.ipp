@@ -28,7 +28,7 @@ cfr_solver<T, U, Data>::cfr_solver(std::unique_ptr<game_state> state, std::uniqu
         }
     }
 
-    assert(states_.size() > 1); // invalid game tree
+    assert(states_.size() > 0); // invalid game tree
     assert(root_->get_child_count() > 0);
     assert(states_[0] == root_.get());
 }
