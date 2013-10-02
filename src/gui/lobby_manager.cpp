@@ -65,6 +65,11 @@ lobby_manager::lobby_manager(const std::string& filename, input_manager& input_m
             registration_wait_ = reader.attributes().value("time").toDouble();
             reader.skipCurrentElement();
         }
+        else if (reader.name() == "lobby-regex")
+        {
+            lobby_pattern_ = reader.attributes().value("pattern").toString();
+            reader.skipCurrentElement();
+        }
         else
         {
             reader.skipCurrentElement();
@@ -215,4 +220,9 @@ int lobby_manager::get_table_count() const
 double lobby_manager::get_registration_wait() const
 {
     return registration_wait_;
+}
+
+QString lobby_manager::get_lobby_pattern() const
+{
+    return lobby_pattern_;
 }

@@ -361,7 +361,9 @@ void main_window::open_strategy()
         {
             const auto filename = i->toStdString();
             lobby_.reset(new lobby_manager(filename, *input_manager_, *window_manager_));
+            lobby_title_->setText(lobby_->get_lobby_pattern());
             site_.reset(new table_manager(filename, *input_manager_));
+            title_filter_->setText(site_->get_table_pattern());
             BOOST_LOG_TRIVIAL(info) << QString("Loaded site settings: %1").arg(filename.c_str()).toStdString();
             continue;
         }

@@ -135,6 +135,11 @@ table_manager::table_manager(const std::string& filename, input_manager& input_m
             window_size_[1] = reader.attributes().value("height").toString().toInt();
             reader.skipCurrentElement();
         }
+        else if (reader.name() == "table-regex")
+        {
+            table_pattern_ = reader.attributes().value("pattern").toString();
+            reader.skipCurrentElement();
+        }
         else
         {
             reader.skipCurrentElement();
@@ -377,4 +382,9 @@ void table_manager::save_snapshot() const
     const auto filename = QDateTime::currentDateTimeUtc().toString("'snapshot-'yyyy-MM-ddTHHmmss.zzz'.png'");
     image_->save(filename);
     mono_image_->save("mono-" + filename);
+}
+
+QString table_manager::get_table_pattern() const
+{
+    return table_pattern_;
 }

@@ -28,6 +28,7 @@ public:
     bool detect_closed_tables();
     int get_table_count() const;
     double get_registration_wait() const;
+    QString get_lobby_pattern() const;
 
 private:
     static BOOL CALLBACK callback(HWND window, LPARAM lParam);
@@ -48,4 +49,5 @@ private:
     std::vector<window_utils::button_data> register_buttons_;
 
     std::unordered_set<WId> tables_;
+    QString lobby_pattern_;
 };

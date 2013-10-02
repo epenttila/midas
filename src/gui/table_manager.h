@@ -41,6 +41,7 @@ public:
     bool is_window() const;
     void reset();
     void save_snapshot() const;
+    QString get_table_pattern() const;
 
 private:
     WId window_;
@@ -75,4 +76,5 @@ private:
     std::unordered_multimap<double, window_utils::button_data> size_buttons_;
 
     std::array<int, 2> window_size_;
+    QString table_pattern_;
 };
