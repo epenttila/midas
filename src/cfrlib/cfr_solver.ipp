@@ -108,6 +108,8 @@ void cfr_solver<T, U, Data>::save_state(const std::string& filename) const
     std::ofstream os(filename, std::ios::binary);
     binary_write(os, total_iterations_);
     binary_write(os, data_);
+
+    BOOST_LOG_TRIVIAL(info) << "State with " << total_iterations_ << " iterations saved";
 }
 
 template<class T, class U, class Data>
@@ -120,6 +122,8 @@ void cfr_solver<T, U, Data>::load_state(const std::string& filename)
 
     binary_read(is, total_iterations_);
     binary_read(is, data_);
+
+    BOOST_LOG_TRIVIAL(info) << "State with " << total_iterations_ << " iterations loaded";
 }
 
 template<class T, class U, class Data>
