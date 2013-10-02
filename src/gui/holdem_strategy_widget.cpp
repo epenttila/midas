@@ -33,9 +33,17 @@ namespace
 
 holdem_strategy_widget::holdem_strategy_widget(QWidget* parent, Qt::WindowFlags flags)
     : QWidget(parent, flags)
+    , hilight_bucket_(-1)
 {
-    for (int i = 0; i < actions_.size(); ++i)
-        actions_[i].fill(Qt::transparent);
+    for (auto& i : cells_)
+    {
+        for (auto& j : i)
+        {
+            j.color = Qt::transparent;
+            j.names.clear();
+            j.bucket = -1;
+        }
+    }
 
     setFixedSize(CELL_SIZE * (1 + CARDS), CELL_SIZE * (1 + CARDS));
 }
@@ -49,7 +57,17 @@ void holdem_strategy_widget::paintEvent(QPaintEvent*)
     for (int i = 0; i < CARDS; ++i)
     {
         for (int j = i + 1; j < CARDS; ++j)
-            painter.fillRect(QRect(get_horz_card(i), get_vert_card(j), CELL_SIZE, CELL_SIZE), actions_[i][j]);
+        {
+            painter.fillRect(QRect(get_horz_card(i), get_vert_card(j), CELL_SIZE, CELL_SIZE), cells_[i][j].color);
+
+            if (hilight_bucket_ != -1 && cells_[i][j].bucket == hilight_bucket_)
+            {
+                painter.save();
+                painter.setPen(QPen(Qt::white, 1, Qt::SolidLine, Qt::RoundCap, Qt::MiterJoin));
+                painter.drawRect(get_horz_card(i) + 1, get_vert_card(j) + 1, CELL_SIZE - 3, CELL_SIZE - 3);
+                painter.restore();
+            }
+        }
     }
 
     for (int i = 0; i < CARDS; ++i)
@@ -75,13 +93,21 @@ void holdem_strategy_widget::paintEvent(QPaintEvent*)
 void holdem_strategy_widget::update(const nlhe_strategy& strategy, const std::array<int, 2>& hole,
     const std::array<int, 5>& board, std::size_t state_id)
 {
+    hilight_bucket_ = -1;
     hole_ = hole;
 
     if (hole_[0] > hole_[1])
         std::swap(hole_[0], hole_[1]);
 
-    for (int i = 0; i < actions_.size(); ++i)
-        actions_[i].fill(Qt::transparent);
+    for (auto& i : cells_)
+    {
+        for (auto& j : i)
+        {
+            j.color = Qt::transparent;
+            j.names.clear();
+            j.bucket = -1;
+        }
+    }
 
     for (int i = 0; i < CARDS; ++i)
     {
@@ -93,7 +119,8 @@ void holdem_strategy_widget::update(const nlhe_strategy& strategy, const std::ar
             if (j == board[0] || j == board[1] || j == board[2] || j == board[3] || j == board[4])
                 continue;
 
-            int bucket = -1;
+            auto& bucket = cells_[i][j].bucket;
+            bucket = -1;
 
             holdem_abstraction_base::bucket_type buckets;
             strategy.get_abstraction().get_buckets(i, j, board[0], board[1], board[2], board[3], board[4], &buckets);
@@ -111,7 +138,8 @@ void holdem_strategy_widget::update(const nlhe_strategy& strategy, const std::ar
             double call_p = 0;
             double raise_p = 0;
 
-            action_names_[i][j].clear();
+            auto& names = cells_[i][j].names;
+            names.clear();
 
             for (int index = 0; index < strategy.get_root_state().get_action_count(); ++index)
             {
@@ -126,10 +154,9 @@ void holdem_strategy_widget::update(const nlhe_strategy& strategy, const std::ar
                     raise_p += p;
 
                 if (action > 0)
-                    action_names_[i][j] += "\n";
+                    names += "\n";
 
-                action_names_[i][j] += QString("%1 (%2)")
-                    .arg(strategy.get_root_state().get_action_name(action).c_str()).arg(p);
+                names += QString("%1 (%2)").arg(strategy.get_root_state().get_action_name(action).c_str()).arg(p);
             }
 
             fold_p = std::min(fold_p, 1.0);
@@ -137,7 +164,7 @@ void holdem_strategy_widget::update(const nlhe_strategy& strategy, const std::ar
             raise_p = std::min(raise_p, 1.0);
 
             assert(std::abs(fold_p + call_p + raise_p - 1.0) < 0.0001);
-            actions_[i][j] = QColor::fromRgbF(raise_p, call_p, fold_p);
+            cells_[i][j].color = QColor::fromRgbF(raise_p, call_p, fold_p);
         }
     }
 
@@ -155,10 +182,11 @@ bool holdem_strategy_widget::event(QEvent* event)
 
         if (i >= 0 && i < CARDS && j >= 0 && j < CARDS && i < j)
         {
-            auto str = QString("%1 %2").arg(get_card_string(i).c_str()).arg(get_card_string(j).c_str());
+            auto str = QString("%1 %2 (%3)").arg(get_card_string(i).c_str())
+                .arg(get_card_string(j).c_str()).arg(cells_[i][j].bucket);
 
-            if (!action_names_[i][j].isEmpty())
-                str += "\n\n" + action_names_[i][j];
+            if (!cells_[i][j].names.isEmpty())
+                str += "\n\n" + cells_[i][j].names;
 
             QToolTip::showText(helpEvent->globalPos(), str);
         }
@@ -172,4 +200,17 @@ bool holdem_strategy_widget::event(QEvent* event)
     }
 
     return QWidget::event(event);
+}
+
+void holdem_strategy_widget::mousePressEvent(QMouseEvent* event)
+{
+    const int i = event->pos().x() / CELL_SIZE - 1;
+    const int j = event->pos().y() / CELL_SIZE;
+
+    if (i >= 0 && i < 52 && j >= 0 && j < 52)
+        hilight_bucket_ = cells_[i][j].bucket;
+    else
+        hilight_bucket_ = -1;
+
+    QWidget::update();
 }
