@@ -208,7 +208,6 @@ main_window::main_window()
     toolbar->addSeparator();
     lobby_title_ = new QLineEdit(this);
     lobby_title_->setPlaceholderText("Lobby title (exact)");
-    connect(lobby_title_, SIGNAL(textChanged(const QString&)), SLOT(lobby_title_changed(const QString&)));
     toolbar->addWidget(lobby_title_);
     toolbar->addSeparator();
     table_count_ = new QSpinBox(this);
@@ -218,7 +217,7 @@ main_window::main_window()
     toolbar->addSeparator();
     autoplay_action_ = toolbar->addAction(QIcon(":/icons/control_play.png"), "Autoplay");
     autoplay_action_->setCheckable(true);
-    connect(autoplay_action_, SIGNAL(toggled(bool)), SLOT(play_changed(bool)));
+    connect(autoplay_action_, SIGNAL(toggled(bool)), SLOT(autoplay_changed(bool)));
     autolobby_action_ = toolbar->addAction(QIcon(":/icons/layout.png"), "Autolobby");
     autolobby_action_->setCheckable(true);
     connect(autolobby_action_, SIGNAL(toggled(bool)), SLOT(autolobby_changed(bool)));
@@ -236,7 +235,7 @@ main_window::main_window()
     sink_frontend->set_formatter(log_format);
     boost::log::core::get()->add_sink(sink_frontend);
 
-    QVBoxLayout* layout = new QVBoxLayout(this);
+    QVBoxLayout* layout = new QVBoxLayout(widget);
     layout->addWidget(visualizer_);
     layout->addWidget(log_);
     widget->setLayout(layout);
