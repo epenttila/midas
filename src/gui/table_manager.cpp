@@ -55,10 +55,6 @@ table_manager::table_manager(const std::string& filename, input_manager& input_m
         {
             raise_buttons_.push_back(window_utils::read_xml_button(reader));
         }
-        else if (reader.name() == "sit-in-button")
-        {
-            sit_in_button_ = window_utils::read_xml_button(reader);
-        }
         else if (reader.name() == "title-bb-regex")
         {
             title_bb_regex_ = std::regex(reader.attributes().value("pattern").toUtf8());
@@ -349,12 +345,6 @@ int table_manager::get_buttons() const
 bool table_manager::is_sit_out(int position) const
 {
     return is_pixel(image_.get(), sit_out_pixels_[position]);
-}
-
-void table_manager::sit_in() const
-{
-    if (!click_button(input_, window_, sit_in_button_))
-        throw std::runtime_error("Unable to press sit in button");
 }
 
 void table_manager::set_window(WId window)

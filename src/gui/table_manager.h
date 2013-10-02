@@ -36,7 +36,6 @@ public:
     bool is_all_in(int position) const;
     int get_buttons() const;
     bool is_sit_out(int position) const;
-    void sit_in() const;
     bool is_opponent_allin() const;
     bool is_opponent_sitout() const;
     bool is_window() const;
@@ -72,7 +71,6 @@ private:
     std::vector<window_utils::button_data> fold_buttons_;
     std::vector<window_utils::button_data> call_buttons_;
     std::vector<window_utils::button_data> raise_buttons_;
-    window_utils::button_data sit_in_button_;
     window_utils::button_data bet_input_button_;
     std::unordered_multimap<double, window_utils::button_data> size_buttons_;
 
