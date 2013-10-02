@@ -64,7 +64,6 @@ private:
     void find_window();
     void process_snapshot();
     void perform_action();
-    void log(const QString& s);
     bool nativeEvent(const QByteArray& eventType, void* message, long* result);
     void update_strategy_widget(const strategy_info& si);
     void ensure(bool expression, const std::string& s, int line);

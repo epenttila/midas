@@ -15,6 +15,8 @@
 #include <boost/log/utility/setup/common_attributes.hpp>
 #include <boost/log/sinks/sync_frontend.hpp>
 #include <boost/log/utility/setup/formatter_parser.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/support/date_time.hpp>
 #include <boost/scope_exit.hpp>
 #include <Windows.h>
 #include <QPlainTextEdit>
@@ -152,7 +154,10 @@ main_window::main_window()
 {
     boost::log::add_common_attributes();
 
-    static const char* log_format = "[%TimeStamp%] %Message%";
+    const auto log_format = boost::log::expressions::stream
+        << "["
+        << boost::log::expressions::format_date_time<boost::posix_time::ptime>("TimeStamp", "%Y-%m-%d %H:%M:%S.%f")
+        << "] [" << boost::log::trivial::severity << "] " << boost::log::expressions::smessage;
 
     boost::log::add_console_log
     (
@@ -228,7 +233,7 @@ main_window::main_window()
     typedef boost::log::sinks::synchronous_sink<qt_log_sink> sink_t;
     boost::shared_ptr<qt_log_sink> sink_backend(new qt_log_sink(log_));
     boost::shared_ptr<sink_t> sink_frontend(new sink_t(sink_backend));
-    sink_frontend->set_formatter(boost::log::parse_formatter(log_format));
+    sink_frontend->set_formatter(log_format);
     boost::log::core::get()->add_sink(sink_frontend);
 
     QVBoxLayout* layout = new QVBoxLayout(this);
@@ -272,14 +277,14 @@ main_window::main_window()
 
         if (j.size() != 2)
         {
-            BOOST_LOG_TRIVIAL(error) << "Settings: Invalid activity span";
+            BOOST_LOG_TRIVIAL(error) << "Invalid activity span setting";
             continue;
         }
 
         activity_spans_.push_back(std::make_pair(hms_to_secs(j.at(0)), hms_to_secs(j.at(1))));
     }
 
-    log(QString("Loaded settings from \"%1\"").arg(settings.fileName()));
+    BOOST_LOG_TRIVIAL(info) << QString("Loaded program settings: %1").arg(settings.fileName()).toStdString();
 
     if (RegisterHotKey(reinterpret_cast<HWND>(winId()), 0, MOD_ALT | MOD_CONTROL, autolobby_hotkey))
     {
@@ -310,11 +315,11 @@ void main_window::capture_timer_timeout()
     }
     catch (const std::exception& e)
     {
-        BOOST_LOG_TRIVIAL(error) << "Exception: " << e.what();
+        BOOST_LOG_TRIVIAL(fatal) << e.what();
 
         if (site_)
         {
-            BOOST_LOG_TRIVIAL(info) << "Saving current snapshot";
+            BOOST_LOG_TRIVIAL(warning) << "Saving current snapshot";
             site_->save_snapshot();
         }
     }
@@ -357,7 +362,7 @@ void main_window::open_strategy()
             const auto filename = i->toStdString();
             lobby_.reset(new lobby_manager(filename, *input_manager_, *window_manager_));
             site_.reset(new table_manager(filename, *input_manager_));
-            log(QString("Loaded site settings \"%1\"").arg(filename.c_str()));
+            BOOST_LOG_TRIVIAL(info) << QString("Loaded site settings: %1").arg(filename.c_str()).toStdString();
             continue;
         }
 
@@ -375,7 +380,7 @@ void main_window::open_strategy()
             continue;
         }
 
-        log(QString("Loaded strategy \"%1\"").arg(*i));
+        BOOST_LOG_TRIVIAL(info) << QString("Loaded strategy: %1").arg(*i).toStdString();
     }
 
     QApplication::restoreOverrideCursor();
@@ -390,18 +395,18 @@ void main_window::autoplay_changed(const bool checked)
 {
     if (checked)
     {
-        log("Autoplay: Starting");
+        BOOST_LOG_TRIVIAL(info) << "Starting autoplay";
     }
     else
     {
-        log("Autoplay: Stopping");
+        BOOST_LOG_TRIVIAL(info) << "Stopping autoplay";
         acting_ = false;
     }
 }
 
 void main_window::action_start_timeout()
 {
-    log("Autoplay: Waiting for mutex...");
+    BOOST_LOG_TRIVIAL(info) << "Waiting for mutex";
 
     auto mutex = window_manager_->try_interact();
 
@@ -410,11 +415,11 @@ void main_window::action_start_timeout()
         switch (next_action_)
         {
         case table_manager::FOLD:
-            log("Player: Fold");
+            BOOST_LOG_TRIVIAL(info) << "Folding";
             site_->fold();
             break;
         case table_manager::CALL:
-            log("Player: Call");
+            BOOST_LOG_TRIVIAL(info) << "Calling";
             site_->call();
             break;
         case table_manager::RAISE:
@@ -427,7 +432,9 @@ void main_window::action_start_timeout()
 
                 const double minbet = std::max(site_->get_big_blind(), to_call) + to_call + my_bet;
 
-                log(QString("Autoplay: Raise %1 (%2x pot) (min: %3)").arg(amount).arg(raise_fraction_).arg(minbet));
+                BOOST_LOG_TRIVIAL(info) << QString("Raising %1 (%2x pot) (min: %3)").arg(amount).arg(raise_fraction_)
+                    .arg(minbet).toStdString();
+
                 site_->raise(amount, raise_fraction_, minbet);
             }
             break;
@@ -435,16 +442,17 @@ void main_window::action_start_timeout()
     }
     catch (const std::exception& e)
     {
-        BOOST_LOG_TRIVIAL(error) << "Exception: " << e.what();
+        BOOST_LOG_TRIVIAL(fatal) << e.what();
 
         if (site_)
         {
-            BOOST_LOG_TRIVIAL(info) << "Saving current snapshot";
+            BOOST_LOG_TRIVIAL(warning) << "Saving current snapshot";
             site_->save_snapshot();
         }
     }
 
-    log(QString("Autoplay: Waiting for %1 s after action...").arg(action_post_delay_));
+    BOOST_LOG_TRIVIAL(info) << QString("Waiting for %1 seconds after action").arg(action_post_delay_).toStdString();
+
     QTimer::singleShot(int(action_post_delay_ * 1000.0), this, SLOT(action_finish_timeout()));
 }
 
@@ -597,25 +605,32 @@ void main_window::process_snapshot()
 
     if (hole.first != -1 && hole.second != -1)
     {
-        log(QString("Hole: [%1 %2]").arg(get_card_string(hole.first).c_str())
-           .arg(get_card_string(hole.second).c_str()));
+        BOOST_LOG_TRIVIAL(info) << QString("Hole: [%1 %2]").arg(get_card_string(hole.first).c_str())
+            .arg(get_card_string(hole.second).c_str()).toStdString();
     }
+
+    QString board_string;
 
     if (board[4] != -1)
     {
-        log(QString("Board: [%1 %2 %3 %4] [%5]").arg(get_card_string(board[0]).c_str()).arg(get_card_string(board[1]).c_str())
-            .arg(get_card_string(board[2]).c_str()).arg(get_card_string(board[3]).c_str()).arg(get_card_string(board[4]).c_str()));
+        board_string = QString("Board: [%1 %2 %3 %4] [%5]").arg(get_card_string(board[0]).c_str())
+            .arg(get_card_string(board[1]).c_str()).arg(get_card_string(board[2]).c_str())
+            .arg(get_card_string(board[3]).c_str()).arg(get_card_string(board[4]).c_str());
     }
     else if (board[3] != -1)
     {
-        log(QString("Board: [%1 %2 %3] [%4]").arg(get_card_string(board[0]).c_str()).arg(get_card_string(board[1]).c_str())
-            .arg(get_card_string(board[2]).c_str()).arg(get_card_string(board[3]).c_str()));
+        board_string = QString("Board: [%1 %2 %3] [%4]").arg(get_card_string(board[0]).c_str())
+            .arg(get_card_string(board[1]).c_str()).arg(get_card_string(board[2]).c_str())
+            .arg(get_card_string(board[3]).c_str());
     }
     else if (board[0] != -1)
     {
-        log(QString("Board: [%1 %2 %3]").arg(get_card_string(board[0]).c_str()).arg(get_card_string(board[1]).c_str())
-            .arg(get_card_string(board[2]).c_str()));
+        board_string = QString("Board: [%1 %2 %3]").arg(get_card_string(board[0]).c_str())
+            .arg(get_card_string(board[1]).c_str()).arg(get_card_string(board[2]).c_str());
     }
+
+    if (!board_string.isEmpty())
+        BOOST_LOG_TRIVIAL(info) << board_string.toStdString();
 
     if (strategy_infos_.empty())
         return;
@@ -624,12 +639,12 @@ void main_window::process_snapshot()
     auto& strategy_info = *it->second;
     auto& current_state = strategy_info.current_state_;
 
-    BOOST_LOG_TRIVIAL(info) << QString("Strategy: %1")
+    BOOST_LOG_TRIVIAL(info) << QString("Strategy file: %1")
         .arg(QFileInfo(strategy_info.strategy_->get_strategy().get_filename().c_str()).fileName()).toStdString();
 
     if (new_game && round == 0)
     {
-        log(QString("State: New game (%1 SB)").arg(stack_size_));
+        BOOST_LOG_TRIVIAL(info) << QString("New game (%1 SB)").arg(stack_size_).toStdString();
         current_state = &strategy_info.strategy_->get_root_state();
     }
 
@@ -640,7 +655,7 @@ void main_window::process_snapshot()
     {
         if (!commit)
         {
-            BOOST_LOG_TRIVIAL(warning) << "Warning: Reverting state";
+            BOOST_LOG_TRIVIAL(warning) << "Reverting state";
             strategy_info.current_state_ = original_state;
         }
     } BOOST_SCOPE_EXIT_END
@@ -653,7 +668,7 @@ void main_window::process_snapshot()
     // a new round has started but we did not end the previous one, opponent has called
     if (round > current_state->get_round())
     {
-        BOOST_LOG_TRIVIAL(info) << "State: Round changed; opponent called";
+        BOOST_LOG_TRIVIAL(info) << "Round changed; opponent called";
         current_state = current_state->call();
     }
 
@@ -661,10 +676,10 @@ void main_window::process_snapshot()
 
     // note: we modify the current state normally as this will be interpreted as a check
     if (site_->is_opponent_sitout())
-        log("State: Opponent is sitting out");
+        BOOST_LOG_TRIVIAL(info) << "Opponent is sitting out";
 
     if (site_->is_opponent_allin())
-        log("State: Opponent is all-in");
+        BOOST_LOG_TRIVIAL(info) << "Opponent is all-in";
 
     if ((current_state->get_round() == PREFLOP && (site_->get_bet(1) > site_->get_big_blind()))
         || (current_state->get_round() > PREFLOP && (site_->get_bet(1) > 0)))
@@ -673,19 +688,19 @@ void main_window::process_snapshot()
         const double fraction = site_->is_opponent_allin() ? ALLIN_BET_SIZE : (site_->get_bet(1) - site_->get_bet(0))
             / (site_->get_total_pot() - (site_->get_bet(1) - site_->get_bet(0)));
         ENSURE(fraction > 0);
-        log(QString("State: Opponent raised %1x pot").arg(fraction));
+        BOOST_LOG_TRIVIAL(info) << QString("Opponent raised %1x pot").arg(fraction).toStdString();
         current_state = current_state->raise(fraction); // there is an outstanding bet/raise
     }
     else if (current_state->get_round() == PREFLOP && site_->get_dealer() == 1 && site_->get_bet(1) <= site_->get_big_blind())
     {
-        BOOST_LOG_TRIVIAL(info) << "State: Facing big blind sized bet out of position preflop; opponent called";
+        BOOST_LOG_TRIVIAL(info) << "Facing big blind sized bet out of position preflop; opponent called";
         current_state = current_state->call();
     }
     else if (current_state->get_round() > PREFLOP && site_->get_dealer() == 0 && site_->get_bet(1) == 0)
     {
         // we are in position facing 0 sized bet, opponent has checked
         // we are oop facing big blind sized bet preflop, opponent has called
-        BOOST_LOG_TRIVIAL(info) << "State: Facing 0-sized bet in position postflop; opponent checked";
+        BOOST_LOG_TRIVIAL(info) << "Facing 0-sized bet in position postflop; opponent checked";
         current_state = current_state->call();
     }
 
@@ -710,7 +725,7 @@ void main_window::process_snapshot()
 
     std::stringstream ss;
     ss << *current_state;
-    log(QString("State: %1").arg(ss.str().c_str()));
+    BOOST_LOG_TRIVIAL(info) << QString("State: %1").arg(ss.str().c_str()).toStdString();
 
     update_strategy_widget(strategy_info);
 
@@ -773,7 +788,7 @@ void main_window::perform_action()
             {
                 next_action_ = table_manager::RAISE;
                 raise_fraction_ = ALLIN_BET_SIZE;
-                BOOST_LOG_TRIVIAL(info) << "Strategy: Translating pre-river call to all-in to ensure hand terminates";
+                BOOST_LOG_TRIVIAL(info) << "Translating pre-river call to all-in to ensure hand terminates";
             }
             else
             {
@@ -788,7 +803,7 @@ void main_window::perform_action()
     }
 
     const double probability = strategy->get_strategy().get(current_state->get_id(), index, bucket);
-    log(QString("Strategy: %1 (%2)").arg(s).arg(probability));
+    BOOST_LOG_TRIVIAL(info) << QString("Strategy: %1 (%2)").arg(s).arg(probability).toStdString();
 
     current_state = current_state->get_child(index);
 
@@ -801,7 +816,7 @@ void main_window::perform_action()
 
     QTimer::singleShot(static_cast<int>(wait * 1000.0), this, SLOT(action_start_timeout()));
 
-    BOOST_LOG_TRIVIAL(info) << QString("Autoplay: Waiting %1 s before action").arg(wait).toStdString();
+    BOOST_LOG_TRIVIAL(info) << QString("Waiting %1 seconds before action").arg(wait).toStdString();
 }
 
 main_window::strategy_info::strategy_info()
@@ -822,7 +837,7 @@ void main_window::autolobby_timer_timeout()
 {
     if (window_manager_->is_stop() && table_count_->value() > 0)
     {
-        BOOST_LOG_TRIVIAL(warning) << "Autolobby: Setting table count to zero due to global stop";
+        BOOST_LOG_TRIVIAL(warning) << "Setting table count to zero due to global stop";
         table_count_->setValue(0);
         return;
     }
@@ -830,7 +845,7 @@ void main_window::autolobby_timer_timeout()
     if (!lobby_)
         return;
 
-    registered_label_->setText(QString("Regs: %1/%2 - Tables: %3/%2").arg(lobby_->get_registered_sngs())
+    registered_label_->setText(QString("Registrations: %1/%2 - Tables: %3/%2").arg(lobby_->get_registered_sngs())
         .arg(table_count_->value()).arg(lobby_->get_table_count()));
 
     if (!lobby_->is_window())
@@ -851,8 +866,6 @@ void main_window::autolobby_timer_timeout()
     assert(lobby_ && lobby_->is_window());
 
     auto mutex = window_manager_->try_interact();
-
-    //log(QString("Registered in %1 tournaments").arg(lobby_->get_registered_sngs()));
 
     if (!lobby_->ensure_visible())
         return;
@@ -875,11 +888,6 @@ void main_window::autolobby_timer_timeout()
         BOOST_LOG_TRIVIAL(info) << "Stopping registration timeout timer";
         registration_timer_->stop();
     }
-}
-
-void main_window::log(const QString& s)
-{
-    BOOST_LOG_TRIVIAL(info) << s.toStdString();
 }
 
 bool main_window::nativeEvent(const QByteArray& /*eventType*/, void* message, long* /*result*/)
@@ -999,7 +1007,7 @@ void main_window::ensure(bool expression, const std::string& s, int line)
         return;
 
     assert(false);
-    log(QString("Error: verification on line %1 failed (%2)").arg(line).arg(s.c_str()));
+    BOOST_LOG_TRIVIAL(error) << QString("Verification on line %1 failed (%2)").arg(line).arg(s.c_str()).toStdString();
 
     throw std::runtime_error(s.c_str());
 }
@@ -1008,7 +1016,7 @@ void main_window::schedule_changed(const bool checked)
 {
     if (checked)
     {
-        log("Scheduler: Enabling");
+        BOOST_LOG_TRIVIAL(info) << "Enabling scheduler";
 
         schedule_active_ = false;
 
@@ -1016,19 +1024,19 @@ void main_window::schedule_changed(const bool checked)
 
         if (time == -1)
         {
-            BOOST_LOG_TRIVIAL(error) << "Scheduler: Unable to determine time to next activity";
+            BOOST_LOG_TRIVIAL(error) << "Unable to determine time to next activity";
             return;
         }
 
         schedule_timer_->setSingleShot(true);
         schedule_timer_->start(time);
 
-        BOOST_LOG_TRIVIAL(info) << QString("Scheduler: Next activity in %1")
+        BOOST_LOG_TRIVIAL(info) << QString("Next scheduled activity in %1")
             .arg(secs_to_hms(schedule_timer_->remainingTime() / 1000.0)).toStdString();
     }
     else
     {
-        log("Scheduler: Disabling");
+        BOOST_LOG_TRIVIAL(info) << "Disabling scheduler";
         schedule_timer_->stop();
         schedule_active_ = false;
     }
@@ -1040,18 +1048,18 @@ void main_window::schedule_timer_timeout()
 
     if (time == -1)
     {
-        BOOST_LOG_TRIVIAL(error) << "Scheduler: Unable to determine time to next activity";
+        BOOST_LOG_TRIVIAL(error) << "Unable to determine time to next activity";
         return;
     }
 
     schedule_timer_->start(time);
 
     if (schedule_active_)
-        log(QString("Scheduler: Enabling registration"));
+        BOOST_LOG_TRIVIAL(info) << "Enabling scheduled registration";
     else
-        log(QString("Scheduler: Disabling registration"));
+        BOOST_LOG_TRIVIAL(info) << "Disabling scheduled registration";
 
-    BOOST_LOG_TRIVIAL(info) << QString("Scheduler: Next %1 in %2").arg(schedule_active_ ? "break" : "activity")
+    BOOST_LOG_TRIVIAL(info) << QString("Next scheduled %1 in %2").arg(schedule_active_ ? "break" : "activity")
         .arg(secs_to_hms(schedule_timer_->remainingTime() / 1000.0)).toStdString();
 }
 

@@ -399,14 +399,14 @@ bool close_popups(input_manager& input, WId window, const std::vector<popup_data
 
         if (t.elapsed() > wait)
         {
-            BOOST_LOG_TRIVIAL(warning) << "Windows: Forcing window to close after " << t.elapsed() << " ms ("
+            BOOST_LOG_TRIVIAL(warning) << "Forcing window to close after " << t.elapsed() << " ms ("
                 << text << ")";
             SendMessage(hwnd, WM_CLOSE, 0, 0);
         }
 
         if (t.elapsed() > 2 * wait)
         {
-            BOOST_LOG_TRIVIAL(warning) << "Windows: Failed to close window after " << t.elapsed() << " ms ("
+            BOOST_LOG_TRIVIAL(warning) << "Failed to close window after " << t.elapsed() << " ms ("
                 << text << ")";
             return false;
         }

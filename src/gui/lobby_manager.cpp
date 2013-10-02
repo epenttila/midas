@@ -20,7 +20,7 @@ lobby_manager::lobby_manager(const std::string& filename, input_manager& input_m
     , registration_wait_(5.0)
     , popup_wait_(5.0)
 {
-    BOOST_LOG_TRIVIAL(info) << "Lobby: Opening settings: " << filename;
+    BOOST_LOG_TRIVIAL(info) << "Loading lobby settings: " << filename;
 
     QFile file(filename.c_str());
 
@@ -94,7 +94,7 @@ BOOL CALLBACK lobby_manager::callback(HWND hwnd, LPARAM lParam)
         lobby->registering_ = false;
         ++lobby->registered_;
 
-        BOOST_LOG_TRIVIAL(info) << "Lobby: Registration success (" << lobby->registered_ << " active)";
+        BOOST_LOG_TRIVIAL(info) << "Registration success (" << lobby->registered_ << " active)";
     }
 
     window_utils::close_popups(lobby->input_manager_, window, lobby->finished_popups_, lobby->popup_wait_);
@@ -104,7 +104,7 @@ BOOL CALLBACK lobby_manager::callback(HWND hwnd, LPARAM lParam)
         assert(lobby->registering_);
         lobby->registering_ = false;
 
-        BOOST_LOG_TRIVIAL(info) << "Lobby: Registration failed (" << lobby->registered_ << " active)";
+        BOOST_LOG_TRIVIAL(info) << "Registration failed (" << lobby->registered_ << " active)";
     }
 
     // TODO close ie windows? CloseWindow
@@ -127,7 +127,7 @@ bool lobby_manager::register_sng()
 
     registering_ = true;
 
-    BOOST_LOG_TRIVIAL(info) << "Lobby: Registering... (" << registered_ << " active)";
+    BOOST_LOG_TRIVIAL(info) << "Registering... (" << registered_ << " active)";
 
     return true;
 }
@@ -149,7 +149,7 @@ void lobby_manager::reset()
     window_ = 0;
     tables_.clear();
 
-    BOOST_LOG_TRIVIAL(info) << "Lobby: Resetting (" << registered_ << " active)";
+    BOOST_LOG_TRIVIAL(info) << "Resetting registrations (" << registered_ << " active)";
 }
 
 bool lobby_manager::ensure_visible()
@@ -168,7 +168,7 @@ void lobby_manager::cancel_registration()
 {
     registering_ = false;
 
-    BOOST_LOG_TRIVIAL(info) << "Lobby: Registration cancelled (" << registered_ << " active)";
+    BOOST_LOG_TRIVIAL(info) << "Registration cancelled (" << registered_ << " active)";
 }
 
 bool lobby_manager::detect_closed_tables()
@@ -183,13 +183,13 @@ bool lobby_manager::detect_closed_tables()
             if (tables.find(i) == tables.end())
             {
                 --registered_;
-                BOOST_LOG_TRIVIAL(info) << "Lobby: Tournament finished (" << registered_ << " active)";
+                BOOST_LOG_TRIVIAL(info) << "Tournament finished (" << registered_ << " active)";
             }
         }
 
         if (registered_ < 0)
         {
-            BOOST_LOG_TRIVIAL(warning) << "Warning: Negative registrations";
+            BOOST_LOG_TRIVIAL(warning) << "Negative registrations";
             registered_ = 0;
         }
 
@@ -198,7 +198,7 @@ bool lobby_manager::detect_closed_tables()
     else
     {
         // wait until we get rid of the extra tables
-        BOOST_LOG_TRIVIAL(warning) << "Warning: There are more tables than registrations";
+        BOOST_LOG_TRIVIAL(warning) << "There are more tables than registrations";
         ret = false;
     }
 

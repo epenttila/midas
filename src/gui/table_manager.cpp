@@ -216,13 +216,13 @@ int table_manager::get_dealer() const
 void table_manager::fold() const
 {
     if (!click_any_button(input_, window_, fold_buttons_))
-        throw std::runtime_error("Warning: Unable to press fold button");
+        throw std::runtime_error("Unable to press fold button");
 }
 
 void table_manager::call() const
 {
     if (!click_any_button(input_, window_, call_buttons_))
-        throw std::runtime_error("Warning: Unable to press call button");
+        throw std::runtime_error("Unable to press call button");
 }
 
 void table_manager::raise(double amount, double fraction, double minbet) const
