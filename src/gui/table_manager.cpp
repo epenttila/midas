@@ -214,25 +214,43 @@ int table_manager::get_dealer() const
     return -1;
 }
 
-void table_manager::fold() const
+void table_manager::fold(double max_wait) const
 {
-    if (!click_any_button(input_, window_, fold_buttons_))
-        throw std::runtime_error("Unable to press fold button");
+    QTime t;
+    t.start();
+
+    while (!click_any_button(input_, window_, fold_buttons_))
+    {
+        if (t.elapsed() > max_wait * 1000.0)
+        {
+            throw std::runtime_error(QString("Unable to press fold button after %1 seconds")
+                .arg(t.elapsed()).toStdString());
+        }
+    }
 }
 
-void table_manager::call() const
+void table_manager::call(double max_wait) const
 {
-    if (!click_any_button(input_, window_, call_buttons_))
-        throw std::runtime_error("Unable to press call button");
+    QTime t;
+    t.start();
+
+    while (!click_any_button(input_, window_, call_buttons_))
+    {
+        if (t.elapsed() > max_wait * 1000.0)
+        {
+            throw std::runtime_error(QString("Unable to press call button after %1 seconds")
+                .arg(t.elapsed()).toStdString());
+        }
+    }
 }
 
-void table_manager::raise(double amount, double fraction, double minbet) const
+void table_manager::raise(double amount, double fraction, double minbet, double max_wait) const
 {
     if ((get_buttons() & RAISE_BUTTON) != RAISE_BUTTON)
     {
         // TODO move this out of here?
         BOOST_LOG_TRIVIAL(info) << "No raise button, calling instead";
-        call();
+        call(max_wait);
         return;
     }
 
@@ -274,8 +292,17 @@ void table_manager::raise(double amount, double fraction, double minbet) const
         }
     }
 
-    if (!click_any_button(input_, window_, raise_buttons_))
-        throw std::runtime_error("Unable to press raise button");
+    QTime t;
+    t.start();
+
+    while (!click_any_button(input_, window_, raise_buttons_))
+    {
+        if (t.elapsed() > max_wait * 1000.0)
+        {
+            throw std::runtime_error(QString("Unable to press raise button after %1 seconds")
+                .arg(t.elapsed()).toStdString());
+        }
+    }
 }
 
 double table_manager::get_stack(int position) const

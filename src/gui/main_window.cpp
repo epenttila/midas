@@ -417,11 +417,11 @@ void main_window::action_start_timeout()
         {
         case table_manager::FOLD:
             BOOST_LOG_TRIVIAL(info) << "Folding";
-            site_->fold();
+            site_->fold(action_delay_[1]);
             break;
         case table_manager::CALL:
             BOOST_LOG_TRIVIAL(info) << "Calling";
-            site_->call();
+            site_->call(action_delay_[1]);
             break;
         case table_manager::RAISE:
             {
@@ -436,7 +436,7 @@ void main_window::action_start_timeout()
                 BOOST_LOG_TRIVIAL(info) << QString("Raising %1 (%2x pot) (min: %3)").arg(amount).arg(raise_fraction_)
                     .arg(minbet).toStdString();
 
-                site_->raise(amount, raise_fraction_, minbet);
+                site_->raise(amount, raise_fraction_, minbet, action_delay_[1]);
             }
             break;
         }

@@ -25,9 +25,9 @@ public:
     std::pair<int, int> get_hole_cards() const;
     void get_board_cards(std::array<int, 5>& board) const;
     int get_dealer() const;
-    void fold() const;
-    void call() const;
-    void raise(double amount, double fraction, double minbet) const;
+    void fold(double max_wait) const;
+    void call(double max_wait) const;
+    void raise(double amount, double fraction, double minbet, double max_wait) const;
     double get_stack(int position) const;
     double get_bet(int position) const;
     double get_big_blind() const;
