@@ -772,7 +772,7 @@ void main_window::perform_action()
     const auto& strategy = strategy_info.strategy_;
     const int index = site_->is_opponent_sitout() ? nlhe_state_base::CALL + 1
         : strategy->get_strategy().get_action(current_state->get_id(), bucket);
-    const int action = current_state->get_action(index);
+    const nlhe_state_base::holdem_action action = current_state->get_action(index);
     const QString s = current_state->get_action_name(action).c_str();
 
     switch (action)

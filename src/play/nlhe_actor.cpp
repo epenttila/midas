@@ -25,7 +25,7 @@ void nlhe_actor::act(nlhe_game& g)
     const int action_index = strategy_->get_strategy().get_action(state_->get_id(), buckets_[g.get_round()]);
     const int action = state_->get_action(action_index);
     //const double probability = strategy_info_.strategy->get(state_->get_id(), action_index, buckets_[g.get_round()]);
-    const int prev_action_index = state_->get_action();
+    const int prev_action_index = state_->get_action_index();
     const int prev_action = prev_action_index != -1 ? state_->get_action(prev_action_index) : -1;
 
     assert(state_->get_child(action_index));
