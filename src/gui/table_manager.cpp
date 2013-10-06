@@ -147,7 +147,7 @@ table_manager::table_manager(const std::string& filename, input_manager& input_m
     }
 }
 
-void table_manager::update(bool save)
+void table_manager::update()
 {
     const auto hwnd = reinterpret_cast<HWND>(window_);
 
@@ -174,9 +174,6 @@ void table_manager::update(bool save)
         mono_image_.reset(new QImage);
 
     *mono_image_ = image_->convertToFormat(QImage::Format_Mono, Qt::ThresholdDither);
-
-    if (save)
-        save_snapshot();
 
     if (image_->width() != window_size_[0] || image_->height() != window_size_[1])
     {

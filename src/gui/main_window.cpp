@@ -484,7 +484,7 @@ void main_window::process_snapshot()
     if (acting_ || !site_ || !site_->is_window())
         return;
 
-    site_->update(save_images_->isChecked());
+    site_->update();
 
     // consider sitout fatal
     if (site_->is_sit_out(0))
@@ -603,6 +603,9 @@ void main_window::process_snapshot()
     ENSURE(stack_size_ > 0);
 
     BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
+
+    if (save_images_->isChecked())
+        site_->save_snapshot();
 
     if (hole.first != -1 && hole.second != -1)
     {
