@@ -967,6 +967,9 @@ void main_window::state_widget_state_reset()
     auto& si = *strategy_infos_.begin()->second;
     si.current_state_ = &si.strategy_->get_root_state();
     update_strategy_widget(si);
+
+    visualizer_->set_big_blind(2);
+    visualizer_->set_dealer(0);
 }
 
 void main_window::state_widget_called()
@@ -986,6 +989,8 @@ void main_window::state_widget_called()
 
     si.current_state_ = state;
     update_strategy_widget(si);
+
+    visualizer_->set_pot(si.current_state_->get_round(), si.current_state_->get_pot());
 }
 
 void main_window::state_widget_raised(double fraction)
@@ -1000,6 +1005,8 @@ void main_window::state_widget_raised(double fraction)
  
     si.current_state_ = si.current_state_->raise(fraction);
     update_strategy_widget(si);
+
+    visualizer_->set_pot(si.current_state_->get_round(), si.current_state_->get_pot());
 }
 
 void main_window::ensure(bool expression, const std::string& s, int line)
