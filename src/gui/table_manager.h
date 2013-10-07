@@ -12,6 +12,7 @@
 #include "window_utils.h"
 
 class input_manager;
+class window_manager;
 
 class table_manager : private boost::noncopyable
 {
@@ -19,7 +20,7 @@ public:
     enum { FOLD, CALL, RAISE, ALLIN, SITOUT };
     enum { FOLD_BUTTON = 0x1, CALL_BUTTON = 0x2, RAISE_BUTTON = 0x4 };
 
-    table_manager(const std::string& filename, input_manager& input_manager);
+    table_manager(const std::string& filename, input_manager& input_manager, const window_manager& window_manager);
     void update();
     void set_window(WId window);
     std::pair<int, int> get_hole_cards() const;
@@ -39,12 +40,11 @@ public:
     bool is_opponent_allin() const;
     bool is_opponent_sitout() const;
     bool is_window() const;
-    void reset();
     void save_snapshot() const;
     QString get_table_pattern() const;
 
 private:
-    WId window_;
+    const window_manager& window_manager_;
     input_manager& input_;
     std::unique_ptr<QImage> image_;
     std::unique_ptr<QImage> mono_image_;

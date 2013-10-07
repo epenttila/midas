@@ -14,8 +14,9 @@
 #include "input_manager.h"
 #include "window_manager.h"
 
-table_manager::table_manager(const std::string& filename, input_manager& input_manager)
-    : window_(0)
+table_manager::table_manager(const std::string& filename, input_manager& input_manager,
+    const window_manager& window_manager)
+    : window_manager_(window_manager)
     , input_(input_manager)
 {
     window_size_.fill(0);
@@ -149,7 +150,7 @@ table_manager::table_manager(const std::string& filename, input_manager& input_m
 
 void table_manager::update()
 {
-    const auto hwnd = reinterpret_cast<HWND>(window_);
+    const auto hwnd = reinterpret_cast<HWND>(window_manager_.get_window());
 
     if (!IsWindow(hwnd))
     {
@@ -161,7 +162,7 @@ void table_manager::update()
     if (!image_)
         image_.reset(new QImage);
 
-    *image_ = window_manager::screenshot(window_).toImage();
+    *image_ = window_manager::screenshot(window_manager_.get_window()).toImage();
 
     if (image_->isNull())
     {
@@ -216,7 +217,7 @@ void table_manager::fold(double max_wait) const
     QTime t;
     t.start();
 
-    while (!click_any_button(input_, window_, fold_buttons_))
+    while (!click_any_button(input_, window_manager_.get_window(), fold_buttons_))
     {
         if (t.elapsed() > max_wait * 1000.0)
         {
@@ -231,7 +232,7 @@ void table_manager::call(double max_wait) const
     QTime t;
     t.start();
 
-    while (!click_any_button(input_, window_, call_buttons_))
+    while (!click_any_button(input_, window_manager_.get_window(), call_buttons_))
     {
         if (t.elapsed() > max_wait * 1000.0)
         {
@@ -260,7 +261,7 @@ void table_manager::raise(double amount, double fraction, double minbet, double 
 
         for (auto i = range.first; i != range.second; ++i)
         {
-            if (click_button(input_, window_, i->second))
+            if (click_button(input_, window_manager_.get_window(), i->second))
             {
                 ok = true;
                 break;
@@ -271,11 +272,11 @@ void table_manager::raise(double amount, double fraction, double minbet, double 
     // type bet size manually
     if (!ok)
     {
-        if (click_button(input_, window_, bet_input_button_, true))
+        if (click_button(input_, window_manager_.get_window(), bet_input_button_, true))
         {
             input_.sleep();
 
-            if (GetForegroundWindow() == reinterpret_cast<HWND>(window_))
+            if (GetForegroundWindow() == reinterpret_cast<HWND>(window_manager_.get_window()))
             {
                 // TODO support decimal point
                 amount = std::max(std::min<double>(amount, std::numeric_limits<int>::max()), 0.0);
@@ -292,7 +293,7 @@ void table_manager::raise(double amount, double fraction, double minbet, double 
     QTime t;
     t.start();
 
-    while (!click_any_button(input_, window_, raise_buttons_))
+    while (!click_any_button(input_, window_manager_.get_window(), raise_buttons_))
     {
         if (t.elapsed() > max_wait * 1000.0)
         {
@@ -318,7 +319,7 @@ double table_manager::get_bet(int position) const
 
 double table_manager::get_big_blind() const
 {
-    const auto title = window_manager::get_window_text(window_);
+    const auto title = window_manager::get_window_text(window_manager_.get_window());
     std::smatch match;
 
     double big_blind = -1;
@@ -376,11 +377,6 @@ bool table_manager::is_sit_out(int position) const
     return is_pixel(image_.get(), sit_out_pixels_[position]);
 }
 
-void table_manager::set_window(WId window)
-{
-    window_ = window;
-}
-
 bool table_manager::is_opponent_allin() const
 {
     return is_all_in(1);
@@ -393,12 +389,7 @@ bool table_manager::is_opponent_sitout() const
 
 bool table_manager::is_window() const
 {
-    return IsWindow(reinterpret_cast<HWND>(window_)) ? true : false;
-}
-
-void table_manager::reset()
-{
-    window_ = 0;
+    return IsWindow(reinterpret_cast<HWND>(window_manager_.get_window())) ? true : false;
 }
 
 void table_manager::save_snapshot() const

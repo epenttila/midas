@@ -361,7 +361,7 @@ void main_window::open_strategy()
             const auto filename = i->toStdString();
             lobby_.reset(new lobby_manager(filename, *input_manager_, *window_manager_));
             lobby_title_->setText(lobby_->get_lobby_pattern());
-            site_.reset(new table_manager(filename, *input_manager_));
+            site_.reset(new table_manager(filename, *input_manager_, *window_manager_));
             title_filter_->setText(site_->get_table_pattern());
             BOOST_LOG_TRIVIAL(info) << QString("Loaded site settings: %1").arg(filename.c_str()).toStdString();
             continue;
@@ -459,20 +459,27 @@ void main_window::action_start_timeout()
 
 void main_window::find_window()
 {
-    if (site_)
-        site_->set_window(window_manager_->get_window());
+    const auto old = window_manager_->get_window();
 
-    if (window_manager_->is_window())
-        return;
+    window_manager_->find_window();
 
-    if (window_manager_->find_window())
+    if (window_manager_->get_window() != old)
     {
-        const std::string title_name = window_manager_->get_title_name();
-        capture_label_->setText(QString("%1").arg(title_name.c_str()));
-    }
-    else
-    {
-        capture_label_->setText("No window");
+        if (window_manager_->get_window())
+        {
+            const std::string title_name = window_manager_->get_title_name();
+            capture_label_->setText(QString("%1").arg(title_name.c_str()));
+
+            BOOST_LOG_TRIVIAL(info) << QString("Found window: %1 -> %2 (%3)").arg(old)
+                .arg(window_manager_->get_window()).arg(title_name.c_str()).toStdString();
+        }
+        else
+        {
+            capture_label_->setText("No window");
+
+            BOOST_LOG_TRIVIAL(info) << QString("Window lost: %1 -> %2").arg(old).arg(window_manager_->get_window())
+                .toStdString();
+        }
     }
 }
 
@@ -603,6 +610,9 @@ void main_window::process_snapshot()
     ENSURE(stack_size_ > 0);
 
     BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
+
+    BOOST_LOG_TRIVIAL(info) << "Window: " << window_manager_->get_window() << " (" <<
+        window_manager_->get_window_text(window_manager_->get_window()) << ")";
 
     if (save_images_->isChecked())
         site_->save_snapshot();

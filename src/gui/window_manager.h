@@ -16,7 +16,7 @@ public:
     window_manager();
     ~window_manager();
     bool is_window() const;
-    bool find_window();
+    void find_window();
     WId get_window() const;
     bool is_window_good(WId window) const;
     void set_title_filter(const std::string& filter);

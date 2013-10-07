@@ -39,10 +39,10 @@ bool window_manager::is_window() const
     return IsWindow(reinterpret_cast<HWND>(window_)) ? true : false;
 }
 
-bool window_manager::find_window()
+void window_manager::find_window()
 {
     if (is_window())
-        return false; // consider the function result a failure if we already have a window
+        return;
 
     boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex> lock(*mutex_);
 
@@ -50,8 +50,6 @@ bool window_manager::find_window()
     window_ = 0;
 
     EnumWindows(callback, reinterpret_cast<LPARAM>(this));
-
-    return is_window();
 }
 
 WId window_manager::get_window() const
