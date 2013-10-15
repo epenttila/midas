@@ -61,7 +61,7 @@ private:
 
     void find_window();
     void process_snapshot();
-    void perform_action();
+    void perform_action(strategy_info& strategy_info);
     bool nativeEvent(const QByteArray& eventType, void* message, long* result);
     void update_strategy_widget(const strategy_info& si);
     void ensure(bool expression, const std::string& s, int line);
@@ -100,6 +100,5 @@ private:
     QTimer* registration_timer_;
     QLabel* registered_label_;
     QAction* autolobby_action_;
-    int stack_size_;
     double activity_variance_;
 };

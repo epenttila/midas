@@ -150,7 +150,6 @@ main_window::main_window()
     , input_manager_(new input_manager)
     , acting_(false)
     , schedule_active_(false)
-    , stack_size_(-1)
 {
     boost::log::add_common_attributes();
 
@@ -587,34 +586,32 @@ void main_window::process_snapshot()
     // opponent stack might be obstructed by all-in or sitout statuses
     ENSURE(site_->get_stack(1) > 0 || site_->is_opponent_allin() || site_->is_opponent_sitout());
 
-    if (new_game)
+    std::array<double, 2> stacks;
+
+    stacks[0] = site_->get_stack(0) + (site_->get_total_pot() - site_->get_bet(0) - site_->get_bet(1)) / 2.0
+        + site_->get_bet(0);
+
+    if (site_->is_opponent_sitout())
     {
-        std::array<double, 2> stacks;
-        
-        stacks[0] = site_->get_stack(0) + site_->get_bet(0);
-
-        if (site_->get_stack(1) > 0)
-        {
-            stacks[1] = site_->get_stack(1) + site_->get_bet(1); // opponent stack equals stack+bet
-        }
-        else
-        {
-            if (site_->is_opponent_sitout())
-                stacks[1] = ALLIN_BET_SIZE; // can't see stack due to sitout, assume worst case
-            else if (site_->is_opponent_allin())
-                stacks[1] = site_->get_bet(1); // opponent stack equals his bet
-        }
-
-        ENSURE(stacks[0] > 0 && stacks[1] > 0);
-        stack_size_ = int(std::ceil(std::min(stacks[0], stacks[1]) / site_->get_big_blind() * 2.0));
+        stacks[1] = ALLIN_BET_SIZE; // can't see stack due to sitout, assume worst case
+    }
+    else
+    {
+        stacks[1] = site_->get_stack(1) + (site_->get_total_pot() - site_->get_bet(0) - site_->get_bet(1)) / 2.0
+            + site_->get_bet(1);
     }
 
-    ENSURE(stack_size_ > 0);
+    ENSURE(stacks[0] > 0 && stacks[1] > 0);
+
+    const auto stack_size = int(std::ceil(std::min(stacks[0], stacks[1]) / site_->get_big_blind() * 2.0));
+
+    ENSURE(stack_size > 0);
 
     BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
 
     BOOST_LOG_TRIVIAL(info) << "Window: " << window_manager_->get_window() << " (" <<
         window_manager_->get_window_text(window_manager_->get_window()) << ")";
+    BOOST_LOG_TRIVIAL(info) << "Stack: " << stack_size << " SB";
 
     if (save_images_->isChecked())
         site_->save_snapshot();
@@ -651,7 +648,7 @@ void main_window::process_snapshot()
     if (strategy_infos_.empty())
         return;
 
-    auto it = find_nearest(strategy_infos_, stack_size_);
+    auto it = find_nearest(strategy_infos_, stack_size);
     auto& strategy_info = *it->second;
     auto& current_state = strategy_info.current_state_;
 
@@ -660,8 +657,8 @@ void main_window::process_snapshot()
 
     if (new_game && round == 0)
     {
-        BOOST_LOG_TRIVIAL(info) << QString("New game (%1 SB)").arg(stack_size_).toStdString();
         current_state = &strategy_info.strategy_->get_root_state();
+        BOOST_LOG_TRIVIAL(info) << "New game";
     }
 
     auto original_state = current_state;
@@ -745,19 +742,16 @@ void main_window::process_snapshot()
 
     update_strategy_widget(strategy_info);
 
-    perform_action();
+    perform_action(strategy_info);
 
     commit = true;
 }
 
 #pragma warning(pop)
 
-void main_window::perform_action()
+void main_window::perform_action(strategy_info& strategy_info)
 {
     ENSURE(site_ && !strategy_infos_.empty());
-
-    auto it = find_nearest(strategy_infos_, stack_size_);
-    auto& strategy_info = *it->second;
 
     std::array<int, 2> hole;
     site_->get_hole_cards(hole);
