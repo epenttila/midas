@@ -376,8 +376,9 @@ void main_window::open_strategy()
             si.reset(new strategy_info);
             si->strategy_ = std::move(p);
         }
-        catch (const std::runtime_error&)
+        catch (const std::exception& e)
         {
+            BOOST_LOG_TRIVIAL(fatal) << e.what();
             continue;
         }
 
