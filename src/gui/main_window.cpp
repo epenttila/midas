@@ -176,8 +176,8 @@ main_window::main_window()
     setCentralWidget(widget);
 
     visualizer_ = new table_widget(this);
-    strategy_ = new holdem_strategy_widget(this, Qt::Tool);
-    strategy_->setVisible(false);
+    strategy_widget_ = new holdem_strategy_widget(this, Qt::Tool);
+    strategy_widget_->setVisible(false);
     state_widget_ = new state_widget(this, Qt::Tool);
     state_widget_->setVisible(false);
     connect(state_widget_, SIGNAL(board_changed(const QString&)), SLOT(state_widget_board_changed(const QString&)));
@@ -390,7 +390,7 @@ void main_window::open_strategy()
 
 void main_window::show_strategy_changed()
 {
-    strategy_->setVisible(!strategy_->isVisible());
+    strategy_widget_->setVisible(!strategy_widget_->isVisible());
 }
 
 void main_window::autoplay_changed(const bool checked)
@@ -832,7 +832,7 @@ void main_window::state_widget_board_changed(const QString& board)
         s.erase(s.begin(), s.begin() + 2);
     }
 
-    strategy_->set_board(b);
+    strategy_widget_->set_board(b);
 }
 
 void main_window::update_strategy_widget(WId window, const nlhe_strategy& strategy, const std::array<int, 2>& hole,
@@ -843,9 +843,9 @@ void main_window::update_strategy_widget(WId window, const nlhe_strategy& strate
     if (!state)
         return;
 
-    strategy_->set_hole(hole);
-    strategy_->set_board(board);
-    strategy_->update(strategy, *state);
+    strategy_widget_->set_hole(hole);
+    strategy_widget_->set_board(board);
+    strategy_widget_->update(strategy, *state);
 }
 
 void main_window::ensure(bool expression, const std::string& s, int line)
@@ -940,5 +940,5 @@ void main_window::state_widget_state_changed()
     if (strategies_.empty() || !state_widget_->get_state())
         return;
 
-    strategy_->update(*strategies_.begin()->second, *state_widget_->get_state());
+    strategy_widget_->update(*strategies_.begin()->second, *state_widget_->get_state());
 }

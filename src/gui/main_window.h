@@ -64,7 +64,7 @@ private:
     QPlainTextEdit* log_;
     QLineEdit* title_filter_;
     std::unique_ptr<window_manager> window_manager_;
-    holdem_strategy_widget* strategy_;
+    holdem_strategy_widget* strategy_widget_;
     std::mt19937 engine_;
     double capture_interval_;
     std::unique_ptr<input_manager> input_manager_;
