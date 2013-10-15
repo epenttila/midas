@@ -661,18 +661,6 @@ void main_window::process_snapshot()
         BOOST_LOG_TRIVIAL(info) << "New game";
     }
 
-    auto original_state = current_state;
-    bool commit = false;
-
-    BOOST_SCOPE_EXIT(&strategy_info, &original_state, &commit)
-    {
-        if (!commit)
-        {
-            BOOST_LOG_TRIVIAL(warning) << "Reverting state";
-            strategy_info.current_state_ = original_state;
-        }
-    } BOOST_SCOPE_EXIT_END
-
     ENSURE(current_state != nullptr);
     ENSURE(!current_state->is_terminal());
 
@@ -744,7 +732,6 @@ void main_window::process_snapshot()
 
     perform_action(strategy_info);
 
-    commit = true;
 }
 
 #pragma warning(pop)
