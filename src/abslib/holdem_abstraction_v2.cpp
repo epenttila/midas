@@ -297,21 +297,9 @@ void holdem_abstraction_v2::get_buckets(const int c0, const int c1, const int b0
     std::array<card_t, 7> cards = { card_t(c0), card_t(c1), card_t(b0), card_t(b1), card_t(b2), card_t(b3), card_t(b4) };
 
     (*buckets)[PREFLOP] = read(PREFLOP, preflop_indexer_.hand_index_last(cards.data()));
-
-    if (b0 == -1)
-        return;
-
-    (*buckets)[FLOP] = read(FLOP, flop_indexer_.hand_index_last(cards.data()));
-
-    if (b3 == -1)
-        return;
-
-    (*buckets)[TURN] = read(TURN, turn_indexer_.hand_index_last(cards.data()));
-
-    if (b4 == -1)
-        return;
-
-    (*buckets)[RIVER] = read(RIVER, river_indexer_.hand_index_last(cards.data()));
+    (*buckets)[FLOP] = (b0 != -1) ? read(FLOP, flop_indexer_.hand_index_last(cards.data())) : -1;
+    (*buckets)[TURN] = (b3 != -1) ? read(TURN, turn_indexer_.hand_index_last(cards.data())) : -1;
+    (*buckets)[RIVER] = (b4 != -1) ? read(RIVER, river_indexer_.hand_index_last(cards.data())) : -1;
 }
 
 void holdem_abstraction_v2::read(const std::string& filename)
