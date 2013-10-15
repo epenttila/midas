@@ -148,7 +148,6 @@ main_window::main_window()
     : window_manager_(new window_manager)
     , engine_(std::random_device()())
     , input_manager_(new input_manager)
-    , acting_(false)
     , schedule_active_(false)
 {
     boost::log::add_common_attributes();
@@ -396,67 +395,11 @@ void main_window::show_strategy_changed()
 void main_window::autoplay_changed(const bool checked)
 {
     if (checked)
-    {
         BOOST_LOG_TRIVIAL(info) << "Starting autoplay";
-    }
     else
-    {
         BOOST_LOG_TRIVIAL(info) << "Stopping autoplay";
-        acting_ = false;
-    }
 }
 
-void main_window::action_start_timeout()
-{
-    BOOST_LOG_TRIVIAL(info) << "Waiting for mutex";
-
-    auto mutex = window_manager_->try_interact();
-
-    try
-    {
-        switch (next_action_)
-        {
-        case table_manager::FOLD:
-            BOOST_LOG_TRIVIAL(info) << "Folding";
-            site_->fold(action_delay_[1]);
-            break;
-        case table_manager::CALL:
-            BOOST_LOG_TRIVIAL(info) << "Calling";
-            site_->call(action_delay_[1]);
-            break;
-        case table_manager::RAISE:
-            {
-                const double total_pot = site_->get_total_pot();
-                const double my_bet = site_->get_bet(0);
-                const double op_bet = site_->get_bet(1);
-                const double to_call = op_bet - my_bet;
-                const double amount = raise_fraction_ * (total_pot + to_call) + to_call + my_bet;
-
-                const double minbet = std::max(site_->get_big_blind(), to_call) + to_call + my_bet;
-
-                BOOST_LOG_TRIVIAL(info) << QString("Raising %1 (%2x pot) (min: %3)").arg(amount).arg(raise_fraction_)
-                    .arg(minbet).toStdString();
-
-                site_->raise(amount, raise_fraction_, minbet, action_delay_[1]);
-            }
-            break;
-        }
-    }
-    catch (const std::exception& e)
-    {
-        BOOST_LOG_TRIVIAL(fatal) << e.what();
-
-        if (site_)
-        {
-            BOOST_LOG_TRIVIAL(warning) << "Saving current snapshot";
-            site_->save_snapshot();
-        }
-    }
-
-    BOOST_LOG_TRIVIAL(info) << QString("Waiting for %1 seconds after action").arg(action_post_delay_).toStdString();
-
-    QTimer::singleShot(int(action_post_delay_ * 1000.0), this, SLOT(action_finish_timeout()));
-}
 
 void main_window::find_window()
 {
@@ -489,7 +432,7 @@ void main_window::find_window()
 
 void main_window::process_snapshot()
 {
-    if (acting_ || !site_ || !site_->is_window())
+    if (!site_ || !site_->is_window())
         return;
 
     site_->update();
@@ -772,10 +715,13 @@ void main_window::perform_action(strategy_info& strategy_info)
     const nlhe_state_base::holdem_action action = current_state->get_action(index);
     const QString s = current_state->get_action_name(action).c_str();
 
+    int next_action;
+    double raise_fraction = -1;
+
     switch (action)
     {
     case nlhe_state_base::FOLD:
-        next_action_ = table_manager::FOLD;
+        next_action = table_manager::FOLD;
         break;
     case nlhe_state_base::CALL:
         {
@@ -784,19 +730,19 @@ void main_window::perform_action(strategy_info& strategy_info)
             // ensure the hand really terminates if our abstraction says so
             if (current_state->get_round() < RIVER && current_state->call()->is_terminal())
             {
-                next_action_ = table_manager::RAISE;
-                raise_fraction_ = ALLIN_BET_SIZE;
+                next_action = table_manager::RAISE;
+                raise_fraction = ALLIN_BET_SIZE;
                 BOOST_LOG_TRIVIAL(info) << "Translating pre-river call to all-in to ensure hand terminates";
             }
             else
             {
-                next_action_ = table_manager::CALL;
+                next_action = table_manager::CALL;
             }
         }
         break;
     default:
-        next_action_ = table_manager::RAISE;
-        raise_fraction_ = current_state->get_raise_factor(action);
+        next_action = table_manager::RAISE;
+        raise_fraction = current_state->get_raise_factor(action);
         break;
     }
 
@@ -805,16 +751,32 @@ void main_window::perform_action(strategy_info& strategy_info)
 
     current_state = current_state->get_child(index);
 
-    acting_ = true;
+    switch (next_action)
+    {
+    case table_manager::FOLD:
+        BOOST_LOG_TRIVIAL(info) << "Folding";
+        site_->fold(action_delay_[1]);
+        break;
+    case table_manager::CALL:
+        BOOST_LOG_TRIVIAL(info) << "Calling";
+        site_->call(action_delay_[1]);
+        break;
+    case table_manager::RAISE:
+        {
+            const double total_pot = site_->get_total_pot();
+            const double my_bet = site_->get_bet(0);
+            const double op_bet = site_->get_bet(1);
+            const double to_call = op_bet - my_bet;
+            const double amount = raise_fraction * (total_pot + to_call) + to_call + my_bet;
+            const double minbet = std::max(site_->get_big_blind(), to_call) + to_call + my_bet;
 
-    assert(autoplay_action_->isChecked());
+            BOOST_LOG_TRIVIAL(info) << QString("Raising %1 (%2x pot) (%3 min)").arg(amount).arg(raise_fraction)
+                .arg(minbet).toStdString();
 
-    const double wait = site_->is_opponent_sitout() ? action_delay_[0] : get_normal_random(engine_,
-        action_delay_[0], action_delay_[1]);
-
-    QTimer::singleShot(static_cast<int>(wait * 1000.0), this, SLOT(action_start_timeout()));
-
-    BOOST_LOG_TRIVIAL(info) << QString("Waiting %1 seconds before action").arg(wait).toStdString();
+            site_->raise(amount, raise_fraction, minbet, action_delay_[1]);
+        }
+        break;
+    }
 }
 
 main_window::strategy_info::strategy_info()
@@ -824,11 +786,6 @@ main_window::strategy_info::strategy_info()
 
 main_window::strategy_info::~strategy_info()
 {
-}
-
-void main_window::action_finish_timeout()
-{
-    acting_ = false;
 }
 
 void main_window::autolobby_timer_timeout()

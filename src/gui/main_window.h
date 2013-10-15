@@ -38,8 +38,6 @@ public slots:
     void open_strategy();
     void show_strategy_changed();
     void autoplay_changed(bool checked);
-    void action_start_timeout();
-    void action_finish_timeout();
     void autolobby_timer_timeout();
     void modify_state_changed();
     void state_widget_board_changed(const QString& board);
@@ -75,12 +73,9 @@ private:
     QLineEdit* title_filter_;
     std::unique_ptr<window_manager> window_manager_;
     holdem_strategy_widget* strategy_;
-    int next_action_;
     std::mt19937 engine_;
-    double raise_fraction_;
     double capture_interval_;
     std::unique_ptr<input_manager> input_manager_;
-    bool acting_;
     std::array<double, 2> action_delay_;
     double action_post_delay_;
     QTimer* autolobby_timer_;
