@@ -12,7 +12,6 @@
 #include "window_utils.h"
 
 class input_manager;
-class window_manager;
 
 class table_manager : private boost::noncopyable
 {
@@ -20,9 +19,8 @@ public:
     enum { FOLD, CALL, RAISE, ALLIN, SITOUT };
     enum { FOLD_BUTTON = 0x1, CALL_BUTTON = 0x2, RAISE_BUTTON = 0x4 };
 
-    table_manager(const std::string& filename, input_manager& input_manager, const window_manager& window_manager);
-    void update();
-    void set_window(WId window);
+    table_manager(const std::string& filename, input_manager& input_manager);
+    void update(WId window);
     void get_hole_cards(std::array<int, 2>& hole) const;
     void get_board_cards(std::array<int, 5>& board) const;
     int get_dealer() const;
@@ -39,12 +37,11 @@ public:
     bool is_sit_out(int position) const;
     bool is_opponent_allin() const;
     bool is_opponent_sitout() const;
-    bool is_window() const;
     void save_snapshot() const;
     QString get_table_pattern() const;
 
 private:
-    const window_manager& window_manager_;
+    WId window_;
     input_manager& input_;
     std::unique_ptr<QImage> image_;
     std::unique_ptr<QImage> mono_image_;

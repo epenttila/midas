@@ -66,4 +66,7 @@ namespace window_utils
     button_data read_xml_button(QXmlStreamReader& reader);
     popup_data read_xml_popup(QXmlStreamReader& reader);
     bool close_popups(input_manager& input, WId window, const std::vector<popup_data>& popups, double wait);
+    bool is_window(WId window);
+    std::string get_window_text(WId window);
+    QPixmap screenshot(WId winId);
 }

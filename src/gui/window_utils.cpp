@@ -10,18 +10,8 @@
 
 #include "util/card.h"
 #include "input_manager.h"
-#include "window_manager.h"
 
-namespace
-{
-    // TODO combine with one in window_manager
-    std::string get_window_text(HWND hwnd)
-    {
-        std::array<char, 256> arr;
-        GetWindowText(hwnd, &arr[0], int(arr.size()));
-        return std::string(arr.data());
-    }
-}
+Q_GUI_EXPORT QPixmap qt_pixmapFromWinHBITMAP(HBITMAP, int hbitmapFormat = 0);
 
 namespace window_utils
 {
@@ -215,7 +205,7 @@ bool is_any_button(const QImage* image, const std::vector<button_data>& buttons)
 
 bool click_button(input_manager& input, WId window, const button_data& button, bool double_click)
 {
-    auto image = window_manager::screenshot(window).toImage();
+    auto image = screenshot(window).toImage();
 
     // check if button is there
     if (!is_button(&image, button))
@@ -224,7 +214,7 @@ bool click_button(input_manager& input, WId window, const button_data& button, b
     input.move_mouse(window, button.rect.x(), button.rect.y(), button.rect.width(), button.rect.height());
     input.sleep();
 
-    image = window_manager::screenshot(window).toImage();
+    image = screenshot(window).toImage();
 
     // check if the button is still there
     if (!is_button(&image, button))
@@ -356,7 +346,7 @@ bool close_popups(input_manager& input, WId window, const std::vector<popup_data
     if (!IsWindow(hwnd) || !IsWindowVisible(hwnd))
         return false;
 
-    const auto title = window_manager::get_window_text(window);
+    const auto title = get_window_text(window);
     bool found = false;
 
     for (auto i = popups.begin(); i != popups.end(); ++i)
@@ -370,8 +360,6 @@ bool close_popups(input_manager& input, WId window, const std::vector<popup_data
 
     if (!found)
         return false;
-
-    const auto text = get_window_text(hwnd);
 
     // not all windows will be closed when clicking OK, so can't use IsWindow here
     QTime t;
@@ -400,19 +388,62 @@ bool close_popups(input_manager& input, WId window, const std::vector<popup_data
         if (t.elapsed() > wait)
         {
             BOOST_LOG_TRIVIAL(warning) << "Forcing window to close after " << t.elapsed() << " ms ("
-                << text << ")";
+                << title << ")";
             SendMessage(hwnd, WM_CLOSE, 0, 0);
         }
 
         if (t.elapsed() > 2 * wait)
         {
             BOOST_LOG_TRIVIAL(warning) << "Failed to close window after " << t.elapsed() << " ms ("
-                << text << ")";
+                << title << ")";
             return false;
         }
     }
 
     return true;
+}
+
+bool is_window(WId window)
+{
+    return IsWindow(reinterpret_cast<HWND>(window)) ? true : false;
+}
+
+std::string get_window_text(WId window)
+{
+    std::array<char, 256> arr;
+    GetWindowText(reinterpret_cast<HWND>(window), &arr[0], int(arr.size()));
+    return std::string(arr.data());
+}
+
+QPixmap screenshot(WId window)
+{
+    // TODO move to window_utils
+    const auto hwnd = reinterpret_cast<HWND>(window);
+
+    RECT r;
+    GetClientRect(hwnd, &r);
+
+    const int w = r.right - r.left;
+    const int h = r.bottom - r.top;
+
+    const HDC display_dc = GetDC(0);
+    const HDC bitmap_dc = CreateCompatibleDC(display_dc);
+    const HBITMAP bitmap = CreateCompatibleBitmap(display_dc, w, h);
+    const HGDIOBJ null_bitmap = SelectObject(bitmap_dc, bitmap);
+
+    const HDC window_dc = GetDC(hwnd);
+    BitBlt(bitmap_dc, 0, 0, w, h, window_dc, 0, 0, SRCCOPY);
+
+    ReleaseDC(hwnd, window_dc);
+    SelectObject(bitmap_dc, null_bitmap);
+    DeleteDC(bitmap_dc);
+
+    const QPixmap pixmap = qt_pixmapFromWinHBITMAP(bitmap);
+
+    DeleteObject(bitmap);
+    ReleaseDC(0, display_dc);
+
+    return pixmap;
 }
 
 }

@@ -246,8 +246,6 @@ main_window::main_window()
     registration_timer_->setSingleShot(true);
     connect(registration_timer_, SIGNAL(timeout()), SLOT(registration_timer_timeout()));
 
-    capture_label_ = new QLabel("No window", this);
-    statusBar()->addWidget(capture_label_, 1);
     schedule_label_ = new QLabel("Scheduler off", this);
     statusBar()->addWidget(schedule_label_, 1);
     registered_label_ = new QLabel("0/0", this);
@@ -305,8 +303,14 @@ void main_window::capture_timer_timeout()
 {
     try
     {
-        find_window();
-        process_snapshot();
+        window_manager_->update();
+
+        /// TODO sync states_ with tables
+
+        visualizer_->set_tables(window_manager_->get_tables());
+
+        for (auto window : window_manager_->get_tables())
+            process_snapshot(window);
     }
     catch (const std::exception& e)
     {
@@ -343,7 +347,7 @@ void main_window::open_strategy()
 
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
-    strategy_infos_.clear();
+    strategies_.clear();
 
     std::regex r("([^-]+)-([^-]+)-[0-9]+\\.str");
     std::regex r_nlhe("nlhe\\.([a-z]+)\\.([0-9]+)");
@@ -357,7 +361,7 @@ void main_window::open_strategy()
             const auto filename = i->toStdString();
             lobby_.reset(new lobby_manager(filename, *input_manager_, *window_manager_));
             lobby_title_->setText(lobby_->get_lobby_pattern());
-            site_.reset(new table_manager(filename, *input_manager_, *window_manager_));
+            site_.reset(new table_manager(filename, *input_manager_));
             title_filter_->setText(site_->get_table_pattern());
             BOOST_LOG_TRIVIAL(info) << QString("Loaded site settings: %1").arg(filename.c_str()).toStdString();
             continue;
@@ -368,9 +372,7 @@ void main_window::open_strategy()
         try
         {
             std::unique_ptr<nlhe_strategy> p(new nlhe_strategy(i->toStdString()));
-            auto& si = strategy_infos_[p->get_stack_size()];
-            si.reset(new strategy_info);
-            si->strategy_ = std::move(p);
+            strategies_[p->get_stack_size()] = std::move(p);
         }
         catch (const std::exception& e)
         {
@@ -381,8 +383,7 @@ void main_window::open_strategy()
         BOOST_LOG_TRIVIAL(info) << QString("Loaded strategy: %1").arg(*i).toStdString();
     }
 
-    state_widget_->set_root_state(strategy_infos_.empty() ? nullptr
-        : &strategy_infos_.begin()->second->strategy_->get_root_state());
+    state_widget_->set_root_state(strategies_.empty() ? nullptr : &strategies_.begin()->second->get_root_state());
 
     QApplication::restoreOverrideCursor();
 }
@@ -400,50 +401,23 @@ void main_window::autoplay_changed(const bool checked)
         BOOST_LOG_TRIVIAL(info) << "Stopping autoplay";
 }
 
-
-void main_window::find_window()
-{
-    const auto old = window_manager_->get_window();
-
-    window_manager_->find_window();
-
-    if (window_manager_->get_window() != old)
-    {
-        if (window_manager_->get_window())
-        {
-            const std::string title_name = window_manager_->get_title_name();
-            capture_label_->setText(QString("%1").arg(title_name.c_str()));
-
-            BOOST_LOG_TRIVIAL(info) << QString("Found window: %1 -> %2 (%3)").arg(old)
-                .arg(window_manager_->get_window()).arg(title_name.c_str()).toStdString();
-        }
-        else
-        {
-            capture_label_->setText("No window");
-
-            BOOST_LOG_TRIVIAL(info) << QString("Window lost: %1 -> %2").arg(old).arg(window_manager_->get_window())
-                .toStdString();
-        }
-    }
-}
-
 #pragma warning(push)
 #pragma warning(disable: 4512)
 
-void main_window::process_snapshot()
+void main_window::process_snapshot(const WId window)
 {
-    if (!site_ || !site_->is_window())
+    if (!site_)
         return;
 
-    site_->update();
+    site_->update(window);
 
     // consider sitout fatal
     if (site_->is_sit_out(0))
     {
-        if (!window_manager_->is_stop())
+        if (table_count_->value() > 0)
         {
             BOOST_LOG_TRIVIAL(error) << "We are sitting out; stopping registrations";
-            window_manager_->set_stop(true);
+            table_count_->setValue(0);
         }
 
         return;
@@ -494,15 +468,16 @@ void main_window::process_snapshot()
         && ((site_->get_dealer() == 0 && site_->get_bet(0) < site_->get_big_blind())
         || (site_->get_dealer() == 1 && site_->get_bet(0) == site_->get_big_blind()));
 
-    visualizer_->set_dealer(site_->get_dealer());
-    visualizer_->set_hole_cards(0, hole);
-    visualizer_->set_board_cards(board);
-    visualizer_->set_big_blind(site_->get_big_blind());
-    visualizer_->set_real_pot(site_->get_total_pot());
-    visualizer_->set_real_bets(site_->get_bet(0), site_->get_bet(1));
-    visualizer_->set_sit_out(site_->is_sit_out(0), site_->is_sit_out(1));
-    visualizer_->set_stacks(site_->get_stack(0), site_->get_stack(1));
-    visualizer_->set_buttons(site_->get_buttons());
+    visualizer_->set_active(window);
+    visualizer_->set_dealer(window, site_->get_dealer());
+    visualizer_->set_hole_cards(window, hole);
+    visualizer_->set_board_cards(window, board);
+    visualizer_->set_big_blind(window, site_->get_big_blind());
+    visualizer_->set_real_pot(window, site_->get_total_pot());
+    visualizer_->set_real_bets(window, site_->get_bet(0), site_->get_bet(1));
+    visualizer_->set_sit_out(window, site_->is_sit_out(0), site_->is_sit_out(1));
+    visualizer_->set_stacks(window, site_->get_stack(0), site_->get_stack(1));
+    visualizer_->set_buttons(window, site_->get_buttons());
 
     if (!autoplay_action_->isChecked())
         return;
@@ -552,8 +527,7 @@ void main_window::process_snapshot()
 
     BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
 
-    BOOST_LOG_TRIVIAL(info) << "Window: " << window_manager_->get_window() << " (" <<
-        window_manager_->get_window_text(window_manager_->get_window()) << ")";
+    BOOST_LOG_TRIVIAL(info) << "Window: " << window << " (" << window_utils::get_window_text(window) << ")";
     BOOST_LOG_TRIVIAL(info) << "Stack: " << stack_size << " SB";
 
     if (save_images_->isChecked())
@@ -588,20 +562,20 @@ void main_window::process_snapshot()
     if (!board_string.isEmpty())
         BOOST_LOG_TRIVIAL(info) << board_string.toStdString();
 
-    if (strategy_infos_.empty())
+    if (strategies_.empty())
         return;
 
-    auto it = find_nearest(strategy_infos_, stack_size);
-    auto& strategy_info = *it->second;
-    auto& current_state = strategy_info.current_state_;
+    auto it = find_nearest(strategies_, stack_size);
+    auto& strategy = *it->second;
+    auto& current_state = states_[window];
 
     BOOST_LOG_TRIVIAL(info) << QString("Strategy file: %1")
-        .arg(QFileInfo(strategy_info.strategy_->get_strategy().get_filename().c_str()).fileName()).toStdString();
+        .arg(QFileInfo(strategy.get_strategy().get_filename().c_str()).fileName()).toStdString();
 
     if (new_game && round == 0)
     {
-        current_state = &strategy_info.strategy_->get_root_state();
         BOOST_LOG_TRIVIAL(info) << "New game";
+        current_state = &strategy.get_root_state();
     }
 
     ENSURE(current_state != nullptr);
@@ -662,7 +636,7 @@ void main_window::process_snapshot()
     if (site_->get_dealer() == 1)
         std::swap(pot[0], pot[1]);
 
-    visualizer_->set_pot(current_state->get_round(), pot);
+    visualizer_->set_pot(window, current_state->get_round(), pot);
 
     // we should never reach terminal states when we have a pending action
     ENSURE(current_state->get_id() != -1);
@@ -671,17 +645,16 @@ void main_window::process_snapshot()
     ss << *current_state;
     BOOST_LOG_TRIVIAL(info) << QString("State: %1").arg(ss.str().c_str()).toStdString();
 
-    update_strategy_widget(strategy_info);
+    update_strategy_widget(window, strategy, hole, board);
 
-    perform_action(strategy_info);
-
+    perform_action(window, strategy);
 }
 
 #pragma warning(pop)
 
-void main_window::perform_action(strategy_info& strategy_info)
+void main_window::perform_action(WId window, const nlhe_strategy& strategy)
 {
-    ENSURE(site_ && !strategy_infos_.empty());
+    ENSURE(site_ && !strategies_.empty());
 
     std::array<int, 2> hole;
     site_->get_hole_cards(hole);
@@ -696,22 +669,23 @@ void main_window::perform_action(strategy_info& strategy_info)
     const int b3 = board[3];
     const int b4 = board[4];
     int bucket = -1;
-    const auto& abstraction = strategy_info.strategy_->get_abstraction();
+    const auto& abstraction = strategy.get_abstraction();
+    auto& current_state = states_[window];
+
+    ENSURE(current_state != nullptr);
+    ENSURE(!current_state->is_terminal());
 
     if (c0 != -1 && c1 != -1)
     {
         holdem_abstraction_base::bucket_type buckets;
         abstraction.get_buckets(c0, c1, b0, b1, b2, b3, b4, &buckets);
-        bucket = buckets[strategy_info.current_state_->get_round()];
+        bucket = buckets[current_state->get_round()];
     }
 
-    auto& current_state = strategy_info.current_state_;
+    ENSURE(bucket != -1);
 
-    ENSURE(current_state && !current_state->is_terminal() && bucket != -1);
-
-    const auto& strategy = strategy_info.strategy_;
     const int index = site_->is_opponent_sitout() ? nlhe_state_base::CALL + 1
-        : strategy->get_strategy().get_action(current_state->get_id(), bucket);
+        : strategy.get_strategy().get_action(current_state->get_id(), bucket);
     const nlhe_state_base::holdem_action action = current_state->get_action(index);
     const QString s = current_state->get_action_name(action).c_str();
 
@@ -746,7 +720,7 @@ void main_window::perform_action(strategy_info& strategy_info)
         break;
     }
 
-    const double probability = strategy->get_strategy().get(current_state->get_id(), index, bucket);
+    const double probability = strategy.get_strategy().get(current_state->get_id(), index, bucket);
     BOOST_LOG_TRIVIAL(info) << QString("Strategy: %1 (%2)").arg(s).arg(probability).toStdString();
 
     current_state = current_state->get_child(index);
@@ -779,24 +753,8 @@ void main_window::perform_action(strategy_info& strategy_info)
     }
 }
 
-main_window::strategy_info::strategy_info()
-    : current_state_(nullptr)
-{
-}
-
-main_window::strategy_info::~strategy_info()
-{
-}
-
 void main_window::autolobby_timer_timeout()
 {
-    if (window_manager_->is_stop() && table_count_->value() > 0)
-    {
-        BOOST_LOG_TRIVIAL(warning) << "Setting table count to zero due to global stop";
-        table_count_->setValue(0);
-        return;
-    }
-
     if (!lobby_)
         return;
 
@@ -819,8 +777,6 @@ void main_window::autolobby_timer_timeout()
     }
 
     assert(lobby_ && lobby_->is_window());
-
-    auto mutex = window_manager_->try_interact();
 
     if (!lobby_->ensure_visible())
         return;
@@ -876,37 +832,20 @@ void main_window::state_widget_board_changed(const QString& board)
         s.erase(s.begin(), s.begin() + 2);
     }
 
-    visualizer_->set_board_cards(b);
-
     strategy_->set_board(b);
 }
 
-void main_window::update_strategy_widget(const strategy_info& si)
+void main_window::update_strategy_widget(WId window, const nlhe_strategy& strategy, const std::array<int, 2>& hole,
+    const std::array<int, 5>& board)
 {
-    if (!si.current_state_)
+    const auto state = states_[window];
+
+    if (!state)
         return;
-
-    std::array<int, 2> hole;
-    visualizer_->get_hole_cards(hole);
-
-    std::array<int, 5> board;
-    visualizer_->get_board_cards(board);
-
-    switch (si.current_state_->get_round())
-    {
-    case PREFLOP:
-        board[0] = -1;
-        board[1] = -1;
-        board[2] = -1;
-    case FLOP:
-        board[3] = -1;
-    case TURN:
-        board[4] = -1;
-    }
 
     strategy_->set_hole(hole);
     strategy_->set_board(board);
-    strategy_->update(*si.strategy_, *si.current_state_);
+    strategy_->update(strategy, *state);
 }
 
 void main_window::ensure(bool expression, const std::string& s, int line)
@@ -985,7 +924,6 @@ void main_window::autolobby_changed(bool checked)
 {
     if (checked)
     {
-        window_manager_->set_stop(false);
         autolobby_timer_->start(int(lobby_interval_ * 1000.0));
     }
     else
@@ -999,8 +937,8 @@ void main_window::autolobby_changed(bool checked)
 
 void main_window::state_widget_state_changed()
 {
-    if (strategy_infos_.empty() || !state_widget_->get_state())
+    if (strategies_.empty() || !state_widget_->get_state())
         return;
 
-    strategy_->update(*strategy_infos_.begin()->second->strategy_, *state_widget_->get_state());
+    strategy_->update(*strategies_.begin()->second, *state_widget_->get_state());
 }

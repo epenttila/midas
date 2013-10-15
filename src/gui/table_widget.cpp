@@ -2,7 +2,6 @@
 
 #pragma warning(push, 1)
 #include <boost/lexical_cast.hpp>
-#include <QListWidget>
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QPainter>
@@ -14,212 +13,201 @@
 
 namespace
 {
+    enum
+    {
+        WINDOW_COLUMN,
+        BIGBLIND_COLUMN,
+        PSTACK_COLUMN,
+        OSTACK_COLUMN,
+        PSITOUT_COLUMN,
+        OSITOUT_COLUMN,
+        HOLE_COLUMN,
+        DEALER_COLUMN,
+        BOARD_COLUMN,
+        PBET_COLUMN,
+        OBET_COLUMN,
+        POT_COLUMN,
+        BUTTONS_COLUMN,
+        MAX_COLUMNS,
+    };
+
     static const int CARD_WIDTH = 50;
     static const int CARD_HEIGHT = 70;
     static const int CARD_MARGIN = 5;
 
-    void paint_card(QPainter& painter, const QPoint& destination, const std::array<std::unique_ptr<QPixmap>, 52>& cards_images,
-        const QPixmap& empty, int card)
+    class card_delegate : public QAbstractItemDelegate
     {
-        if (card != -1)
-            painter.drawPixmap(destination, *cards_images[card]);
-        else
-            painter.drawPixmap(destination, empty);
-    }
+    public:
+        card_delegate(const std::array<std::unique_ptr<QPixmap>, 52>& images)
+            : images_(images)
+        {
+        }
+
+        void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
+        {
+            const auto list = index.data(Qt::DisplayRole).toList();
+
+            const int y = option.rect.top() + (option.rect.height() - images_[0]->height()) / 2;
+            int x = option.rect.left();
+
+            painter->setClipRect(option.rect);
+
+            for (auto i : list)
+            {
+                if (i.toInt() != -1)
+                    painter->drawPixmap(x, y, *images_[i.toInt()]);
+
+                x += images_[0]->width();
+            }
+        }
+
+        QSize sizeHint(const QStyleOptionViewItem&,const QModelIndex& index) const
+        {
+            const auto list = index.data(Qt::DisplayRole).toList();
+
+            return QSize(images_[0]->width() * list.size(), images_[0]->height());
+        }
+
+    private:
+        const std::array<std::unique_ptr<QPixmap>, 52>& images_;
+    };
 }
 
 table_widget::table_widget(QWidget* parent)
-    : QFrame(parent)
+    : QTableWidget(0, MAX_COLUMNS, parent)
     , dealer_image_(new QPixmap(":/images/dealer.png"))
-    , dealer_(-1)
-    , round_(-1)
     , empty_image_(new QPixmap(":/images/card_empty.png"))
-    , big_blind_(-1)
-    , real_pot_(-1)
-    , buttons_(-1)
 {
-    // TODO make editable and feed back to game state
-    hole_[0].fill(-1);
-    hole_[1].fill(-1);
-    board_.fill(-1);
-    bets_.fill(0);
-    pot_.fill(0);
-    real_bets_.fill(0);
-    sit_out_.fill(false);
-    stacks_.fill(0);
-
     for (int i = 0; i < 52; ++i)
-        card_images_[i].reset(new QPixmap(QString(":/images/card_%1.png").arg(get_card_string(i).c_str())));
+        card_images_[i].reset(new QPixmap(QString(":/images/mini_%1.png").arg(get_card_string(i).c_str())));
 
     setMinimumSize(13 * CARD_WIDTH + 15 * CARD_MARGIN, 3 * CARD_HEIGHT + 5 * CARD_MARGIN);
-    setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
+
+    setHorizontalHeaderLabels(QStringList() << "Window" << "BB" << "PStack" << "OStack" << "PSitout" << "OSitout"
+        << "Hole" << "Dealer" << "Board" << "PBet" << "OBet" << "Pot" << "Buttons");
+
+    setItemDelegateForColumn(HOLE_COLUMN, new card_delegate(card_images_));
+    setItemDelegateForColumn(BOARD_COLUMN, new card_delegate(card_images_));
+
+    resizeColumnsToContents();
 }
 
-void table_widget::set_board_cards(const std::array<int, 5>& board)
+void table_widget::set_board_cards(WId window, const std::array<int, 5>& board)
 {
-    board_ = board;
-    update();
+    QList<QVariant> list;
+
+    for (auto i : board)
+        list.append(i);
+
+    item(get_row(window), BOARD_COLUMN)->setData(Qt::DisplayRole, list);
+
+    resizeColumnToContents(BOARD_COLUMN);
 }
 
-void table_widget::set_hole_cards(int seat, const std::array<int, 2>& cards)
+void table_widget::set_hole_cards(WId window, const std::array<int, 2>& cards)
 {
-    hole_[seat] = cards;
-    update();
+    QList<QVariant> list;
+
+    for (auto i : cards)
+        list.append(i);
+
+    item(get_row(window), HOLE_COLUMN)->setData(Qt::DisplayRole, list);
+
+    resizeColumnToContents(HOLE_COLUMN);
 }
 
-void table_widget::set_dealer(int dealer)
+void table_widget::set_dealer(WId window, int dealer)
 {
-    if (dealer == dealer_)
+    item(get_row(window), DEALER_COLUMN)->setData(Qt::DisplayRole, dealer);
+}
+
+void table_widget::set_pot(WId, int, const std::array<int, 2>&)
+{
+    //item(get_row(window), DEALER_COLUMN)->setData(Qt::DisplayRole, dealer);
+}
+
+void table_widget::set_big_blind(WId window, double big_blind)
+{
+    item(get_row(window), BIGBLIND_COLUMN)->setData(Qt::DisplayRole, big_blind);
+}
+
+void table_widget::set_sit_out(WId window, bool sitout1, bool sitout2)
+{
+    item(get_row(window), PSITOUT_COLUMN)->setData(Qt::DisplayRole, sitout1);
+    item(get_row(window), OSITOUT_COLUMN)->setData(Qt::DisplayRole, sitout2);
+}
+
+void table_widget::set_stacks(WId window, double stack1, double stack2)
+{
+    item(get_row(window), PSTACK_COLUMN)->setData(Qt::DisplayRole, stack1);
+    item(get_row(window), OSTACK_COLUMN)->setData(Qt::DisplayRole, stack2);
+}
+
+void table_widget::set_buttons(WId window, int buttons)
+{
+    item(get_row(window), BUTTONS_COLUMN)->setData(Qt::DisplayRole, buttons);
+}
+
+void table_widget::set_real_bets(WId window, double bet1, double bet2)
+{
+    item(get_row(window), PBET_COLUMN)->setData(Qt::DisplayRole, bet1);
+    item(get_row(window), OBET_COLUMN)->setData(Qt::DisplayRole, bet2);
+}
+
+void table_widget::set_real_pot(WId window, double pot)
+{
+    item(get_row(window), POT_COLUMN)->setData(Qt::DisplayRole, pot);
+}
+
+void table_widget::set_tables(const std::unordered_set<WId>& tables)
+{
+    std::unordered_set<WId> existing;
+
+    for (int row = 0; row < rowCount(); ++row)
+    {
+        const auto window = item(row, WINDOW_COLUMN)->data(Qt::DisplayRole).toULongLong();
+
+        if (tables.find(window) != tables.end())
+        {
+            existing.insert(window);
+            continue;
+        }
+
+        removeRow(row--);
+    }
+
+    for (auto window : tables)
+    {
+        if (existing.find(window) != existing.end())
+            continue;
+
+        auto row = rowCount();
+        insertRow(row);
+
+        for (int col = 0; col < MAX_COLUMNS; ++col)
+            setItem(row, col, new QTableWidgetItem);
+
+        item(row, WINDOW_COLUMN)->setData(Qt::DisplayRole, window);
+    }
+}
+
+int table_widget::get_row(WId window) const
+{
+    for (int row = 0; row < rowCount(); ++row)
+    {
+        if (window == item(row, WINDOW_COLUMN)->data(Qt::DisplayRole).toULongLong())
+            return row;
+    }
+
+    return -1;
+}
+
+void table_widget::set_active(WId window)
+{
+    const auto row = get_row(window);
+
+    if (row == -1)
         return;
 
-    dealer_ = dealer;
-    bets_.fill(0);
-    pot_.fill(0);
-    round_ = 0;
-    update();
-}
-
-void table_widget::set_pot(int round, const std::array<int, 2>& pot)
-{
-    if (round != 0 && round != round_)
-    {
-        pot_ = pot;
-        bets_.fill(0);
-        round_ = round;
-    }
-    else
-    {
-        bets_[0] = pot[0] - pot_[0];
-        bets_[1] = pot[1] - pot_[1];
-    }
-
-    update();
-}
-
-void table_widget::paintEvent(QPaintEvent* event)
-{
-    QPainter painter(this);
-    painter.fillRect(rect(), Qt::white);
-
-    int y = CARD_MARGIN;
-
-    paint_card(painter, QPoint(CARD_MARGIN, y), card_images_, *empty_image_, hole_[0][0]);
-    paint_card(painter, QPoint(CARD_WIDTH + 2 * CARD_MARGIN, y), card_images_, *empty_image_, hole_[0][1]);
-    paint_card(painter, QPoint(rect().right() - 2 * CARD_WIDTH - 2 * CARD_MARGIN, y), card_images_, *empty_image_, hole_[1][0]);
-    paint_card(painter, QPoint(rect().right() - CARD_WIDTH - CARD_MARGIN, y), card_images_, *empty_image_, hole_[1][1]);
-
-    for (int i = 0; i < board_.size(); ++i)
-    {
-        paint_card(painter, QPoint(rect().center().x() - (5 * CARD_WIDTH + 4 * CARD_MARGIN) / 2 + i
-            * (CARD_WIDTH + CARD_MARGIN), y), card_images_, *empty_image_, board_[i]);
-    }
-
-    y += CARD_HEIGHT + CARD_MARGIN;
-
-    painter.setFont(QFont("Helvetica", 16, QFont::Bold));
-
-    const QRect left_pod(CARD_MARGIN, y, 2 * CARD_WIDTH + CARD_MARGIN, CARD_HEIGHT);
-    const QRect right_pod(rect().right() - 2 * (CARD_WIDTH + CARD_MARGIN), y, 2 * CARD_WIDTH + CARD_MARGIN,
-        CARD_HEIGHT);
-
-    painter.drawText(left_pod, Qt::AlignCenter | Qt::AlignVCenter, QString("%1")
-        .arg(sit_out_[0] ? "Sit out" : format_money(stacks_[0]).c_str()));
-    painter.drawRect(left_pod);
-
-    painter.drawText(right_pod, Qt::AlignCenter | Qt::AlignVCenter, QString("%1")
-        .arg(sit_out_[1] ? "Sit out" : format_money(stacks_[1]).c_str()));
-    painter.drawRect(right_pod);
-
-    const QRect left_bet(left_pod.right() + CARD_MARGIN, y, left_pod.width(), left_pod.height());
-    const QRect right_bet(right_pod.left() - CARD_MARGIN - right_pod.width(), y, right_pod.width(), right_pod.height());
-
-    const QRect center_pot(rect().center().x() - 200, y, 400, CARD_HEIGHT);
-
-    if (real_bets_[0] > 0)
-    {
-        painter.drawText(left_bet, Qt::AlignHCenter | Qt::AlignTop, QString("%1")
-            .arg(format_money(real_bets_[0]).c_str()));
-    }
-
-    if (real_bets_[1] > 0)
-    {
-        painter.drawText(right_bet, Qt::AlignHCenter | Qt::AlignTop, QString("%1")
-            .arg(format_money(real_bets_[1]).c_str()));
-    }
-
-    if (real_pot_ > 0)
-    {
-        painter.drawText(center_pot, Qt::AlignHCenter | Qt::AlignTop, QString("%1")
-            .arg(format_money(real_pot_).c_str()));
-    }
-
-    if (bets_[0] > 0)
-    {
-        painter.drawText(left_bet, Qt::AlignHCenter | Qt::AlignBottom, QString("(%1)")
-            .arg(format_money(bets_[0] * big_blind_ / 2.0).c_str()));
-    }
-
-    if (bets_[1] > 0)
-    {
-        painter.drawText(right_bet, Qt::AlignHCenter | Qt::AlignBottom, QString("(%1)")
-            .arg(format_money(bets_[1] * big_blind_ / 2.0).c_str()));
-    }
-
-    if (pot_[0] > 0)
-    {
-        painter.drawText(center_pot, Qt::AlignHCenter | Qt::AlignBottom, QString("(%1)")
-            .arg(format_money((pot_[0] + pot_[1]) * big_blind_ / 2.0).c_str()));
-    }
-
-    y += CARD_HEIGHT + CARD_MARGIN;
-
-    const int hole_midpoint = CARD_MARGIN + CARD_WIDTH + CARD_MARGIN / 2;
-    const QPoint dealer_point((dealer_ == 0 ? hole_midpoint : rect().right() - hole_midpoint) - dealer_image_->width() / 2, y);
-
-    painter.drawPixmap(dealer_point, *dealer_image_);
-
-    QFrame::paintEvent(event);
-}
-
-void table_widget::get_board_cards(std::array<int, 5>& board) const
-{
-    board = board_;
-}
-
-void table_widget::get_hole_cards(std::array<int, 2>& hole) const
-{
-    hole = hole_[0];
-}
-
-void table_widget::set_big_blind(double big_blind)
-{
-    big_blind_ = big_blind;
-}
-
-void table_widget::set_sit_out(bool sitout1, bool sitout2)
-{
-    sit_out_[0] = sitout1;
-    sit_out_[1] = sitout2;
-}
-
-void table_widget::set_stacks(double stack1, double stack2)
-{
-    stacks_[0] = stack1;
-    stacks_[1] = stack2;
-}
-
-void table_widget::set_buttons(int buttons)
-{
-    buttons_ = buttons;
-}
-
-void table_widget::set_real_bets(double bet1, double bet2)
-{
-    real_bets_[0] = bet1;
-    real_bets_[1] = bet2;
-}
-
-void table_widget::set_real_pot(double pot)
-{
-    real_pot_ = pot;
+    selectRow(row);
 }

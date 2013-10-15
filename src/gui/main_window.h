@@ -7,6 +7,7 @@
 #include <fstream>
 #include <array>
 #include <memory>
+#include <unordered_map>
 #pragma warning(pop)
 
 class QPlainTextEdit;
@@ -49,26 +50,17 @@ public slots:
     void state_widget_state_changed();
 
 private:
-    struct strategy_info
-    {
-        strategy_info();
-        ~strategy_info();
-        const nlhe_state_base* current_state_;
-        std::unique_ptr<nlhe_strategy> strategy_;
-    };
-
-    void find_window();
-    void process_snapshot();
-    void perform_action(strategy_info& strategy_info);
+    void process_snapshot(WId window);
+    void perform_action(WId window, const nlhe_strategy& strategy);
     bool nativeEvent(const QByteArray& eventType, void* message, long* result);
-    void update_strategy_widget(const strategy_info& si);
+    void update_strategy_widget(WId window, const nlhe_strategy& strategy, const std::array<int, 2>& hole,
+        const std::array<int, 5>& board);
     void ensure(bool expression, const std::string& s, int line);
 
     table_widget* visualizer_;
-    std::map<int, std::unique_ptr<strategy_info>> strategy_infos_;
+    std::map<int, std::unique_ptr<nlhe_strategy>> strategies_;
     QTimer* capture_timer_;
     std::unique_ptr<table_manager> site_;
-    QLabel* capture_label_;
     QPlainTextEdit* log_;
     QLineEdit* title_filter_;
     std::unique_ptr<window_manager> window_manager_;
@@ -96,4 +88,5 @@ private:
     QLabel* registered_label_;
     QAction* autolobby_action_;
     double activity_variance_;
+    std::unordered_map<WId, const nlhe_state_base*> states_;
 };
