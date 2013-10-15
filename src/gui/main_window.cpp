@@ -510,13 +510,14 @@ void main_window::process_snapshot()
     if (autoplay_action_->isChecked() && site_->get_buttons() == 0)
         return;
 
-    const auto hole = site_->get_hole_cards();
+    std::array<int, 2> hole;
+    site_->get_hole_cards(hole);
     std::array<int, 5> board;
     site_->get_board_cards(board);
 
     int round = -1;
 
-    if (hole.first != -1 && hole.second != -1)
+    if (hole[0] != -1 && hole[1] != -1)
     {
         if (board[0] != -1 && board[1] != -1 && board[2] != -1)
         {
@@ -551,8 +552,7 @@ void main_window::process_snapshot()
         || (site_->get_dealer() == 1 && site_->get_bet(0) == site_->get_big_blind()));
 
     visualizer_->set_dealer(site_->get_dealer());
-    std::array<int, 2> hole_array = {{ hole.first, hole.second }};
-    visualizer_->set_hole_cards(0, hole_array);
+    visualizer_->set_hole_cards(0, hole);
     visualizer_->set_board_cards(board);
     visualizer_->set_big_blind(site_->get_big_blind());
     visualizer_->set_real_pot(site_->get_total_pot());
@@ -618,10 +618,10 @@ void main_window::process_snapshot()
     if (save_images_->isChecked())
         site_->save_snapshot();
 
-    if (hole.first != -1 && hole.second != -1)
+    if (hole[0] != -1 && hole[1] != -1)
     {
-        BOOST_LOG_TRIVIAL(info) << QString("Hole: [%1 %2]").arg(get_card_string(hole.first).c_str())
-            .arg(get_card_string(hole.second).c_str()).toStdString();
+        BOOST_LOG_TRIVIAL(info) << QString("Hole: [%1 %2]").arg(get_card_string(hole[0]).c_str())
+            .arg(get_card_string(hole[1]).c_str()).toStdString();
     }
 
     QString board_string;
@@ -758,12 +758,13 @@ void main_window::perform_action()
     auto it = find_nearest(strategy_infos_, stack_size_);
     auto& strategy_info = *it->second;
 
-    auto hole = site_->get_hole_cards();
+    std::array<int, 2> hole;
+    site_->get_hole_cards(hole);
     std::array<int, 5> board;
     site_->get_board_cards(board);
 
-    const int c0 = hole.first;
-    const int c1 = hole.second;
+    const int c0 = hole[0];
+    const int c1 = hole[1];
     const int b0 = board[0];
     const int b1 = board[1];
     const int b2 = board[2];

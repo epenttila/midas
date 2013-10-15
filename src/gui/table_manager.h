@@ -23,7 +23,7 @@ public:
     table_manager(const std::string& filename, input_manager& input_manager, const window_manager& window_manager);
     void update();
     void set_window(WId window);
-    std::pair<int, int> get_hole_cards() const;
+    void get_hole_cards(std::array<int, 2>& hole) const;
     void get_board_cards(std::array<int, 5>& board) const;
     int get_dealer() const;
     void fold(double max_wait) const;

@@ -183,13 +183,13 @@ void table_manager::update()
     }
 }
 
-std::pair<int, int> table_manager::get_hole_cards() const
+void table_manager::get_hole_cards(std::array<int, 2>& hole) const
 {
-    return std::make_pair(
-        parse_image_card(image_.get(), mono_image_.get(), hole_card_rects_[0], suit_colors_, card_color_,
-            fonts_.at("rank")),
-        parse_image_card(image_.get(), mono_image_.get(), hole_card_rects_[1], suit_colors_, card_color_,
-            fonts_.at("rank")));
+    for (int i = 0; i < hole.size(); ++i)
+    {
+        hole[i] = parse_image_card(image_.get(), mono_image_.get(), hole_card_rects_[i], suit_colors_, card_color_,
+            fonts_.at("rank"));
+    }
 }
 
 void table_manager::get_board_cards(std::array<int, 5>& board) const
