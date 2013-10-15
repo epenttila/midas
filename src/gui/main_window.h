@@ -43,14 +43,12 @@ public slots:
     void autolobby_timer_timeout();
     void modify_state_changed();
     void state_widget_board_changed(const QString& board);
-    void state_widget_state_reset();
-    void state_widget_called();
-    void state_widget_raised(double fraction);
     void schedule_changed(bool checked);
     void schedule_timer_timeout();
     void registration_timer_timeout();
     void autolobby_changed(bool checked);
     void table_title_changed(const QString& str);
+    void state_widget_state_changed();
 
 private:
     struct strategy_info

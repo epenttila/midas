@@ -183,9 +183,7 @@ main_window::main_window()
     state_widget_ = new state_widget(this, Qt::Tool);
     state_widget_->setVisible(false);
     connect(state_widget_, SIGNAL(board_changed(const QString&)), SLOT(state_widget_board_changed(const QString&)));
-    connect(state_widget_, SIGNAL(state_reset()), SLOT(state_widget_state_reset()));
-    connect(state_widget_, SIGNAL(called()), SLOT(state_widget_called()));
-    connect(state_widget_, SIGNAL(raised(double)), SLOT(state_widget_raised(double)));
+    connect(state_widget_, SIGNAL(state_changed()), SLOT(state_widget_state_changed()));
 
     auto toolbar = addToolBar("File");
     toolbar->setMovable(false);
@@ -384,6 +382,9 @@ void main_window::open_strategy()
 
         BOOST_LOG_TRIVIAL(info) << QString("Loaded strategy: %1").arg(*i).toStdString();
     }
+
+    state_widget_->set_root_state(strategy_infos_.empty() ? nullptr
+        : &strategy_infos_.begin()->second->strategy_->get_root_state());
 
     QApplication::restoreOverrideCursor();
 }
@@ -939,8 +940,7 @@ void main_window::state_widget_board_changed(const QString& board)
 
     visualizer_->set_board_cards(b);
 
-    if (!strategy_infos_.empty())
-        update_strategy_widget(*strategy_infos_.begin()->second);
+    strategy_->set_board(b);
 }
 
 void main_window::update_strategy_widget(const strategy_info& si)
@@ -966,62 +966,9 @@ void main_window::update_strategy_widget(const strategy_info& si)
         board[4] = -1;
     }
 
-    strategy_->update(*si.strategy_, hole, board, si.current_state_->get_id());
-
-    std::stringstream ss;
-    ss << *si.current_state_;
-
-    state_widget_->set_state(ss.str().c_str());
-}
-
-void main_window::state_widget_state_reset()
-{
-    if (strategy_infos_.empty())
-        return;
-
-    auto& si = *strategy_infos_.begin()->second;
-    si.current_state_ = &si.strategy_->get_root_state();
-    update_strategy_widget(si);
-
-    visualizer_->set_big_blind(2);
-    visualizer_->set_dealer(0);
-}
-
-void main_window::state_widget_called()
-{
-    if (strategy_infos_.empty())
-        return;
-
-    auto& si = *strategy_infos_.begin()->second;
-
-    if (!si.current_state_)
-        return;
-
-    const auto state = si.current_state_->call();
-
-    if (state->is_terminal())
-        return;
-
-    si.current_state_ = state;
-    update_strategy_widget(si);
-
-    visualizer_->set_pot(si.current_state_->get_round(), si.current_state_->get_pot());
-}
-
-void main_window::state_widget_raised(double fraction)
-{
-    if (strategy_infos_.empty())
-        return;
-
-    auto& si = *strategy_infos_.begin()->second;
-
-    if (!si.current_state_)
-        return;
- 
-    si.current_state_ = si.current_state_->raise(fraction);
-    update_strategy_widget(si);
-
-    visualizer_->set_pot(si.current_state_->get_round(), si.current_state_->get_pot());
+    strategy_->set_hole(hole);
+    strategy_->set_board(board);
+    strategy_->update(*si.strategy_, *si.current_state_);
 }
 
 void main_window::ensure(bool expression, const std::string& s, int line)
@@ -1110,4 +1057,12 @@ void main_window::autolobby_changed(bool checked)
         if (lobby_)
             lobby_->reset();
     }
+}
+
+void main_window::state_widget_state_changed()
+{
+    if (strategy_infos_.empty() || !state_widget_->get_state())
+        return;
+
+    strategy_->update(*strategy_infos_.begin()->second->strategy_, *state_widget_->get_state());
 }

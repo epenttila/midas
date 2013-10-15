@@ -35,6 +35,9 @@ holdem_strategy_widget::holdem_strategy_widget(QWidget* parent, Qt::WindowFlags 
     : QWidget(parent, flags)
     , hilight_bucket_(-1)
 {
+    hole_.fill(-1);
+    board_.fill(-1);
+
     for (auto& i : cells_)
     {
         for (auto& j : i)
@@ -90,14 +93,9 @@ void holdem_strategy_widget::paintEvent(QPaintEvent*)
     }
 }
 
-void holdem_strategy_widget::update(const nlhe_strategy& strategy, const std::array<int, 2>& hole,
-    const std::array<int, 5>& board, std::size_t state_id)
+void holdem_strategy_widget::update(const nlhe_strategy& strategy, const nlhe_state_base& state)
 {
     hilight_bucket_ = -1;
-    hole_ = hole;
-
-    if (hole_[0] > hole_[1])
-        std::swap(hole_[0], hole_[1]);
 
     for (auto& i : cells_)
     {
@@ -107,6 +105,20 @@ void holdem_strategy_widget::update(const nlhe_strategy& strategy, const std::ar
             j.names.clear();
             j.bucket = -1;
         }
+    }
+
+    std::array<int, 5> board = board_;
+
+    switch (state.get_round())
+    {
+    case PREFLOP:
+        board[0] = -1;
+        board[1] = -1;
+        board[2] = -1;
+    case FLOP:
+        board[3] = -1;
+    case TURN:
+        board[4] = -1;
     }
 
     for (int i = 0; i < CARDS; ++i)
@@ -125,14 +137,10 @@ void holdem_strategy_widget::update(const nlhe_strategy& strategy, const std::ar
             holdem_abstraction_base::bucket_type buckets;
             strategy.get_abstraction().get_buckets(i, j, board[0], board[1], board[2], board[3], board[4], &buckets);
 
-            if (board[4] != -1)
-                bucket = buckets[RIVER];
-            else if (board[3] != -1)
-                bucket = buckets[TURN];
-            else if (board[2] != -1)
-                bucket = buckets[FLOP];
-            else
-                bucket = buckets[PREFLOP];
+            bucket = buckets[state.get_round()];
+
+            if (bucket == -1)
+                return;
 
             double fold_p = 0;
             double call_p = 0;
@@ -143,7 +151,7 @@ void holdem_strategy_widget::update(const nlhe_strategy& strategy, const std::ar
 
             for (int index = 0; index < strategy.get_root_state().get_action_count(); ++index)
             {
-                const double p = strategy.get_strategy().get(state_id, index, bucket);
+                const double p = strategy.get_strategy().get(state.get_id(), index, bucket);
                 const auto action = strategy.get_root_state().get_action(index);
 
                 if (action == 0)
@@ -213,4 +221,17 @@ void holdem_strategy_widget::mousePressEvent(QMouseEvent* event)
         hilight_bucket_ = -1;
 
     QWidget::update();
+}
+
+void holdem_strategy_widget::set_hole(const std::array<int, 2>& hole)
+{
+    hole_ = hole;
+
+    if (hole_[0] > hole_[1])
+        std::swap(hole_[0], hole_[1]);
+}
+
+void holdem_strategy_widget::set_board(const std::array<int, 5>& board)
+{
+    board_ = board;
 }
