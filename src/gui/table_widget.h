@@ -19,7 +19,6 @@ public:
     void set_board_cards(WId window, const std::array<int, 5>& board);
     void set_hole_cards(WId window, const std::array<int, 2>& cards);
     void set_dealer(WId window, int dealer);
-    void set_pot(WId window, int round, const std::array<int, 2>& pot);
     void set_big_blind(WId window, double big_blind);
     void set_real_bets(WId window, double bet1, double bet2);
     void set_real_pot(WId window, double pot);

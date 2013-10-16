@@ -631,13 +631,6 @@ void main_window::process_snapshot(const WId window)
     // ensure rounds match
     ENSURE(current_state->get_round() == round);
 
-    std::array<int, 2> pot = current_state->get_pot();
-        
-    if (site_->get_dealer() == 1)
-        std::swap(pot[0], pot[1]);
-
-    visualizer_->set_pot(window, current_state->get_round(), pot);
-
     // we should never reach terminal states when we have a pending action
     ENSURE(current_state->get_id() != -1);
 

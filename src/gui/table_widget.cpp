@@ -121,11 +121,6 @@ void table_widget::set_dealer(WId window, int dealer)
     item(get_row(window), DEALER_COLUMN)->setData(Qt::DisplayRole, dealer);
 }
 
-void table_widget::set_pot(WId, int, const std::array<int, 2>&)
-{
-    //item(get_row(window), DEALER_COLUMN)->setData(Qt::DisplayRole, dealer);
-}
-
 void table_widget::set_big_blind(WId window, double big_blind)
 {
     item(get_row(window), BIGBLIND_COLUMN)->setData(Qt::DisplayRole, big_blind);
