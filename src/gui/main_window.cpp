@@ -819,7 +819,7 @@ void main_window::modify_state_changed()
 
 void main_window::state_widget_board_changed(const QString& board)
 {
-    std::string s(board.toStdString());
+    std::string s(QString(board).remove(' ').toStdString());
     std::array<int, 5> b;
     b.fill(-1);
 
