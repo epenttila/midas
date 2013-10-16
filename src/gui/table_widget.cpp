@@ -5,6 +5,8 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QPainter>
+#include <QStyledItemDelegate>
+#include <QApplication>
 #include <Windows.h>
 #pragma warning(pop)
 
@@ -35,7 +37,7 @@ namespace
     static const int CARD_HEIGHT = 70;
     static const int CARD_MARGIN = 5;
 
-    class card_delegate : public QAbstractItemDelegate
+    class card_delegate : public QStyledItemDelegate
     {
     public:
         card_delegate(const std::array<std::unique_ptr<QPixmap>, 52>& images)
@@ -45,6 +47,14 @@ namespace
 
         void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
         {
+            QStyleOptionViewItemV4 opt = option;
+            initStyleOption(&opt, index);
+
+            opt.text = "";
+            const auto style = opt.widget ? opt.widget->style() : QApplication::style();
+
+            style->drawControl(QStyle::CE_ItemViewItem, &opt, painter, opt.widget);
+
             const auto list = index.data(Qt::DisplayRole).toList();
 
             const int y = option.rect.top() + (option.rect.height() - images_[0]->height()) / 2;
