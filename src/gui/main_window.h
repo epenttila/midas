@@ -70,7 +70,6 @@ private:
     double capture_interval_;
     std::unique_ptr<input_manager> input_manager_;
     std::array<double, 2> action_delay_;
-    double action_post_delay_;
     QTimer* autolobby_timer_;
     std::unique_ptr<lobby_manager> lobby_;
     QLineEdit* lobby_title_;
@@ -92,4 +91,5 @@ private:
     std::unordered_map<WId, const nlhe_state_base*> states_;
     QLabel* site_label_;
     QLabel* strategy_label_;
+    std::unordered_map<WId, QDateTime> next_action_times_;
 };

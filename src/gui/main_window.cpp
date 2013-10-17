@@ -260,7 +260,6 @@ main_window::main_window()
     capture_interval_ = settings.value("capture-interval", 1).toDouble();
     action_delay_[0] = settings.value("action-delay-min", 0.5).toDouble();
     action_delay_[1] = settings.value("action-delay-max", 2.0).toDouble();
-    action_post_delay_ = settings.value("post-action-delay", 1.0).toDouble();
     input_manager_->set_delay(settings.value("input-delay-min", 0.5).toDouble(),
         settings.value("input-delay-max", 1.0).toDouble());
     lobby_interval_ = settings.value("lobby-interval", 1.0).toDouble();
@@ -409,6 +408,13 @@ void main_window::autoplay_changed(const bool checked)
 void main_window::process_snapshot(const WId window)
 {
     if (!site_)
+        return;
+
+    const auto now = QDateTime::currentDateTime();
+
+    if (!next_action_times_.count(window))
+        next_action_times_[window] = now;
+    else if (now < next_action_times_[window])
         return;
 
     site_->update(window);
@@ -746,6 +752,13 @@ void main_window::perform_action(WId window, const nlhe_strategy& strategy)
         }
         break;
     }
+
+    const double wait = site_->is_opponent_sitout() ? action_delay_[0] : get_normal_random(engine_,
+        action_delay_[0], action_delay_[1]);
+
+    BOOST_LOG_TRIVIAL(info) << QString("Waiting for %1 seconds after action").arg(wait).toStdString();
+
+    next_action_times_[window] = QDateTime::currentDateTime().addMSecs(static_cast<qint64>(wait * 1000));
 }
 
 void main_window::autolobby_timer_timeout()
