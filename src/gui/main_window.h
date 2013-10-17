@@ -56,6 +56,7 @@ private:
     void update_strategy_widget(WId window, const nlhe_strategy& strategy, const std::array<int, 2>& hole,
         const std::array<int, 5>& board);
     void ensure(bool expression, const std::string& s, int line);
+    void update_statusbar();
 
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<nlhe_strategy>> strategies_;
@@ -89,4 +90,6 @@ private:
     QAction* autolobby_action_;
     double activity_variance_;
     std::unordered_map<WId, const nlhe_state_base*> states_;
+    QLabel* site_label_;
+    QLabel* strategy_label_;
 };

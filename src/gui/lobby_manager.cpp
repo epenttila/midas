@@ -19,6 +19,7 @@ lobby_manager::lobby_manager(const std::string& filename, input_manager& input_m
     , window_manager_(wm)
     , registration_wait_(5.0)
     , popup_wait_(5.0)
+    , filename_(filename)
 {
     BOOST_LOG_TRIVIAL(info) << "Loading lobby settings: " << filename;
 
@@ -225,4 +226,9 @@ double lobby_manager::get_registration_wait() const
 QString lobby_manager::get_lobby_pattern() const
 {
     return lobby_pattern_;
+}
+
+std::string lobby_manager::get_filename() const
+{
+    return filename_;
 }

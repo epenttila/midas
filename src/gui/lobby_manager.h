@@ -29,6 +29,7 @@ public:
     int get_table_count() const;
     double get_registration_wait() const;
     QString get_lobby_pattern() const;
+    std::string get_filename() const;
 
 private:
     static BOOL CALLBACK callback(HWND window, LPARAM lParam);
@@ -50,4 +51,6 @@ private:
 
     std::unordered_set<WId> tables_;
     QString lobby_pattern_;
+
+    std::string filename_;
 };

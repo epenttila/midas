@@ -246,10 +246,15 @@ main_window::main_window()
     registration_timer_->setSingleShot(true);
     connect(registration_timer_, SIGNAL(timeout()), SLOT(registration_timer_timeout()));
 
-    schedule_label_ = new QLabel("Scheduler off", this);
+    site_label_ = new QLabel(this);
+    statusBar()->addWidget(site_label_, 1);
+    strategy_label_ = new QLabel(this);
+    statusBar()->addWidget(strategy_label_, 1);
+    schedule_label_ = new QLabel(this);
     statusBar()->addWidget(schedule_label_, 1);
-    registered_label_ = new QLabel("0/0", this);
+    registered_label_ = new QLabel(this);
     statusBar()->addWidget(registered_label_, 1);
+    update_statusbar();
 
     QSettings settings("settings.ini", QSettings::IniFormat);
     capture_interval_ = settings.value("capture-interval", 1).toDouble();
@@ -323,19 +328,7 @@ void main_window::capture_timer_timeout()
         }
     }
 
-    QString s;
-
-    if (schedule_action_->isChecked())
-    {
-        if (schedule_active_)
-            s = QString("Active for %1").arg(secs_to_hms(schedule_timer_->remainingTime() / 1000.0));
-        else
-            s = QString("Inactive for %1").arg(secs_to_hms(schedule_timer_->remainingTime() / 1000.0));
-    }
-    else
-        s = "Scheduler off";
-
-    schedule_label_->setText(s);
+    update_statusbar();
 }
 
 void main_window::open_strategy()
@@ -347,7 +340,7 @@ void main_window::open_strategy()
 
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
-    strategies_.clear();
+    std::map<int, std::unique_ptr<nlhe_strategy>> new_strategies;
 
     std::regex r("([^-]+)-([^-]+)-[0-9]+\\.str");
     std::regex r_nlhe("nlhe\\.([a-z]+)\\.([0-9]+)");
@@ -356,33 +349,42 @@ void main_window::open_strategy()
 
     for (auto i = filenames.begin(); i != filenames.end(); ++i)
     {
-        if (QFileInfo(*i).suffix() == "xml")
+        const auto info = QFileInfo(*i);
+
+        if (info.suffix() == "xml")
         {
             const auto filename = i->toStdString();
             lobby_.reset(new lobby_manager(filename, *input_manager_, *window_manager_));
             lobby_title_->setText(lobby_->get_lobby_pattern());
             site_.reset(new table_manager(filename, *input_manager_));
             title_filter_->setText(site_->get_table_pattern());
+
             BOOST_LOG_TRIVIAL(info) << QString("Loaded site settings: %1").arg(filename.c_str()).toStdString();
-            continue;
         }
-
-        const std::string filename = QFileInfo(*i).fileName().toStdString();
-
-        try
+        else if (info.suffix() == "str")
         {
-            std::unique_ptr<nlhe_strategy> p(new nlhe_strategy(i->toStdString()));
-            strategies_[p->get_stack_size()] = std::move(p);
-        }
-        catch (const std::exception& e)
-        {
-            BOOST_LOG_TRIVIAL(fatal) << e.what();
-            continue;
-        }
+            const std::string filename = QFileInfo(*i).fileName().toStdString();
 
-        BOOST_LOG_TRIVIAL(info) << QString("Loaded strategy: %1").arg(*i).toStdString();
+            try
+            {
+                std::unique_ptr<nlhe_strategy> p(new nlhe_strategy(i->toStdString()));
+                new_strategies[p->get_stack_size()] = std::move(p);
+            }
+            catch (const std::exception& e)
+            {
+                BOOST_LOG_TRIVIAL(fatal) << e.what();
+                continue;
+            }
+
+            BOOST_LOG_TRIVIAL(info) << QString("Loaded strategy: %1").arg(*i).toStdString();
+        }
     }
 
+    if (!new_strategies.empty())
+        std::swap(strategies_, new_strategies);
+
+    update_statusbar();
+    
     state_widget_->set_root_state(strategies_.empty() ? nullptr : &strategies_.begin()->second->get_root_state());
 
     QApplication::restoreOverrideCursor();
@@ -751,8 +753,7 @@ void main_window::autolobby_timer_timeout()
     if (!lobby_)
         return;
 
-    registered_label_->setText(QString("Registrations: %1/%2 - Tables: %3/%2").arg(lobby_->get_registered_sngs())
-        .arg(table_count_->value()).arg(lobby_->get_table_count()));
+    update_statusbar();
 
     if (!lobby_->is_window())
     {
@@ -934,4 +935,28 @@ void main_window::state_widget_state_changed()
         return;
 
     strategy_widget_->update(*strategies_.begin()->second, *state_widget_->get_state());
+}
+
+void main_window::update_statusbar()
+{
+    site_label_->setText(lobby_ ? QFileInfo(lobby_->get_filename().c_str()).fileName() : "No site");
+    strategy_label_->setText(QString("%1 strategies").arg(strategies_.size()));
+
+    QString s;
+
+    if (schedule_action_->isChecked())
+    {
+        if (schedule_active_)
+            s = QString("Active for %1").arg(secs_to_hms(schedule_timer_->remainingTime() / 1000.0));
+        else
+            s = QString("Inactive for %1").arg(secs_to_hms(schedule_timer_->remainingTime() / 1000.0));
+    }
+    else
+        s = "No schedule";
+
+    schedule_label_->setText(s);
+
+    registered_label_->setText(QString("Registrations: %1/%2 - Tables: %3/%2")
+        .arg(lobby_ ? lobby_->get_registered_sngs() : 0)
+        .arg(table_count_->value()).arg(lobby_ ? lobby_->get_table_count() : 0));
 }
