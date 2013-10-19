@@ -17,7 +17,8 @@
 #include <boost/log/utility/setup/formatter_parser.hpp>
 #include <boost/log/expressions.hpp>
 #include <boost/log/support/date_time.hpp>
-#include <boost/scope_exit.hpp>
+#include <boost/log/utility/setup/from_settings.hpp>
+#include <boost/log/utility/setup/from_stream.hpp>
 #include <Windows.h>
 #include <QPlainTextEdit>
 #include <QVBoxLayout>
@@ -142,6 +143,25 @@ namespace
 
         return static_cast<int>(time * 1000);
     }
+
+    struct qt_sink_factory : public boost::log::sink_factory<char>
+    {
+        qt_sink_factory(QPlainTextEdit& log) : log_(log) {}
+
+        boost::shared_ptr<boost::log::sinks::sink> qt_sink_factory::create_sink(const settings_section& settings)
+        {
+            typedef boost::log::sinks::synchronous_sink<qt_log_sink> sink_t;
+            boost::shared_ptr<qt_log_sink> sink_backend(new qt_log_sink(&log_));
+            boost::shared_ptr<sink_t> sink_frontend(new sink_t(sink_backend));
+
+            if (const auto p = settings["Format"])
+                sink_frontend->set_formatter(boost::log::parse_formatter(*p.get()));
+
+            return sink_frontend;
+        }
+
+        QPlainTextEdit& log_;
+    };
 }
 
 main_window::main_window()
@@ -150,26 +170,6 @@ main_window::main_window()
     , input_manager_(new input_manager)
     , schedule_active_(false)
 {
-    boost::log::add_common_attributes();
-
-    const auto log_format = boost::log::expressions::stream
-        << "["
-        << boost::log::expressions::format_date_time<boost::posix_time::ptime>("TimeStamp", "%Y-%m-%d %H:%M:%S.%f")
-        << "] [" << boost::log::trivial::severity << "] " << boost::log::expressions::smessage;
-
-    boost::log::add_console_log
-    (
-        std::clog,
-        boost::log::keywords::format = log_format
-    );
-
-    boost::log::add_file_log
-    (
-        boost::log::keywords::file_name = QDateTime::currentDateTimeUtc().toString("'log-'yyyyMMddTHHmmss'.txt'").toUtf8().data(),
-        boost::log::keywords::auto_flush = true,
-        boost::log::keywords::format = log_format
-    );
-
     auto widget = new QWidget(this);
     widget->setFocus();
 
@@ -225,12 +225,6 @@ main_window::main_window()
     log_->setReadOnly(true);
     log_->setMaximumBlockCount(1000);
 
-    typedef boost::log::sinks::synchronous_sink<qt_log_sink> sink_t;
-    boost::shared_ptr<qt_log_sink> sink_backend(new qt_log_sink(log_));
-    boost::shared_ptr<sink_t> sink_frontend(new sink_t(sink_backend));
-    sink_frontend->set_formatter(log_format);
-    boost::log::core::get()->add_sink(sink_frontend);
-
     QVBoxLayout* layout = new QVBoxLayout(widget);
     layout->addWidget(visualizer_);
     layout->addWidget(log_);
@@ -255,6 +249,13 @@ main_window::main_window()
     registered_label_ = new QLabel(this);
     statusBar()->addWidget(registered_label_, 1);
     update_statusbar();
+
+    boost::log::add_common_attributes();
+    boost::log::register_sink_factory("Window", boost::make_shared<qt_sink_factory>(*log_));
+    boost::log::register_simple_formatter_factory<boost::log::trivial::severity_level, char>("Severity");
+
+    std::ifstream file("settings.ini");
+    boost::log::init_from_stream(file);
 
     QSettings settings("settings.ini", QSettings::IniFormat);
     capture_interval_ = settings.value("capture-interval", 1).toDouble();
