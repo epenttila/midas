@@ -36,6 +36,7 @@
 #include <QApplication>
 #include <QSpinBox>
 #include <QDateTime>
+#include <QMessageBox>
 #pragma warning(pop)
 
 #include "cfrlib/holdem_game.h"
@@ -254,8 +255,16 @@ main_window::main_window()
     boost::log::register_sink_factory("Window", boost::make_shared<qt_sink_factory>(*log_));
     boost::log::register_simple_formatter_factory<boost::log::trivial::severity_level, char>("Severity");
 
-    std::ifstream file("settings.ini");
-    boost::log::init_from_stream(file);
+    try
+    {
+        std::ifstream file("settings.ini");
+        boost::log::init_from_stream(file);
+    }
+    catch (const std::exception& e)
+    {
+        QMessageBox::critical(this, "Exception", e.what());
+        BOOST_LOG_TRIVIAL(error) << e.what();
+    }
 
     QSettings settings("settings.ini", QSettings::IniFormat);
     capture_interval_ = settings.value("capture-interval", 1).toDouble();
