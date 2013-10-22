@@ -77,15 +77,17 @@ namespace
             return "[Error]";
     }
 
-    QString secs_to_hms(double seconds)
+    QString secs_to_hms(double seconds_)
     {
+        auto seconds = static_cast<int>(seconds_);
+
         const auto hours = static_cast<int>(seconds / 3600);
         seconds -= hours * 3600;
 
         const auto minutes = static_cast<int>(seconds / 60);
         seconds -= minutes * 60;
 
-        return QString("%1:%2:%3").arg(hours).arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 'f', 0, QChar('0'));
+        return QString("%1:%2:%3").arg(hours).arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 10, QChar('0'));
     }
 
     double datetime_to_secs(const QDateTime& dt)
