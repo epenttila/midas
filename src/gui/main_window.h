@@ -31,6 +31,8 @@ class main_window : public QMainWindow
     Q_OBJECT
 
 public:
+    typedef std::array<std::vector<std::pair<double, double>>, 7> spans_t;
+
     main_window();
     ~main_window();
 
@@ -43,7 +45,6 @@ public slots:
     void modify_state_changed();
     void state_widget_board_changed(const QString& board);
     void schedule_changed(bool checked);
-    void schedule_timer_timeout();
     void registration_timer_timeout();
     void autolobby_changed(bool checked);
     void table_title_changed(const QString& str);
@@ -79,10 +80,9 @@ private:
     state_widget* state_widget_;
     QAction* open_action_;
     QAction* save_images_;
-    std::vector<std::pair<double, double>> activity_spans_;
+    spans_t activity_spans_;
     QAction* schedule_action_;
     bool schedule_active_;
-    QTimer* schedule_timer_;
     QLabel* schedule_label_;
     QTimer* registration_timer_;
     QLabel* registered_label_;
@@ -92,4 +92,5 @@ private:
     QLabel* site_label_;
     QLabel* strategy_label_;
     std::unordered_map<WId, QDateTime> next_action_times_;
+    double time_to_next_activity_;
 };

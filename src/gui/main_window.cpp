@@ -99,50 +99,56 @@ namespace
         return datetime_to_secs(QDateTime::fromString(str, "HH:mm:ss"));
     }
 
-    int get_time_to_activity(std::mt19937& engine, const double var,
-        const std::vector<std::pair<double, double>>& spans, const bool next, bool* active)
+    bool is_schedule_active(const double var, const main_window::spans_t& daily_spans, double* time)
     {
-        if (spans.empty())
-            return -1;
+        assert(daily_spans.size() == 7);
 
-        const auto now = datetime_to_secs(QDateTime::currentDateTime());
+        const auto t = QDateTime::currentDateTime();
+        const auto day = t.date().dayOfWeek() - 1;
+        const auto& spans = daily_spans[day];
+        const auto now = datetime_to_secs(t);
 
-        *active = false;
-        double time = -1;
+        std::mt19937_64 engine(t.date().toJulianDay());
 
-        for (std::size_t i = 0; i < spans.size(); ++i)
+        for (const auto span : spans)
         {
-            if (now < spans[i].first)
+            const auto first = get_uniform_random(engine, span.first - var / 2.0, span.first + var / 2.0);
+            const auto second = get_uniform_random(engine, span.second - var / 2.0, span.second + var / 2.0);
+
+            if (now < first)
             {
-                // not in a span, return start of next span
-                time = spans[i].first - now;
-                break;
+                *time = first - now;
+                return false;
             }
-            else if (now >= spans[i].first && now < spans[i].second)
+            else if (now >= first && now < second)
             {
-                // in a span, return start (0) or end of current span
-                *active = true;
-
-                if (!next)
-                    time = 0;
-                else
-                    time = spans[i].second - now;
-
-                break;
+                *time = second - now;
+                return true;
             }
         }
 
-        // wrap to start of span next day
-        if (time == -1)
-            time = spans[0].first - (now - 24 * 3600);
+        int days = 1;
 
-        assert(time >= 0);
+        for (;;)
+        {
+            const auto i = (day + days) % daily_spans.size();
 
-        // randomize time to next activity (only increase the time, decreasing leads to double activations)
-        if (time > 0)
-            time = std::max(0.0, get_uniform_random(engine, time, time + var));
+            if (!daily_spans[i].empty())
+            {
+                // TODO use get_uniform_random
+                *time = days * 86400.0 + daily_spans[i][0].first - now;
+                return false;
+            }
 
-        return static_cast<int>(time * 1000);
+            if (i == day)
+                break; // we wrapped around
+
+            ++days;
+        }
+
+        *time = -1;
+
+        return false;
     }
 
     struct qt_sink_factory : public boost::log::sink_factory<char>
@@ -170,6 +176,7 @@ main_window::main_window()
     , engine_(std::random_device()())
     , input_manager_(new input_manager)
     , schedule_active_(false)
+    , time_to_next_activity_(0)
 {
     auto widget = new QWidget(this);
     widget->setFocus();
@@ -235,8 +242,6 @@ main_window::main_window()
     connect(capture_timer_, SIGNAL(timeout()), SLOT(capture_timer_timeout()));
     autolobby_timer_ = new QTimer(this);
     connect(autolobby_timer_, SIGNAL(timeout()), SLOT(autolobby_timer_timeout()));
-    schedule_timer_ = new QTimer(this);
-    connect(schedule_timer_, SIGNAL(timeout()), SLOT(schedule_timer_timeout()));
     registration_timer_ = new QTimer(this);
     registration_timer_->setSingleShot(true);
     connect(registration_timer_, SIGNAL(timeout()), SLOT(registration_timer_timeout()));
@@ -278,17 +283,23 @@ main_window::main_window()
         settings.value("mouse-speed-max", 2.5).toDouble());
     activity_variance_ = settings.value("activity-variance", 0.0).toDouble();
 
-    for (auto i : settings.value("activity-spans").toStringList())
+    for (int day = 0; day < 7; ++day)
     {
-        const auto j = i.split(QChar('-'));
-
-        if (j.size() != 2)
+        for (auto i : settings.value(QString("activity-spans-%1").arg(day)).toStringList())
         {
-            BOOST_LOG_TRIVIAL(error) << "Invalid activity span setting";
-            continue;
-        }
+            if (i == "0")
+                continue;
 
-        activity_spans_.push_back(std::make_pair(hms_to_secs(j.at(0)), hms_to_secs(j.at(1))));
+            const auto j = i.split(QChar('-'));
+
+            if (j.size() != 2)
+            {
+                BOOST_LOG_TRIVIAL(error) << "Invalid activity span setting";
+                continue;
+            }
+
+            activity_spans_[day].push_back(std::make_pair(hms_to_secs(j.at(0)), hms_to_secs(j.at(1))));
+        }
     }
 
     BOOST_LOG_TRIVIAL(info) << QString("Loaded program settings: %1").arg(settings.fileName()).toStdString();
@@ -773,6 +784,24 @@ void main_window::perform_action(WId window, const nlhe_strategy& strategy)
 
 void main_window::autolobby_timer_timeout()
 {
+    if (schedule_action_->isChecked())
+    {
+        const auto active = is_schedule_active(activity_variance_, activity_spans_, &time_to_next_activity_);
+
+        if (active != schedule_active_)
+        {
+            schedule_active_ = active;
+
+            if (schedule_active_)
+                BOOST_LOG_TRIVIAL(info) << "Enabling scheduled registration";
+            else
+                BOOST_LOG_TRIVIAL(info) << "Disabling scheduled registration";
+
+            BOOST_LOG_TRIVIAL(info) << QString("Next scheduled %1 in %2").arg(schedule_active_ ? "break" : "activity")
+                .arg(secs_to_hms(time_to_next_activity_)).toStdString();
+        }
+    }
+
     if (!lobby_)
         return;
 
@@ -879,52 +908,9 @@ void main_window::ensure(bool expression, const std::string& s, int line)
 void main_window::schedule_changed(const bool checked)
 {
     if (checked)
-    {
         BOOST_LOG_TRIVIAL(info) << "Enabling scheduler";
-
-        schedule_active_ = false;
-
-        const auto time = get_time_to_activity(engine_, activity_variance_, activity_spans_, false, &schedule_active_);
-
-        if (time == -1)
-        {
-            BOOST_LOG_TRIVIAL(error) << "Unable to determine time to next activity";
-            return;
-        }
-
-        schedule_timer_->setSingleShot(true);
-        schedule_timer_->start(time);
-
-        BOOST_LOG_TRIVIAL(info) << QString("Next scheduled activity in %1")
-            .arg(secs_to_hms(schedule_timer_->remainingTime() / 1000.0)).toStdString();
-    }
     else
-    {
         BOOST_LOG_TRIVIAL(info) << "Disabling scheduler";
-        schedule_timer_->stop();
-        schedule_active_ = false;
-    }
-}
-
-void main_window::schedule_timer_timeout()
-{
-    const auto time = get_time_to_activity(engine_, activity_variance_, activity_spans_, true, &schedule_active_);
-
-    if (time == -1)
-    {
-        BOOST_LOG_TRIVIAL(error) << "Unable to determine time to next activity";
-        return;
-    }
-
-    schedule_timer_->start(time);
-
-    if (schedule_active_)
-        BOOST_LOG_TRIVIAL(info) << "Enabling scheduled registration";
-    else
-        BOOST_LOG_TRIVIAL(info) << "Disabling scheduled registration";
-
-    BOOST_LOG_TRIVIAL(info) << QString("Next scheduled %1 in %2").arg(schedule_active_ ? "break" : "activity")
-        .arg(secs_to_hms(schedule_timer_->remainingTime() / 1000.0)).toStdString();
 }
 
 void main_window::registration_timer_timeout()
@@ -970,9 +956,9 @@ void main_window::update_statusbar()
     if (schedule_action_->isChecked())
     {
         if (schedule_active_)
-            s = QString("Active for %1").arg(secs_to_hms(schedule_timer_->remainingTime() / 1000.0));
+            s = QString("Active for %1").arg(secs_to_hms(time_to_next_activity_));
         else
-            s = QString("Inactive for %1").arg(secs_to_hms(schedule_timer_->remainingTime() / 1000.0));
+            s = QString("Inactive for %1").arg(secs_to_hms(time_to_next_activity_));
     }
     else
         s = "No schedule";
