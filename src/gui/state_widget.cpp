@@ -108,4 +108,5 @@ void state_widget::state_text_changed()
 void state_widget::set_root_state(const nlhe_state_base* state)
 {
     root_state_ = state;
+    set_state(root_state_);
 }
