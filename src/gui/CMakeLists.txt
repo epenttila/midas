@@ -18,17 +18,10 @@ set(gui_SOURCES
     table_widget.h
     window_manager.cpp
     window_manager.h
-	window_utils.cpp
-	window_utils.h
+    window_utils.cpp
+    window_utils.h
     qt_log_sink.cpp
     qt_log_sink.h
-)
-
-set(gui_HEADERS
-    holdem_strategy_widget.h
-    main_window.h
-    state_widget.h
-    table_widget.h
 )
 
 set(gui_RESOURCES
