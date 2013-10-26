@@ -452,6 +452,9 @@ void main_window::process_snapshot(const WId window)
         {
             BOOST_LOG_TRIVIAL(error) << "We are sitting out; stopping registrations";
             table_count_->setValue(0);
+
+            BOOST_LOG_TRIVIAL(warning) << "Saving current snapshot";
+            site_->save_snapshot();
         }
 
         return;
