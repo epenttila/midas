@@ -442,6 +442,9 @@ void main_window::process_snapshot(const WId window)
 
     site_->update(window);
 
+    if (save_images_->isChecked())
+        site_->save_snapshot();
+
     // consider sitout fatal
     if (site_->is_sit_out(0))
     {
@@ -560,9 +563,6 @@ void main_window::process_snapshot(const WId window)
 
     BOOST_LOG_TRIVIAL(info) << "Window: " << window << " (" << window_utils::get_window_text(window) << ")";
     BOOST_LOG_TRIVIAL(info) << "Stack: " << stack_size << " SB";
-
-    if (save_images_->isChecked())
-        site_->save_snapshot();
 
     if (hole[0] != -1 && hole[1] != -1)
     {
