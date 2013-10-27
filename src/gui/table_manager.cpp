@@ -151,14 +151,16 @@ void table_manager::update(const WId window)
 {
     window_ = window;
 
+    image_.reset();
+    mono_image_.reset();
+
     const auto hwnd = reinterpret_cast<HWND>(window_);
 
     if (!IsWindow(hwnd))
-    {
-        image_.reset();
-        mono_image_.reset();
-        return;
-    }
+        throw std::runtime_error(QString("Window %1 is invalid").arg(window_).toStdString());
+
+    if (!IsWindowVisible(hwnd))
+        throw std::runtime_error(QString("Window %1 is not visible").arg(window_).toStdString());
 
     if (!image_)
         image_.reset(new QImage);
@@ -166,11 +168,7 @@ void table_manager::update(const WId window)
     *image_ = window_utils::screenshot(window_).toImage();
 
     if (image_->isNull())
-    {
-        image_.reset();
-        mono_image_.reset();
-        return;
-    }
+        throw std::runtime_error(QString("Capture for window %1 is invalid").arg(window_).toStdString());
 
     if (!mono_image_)
         mono_image_.reset(new QImage);
@@ -390,6 +388,12 @@ bool table_manager::is_opponent_sitout() const
 
 void table_manager::save_snapshot() const
 {
+    if (!image_ || !mono_image_)
+    {
+        BOOST_LOG_TRIVIAL(warning) << "No image to save";
+        return;
+    }
+
     const auto filename = QDateTime::currentDateTimeUtc().toString("'snapshot-'yyyy-MM-ddTHHmmss.zzz'.png'");
     image_->save(filename);
     mono_image_->save("mono-" + filename);
