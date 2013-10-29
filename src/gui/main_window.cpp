@@ -320,6 +320,8 @@ main_window::main_window()
     BOOST_LOG_TRIVIAL(info) << "Starting capture";
 
     capture_timer_->start(int(capture_interval_ * 1000.0));
+
+    setWindowTitle("Window");
 }
 
 main_window::~main_window()
