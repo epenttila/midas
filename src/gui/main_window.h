@@ -58,6 +58,8 @@ private:
         const std::array<int, 5>& board);
     void ensure(bool expression, const std::string& s, int line);
     void update_statusbar();
+    void changeEvent(QEvent* event);
+    void tray_activated(int reason);
 
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<nlhe_strategy>> strategies_;
