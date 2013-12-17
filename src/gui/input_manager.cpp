@@ -15,10 +15,13 @@ input_manager::input_manager()
 
 void input_manager::send_keypress(short vk)
 {
+    const auto scan = static_cast<WORD>(MapVirtualKeyEx(vk, MAPVK_VK_TO_VSC, GetKeyboardLayout(0)));
+
     KEYBDINPUT kb = {};
     INPUT input = {};
 
     kb.wVk = vk;
+    kb.wScan = scan;
     input.type = INPUT_KEYBOARD;
     input.ki = kb;
     SendInput(1, &input, sizeof(input));
@@ -26,6 +29,7 @@ void input_manager::send_keypress(short vk)
     sleep();
 
     kb.wVk = vk;
+    kb.wScan = scan;
     kb.dwFlags = KEYEVENTF_KEYUP;
     input.type = INPUT_KEYBOARD;
     input.ki = kb;
