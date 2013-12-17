@@ -3,6 +3,7 @@
 #pragma warning(push, 3)
 #include <regex>
 #include <unordered_set>
+#include <memory>
 #include <boost/noncopyable.hpp>
 #include <QWidget>
 #include <Windows.h>
@@ -11,46 +12,38 @@
 #include "window_utils.h"
 
 class input_manager;
-class window_manager;
+class fake_window;
 
 class lobby_manager : private boost::noncopyable
 {
 public:
-    lobby_manager(const std::string& filename, input_manager& input_manager, const window_manager& window_manager);
-    bool close_popups();
-    bool is_window() const;
-    bool register_sng();
+    typedef std::vector<std::unique_ptr<fake_window>> table_vector_t;
+
+    lobby_manager(const std::string& filename, input_manager& input_manager);
+    void register_sng();
     int get_registered_sngs() const;
-    void set_window(WId window);
     void reset();
-    bool ensure_visible();
-    void cancel_registration();
     bool detect_closed_tables();
-    int get_table_count() const;
+    int get_active_tables() const;
     double get_registration_wait() const;
-    QString get_lobby_pattern() const;
     std::string get_filename() const;
+    const table_vector_t& get_tables() const;
+    void update_windows(WId wid);
 
 private:
-    static BOOL CALLBACK callback(HWND window, LPARAM lParam);
+    bool close_popups(input_manager& input, fake_window& window, const std::vector<window_utils::popup_data>& popups,
+        const double max_wait);
 
-    WId window_;
+    std::unique_ptr<fake_window> lobby_window_;
     input_manager& input_manager_;
     int registered_;
-    bool registering_;
-    const window_manager& window_manager_;
     double registration_wait_;
     double popup_wait_;
-
-    std::vector<window_utils::popup_data> popups_;
     std::vector<window_utils::popup_data> reg_fail_popups_;
     std::vector<window_utils::popup_data> reg_success_popups_;
-    std::vector<window_utils::popup_data> finished_popups_;
-
     std::vector<window_utils::button_data> register_buttons_;
-
-    std::unordered_set<WId> tables_;
-    QString lobby_pattern_;
-
+    table_vector_t table_windows_;
     std::string filename_;
+    std::unique_ptr<fake_window> popup_window_;
+    int table_count_;
 };

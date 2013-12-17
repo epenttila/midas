@@ -16,12 +16,12 @@ set(gui_SOURCES
     state_widget.h
     table_widget.cpp
     table_widget.h
-    window_manager.cpp
-    window_manager.h
     window_utils.cpp
     window_utils.h
     qt_log_sink.cpp
     qt_log_sink.h
+    fake_window.cpp
+    fake_window.h
 )
 
 set(gui_RESOURCES

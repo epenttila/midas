@@ -1,7 +1,6 @@
 #pragma once
 
 #pragma warning(push, 1)
-//#include <utility>
 #include <array>
 #include <regex>
 #include <memory>
@@ -12,6 +11,7 @@
 #include "window_utils.h"
 
 class input_manager;
+class fake_window;
 
 class table_manager : private boost::noncopyable
 {
@@ -20,7 +20,7 @@ public:
     enum { FOLD_BUTTON = 0x1, CALL_BUTTON = 0x2, RAISE_BUTTON = 0x4 };
 
     table_manager(const std::string& filename, input_manager& input_manager);
-    void update(WId window);
+    void update(const fake_window& window);
     void get_hole_cards(std::array<int, 2>& hole) const;
     void get_board_cards(std::array<int, 5>& board) const;
     int get_dealer() const;
@@ -41,7 +41,7 @@ public:
     QString get_table_pattern() const;
 
 private:
-    WId window_;
+    std::unique_ptr<fake_window> window_;
     input_manager& input_;
     std::unique_ptr<QImage> image_;
     std::unique_ptr<QImage> mono_image_;

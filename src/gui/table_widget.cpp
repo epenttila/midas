@@ -17,7 +17,6 @@ namespace
 {
     enum
     {
-        WINDOW_COLUMN,
         BIGBLIND_COLUMN,
         PSTACK_COLUMN,
         OSTACK_COLUMN,
@@ -93,7 +92,7 @@ table_widget::table_widget(QWidget* parent)
 
     setMinimumSize(13 * CARD_WIDTH + 15 * CARD_MARGIN, 3 * CARD_HEIGHT + 5 * CARD_MARGIN);
 
-    setHorizontalHeaderLabels(QStringList() << "Window" << "BB" << "PStack" << "OStack" << "PSitout" << "OSitout"
+    setHorizontalHeaderLabels(QStringList() << "BB" << "PStack" << "OStack" << "PSitout" << "OSitout"
         << "Hole" << "Dealer" << "Board" << "PBet" << "OBet" << "Pot" << "Buttons");
 
     setItemDelegateForColumn(HOLE_COLUMN, new card_delegate(card_images_));
@@ -164,47 +163,22 @@ void table_widget::set_real_pot(WId window, double pot)
     item(get_row(window), POT_COLUMN)->setData(Qt::DisplayRole, pot);
 }
 
-void table_widget::set_tables(const std::unordered_set<WId>& tables)
+void table_widget::set_tables(int count)
 {
-    std::unordered_set<WId> existing;
+    const auto old = rowCount();
 
-    for (int row = 0; row < rowCount(); ++row)
+    setRowCount(count);
+
+    for (int row = old; row < rowCount(); ++row)
     {
-        const auto window = item(row, WINDOW_COLUMN)->data(Qt::DisplayRole).toULongLong();
-
-        if (tables.find(window) != tables.end())
-        {
-            existing.insert(window);
-            continue;
-        }
-
-        removeRow(row--);
-    }
-
-    for (auto window : tables)
-    {
-        if (existing.find(window) != existing.end())
-            continue;
-
-        auto row = rowCount();
-        insertRow(row);
-
         for (int col = 0; col < MAX_COLUMNS; ++col)
             setItem(row, col, new QTableWidgetItem);
-
-        item(row, WINDOW_COLUMN)->setData(Qt::DisplayRole, window);
     }
 }
 
 int table_widget::get_row(WId window) const
 {
-    for (int row = 0; row < rowCount(); ++row)
-    {
-        if (window == item(row, WINDOW_COLUMN)->data(Qt::DisplayRole).toULongLong())
-            return row;
-    }
-
-    return -1;
+    return static_cast<int>(window);
 }
 
 void table_widget::set_active(WId window)
@@ -215,4 +189,12 @@ void table_widget::set_active(WId window)
         return;
 
     selectRow(row);
+}
+
+void table_widget::clear_row(WId window)
+{
+    const auto row = get_row(window);
+
+    for (int col = 0; col < MAX_COLUMNS; ++col)
+        setItem(row, col, new QTableWidgetItem);
 }

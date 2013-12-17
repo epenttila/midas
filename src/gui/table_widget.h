@@ -25,8 +25,9 @@ public:
     void set_sit_out(WId window, bool sitout1, bool sitout2);
     void set_stacks(WId window, double stack1, double stack2);
     void set_buttons(WId window, int buttons);
-    void set_tables(const std::unordered_set<WId>& tables);
+    void set_tables(int row);
     void set_active(WId window);
+    void clear_row(WId window);
 
 private:
     int get_row(WId window) const;

@@ -59,14 +59,8 @@ namespace window_utils
     bool is_pixel(const QImage* image, const pixel_data& pixel);
     bool is_button(const QImage* image, const button_data& button);
     bool is_any_button(const QImage* image, const std::vector<button_data>& buttons);
-    bool click_button(input_manager& input, WId window, const button_data& button, bool double_click = false);
-    bool click_any_button(input_manager& input, WId window, const std::vector<button_data>& buttons);
     font_data read_xml_font(QXmlStreamReader& reader);
     label_data read_xml_label(QXmlStreamReader& reader);
     button_data read_xml_button(QXmlStreamReader& reader);
     popup_data read_xml_popup(QXmlStreamReader& reader);
-    bool close_popups(input_manager& input, WId window, const std::vector<popup_data>& popups, double wait);
-    bool is_window(WId window);
-    std::string get_window_text(WId window);
-    QPixmap screenshot(WId winId);
 }

@@ -48,13 +48,13 @@
 #include "abslib/holdem_abstraction.h"
 #include "util/random.h"
 #include "table_widget.h"
-#include "window_manager.h"
 #include "holdem_strategy_widget.h"
 #include "table_manager.h"
 #include "input_manager.h"
 #include "lobby_manager.h"
 #include "state_widget.h"
 #include "qt_log_sink.h"
+#include "fake_window.h"
 
 #define ENSURE(x) ensure(x, #x, __LINE__)
 
@@ -175,8 +175,7 @@ namespace
 }
 
 main_window::main_window()
-    : window_manager_(new window_manager)
-    , engine_(std::random_device()())
+    : engine_(std::random_device()())
     , input_manager_(new input_manager)
     , schedule_active_(false)
     , time_to_next_activity_(0)
@@ -209,13 +208,8 @@ main_window::main_window()
     toolbar->addSeparator();
 
     title_filter_ = new QLineEdit(this);
-    title_filter_->setPlaceholderText("Table title (regex)");
-    connect(title_filter_, SIGNAL(textChanged(const QString&)), SLOT(table_title_changed(const QString&)));
+    title_filter_->setPlaceholderText("Window title");
     toolbar->addWidget(title_filter_);
-    toolbar->addSeparator();
-    lobby_title_ = new QLineEdit(this);
-    lobby_title_->setPlaceholderText("Lobby title (exact)");
-    toolbar->addWidget(lobby_title_);
     toolbar->addSeparator();
     table_count_ = new QSpinBox(this);
     table_count_->setValue(0);
@@ -243,11 +237,6 @@ main_window::main_window()
 
     capture_timer_ = new QTimer(this);
     connect(capture_timer_, SIGNAL(timeout()), SLOT(capture_timer_timeout()));
-    autolobby_timer_ = new QTimer(this);
-    connect(autolobby_timer_, SIGNAL(timeout()), SLOT(autolobby_timer_timeout()));
-    registration_timer_ = new QTimer(this);
-    registration_timer_->setSingleShot(true);
-    connect(registration_timer_, SIGNAL(timeout()), SLOT(registration_timer_timeout()));
 
     site_label_ = new QLabel(this);
     statusBar()->addWidget(site_label_, 1);
@@ -285,6 +274,7 @@ main_window::main_window()
     input_manager_->set_mouse_speed(settings.value("mouse-speed-min", 1.5).toDouble(),
         settings.value("mouse-speed-max", 2.5).toDouble());
     activity_variance_ = settings.value("activity-variance", 0.0).toDouble();
+    title_filter_->setText(settings.value("title-filter").toString());
 
     for (int day = 0; day < 7; ++day)
     {
@@ -343,14 +333,22 @@ void main_window::capture_timer_timeout()
 {
     try
     {
-        window_manager_->update();
+        find_capture_window();
 
-        /// TODO sync states_ with tables
+        if (lobby_)
+        {
+            visualizer_->set_tables(static_cast<int>(lobby_->get_tables().size()));
 
-        visualizer_->set_tables(window_manager_->get_tables());
+            lobby_->update_windows(capture_window_);
 
-        for (auto window : window_manager_->get_tables())
-            process_snapshot(window);
+            handle_lobby();
+
+            for (const auto& window : lobby_->get_tables())
+            {
+                if (window->is_valid())
+                    process_snapshot(*window);
+            }
+        }
     }
     catch (const std::exception& e)
     {
@@ -389,10 +387,8 @@ void main_window::open_strategy()
         if (info.suffix() == "xml")
         {
             const auto filename = i->toStdString();
-            lobby_.reset(new lobby_manager(filename, *input_manager_, *window_manager_));
-            lobby_title_->setText(lobby_->get_lobby_pattern());
+            lobby_.reset(new lobby_manager(filename, *input_manager_));
             site_.reset(new table_manager(filename, *input_manager_));
-            title_filter_->setText(site_->get_table_pattern());
 
             BOOST_LOG_TRIVIAL(info) << QString("Loaded site settings: %1").arg(filename.c_str()).toStdString();
         }
@@ -441,16 +437,16 @@ void main_window::autoplay_changed(const bool checked)
 #pragma warning(push)
 #pragma warning(disable: 4512)
 
-void main_window::process_snapshot(const WId window)
+void main_window::process_snapshot(const fake_window& window)
 {
     if (!site_)
         return;
 
     const auto now = QDateTime::currentDateTime();
 
-    if (!next_action_times_.count(window))
-        next_action_times_[window] = now;
-    else if (now < next_action_times_[window])
+    if (!next_action_times_.count(window.get_id()))
+        next_action_times_[window.get_id()] = now;
+    else if (now < next_action_times_[window.get_id()])
         return;
 
     site_->update(window);
@@ -473,19 +469,26 @@ void main_window::process_snapshot(const WId window)
         return;
     }
 
-    // don't parse screen capture if we are playing and can't see buttons as that might throw exceptions
-    if (autoplay_action_->isChecked() && site_->get_buttons() == 0)
-        return;
-
-    std::array<int, 2> hole;
-    site_->get_hole_cards(hole);
-    std::array<int, 5> board;
-    site_->get_board_cards(board);
+    // these should work for observed tables
+    visualizer_->clear_row(window.get_id());
+    visualizer_->set_active(window.get_id());
+    visualizer_->set_dealer(window.get_id(), site_->get_dealer());
+    visualizer_->set_big_blind(window.get_id(), site_->get_big_blind());
+    visualizer_->set_real_pot(window.get_id(), site_->get_total_pot());
+    visualizer_->set_real_bets(window.get_id(), site_->get_bet(0), site_->get_bet(1));
+    visualizer_->set_sit_out(window.get_id(), site_->is_sit_out(0), site_->is_sit_out(1));
+    visualizer_->set_stacks(window.get_id(), site_->get_stack(0), site_->get_stack(1));
+    visualizer_->set_buttons(window.get_id(), site_->get_buttons());
 
     int round = -1;
+    std::array<int, 5> board;
 
-    if (hole[0] != -1 && hole[1] != -1)
+    // read board only when autoplay is off (observed tables) or we see buttons (our turn)
+    if (!autoplay_action_->isChecked() || site_->get_buttons() != 0)
     {
+        site_->get_board_cards(board);
+        visualizer_->set_board_cards(window.get_id(), board);
+
         if (board[0] != -1 && board[1] != -1 && board[2] != -1)
         {
             if (board[3] != -1)
@@ -509,32 +512,21 @@ void main_window::process_snapshot(const WId window)
             round = -1;
         }
     }
-    else
-    {
-        round = -1;
-    }
 
-    const bool new_game = round == 0
-        && ((site_->get_dealer() == 0 && site_->get_bet(0) < site_->get_big_blind())
-        || (site_->get_dealer() == 1 && site_->get_bet(0) == site_->get_big_blind()));
-
-    visualizer_->set_active(window);
-    visualizer_->set_dealer(window, site_->get_dealer());
-    visualizer_->set_hole_cards(window, hole);
-    visualizer_->set_board_cards(window, board);
-    visualizer_->set_big_blind(window, site_->get_big_blind());
-    visualizer_->set_real_pot(window, site_->get_total_pot());
-    visualizer_->set_real_bets(window, site_->get_bet(0), site_->get_bet(1));
-    visualizer_->set_sit_out(window, site_->is_sit_out(0), site_->is_sit_out(1));
-    visualizer_->set_stacks(window, site_->get_stack(0), site_->get_stack(1));
-    visualizer_->set_buttons(window, site_->get_buttons());
-
+    // do not manipulate state when autoplay is off
     if (!autoplay_action_->isChecked())
         return;
 
     // wait until we see buttons
     if (site_->get_buttons() == 0)
         return;
+
+    // read hole cards only when autoplay is on and we see buttons
+    std::array<int, 2> hole;
+    site_->get_hole_cards(hole);
+    visualizer_->set_hole_cards(window.get_id(), hole);
+
+    ENSURE(hole[0] != -1 && hole[1] != -1);
 
     // this will most likely fail if we can't read the cards
     ENSURE(round != -1);
@@ -544,6 +536,7 @@ void main_window::process_snapshot(const WId window)
     ENSURE(site_->get_total_pot() != -1);
     ENSURE(site_->get_bet(0) != -1);
     ENSURE(site_->get_bet(1) != -1);
+    ENSURE(site_->get_dealer() != -1);
 
     // wait until we see stack sizes
     if (site_->get_stack(0) == 0 || (site_->get_stack(1) == 0 && !site_->is_opponent_allin() && !site_->is_opponent_sitout()))
@@ -577,7 +570,7 @@ void main_window::process_snapshot(const WId window)
 
     BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
 
-    BOOST_LOG_TRIVIAL(info) << "Window: " << window << " (" << window_utils::get_window_text(window) << ")";
+    BOOST_LOG_TRIVIAL(info) << "Window: " << window.get_id() << " (" << window.get_window_text() << ")";
     BOOST_LOG_TRIVIAL(info) << "Stack: " << stack_size << " SB";
 
     if (hole[0] != -1 && hole[1] != -1)
@@ -614,10 +607,14 @@ void main_window::process_snapshot(const WId window)
 
     auto it = find_nearest(strategies_, stack_size);
     auto& strategy = *it->second;
-    auto& current_state = states_[window];
+    auto& current_state = states_[window.get_id()];
 
     BOOST_LOG_TRIVIAL(info) << QString("Strategy file: %1")
         .arg(QFileInfo(strategy.get_strategy().get_filename().c_str()).fileName()).toStdString();
+
+    const bool new_game = round == 0
+        && ((site_->get_dealer() == 0 && site_->get_bet(0) < site_->get_big_blind())
+        || (site_->get_dealer() == 1 && site_->get_bet(0) == site_->get_big_blind()));
 
     if (new_game && round == 0)
     {
@@ -692,7 +689,7 @@ void main_window::process_snapshot(const WId window)
 
 #pragma warning(pop)
 
-void main_window::perform_action(WId window, const nlhe_strategy& strategy)
+void main_window::perform_action(const fake_window& window, const nlhe_strategy& strategy)
 {
     ENSURE(site_ && !strategies_.empty());
 
@@ -710,7 +707,7 @@ void main_window::perform_action(WId window, const nlhe_strategy& strategy)
     const int b4 = board[4];
     int bucket = -1;
     const auto& abstraction = strategy.get_abstraction();
-    auto& current_state = states_[window];
+    auto& current_state = states_[window.get_id()];
 
     ENSURE(current_state != nullptr);
     ENSURE(!current_state->is_terminal());
@@ -797,11 +794,17 @@ void main_window::perform_action(WId window, const nlhe_strategy& strategy)
 
     BOOST_LOG_TRIVIAL(info) << QString("Waiting for %1 seconds after action").arg(wait).toStdString();
 
-    next_action_times_[window] = QDateTime::currentDateTime().addMSecs(static_cast<qint64>(wait * 1000));
+    next_action_times_[window.get_id()] = QDateTime::currentDateTime().addMSecs(static_cast<qint64>(wait * 1000));
 }
 
-void main_window::autolobby_timer_timeout()
+void main_window::handle_lobby()
 {
+    if (!lobby_)
+        return;
+
+    if (!autolobby_action_->isChecked())
+        return;
+
     if (schedule_action_->isChecked())
     {
         const auto active = is_schedule_active(activity_variance_, activity_spans_, &time_to_next_activity_);
@@ -820,48 +823,16 @@ void main_window::autolobby_timer_timeout()
         }
     }
 
-    if (!lobby_)
-        return;
-
     update_statusbar();
 
-    if (!lobby_->is_window())
-    {
-        const auto filter = lobby_title_->text();
-
-        if (filter.isEmpty())
-            return;
-
-        const auto window = FindWindow(nullptr, filter.toUtf8().data());
-
-        if (!IsWindow(window))
-            return;
-
-        lobby_->set_window(reinterpret_cast<WId>(window));
-    }
-
-    assert(lobby_ && lobby_->is_window());
-
-    if (!lobby_->ensure_visible())
-        return;
+    assert(lobby_);
 
     const auto table_count_ok = lobby_->detect_closed_tables();
 
     if (table_count_ok && lobby_->get_registered_sngs() < table_count_->value()
         && (!schedule_action_->isChecked() || schedule_active_))
     {
-        if (lobby_->register_sng())
-        {
-            const int wait = static_cast<int>(lobby_->get_registration_wait() * 1000);
-            BOOST_LOG_TRIVIAL(info) << "Waiting " << wait << " ms for registration to complete";
-            registration_timer_->start(wait);
-        }
-    }
-
-    if (lobby_->close_popups())
-    {
-        BOOST_LOG_TRIVIAL(info) << "Stopping registration timeout timer";
-        registration_timer_->stop();
+        lobby_->register_sng();
     }
 }
 
@@ -899,10 +870,10 @@ void main_window::state_widget_board_changed(const QString& board)
     strategy_widget_->set_board(b);
 }
 
-void main_window::update_strategy_widget(WId window, const nlhe_strategy& strategy, const std::array<int, 2>& hole,
+void main_window::update_strategy_widget(const fake_window& window, const nlhe_strategy& strategy, const std::array<int, 2>& hole,
     const std::array<int, 5>& board)
 {
-    const auto state = states_[window];
+    const auto state = states_[window.get_id()];
 
     if (!state)
         return;
@@ -931,26 +902,10 @@ void main_window::schedule_changed(const bool checked)
         BOOST_LOG_TRIVIAL(info) << "Disabling scheduler";
 }
 
-void main_window::registration_timer_timeout()
-{
-    lobby_->cancel_registration();
-}
-
-void main_window::table_title_changed(const QString& str)
-{
-    window_manager_->set_title_filter(str.toStdString());
-}
-
 void main_window::autolobby_changed(bool checked)
 {
-    if (checked)
+    if (!checked)
     {
-        autolobby_timer_->start(int(lobby_interval_ * 1000.0));
-    }
-    else
-    {
-        autolobby_timer_->stop();
-
         if (lobby_)
             lobby_->reset();
     }
@@ -985,7 +940,7 @@ void main_window::update_statusbar()
 
     registered_label_->setText(QString("Registrations: %1/%2 - Tables: %3/%2")
         .arg(lobby_ ? lobby_->get_registered_sngs() : 0)
-        .arg(table_count_->value()).arg(lobby_ ? lobby_->get_table_count() : 0));
+        .arg(table_count_->value()).arg(lobby_ ? lobby_->get_active_tables() : 0));
 }
 
 void main_window::changeEvent(QEvent* event)
@@ -999,4 +954,19 @@ void main_window::changeEvent(QEvent* event)
     }
 
     QMainWindow::changeEvent(event);
+}
+
+void main_window::find_capture_window()
+{
+    const auto filter = title_filter_->text();
+
+    if (filter.isEmpty())
+        return;
+
+    const auto window = FindWindow(nullptr, filter.toUtf8().data());
+
+    if (IsWindow(window) && IsWindowVisible(window))
+        capture_window_ = reinterpret_cast<WId>(window);
+    else
+        capture_window_ = 0;
 }
