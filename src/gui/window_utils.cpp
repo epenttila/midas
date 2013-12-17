@@ -60,9 +60,9 @@ std::string parse_image_text(const QImage* image, const QRect& rect, const QRgb&
     bool found = false;
     int y = rect.top();
 
-    for (; y < rect.bottom(); ++y)
+    for (; y < rect.top() + rect.height(); ++y)
     {
-        for (int x = rect.left(); x < rect.right(); ++x)
+        for (int x = rect.left(); x < rect.left() + rect.width(); ++x)
         {
             // the topmost row should always contain non-background pixels
             if (image->pixel(x, y) == color)
@@ -81,7 +81,7 @@ std::string parse_image_text(const QImage* image, const QRect& rect, const QRgb&
 
     std::string s;
 
-    for (int x = rect.left(); x < rect.right(); )
+    for (int x = rect.left(); x < rect.left() + rect.width(); )
     {
         const auto val = parse_image_char(*image, x, y, rect.height(), color, font);
 
@@ -107,9 +107,9 @@ int parse_image_card(const QImage* image, const QImage* mono, const QRect& rect,
 
     int suit = -1;
 
-    for (int y = rect.top(); y < rect.bottom(); ++y)
+    for (int y = rect.top(); y < rect.top() + rect.height(); ++y)
     {
-        for (int x = rect.left(); x < rect.right(); ++x)
+        for (int x = rect.left(); x < rect.left() + rect.width(); ++x)
         {
             for (int s = 0; s < colors.size(); ++s)
             {

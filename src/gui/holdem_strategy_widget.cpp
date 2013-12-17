@@ -75,7 +75,7 @@ void holdem_strategy_widget::paintEvent(QPaintEvent*)
 
     for (int i = 0; i < CARDS; ++i)
     {
-        QRect r(get_horz_card(i), rect().bottom() - CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        QRect r(get_horz_card(i), rect().top() + rect().height() - CELL_SIZE, CELL_SIZE, CELL_SIZE);
         painter.drawText(r, Qt::AlignCenter | Qt::AlignHCenter, QString(get_card_string(i).c_str()));
     }
 
