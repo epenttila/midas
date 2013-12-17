@@ -37,6 +37,7 @@
 #include <QSpinBox>
 #include <QDateTime>
 #include <QMessageBox>
+#include <QHostInfo>
 #pragma warning(pop)
 
 #include "cfrlib/holdem_game.h"
@@ -54,6 +55,7 @@
 #include "state_widget.h"
 #include "qt_log_sink.h"
 #include "fake_window.h"
+#include "smtp.h"
 
 #define ENSURE(x) ensure(x, #x, __LINE__)
 
@@ -307,6 +309,23 @@ main_window::main_window()
             .arg(get_key_text(autolobby_hotkey)).toStdString();
     }
 
+    const auto smtp_host = settings.value("smtp-host").toString();
+    const auto smtp_port = static_cast<std::uint16_t>(settings.value("smtp-port").toUInt());
+    smtp_from_ = settings.value("smtp-from").toString();
+    smtp_to_ = settings.value("smtp-to").toString();
+
+    if (!smtp_host.isEmpty())
+    {
+        smtp_ = new smtp(smtp_host, smtp_port);
+
+        connect(smtp_, &smtp::status, [](const QString& s)
+        {
+            BOOST_LOG_TRIVIAL(info) << s.toStdString();
+        });
+    }
+    else
+        smtp_ = nullptr;
+
     BOOST_LOG_TRIVIAL(info) << "Starting capture";
 
     capture_timer_->start(int(capture_interval_ * 1000.0));
@@ -348,6 +367,9 @@ void main_window::capture_timer_timeout()
             BOOST_LOG_TRIVIAL(warning) << "Saving current snapshot";
             site_->save_snapshot();
         }
+
+        if (smtp_)
+            smtp_->send(smtp_from_, smtp_to_, "[midas] Fatal error on " + QHostInfo::localHostName(), e.what());
     }
 
     update_statusbar();

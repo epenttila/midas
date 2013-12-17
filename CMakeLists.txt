@@ -34,6 +34,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 add_definitions(-DBOOST_ALL_NO_LIB -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
 
 find_package(Qt5Widgets)
+find_package(Qt5Network)
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
 

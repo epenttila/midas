@@ -25,6 +25,7 @@ class lobby_manager;
 class QSpinBox;
 class state_widget;
 class fake_window;
+class smtp;
 
 class main_window : public QMainWindow
 {
@@ -89,4 +90,7 @@ private:
     std::unordered_map<int, QDateTime> next_action_times_;
     double time_to_next_activity_;
     WId capture_window_;
+    smtp* smtp_;
+    QString smtp_from_;
+    QString smtp_to_;
 };
