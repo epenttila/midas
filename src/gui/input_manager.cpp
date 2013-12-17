@@ -129,6 +129,12 @@ void input_manager::wind_mouse_impl(double xs, double ys, double xe, double ye, 
 
 void input_manager::move_mouse(int x, int y)
 {
+    POINT pt;
+    GetCursorPos(&pt);
+
+    if (pt.x == x && pt.y == y)
+        return;
+
     const int left = GetSystemMetrics(SM_XVIRTUALSCREEN);
     const int top = GetSystemMetrics(SM_YVIRTUALSCREEN);
     const int width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
@@ -137,18 +143,18 @@ void input_manager::move_mouse(int x, int y)
     x = boost::algorithm::clamp(x, left, left + width - 1);
     y = boost::algorithm::clamp(y, top, top + height - 1);
 
-    POINT pt;
-    GetCursorPos(&pt);
-
     const double speed = get_normal_random(engine_, mouse_speed_[0], mouse_speed_[1]);
 
     wind_mouse_impl(pt.x, pt.y, x, y, 9, 3, 5.0 / speed, 10.0 / speed, 10.0 * speed, 8.0 * speed);
-    set_cursor_position(x, y);
+    SetCursorPos(x, y);
 
-#if !defined(NDEBUG)
     GetCursorPos(&pt);
-    assert(pt.x == x && pt.y == y);
-#endif
+
+    if (pt.x == x || pt.y == y)
+        return;
+
+    throw std::runtime_error(QString("Mouse cursor (%1,%2) moved outside target (%3,%4)").arg(pt.x).arg(pt.y)
+        .arg(x).arg(y).toStdString().c_str());
 }
 
 void input_manager::move_mouse(int x, int y, int width, int height)
@@ -166,6 +172,14 @@ void input_manager::move_mouse(int x, int y, int width, int height)
     target_y = boost::algorithm::clamp(target_y, y, y + height - 1);
 
     move_mouse(target_x, target_y);
+
+    GetCursorPos(&pt);
+
+    if (pt.x >= x && pt.x < x + width && pt.y >= y && pt.y < y + height)
+        return;
+
+    throw std::runtime_error(QString("Mouse cursor (%1,%2) moved outside target (%3,%4,%5,%6)").arg(pt.x).arg(pt.y)
+        .arg(x).arg(y).arg(x + width).arg(y + height).toStdString().c_str());
 }
 
 void input_manager::move_mouse(WId window, int x, int y, int width, int height)
