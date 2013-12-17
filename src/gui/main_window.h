@@ -55,8 +55,6 @@ private:
         const std::array<int, 5>& board);
     void ensure(bool expression, const std::string& s, int line);
     void update_statusbar();
-    void changeEvent(QEvent* event);
-    void tray_activated(int reason);
     void find_capture_window();
     void handle_lobby();
 

@@ -37,7 +37,6 @@
 #include <QSpinBox>
 #include <QDateTime>
 #include <QMessageBox>
-#include <QSystemTrayIcon>
 #pragma warning(pop)
 
 #include "cfrlib/holdem_game.h"
@@ -312,17 +311,7 @@ main_window::main_window()
 
     capture_timer_->start(int(capture_interval_ * 1000.0));
 
-    auto icon = new QSystemTrayIcon(QIcon(":/icons/control_play.png"), this);
-    icon->setVisible(true);
-    connect(icon, &QSystemTrayIcon::activated, this, &main_window::tray_activated);
-
     setWindowTitle("Window");
-}
-
-void main_window::tray_activated(int reason)
-{
-    if (reason == QSystemTrayIcon::Trigger)
-        show();
 }
 
 main_window::~main_window()
@@ -941,19 +930,6 @@ void main_window::update_statusbar()
     registered_label_->setText(QString("Registrations: %1/%2 - Tables: %3/%2")
         .arg(lobby_ ? lobby_->get_registered_sngs() : 0)
         .arg(table_count_->value()).arg(lobby_ ? lobby_->get_active_tables() : 0));
-}
-
-void main_window::changeEvent(QEvent* event)
-{
-    switch (event->type())
-    {
-    case QEvent::WindowStateChange:
-        if (windowState() & Qt::WindowMinimized)
-            QTimer::singleShot(0, this, SLOT(hide()));
-        break;
-    }
-
-    QMainWindow::changeEvent(event);
 }
 
 void main_window::find_capture_window()
