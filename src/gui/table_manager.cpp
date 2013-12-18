@@ -38,11 +38,6 @@ table_manager::table_manager(const std::string& filename, input_manager& input_m
             const int id = reader.attributes().value("id").toString().toInt();
             dealer_pixels_[id] = window_utils::read_xml_pixel(reader);
         }
-        else if (reader.name() == "player-pixel")
-        {
-            const int id = reader.attributes().value("id").toString().toInt();
-            player_pixels_[id] = window_utils::read_xml_pixel(reader);
-        }
         else if (reader.name() == "fold-button")
         {
             fold_buttons_.push_back(window_utils::read_xml_button(reader));
@@ -133,11 +128,6 @@ table_manager::table_manager(const std::string& filename, input_manager& input_m
         {
             window_size_[0] = reader.attributes().value("width").toString().toInt();
             window_size_[1] = reader.attributes().value("height").toString().toInt();
-            reader.skipCurrentElement();
-        }
-        else if (reader.name() == "table-regex")
-        {
-            table_pattern_ = reader.attributes().value("pattern").toString();
             reader.skipCurrentElement();
         }
         else
@@ -322,17 +312,6 @@ double table_manager::get_big_blind() const
     return big_blind;
 }
 
-int table_manager::get_active_player() const
-{
-    for (int i = 0; i < player_pixels_.size(); ++i)
-    {
-        if (is_pixel(image_.get(), player_pixels_[i]))
-            return i;
-    }
-
-    return -1;
-}
-
 double table_manager::get_total_pot() const
 {
     return parse_image_bet(mono_image_.get(), total_pot_label_, fonts_.at(total_pot_label_.font));
@@ -385,9 +364,4 @@ void table_manager::save_snapshot() const
     const auto filename = QDateTime::currentDateTimeUtc().toString("'snapshot-'yyyy-MM-ddTHHmmss.zzz'.png'");
     image_->save(filename);
     mono_image_->save("mono-" + filename);
-}
-
-QString table_manager::get_table_pattern() const
-{
-    return table_pattern_;
 }

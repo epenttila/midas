@@ -31,14 +31,12 @@ public:
     double get_bet(int position) const;
     double get_big_blind() const;
     double get_total_pot() const;
-    int get_active_player() const;
     bool is_all_in(int position) const;
     int get_buttons() const;
     bool is_sit_out(int position) const;
     bool is_opponent_allin() const;
     bool is_opponent_sitout() const;
     void save_snapshot() const;
-    QString get_table_pattern() const;
 
 private:
     std::unique_ptr<fake_window> window_;
@@ -47,7 +45,6 @@ private:
     std::unique_ptr<QImage> mono_image_;
 
     std::array<window_utils::pixel_data, 2> dealer_pixels_;
-    std::array<window_utils::pixel_data, 2> player_pixels_;
     std::array<window_utils::pixel_data, 2> sit_out_pixels_;
     std::array<window_utils::pixel_data, 2> all_in_pixels_;
     std::array<window_utils::pixel_data, 2> stack_hilight_pixels_;
