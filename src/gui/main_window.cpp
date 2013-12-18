@@ -490,6 +490,7 @@ void main_window::process_snapshot(const fake_window& window)
     visualizer_->set_sit_out(window.get_id(), site_->is_sit_out(0), site_->is_sit_out(1));
     visualizer_->set_stacks(window.get_id(), site_->get_stack(0), site_->get_stack(1));
     visualizer_->set_buttons(window.get_id(), site_->get_buttons());
+    visualizer_->set_all_in(window.get_id(), site_->is_all_in(0), site_->is_all_in(1));
 
     int round = -1;
     std::array<int, 5> board;

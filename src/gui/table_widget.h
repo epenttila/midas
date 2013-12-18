@@ -28,6 +28,7 @@ public:
     void set_tables(int row);
     void set_active(WId window);
     void clear_row(WId window);
+    void set_all_in(WId window, bool allin1, bool allin2);
 
 private:
     int get_row(WId window) const;

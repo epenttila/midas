@@ -20,6 +20,8 @@ namespace
         BIGBLIND_COLUMN,
         PSTACK_COLUMN,
         OSTACK_COLUMN,
+        PALLIN_COLUMN,
+        OALLIN_COLUMN,
         PSITOUT_COLUMN,
         OSITOUT_COLUMN,
         HOLE_COLUMN,
@@ -30,6 +32,24 @@ namespace
         POT_COLUMN,
         BUTTONS_COLUMN,
         MAX_COLUMNS,
+    };
+
+    static const char* labels[MAX_COLUMNS] =
+    {
+        "BB",
+        "PStack",
+        "OStack",
+        "PAllin",
+        "OAllin",
+        "PSitout",
+        "OSitout",
+        "Hole",
+        "Dealer",
+        "Board",
+        "PBet",
+        "OBet",
+        "Pot",
+        "Buttons",
     };
 
     static const int CARD_WIDTH = 50;
@@ -92,8 +112,8 @@ table_widget::table_widget(QWidget* parent)
 
     setMinimumSize(13 * CARD_WIDTH + 15 * CARD_MARGIN, 3 * CARD_HEIGHT + 5 * CARD_MARGIN);
 
-    setHorizontalHeaderLabels(QStringList() << "BB" << "PStack" << "OStack" << "PSitout" << "OSitout"
-        << "Hole" << "Dealer" << "Board" << "PBet" << "OBet" << "Pot" << "Buttons");
+    for (int i = 0; i < MAX_COLUMNS; ++i)
+        setHorizontalHeaderItem(i, new QTableWidgetItem(labels[i]));
 
     setItemDelegateForColumn(HOLE_COLUMN, new card_delegate(card_images_));
     setItemDelegateForColumn(BOARD_COLUMN, new card_delegate(card_images_));
@@ -197,4 +217,10 @@ void table_widget::clear_row(WId window)
 
     for (int col = 0; col < MAX_COLUMNS; ++col)
         setItem(row, col, new QTableWidgetItem);
+}
+
+void table_widget::set_all_in(WId window, bool allin1, bool allin2)
+{
+    item(get_row(window), PALLIN_COLUMN)->setData(Qt::DisplayRole, allin1);
+    item(get_row(window), OALLIN_COLUMN)->setData(Qt::DisplayRole, allin2);
 }
