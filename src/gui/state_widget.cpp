@@ -19,22 +19,22 @@ state_widget::state_widget(QWidget* parent, Qt::WindowFlags flags)
 {
     board_ = new QLineEdit();
     auto board_button = new QPushButton("Set");
-    connect(board_button, SIGNAL(clicked()), SLOT(set_board_clicked()));
+    connect(board_button, &QPushButton::clicked, this, &state_widget::set_board_clicked);
 
     state_edit_ = new QLineEdit();
     state_edit_->setReadOnly(true);
-    connect(state_edit_, SIGNAL(textChanged(const QString&)), SLOT(state_text_changed()));
+    connect(state_edit_, &QLineEdit::textChanged, this, &state_widget::state_text_changed);
 
     auto state_button = new QPushButton("Reset");
-    connect(state_button, SIGNAL(clicked()), SLOT(reset_clicked()));
+    connect(state_button, &QPushButton::clicked, this, &state_widget::reset_clicked);
 
     auto call_button = new QPushButton("Call");
-    connect(call_button, SIGNAL(clicked()), SLOT(call_clicked()));
+    connect(call_button, &QPushButton::clicked, this, &state_widget::call_clicked);
 
     raise_amount_ = new QDoubleSpinBox();
     raise_amount_->setRange(0.0, 1000.0);
     auto raise_button = new QPushButton("Raise");
-    connect(raise_button, SIGNAL(clicked()), SLOT(raise_clicked()));
+    connect(raise_button, &QPushButton::clicked, this, &state_widget::raise_clicked);
 
     auto button_layout = new QHBoxLayout();
     button_layout->addWidget(call_button);

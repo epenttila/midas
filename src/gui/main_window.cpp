@@ -191,19 +191,19 @@ main_window::main_window()
     strategy_widget_->setVisible(false);
     state_widget_ = new state_widget(this, Qt::Tool);
     state_widget_->setVisible(false);
-    connect(state_widget_, SIGNAL(board_changed(const QString&)), SLOT(state_widget_board_changed(const QString&)));
-    connect(state_widget_, SIGNAL(state_changed()), SLOT(state_widget_state_changed()));
+    connect(state_widget_, &state_widget::board_changed, this, &main_window::state_widget_board_changed);
+    connect(state_widget_, &state_widget::state_changed, this, &main_window::state_widget_state_changed);
 
     auto toolbar = addToolBar("File");
     toolbar->setMovable(false);
     open_action_ = toolbar->addAction(QIcon(":/icons/folder_page_white.png"), "&Open...");
     open_action_->setIconText("Open...");
     open_action_->setToolTip("Open...");
-    connect(open_action_, SIGNAL(triggered()), SLOT(open_strategy()));
+    connect(open_action_, &QAction::triggered, this, &main_window::open_strategy);
     auto action = toolbar->addAction(QIcon(":/icons/map.png"), "Show strategy");
-    connect(action, SIGNAL(triggered()), SLOT(show_strategy_changed()));
+    connect(action, &QAction::triggered, this, &main_window::show_strategy_changed);
     action = toolbar->addAction(QIcon(":/icons/chart_organisation.png"), "Modify state");
-    connect(action, SIGNAL(triggered()), SLOT(modify_state_changed()));
+    connect(action, &QAction::triggered, this, &main_window::modify_state_changed);
     save_images_ = toolbar->addAction(QIcon(":/icons/picture_save.png"), "Save images");
     save_images_->setCheckable(true);
     toolbar->addSeparator();
@@ -219,13 +219,13 @@ main_window::main_window()
     toolbar->addSeparator();
     autoplay_action_ = toolbar->addAction(QIcon(":/icons/control_play.png"), "Autoplay");
     autoplay_action_->setCheckable(true);
-    connect(autoplay_action_, SIGNAL(toggled(bool)), SLOT(autoplay_changed(bool)));
+    connect(autoplay_action_, &QAction::toggled, this, &main_window::autoplay_changed);
     autolobby_action_ = toolbar->addAction(QIcon(":/icons/layout.png"), "Autolobby");
     autolobby_action_->setCheckable(true);
-    connect(autolobby_action_, SIGNAL(toggled(bool)), SLOT(autolobby_changed(bool)));
+    connect(autolobby_action_, &QAction::toggled, this, &main_window::autolobby_changed);
     schedule_action_ = toolbar->addAction(QIcon(":/icons/time.png"), "Schedule");
     schedule_action_->setCheckable(true);
-    connect(schedule_action_, SIGNAL(toggled(bool)), SLOT(schedule_changed(bool)));
+    connect(schedule_action_, &QAction::toggled, this, &main_window::schedule_changed);
 
     log_ = new QPlainTextEdit(this);
     log_->setReadOnly(true);
@@ -237,7 +237,7 @@ main_window::main_window()
     widget->setLayout(layout);
 
     capture_timer_ = new QTimer(this);
-    connect(capture_timer_, SIGNAL(timeout()), SLOT(capture_timer_timeout()));
+    connect(capture_timer_, &QTimer::timeout, this, &main_window::capture_timer_timeout);
 
     site_label_ = new QLabel(this);
     statusBar()->addWidget(site_label_, 1);
