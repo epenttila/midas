@@ -93,4 +93,5 @@ private:
     smtp* smtp_;
     QString smtp_from_;
     QString smtp_to_;
+    double random_move_probability_;
 };

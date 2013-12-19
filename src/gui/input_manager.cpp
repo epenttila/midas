@@ -161,12 +161,12 @@ void input_manager::move_mouse(int x, int y)
         .arg(x).arg(y).toStdString().c_str());
 }
 
-void input_manager::move_mouse(int x, int y, int width, int height)
+void input_manager::move_mouse(int x, int y, int width, int height, bool force)
 {
     POINT pt;
     GetCursorPos(&pt);
 
-    if (pt.x >= x && pt.x < x + width && pt.y >= y && pt.y < y + height)
+    if (!force && pt.x >= x && pt.x < x + width && pt.y >= y && pt.y < y + height)
         return;
 
     int target_x = boost::math::iround(get_normal_random(engine_, x, x + width - 1));
@@ -270,4 +270,17 @@ void input_manager::move_click(int x, int y, int width, int height, bool double_
     //dist = std::uniform_real_distribution<>(0, 500)(engine_);
 
     //move_mouse(iround(pt.x + cos_angle * dist), iround(pt.y + sin_angle * dist));
+}
+
+void input_manager::move_random(double prob)
+{
+    static const std::uniform_real_distribution<> d(0.0, 1.0);
+
+    if (d(engine_) >= prob)
+        return;
+
+    const int width = GetSystemMetrics(SM_CXSCREEN);
+    const int height = GetSystemMetrics(SM_CYSCREEN);
+
+    move_mouse(0, 0, width, height, true);
 }
