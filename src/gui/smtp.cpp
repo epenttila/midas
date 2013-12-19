@@ -25,7 +25,8 @@ void smtp::send(const QString &from, const QString &to, const QString &subject, 
 
 void smtp::ready_read()
 {
-    QString response = socket_->readLine();
+    const QString full_response = socket_->readLine();
+    auto response = full_response;
     response.truncate(3);
 
     QTextStream out(socket_);
@@ -66,6 +67,6 @@ void smtp::ready_read()
     }
     else
     {
-        emit status(QString("Failed to send message (%1)").arg(response));
+        emit status(QString("Failed to send message (%1)").arg(full_response));
     }
 }
