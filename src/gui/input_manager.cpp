@@ -154,7 +154,7 @@ void input_manager::move_mouse(int x, int y)
 
     GetCursorPos(&pt);
 
-    if (pt.x == x || pt.y == y)
+    if (pt.x == x && pt.y == y)
         return;
 
     throw std::runtime_error(QString("Mouse cursor (%1,%2) moved outside target (%3,%4)").arg(pt.x).arg(pt.y)
