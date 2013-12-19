@@ -195,13 +195,22 @@ void input_manager::move_mouse(WId window, int x, int y, int width, int height)
 
 void input_manager::left_click()
 {
+    button_down();
+    sleep();
+    button_up();
+}
+
+void input_manager::button_down()
+{
     INPUT input = {};
     input.type = INPUT_MOUSE;
     input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
     SendInput(1, &input, sizeof(INPUT));
+}
 
-    sleep();
-
+void input_manager::button_up()
+{
+    INPUT input = {};
     input.type = INPUT_MOUSE;
     input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
     SendInput(1, &input, sizeof(INPUT));
@@ -227,4 +236,38 @@ void input_manager::set_mouse_speed(double min, double max)
 {
     mouse_speed_[0] = min;
     mouse_speed_[1] = max;
+}
+
+void input_manager::move_click(int x, int y, int width, int height, bool double_click)
+{
+    using namespace boost::math;
+
+    move_mouse(x, y, width, height);
+
+    const auto angle = std::uniform_real_distribution<>(0, 2 * constants::pi<double>())(engine_);
+    const auto sin_angle = std::sin(angle);
+    const auto cos_angle = std::cos(angle);
+    const auto dist = std::uniform_real_distribution<>(0, 2)(engine_);
+
+    POINT pt;
+    GetCursorPos(&pt);
+
+    if (double_click)
+    {
+        left_double_click();
+    }
+    else
+    {
+        const auto new_x = boost::algorithm::clamp(iround(pt.x + cos_angle * dist), x, x + width - 1);
+        const auto new_y = boost::algorithm::clamp(iround(pt.y + sin_angle * dist), y, y + height - 1);
+
+        button_down();
+        sleep();
+        set_cursor_position(new_x, new_y);
+        button_up();
+    }
+
+    //dist = std::uniform_real_distribution<>(0, 500)(engine_);
+
+    //move_mouse(iround(pt.x + cos_angle * dist), iround(pt.y + sin_angle * dist));
 }

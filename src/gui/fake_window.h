@@ -24,7 +24,6 @@ public:
     QImage get_client_image() const;
 
 private:
-    void move_mouse(input_manager& input, int x, int y, int w, int h) const;
     QPoint client_to_screen(const QPoint& p) const;
 
     WId wid_;

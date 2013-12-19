@@ -261,17 +261,8 @@ bool fake_window::click_button(input_manager& input, const window_utils::button_
     if (!window_utils::is_button(&client_image_, button))
         return false;
 
-    move_mouse(input, button.rect.x(), button.rect.y(), button.rect.width(), button.rect.height());
-    input.sleep();
-
-    // check if the button is still there
-    //if (!window_utils::is_button(&client_image_, button))
-    //    return false;
-
-    if (double_click)
-        input.left_double_click();
-    else
-        input.left_click();
+    const auto p = client_to_screen(QPoint(button.rect.x(), button.rect.y()));
+    input.move_click(p.x(), p.y(), button.rect.width(), button.rect.height(), double_click);
 
     return true;
 }
@@ -285,12 +276,6 @@ bool fake_window::click_any_button(input_manager& input, const std::vector<windo
     }
 
     return false;
-}
-
-void fake_window::move_mouse(input_manager& input, int x, int y, int w, int h) const
-{
-    const auto p = client_to_screen(QPoint(x, y));
-    input.move_mouse(p.x(), p.y(), w, h);
 }
 
 QPoint fake_window::client_to_screen(const QPoint& point) const

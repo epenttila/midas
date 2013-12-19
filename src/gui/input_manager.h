@@ -22,6 +22,9 @@ public:
     void left_click();
     void left_double_click();
     void set_mouse_speed(double min, double max);
+    void button_down();
+    void button_up();
+    void move_click(int x, int y, int width, int height, bool double_click);
 
 private:
     void wind_mouse_impl(double xs, double ys, double xe, double ye, double gravity, double wind, double min_wait,
