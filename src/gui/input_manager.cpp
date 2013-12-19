@@ -147,7 +147,7 @@ void input_manager::move_mouse(int x, int y)
     x = boost::algorithm::clamp(x, left, left + width - 1);
     y = boost::algorithm::clamp(y, top, top + height - 1);
 
-    const double speed = get_normal_random(engine_, mouse_speed_[0], mouse_speed_[1]);
+    const double speed = get_uniform_random(engine_, mouse_speed_[0], mouse_speed_[1]);
 
     wind_mouse_impl(pt.x, pt.y, x, y, 9, 3, 5.0 / speed, 10.0 / speed, 10.0 * speed, 8.0 * speed);
     SetCursorPos(x, y);
