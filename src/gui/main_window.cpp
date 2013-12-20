@@ -370,6 +370,9 @@ void main_window::capture_timer_timeout()
                     process_snapshot(*window);
             }
         }
+
+        if (autolobby_action_->isChecked() && (!schedule_action_->isChecked() || schedule_active_))
+            input_manager_->move_random(random_move_probability_);
     }
     catch (const std::exception& e)
     {
@@ -381,11 +384,10 @@ void main_window::capture_timer_timeout()
             site_->save_snapshot();
         }
 
+        // ensure we can move after exceptions in case of visible tool tips disturbing scraping
+        if (autolobby_action_->isChecked())
+            input_manager_->move_random(1);
     }
-
-    // ensure we can move after exceptions in case of visible tool tips disturbing scraping
-    if (autolobby_action_->isChecked())
-        input_manager_->move_random(random_move_probability_);
 
     update_statusbar();
 }
