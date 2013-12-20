@@ -381,8 +381,6 @@ void main_window::capture_timer_timeout()
             site_->save_snapshot();
         }
 
-        if (smtp_)
-            smtp_->send(smtp_from_, smtp_to_, "[midas] Fatal error on " + QHostInfo::localHostName(), e.what());
     }
 
     // ensure we can move after exceptions in case of visible tool tips disturbing scraping
@@ -492,6 +490,9 @@ void main_window::process_snapshot(const fake_window& window)
 
             BOOST_LOG_TRIVIAL(warning) << "Saving current snapshot";
             site_->save_snapshot();
+
+            if (smtp_)
+                smtp_->send(smtp_from_, smtp_to_, "[midas] " + QHostInfo::localHostName() + " needs attention", ".");
         }
 
         return;
