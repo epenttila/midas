@@ -25,7 +25,7 @@ void smtp::send(const QString &from, const QString &to, const QString &subject, 
 
 void smtp::ready_read()
 {
-    const QString full_response = socket_->readLine();
+    const QString full_response = socket_->readLine().trimmed();
     auto response = full_response;
     response.truncate(3);
 
