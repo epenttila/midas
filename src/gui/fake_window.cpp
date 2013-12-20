@@ -237,9 +237,13 @@ bool fake_window::update(WId wid)
 
     if (window_rect_.isValid())
         window_image_ = ::screenshot(wid_, window_rect_).toImage();
+    else
+        window_image_ = QImage();
 
     if (client_rect_.isValid())
         client_image_ = ::screenshot(wid_, client_rect_).toImage();
+    else
+        client_image_ = QImage();
 
     return is_valid();
 }
@@ -247,6 +251,9 @@ bool fake_window::update(WId wid)
 bool fake_window::is_valid() const
 {
     if (!IsWindow(reinterpret_cast<HWND>(wid_)))
+        return false;
+
+    if (!window_rect_.isValid() || !client_rect_.isValid() || window_image_.isNull() || client_image_.isNull())
         return false;
 
     return window_image_.pixel(0, 0) == qRgb(255, 255, 255)
