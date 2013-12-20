@@ -342,6 +342,18 @@ void main_window::capture_timer_timeout()
 {
     try
     {
+        if (!autolobby_action_->isChecked() && QFileInfo("enable.txt").exists())
+        {
+            BOOST_LOG_TRIVIAL(info) << "enable.txt found, enabling autolobby";
+            autolobby_action_->setChecked(true);
+        }
+
+        if (autolobby_action_->isChecked() && QFileInfo("disable.txt").exists())
+        {
+            BOOST_LOG_TRIVIAL(info) << "disable.txt found, disabling autolobby";
+            autolobby_action_->setChecked(false);
+        }
+
         find_capture_window();
 
         if (lobby_)
