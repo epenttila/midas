@@ -3,6 +3,7 @@
 #pragma warning(push, 1)
 #include <boost/math/special_functions.hpp>
 #include <boost/algorithm/clamp.hpp>
+#include <QTime>
 #include <Windows.h>
 #pragma warning(pop)
 
@@ -85,8 +86,14 @@ void input_manager::wind_mouse_impl(double xs, double ys, double xe, double ye, 
     double wind_x = 0;
     double wind_y = 0;
 
+    QTime time;
+    time.start();
+
     while ((distance = boost::math::hypot(xs - xe, ys - ye)) >= 1)
     {
+        if (time.elapsed() >= 10000)
+            break;
+
         wind = std::min(wind, distance);
 
         if (distance >= target_area)
@@ -127,7 +134,11 @@ void input_manager::wind_mouse_impl(double xs, double ys, double xe, double ye, 
             set_cursor_position(mx, my);
 
         const double step = boost::math::hypot(xs - pt.x, ys - pt.y);
-        Sleep(boost::math::lround(((max_wait - min_wait) * (step / max_step) + min_wait)));
+
+        const auto wait = boost::math::iround(boost::algorithm::clamp(
+            (max_wait - min_wait) * (step / max_step) + min_wait, min_wait, max_wait));
+
+        Sleep(wait);
     }
 }
 
