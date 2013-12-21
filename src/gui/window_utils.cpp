@@ -56,34 +56,11 @@ std::string parse_image_text(const QImage* image, const QRect& rect, const QRgb&
     if (!image)
         return "";
 
-    // adjust y in case poker client moves stuff vertically
-    bool found = false;
-    int y = rect.top();
-
-    for (; y < rect.top() + rect.height(); ++y)
-    {
-        for (int x = rect.left(); x < rect.left() + rect.width(); ++x)
-        {
-            // the topmost row should always contain non-background pixels
-            if (image->pixel(x, y) == color)
-            {
-                found = true;
-                break;
-            }
-        }
-
-        if (found)
-            break;
-    }
-
-    if (!found)
-        return "";
-
     std::string s;
 
     for (int x = rect.left(); x < rect.left() + rect.width(); )
     {
-        const auto val = parse_image_char(*image, x, y, rect.height(), color, font);
+        const auto val = parse_image_char(*image, x, rect.top(), rect.height(), color, font);
 
         if (val.second > 0)
         {
