@@ -49,6 +49,8 @@ namespace
         font.children[0x0003].children[0x001f].children[0x007c].children[0x03e0].children[0x03e0].children[0x007c].masks[0x001f] = std::make_pair("V", 1);
         font.children[0x0003].children[0x001f].children[0x007c].children[0x03e0].children[0x03e0].children[0x007c].masks[0x007c] = std::make_pair("W", 6);
 
+        font.masks[0x0007] = std::make_pair("'", 2);
+
         font.masks[0x0018] = std::make_pair("v", 6);
         font.masks[0x0020] = std::make_pair("-", 3);
         font.masks[0x0044] = std::make_pair("#", 7);
@@ -66,6 +68,7 @@ namespace
         font.children[0x00c0].masks[0x01c0] = std::make_pair("J", 4);
         font.children[0x00c0].masks[0x01e8] = std::make_pair("a", 5);
 
+        font.masks[0x00e6] = std::make_pair("&", 6);
         font.masks[0x00ee] = std::make_pair("8", 6);
 
         font.children[0x00f0].children[0x01f8].children[0x0108].children[0x0108].masks[0x0198] = std::make_pair("c", 2);
@@ -121,6 +124,7 @@ namespace
         font.children[0x01ff].children[0x01ff].children[0x0111].children[0x0111].masks[0x0111] = std::make_pair("E", 2);
         font.children[0x01ff].children[0x01ff].children[0x0111].children[0x0111].masks[0x01ff] = std::make_pair("B", 2);
 
+        font.masks[0x0200] = std::make_pair(",", 3);
         font.masks[0x0400] = std::make_pair("y", 6);
         font.masks[0x04f0] = std::make_pair("g", 6);
         font.masks[0x07f8] = std::make_pair("p", 6);
