@@ -19,6 +19,7 @@
 #include <boost/log/support/date_time.hpp>
 #include <boost/log/utility/setup/from_settings.hpp>
 #include <boost/log/utility/setup/from_stream.hpp>
+#include <boost/scope_exit.hpp>
 #include <Windows.h>
 #include <QPlainTextEdit>
 #include <QVBoxLayout>
@@ -654,6 +655,18 @@ void main_window::process_snapshot(const fake_window& window)
         current_state = &strategy.get_root_state();
     }
 
+    auto original_state = current_state;
+    bool commit = false;
+
+    BOOST_SCOPE_EXIT(&current_state, &original_state, &commit)
+    {
+        if (!commit)
+        {
+            BOOST_LOG_TRIVIAL(warning) << "Reverting state";
+            current_state = original_state;
+        }
+    } BOOST_SCOPE_EXIT_END
+
     ENSURE(current_state != nullptr);
     ENSURE(!current_state->is_terminal());
 
@@ -717,6 +730,8 @@ void main_window::process_snapshot(const fake_window& window)
     update_strategy_widget(window, strategy, hole, board);
 
     perform_action(window, strategy);
+
+    commit = true;
 }
 
 #pragma warning(pop)
