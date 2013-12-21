@@ -116,7 +116,7 @@ table_manager::table_manager(const std::string& filename, input_manager& input_m
         }
         else if (reader.name() == "card-back-color")
         {
-            card_color_ = QColor(reader.attributes().value("color").toString()).rgb();
+            card_back_color_ = QColor(reader.attributes().value("color").toString()).rgb();
             reader.skipCurrentElement();
         }
         else if (reader.name() == "hole-card")
