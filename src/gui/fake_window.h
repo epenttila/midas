@@ -19,7 +19,7 @@ public:
     bool click_any_button(input_manager& input, const std::vector<window_utils::button_data>& buttons) const;
     int get_id() const;
     std::string get_window_text() const;
-    bool update(WId wid = 0);
+    bool update(WId wid = -1);
     QImage get_window_image() const;
     QImage get_client_image() const;
 

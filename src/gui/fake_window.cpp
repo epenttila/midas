@@ -145,7 +145,7 @@ fake_window::fake_window(int id, const QRect& rect)
 
 bool fake_window::update(WId wid)
 {
-    if (wid != 0)
+    if (wid != -1)
         wid_ = wid;
 
     if (!IsWindow(reinterpret_cast<HWND>(wid_)))
