@@ -559,7 +559,9 @@ void main_window::process_snapshot(const fake_window& window)
     site_->get_hole_cards(hole);
     visualizer_->set_hole_cards(window.get_id(), hole);
 
-    ENSURE(hole[0] != -1 && hole[1] != -1);
+    // wait for visible cards
+    if (hole[0] == -1 || hole[1] == -1)
+        return;
 
     // this will most likely fail if we can't read the cards
     ENSURE(round != -1);
