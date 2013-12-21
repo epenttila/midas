@@ -37,6 +37,7 @@ public:
     bool is_opponent_allin() const;
     bool is_opponent_sitout() const;
     void save_snapshot() const;
+    double get_pot() const;
 
 private:
     std::unique_ptr<fake_window> window_;
@@ -54,6 +55,7 @@ private:
     std::unordered_map<std::string, window_utils::font_data> fonts_;
 
     window_utils::label_data total_pot_label_;
+    window_utils::label_data pot_label_;
     std::array<window_utils::label_data, 2> bet_labels_;
     std::array<window_utils::label_data, 2> stack_labels_;
     std::array<window_utils::label_data, 2> flash_stack_labels_;

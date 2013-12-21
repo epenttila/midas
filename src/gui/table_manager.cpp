@@ -79,6 +79,10 @@ table_manager::table_manager(const std::string& filename, input_manager& input_m
         {
             total_pot_label_ = window_utils::read_xml_label(reader);
         }
+        else if (reader.name() == "pot-label")
+        {
+            pot_label_ = window_utils::read_xml_label(reader);
+        }
         else if (reader.name() == "bet-label")
         {
             const int id = reader.attributes().value("id").toString().toInt();
@@ -315,7 +319,12 @@ double table_manager::get_big_blind() const
 
 double table_manager::get_total_pot() const
 {
-    return parse_image_bet(mono_image_.get(), total_pot_label_, fonts_.at(total_pot_label_.font));
+    const auto total = parse_image_bet(mono_image_.get(), total_pot_label_, fonts_.at(total_pot_label_.font));
+
+    if (total > 0)
+        return total;
+    else
+        return get_bet(0) + get_bet(1) + get_pot();
 }
 
 bool table_manager::is_all_in(int position) const
@@ -365,4 +374,9 @@ void table_manager::save_snapshot() const
     const auto filename = QDateTime::currentDateTimeUtc().toString("'snapshot-'yyyy-MM-ddTHHmmss.zzz'.png'");
     image_->save(filename);
     mono_image_->save("mono-" + filename);
+}
+
+double table_manager::get_pot() const
+{
+    return parse_image_bet(mono_image_.get(), pot_label_, fonts_.at(pot_label_.font));
 }
