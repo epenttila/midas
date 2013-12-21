@@ -471,13 +471,6 @@ void main_window::process_snapshot(const fake_window& window)
     if (!site_)
         return;
 
-    const auto now = QDateTime::currentDateTime();
-
-    if (!next_action_times_.count(window.get_id()))
-        next_action_times_[window.get_id()] = now;
-    else if (now < next_action_times_[window.get_id()])
-        return;
-
     site_->update(window);
 
     if (save_images_->isChecked())
@@ -602,6 +595,28 @@ void main_window::process_snapshot(const fake_window& window)
     const auto stack_size = int(std::ceil(std::min(stacks[0], stacks[1]) / site_->get_big_blind() * 2.0));
 
     ENSURE(stack_size > 0);
+
+    const auto now = QDateTime::currentDateTime();
+    const auto time_it = next_action_times_.find(window.get_id());
+
+    if (time_it == next_action_times_.end())
+    {
+        const double wait = site_->is_opponent_sitout() ? action_delay_[0] : get_normal_random(engine_,
+            action_delay_[0], action_delay_[1]);
+
+        BOOST_LOG_TRIVIAL(info) << QString("[%2] Waiting for %1 seconds before acting").arg(wait).arg(window.get_id())
+            .toStdString();
+
+        next_action_times_[window.get_id()] = now.addMSecs(static_cast<qint64>(wait * 1000));
+
+        return;
+    }
+    else if (now < time_it->second)
+    {
+        return;
+    }
+
+    next_action_times_.erase(time_it);
 
     BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
 
@@ -837,13 +852,6 @@ void main_window::perform_action(const fake_window& window, const nlhe_strategy&
         }
         break;
     }
-
-    const double wait = site_->is_opponent_sitout() ? action_delay_[0] : get_normal_random(engine_,
-        action_delay_[0], action_delay_[1]);
-
-    BOOST_LOG_TRIVIAL(info) << QString("Waiting for %1 seconds after action").arg(wait).toStdString();
-
-    next_action_times_[window.get_id()] = QDateTime::currentDateTime().addMSecs(static_cast<qint64>(wait * 1000));
 }
 
 void main_window::handle_lobby()
