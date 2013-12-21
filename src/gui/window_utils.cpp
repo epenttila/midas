@@ -76,6 +76,16 @@ std::string parse_image_text(const QImage* image, const QRect& rect, const QRgb&
     return s;
 }
 
+bool is_similar(const QRgb& a, const QRgb& b)
+{
+    const auto sim = (qRed(a) - qRed(b)) * (qRed(a) - qRed(b))
+        + (qGreen(a) - qGreen(b)) * (qGreen(a) - qGreen(b))
+        + (qBlue(a) - qBlue(b)) * (qBlue(a) - qBlue(b));
+
+    return sim < 1000;
+}
+
+
 int parse_image_card(const QImage* image, const QImage* mono, const QRect& rect, const std::array<QRgb, 4>& colors,
     const QRgb& color, const QRgb& back_color, const font_data& font)
 {
@@ -93,7 +103,7 @@ int parse_image_card(const QImage* image, const QImage* mono, const QRect& rect,
         {
             for (int s = 0; s < colors.size(); ++s)
             {
-                if (image->pixel(x, y) == colors[s])
+                if (is_similar(image->pixel(x, y), colors[s]))
                 {
                     suit = s;
                     break;
