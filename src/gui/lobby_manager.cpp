@@ -138,12 +138,14 @@ bool lobby_manager::detect_closed_tables()
         if (new_table_count < table_count_)
         {
             registered_ -= table_count_ - new_table_count;
-            BOOST_LOG_TRIVIAL(info) << "Tournament finished (" << registered_ << " active)";
+            BOOST_LOG_TRIVIAL(info) << QString("Tournament finished (regs: %1; tables: %2 -> %3)")
+                .arg(registered_).arg(table_count_).arg(new_table_count).toStdString();
         }
 
         if (registered_ < 0)
         {
-            BOOST_LOG_TRIVIAL(warning) << "Negative registrations";
+            BOOST_LOG_TRIVIAL(warning) << QString("Negative registrations (regs: %1; tables: %2 -> %3)")
+                .arg(registered_).arg(table_count_).arg(new_table_count).toStdString();
             registered_ = 0;
         }
 
@@ -152,7 +154,8 @@ bool lobby_manager::detect_closed_tables()
     else
     {
         // wait until we get rid of the extra tables
-        BOOST_LOG_TRIVIAL(warning) << "There are more tables than registrations";
+        BOOST_LOG_TRIVIAL(warning) << QString("There are more tables than registrations (regs: %1; tables: %2 -> %3)")
+            .arg(registered_).arg(table_count_).arg(new_table_count).toStdString();
         ret = false;
     }
 
