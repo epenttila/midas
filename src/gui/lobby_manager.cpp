@@ -83,6 +83,14 @@ void lobby_manager::register_sng()
         return;
 
     BOOST_LOG_TRIVIAL(info) << "Registering... (" << registered_ << " active)";
+
+    if (reg_success_popups_.empty())
+    {
+        ++registered_;
+        BOOST_LOG_TRIVIAL(info) << "Registration assumed successful (" << registered_ << " active)";
+        return;
+    }
+
     BOOST_LOG_TRIVIAL(info) << "Waiting " << registration_wait_ << " seconds for registration to complete";
 
     QTime t;
