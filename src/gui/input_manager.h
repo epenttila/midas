@@ -25,7 +25,7 @@ public:
     void button_down();
     void button_up();
     void move_click(int x, int y, int width, int height, bool double_click);
-    void move_random(double prob);
+    void move_random(double capture_interval, bool force);
 
 private:
     void wind_mouse_impl(double xs, double ys, double xe, double ye, double gravity, double wind, double min_wait,

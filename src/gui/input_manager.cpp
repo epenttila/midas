@@ -254,14 +254,7 @@ void input_manager::move_click(int x, int y, int width, int height, bool double_
     using namespace boost::math;
 
     move_mouse(x, y, width, height);
-
-    const auto angle = std::uniform_real_distribution<>(0, 2 * constants::pi<double>())(engine_);
-    const auto sin_angle = std::sin(angle);
-    const auto cos_angle = std::cos(angle);
-    const auto dist = std::uniform_real_distribution<>(0, 2)(engine_);
-
-    POINT pt;
-    GetCursorPos(&pt);
+    sleep();
 
     if (double_click)
     {
@@ -269,12 +262,22 @@ void input_manager::move_click(int x, int y, int width, int height, bool double_
     }
     else
     {
+        button_down();
+        sleep();
+
+        const auto angle = std::uniform_real_distribution<>(0, 2 * constants::pi<double>())(engine_);
+        const auto sin_angle = std::sin(angle);
+        const auto cos_angle = std::cos(angle);
+        const auto dist = std::uniform_real_distribution<>(0, 2)(engine_);
+
+        POINT pt;
+        GetCursorPos(&pt);
+
         const auto new_x = boost::algorithm::clamp(iround(pt.x + cos_angle * dist), x, x + width - 1);
         const auto new_y = boost::algorithm::clamp(iround(pt.y + sin_angle * dist), y, y + height - 1);
 
-        button_down();
-        sleep();
         set_cursor_position(new_x, new_y);
+
         button_up();
     }
 
@@ -283,15 +286,28 @@ void input_manager::move_click(int x, int y, int width, int height, bool double_
     //move_mouse(iround(pt.x + cos_angle * dist), iround(pt.y + sin_angle * dist));
 }
 
-void input_manager::move_random(double prob)
+void input_manager::move_random(double capture_interval, bool force)
 {
     static const std::uniform_real_distribution<> d(0.0, 1.0);
+    const auto x = d(engine_) / capture_interval; // normalize probability to x per second
 
-    if (d(engine_) >= prob)
-        return;
+    if (x < 0.1 || force) // 0.0-0.1, 10%, once every 10 seconds
+    {
+        move_mouse(0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN), true);
+    }
+    else if (x < 0.3) // 0.1-0.3, 20%, once every 5 seconds
+    {
+        const auto angle = std::uniform_real_distribution<>(0, 2 * boost::math::constants::pi<double>())(engine_);
+        const auto sin_angle = std::sin(angle);
+        const auto cos_angle = std::cos(angle);
+        const auto dist = std::uniform_real_distribution<>(0, 100)(engine_);
 
-    const int width = GetSystemMetrics(SM_CXSCREEN);
-    const int height = GetSystemMetrics(SM_CYSCREEN);
+        POINT pt;
+        GetCursorPos(&pt);
 
-    move_mouse(0, 0, width, height, true);
+        const auto new_x = boost::math::iround(pt.x + cos_angle * dist);
+        const auto new_y = boost::math::iround(pt.y + sin_angle * dist);
+
+        move_mouse(new_x, new_y);
+    }
 }

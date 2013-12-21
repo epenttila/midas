@@ -277,7 +277,6 @@ main_window::main_window()
         settings.value("mouse-speed-max", 2.5).toDouble());
     activity_variance_ = settings.value("activity-variance", 0.0).toDouble();
     title_filter_->setText(settings.value("title-filter").toString());
-    random_move_probability_ = settings.value("random-move-probability", 0.1).toDouble();
 
     for (int day = 0; day < 7; ++day)
     {
@@ -373,7 +372,7 @@ void main_window::capture_timer_timeout()
         }
 
         if (autolobby_action_->isChecked() && (!schedule_action_->isChecked() || schedule_active_))
-            input_manager_->move_random(random_move_probability_);
+            input_manager_->move_random(capture_interval_, false);
     }
     catch (const std::exception& e)
     {
@@ -387,7 +386,7 @@ void main_window::capture_timer_timeout()
 
         // ensure we can move after exceptions in case of visible tool tips disturbing scraping
         if (autolobby_action_->isChecked())
-            input_manager_->move_random(1);
+            input_manager_->move_random(capture_interval_, true);
     }
 
     update_statusbar();
