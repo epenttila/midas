@@ -227,7 +227,8 @@ label_data read_xml_label(QXmlStreamReader& reader)
         QRect(reader.attributes().value("x").toString().toInt(),
             reader.attributes().value("y").toString().toInt(),
             reader.attributes().value("width").toString().toInt(),
-            reader.attributes().value("height").toString().toInt())
+            reader.attributes().value("height").toString().toInt()),
+        QColor(reader.attributes().value("color").toString()).rgb(),
     };
 
     reader.skipCurrentElement();

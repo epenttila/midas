@@ -139,6 +139,11 @@ table_manager::table_manager(const std::string& filename, input_manager& input_m
             window_size_[1] = reader.attributes().value("height").toString().toInt();
             reader.skipCurrentElement();
         }
+        else if (reader.name() == "stack-all-in-text")
+        {
+            stack_all_in_text_ = reader.attributes().value("text").toString().toStdString();
+            reader.skipCurrentElement();
+        }
         else
         {
             reader.skipCurrentElement();
@@ -290,13 +295,21 @@ void table_manager::raise(double amount, double fraction, double minbet, double 
     }
 }
 
-double table_manager::get_stack(int position) const
+std::string table_manager::get_stack_text(int position) const
 {
     const bool flashing = is_pixel(image_.get(), stack_hilight_pixels_[position]);
     const auto& label = flashing ? flash_stack_labels_[position] : stack_labels_[position];
-    const auto s = parse_image_text(mono_image_.get(), label.rect, qRgb(255, 255, 255), fonts_.at(label.font));
+    return parse_image_text(mono_image_.get(), label.rect, label.color, fonts_.at(label.font));
+}
 
-    return s.empty() ? 0 : std::stof(s);
+double table_manager::get_stack(int position) const
+{
+    const auto s = get_stack_text(position);
+
+    if (s.empty() || s == stack_all_in_text_)
+        return 0;
+
+    return std::stof(s);
 }
 
 double table_manager::get_bet(int position) const
@@ -329,7 +342,10 @@ double table_manager::get_total_pot() const
 
 bool table_manager::is_all_in(int position) const
 {
-    return is_pixel(image_.get(), all_in_pixels_[position]);
+    if (!stack_all_in_text_.empty())
+        return get_stack_text(position) == stack_all_in_text_;
+    else
+        return is_pixel(image_.get(), all_in_pixels_[position]);
 }
 
 int table_manager::get_buttons() const

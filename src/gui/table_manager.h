@@ -40,6 +40,8 @@ public:
     double get_pot() const;
 
 private:
+    std::string get_stack_text(int position) const;
+
     std::unique_ptr<fake_window> window_;
     input_manager& input_;
     std::unique_ptr<QImage> image_;
@@ -59,6 +61,7 @@ private:
     std::array<window_utils::label_data, 2> bet_labels_;
     std::array<window_utils::label_data, 2> stack_labels_;
     std::array<window_utils::label_data, 2> flash_stack_labels_;
+    std::string stack_all_in_text_;
 
     std::array<QRect, 5> board_card_rects_;
     std::array<QRect, 2> hole_card_rects_;

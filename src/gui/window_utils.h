@@ -39,6 +39,7 @@ namespace window_utils
     {
         std::string font;
         QRect rect;
+        QRgb color;
     };
 
     struct popup_data
