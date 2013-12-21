@@ -247,6 +247,7 @@ void table_manager::raise(double amount, double fraction, double minbet, double 
         {
             if (window_->click_button(input_, i->second))
             {
+                input_.sleep();
                 ok = true;
                 break;
             }
