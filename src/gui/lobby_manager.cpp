@@ -133,7 +133,7 @@ bool lobby_manager::detect_closed_tables()
     const auto new_table_count = get_active_tables();
     bool ret = false;
 
-    if (registered_ >= table_count_)
+    if (registered_ >= new_table_count)
     {
         if (new_table_count < table_count_)
         {
