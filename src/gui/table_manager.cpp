@@ -394,5 +394,5 @@ void table_manager::save_snapshot() const
 
 double table_manager::get_pot() const
 {
-    return parse_image_bet(mono_image_.get(), pot_label_, fonts_.at(pot_label_.font));
+    return pot_label_.font.empty() ? 0 : parse_image_bet(mono_image_.get(), pot_label_, fonts_.at(pot_label_.font));
 }
