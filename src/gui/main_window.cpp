@@ -355,6 +355,7 @@ void main_window::capture_timer_timeout()
         }
 
         find_capture_window();
+        handle_schedule();
 
         if (lobby_)
         {
@@ -861,34 +862,33 @@ void main_window::handle_lobby()
     if (!autolobby_action_->isChecked())
         return;
 
-    if (schedule_action_->isChecked())
-    {
-        const auto active = is_schedule_active(activity_variance_, activity_spans_, &time_to_next_activity_);
-
-        if (active != schedule_active_)
-        {
-            schedule_active_ = active;
-
-            if (schedule_active_)
-                BOOST_LOG_TRIVIAL(info) << "Enabling scheduled registration";
-            else
-                BOOST_LOG_TRIVIAL(info) << "Disabling scheduled registration";
-
-            BOOST_LOG_TRIVIAL(info) << QString("Next scheduled %1 in %2").arg(schedule_active_ ? "break" : "activity")
-                .arg(secs_to_hms(time_to_next_activity_)).toStdString();
-        }
-    }
-
-    update_statusbar();
-
-    assert(lobby_);
-
     const auto table_count_ok = lobby_->detect_closed_tables();
 
     if (table_count_ok && lobby_->get_registered_sngs() < table_count_->value()
         && (!schedule_action_->isChecked() || schedule_active_))
     {
         lobby_->register_sng();
+    }
+}
+
+void main_window::handle_schedule()
+{
+    if (!schedule_action_->isChecked())
+        return;
+
+    const auto active = is_schedule_active(activity_variance_, activity_spans_, &time_to_next_activity_);
+
+    if (active != schedule_active_)
+    {
+        schedule_active_ = active;
+
+        if (schedule_active_)
+            BOOST_LOG_TRIVIAL(info) << "Enabling scheduled registration";
+        else
+            BOOST_LOG_TRIVIAL(info) << "Disabling scheduled registration";
+
+        BOOST_LOG_TRIVIAL(info) << QString("Next scheduled %1 in %2").arg(schedule_active_ ? "break" : "activity")
+            .arg(secs_to_hms(time_to_next_activity_)).toStdString();
     }
 }
 

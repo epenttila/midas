@@ -58,6 +58,7 @@ private:
     void update_statusbar();
     void find_capture_window();
     void handle_lobby();
+    void handle_schedule();
 
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<nlhe_strategy>> strategies_;
