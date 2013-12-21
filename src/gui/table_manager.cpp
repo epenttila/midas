@@ -110,6 +110,11 @@ table_manager::table_manager(const std::string& filename, input_manager& input_m
             card_color_ = QColor(reader.attributes().value("color").toString()).rgb();
             reader.skipCurrentElement();
         }
+        else if (reader.name() == "card-back-color")
+        {
+            card_color_ = QColor(reader.attributes().value("color").toString()).rgb();
+            reader.skipCurrentElement();
+        }
         else if (reader.name() == "hole-card")
         {
             const int id = reader.attributes().value("id").toString().toInt();
@@ -167,7 +172,7 @@ void table_manager::get_hole_cards(std::array<int, 2>& hole) const
     for (int i = 0; i < hole.size(); ++i)
     {
         hole[i] = parse_image_card(image_.get(), mono_image_.get(), hole_card_rects_[i], suit_colors_, card_color_,
-            fonts_.at("rank"));
+            card_back_color_, fonts_.at("rank"));
     }
 }
 
@@ -175,8 +180,8 @@ void table_manager::get_board_cards(std::array<int, 5>& board) const
 {
     for (int i = 0; i < board_card_rects_.size(); ++i)
     {
-        board[i] = parse_image_card(image_.get(), mono_image_.get(), board_card_rects_[i], suit_colors_,
-            card_color_, fonts_.at("rank"));
+        board[i] = parse_image_card(image_.get(), mono_image_.get(), board_card_rects_[i], suit_colors_, card_color_,
+            card_back_color_, fonts_.at("rank"));
     }
 }
 

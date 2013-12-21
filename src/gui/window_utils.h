@@ -52,7 +52,7 @@ namespace window_utils
         const QRgb& color, const font_data& font);
     std::string parse_image_text(const QImage* image, const QRect& rect, const QRgb& color, const font_data& font);
     int parse_image_card(const QImage* image, const QImage* mono, const QRect& rect, const std::array<QRgb, 4>& colors,
-        const QRgb& color, const font_data& font);
+        const QRgb& color, const QRgb& back_color, const font_data& font);
     double parse_image_bet(const QImage* image, const label_data& text, const font_data& font);
     QRect read_xml_rect(QXmlStreamReader& reader);
     pixel_data read_xml_pixel(QXmlStreamReader& reader);

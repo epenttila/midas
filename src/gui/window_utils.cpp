@@ -77,9 +77,12 @@ std::string parse_image_text(const QImage* image, const QRect& rect, const QRgb&
 }
 
 int parse_image_card(const QImage* image, const QImage* mono, const QRect& rect, const std::array<QRgb, 4>& colors,
-    const QRgb& color, const font_data& font)
+    const QRgb& color, const QRgb& back_color, const font_data& font)
 {
     if (!image)
+        return -1;
+
+    if (mono->pixel(rect.topLeft()) != back_color)
         return -1;
 
     int suit = -1;
@@ -106,10 +109,7 @@ int parse_image_card(const QImage* image, const QImage* mono, const QRect& rect,
     }
 
     if (suit == -1)
-    {
-        //assert(false);
-        return -1; // funky colors
-    }
+        throw std::runtime_error("Unknown suit color");
 
     const auto s = parse_image_text(mono, rect, color, font);
 
