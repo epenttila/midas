@@ -713,6 +713,10 @@ void main_window::process_snapshot(const fake_window& window)
 
     ENSURE(current_state != nullptr);
 
+    std::stringstream ss;
+    ss << *current_state;
+    BOOST_LOG_TRIVIAL(info) << QString("State: %1").arg(ss.str().c_str()).toStdString();
+
     // ensure it is our turn
     ENSURE((site_->get_dealer() == 0 && current_state->get_player() == 0)
             || (site_->get_dealer() == 1 && current_state->get_player() == 1));
@@ -722,10 +726,6 @@ void main_window::process_snapshot(const fake_window& window)
 
     // we should never reach terminal states when we have a pending action
     ENSURE(current_state->get_id() != -1);
-
-    std::stringstream ss;
-    ss << *current_state;
-    BOOST_LOG_TRIVIAL(info) << QString("State: %1").arg(ss.str().c_str()).toStdString();
 
     update_strategy_widget(window, strategy, hole, board);
 
