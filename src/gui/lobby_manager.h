@@ -42,6 +42,7 @@ private:
     std::vector<window_utils::popup_data> reg_fail_popups_;
     std::vector<window_utils::popup_data> reg_success_popups_;
     std::vector<window_utils::button_data> register_buttons_;
+    std::vector<window_utils::button_data> game_lists_;
     table_vector_t table_windows_;
     std::string filename_;
     std::unique_ptr<fake_window> popup_window_;
