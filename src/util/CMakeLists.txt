@@ -10,6 +10,7 @@ set(util_SOURCES
     sort.h
     metric.h
     game.h
+    random.h
 )
 
 add_custom_target(util SOURCES ${util_SOURCES})
