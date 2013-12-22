@@ -83,11 +83,10 @@ lobby_manager::lobby_manager(const std::string& filename, input_manager& input_m
 
 void lobby_manager::register_sng()
 {
+    lobby_window_->click_any_button(input_manager_, game_lists_);
+
     if (!lobby_window_->click_any_button(input_manager_, register_buttons_))
-    {
-        lobby_window_->click_any_button(input_manager_, game_lists_);
         return;
-    }
 
     BOOST_LOG_TRIVIAL(info) << "Registering... (" << registered_ << " active)";
     BOOST_LOG_TRIVIAL(info) << "Waiting " << registration_wait_ << " seconds for registration to complete";
