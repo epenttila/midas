@@ -31,7 +31,6 @@ private:
     QRect client_rect_;
     int id_;
     QRect rect_;
-    int border_;
     window_utils::font_data title_font_;
     QRect title_rect_;
     QImage window_image_;

@@ -13,6 +13,18 @@ Q_GUI_EXPORT QPixmap qt_pixmapFromWinHBITMAP(HBITMAP, int hbitmapFormat = 0);
 
 namespace
 {
+    static const int WINDOW_BUTTONS_WIDTH = 50; // worst case: min, max, close
+    static const int TITLE_HEIGHT = 18;
+    static const int ICON_BORDER_X = 2;
+    static const int ICON_BORDER_Y = 1;
+    static const int ICON_WIDTH = 16;
+    static const int ICON_HEIGHT = 16;
+    static const int TITLE_OFFSET = 1;
+    static const int TITLE_TEXT_LEFT_OFFSET = 0;
+    static const int TITLE_TEXT_TOP_OFFSET = 4;
+    static const int TITLE_TEXT_RIGHT_OFFSET = 0;
+    static const int TITLE_TEXT_BOTTOM_OFFSET = -4;
+
     QPixmap screenshot(WId window, const QRect& rect)
     {
         const auto hwnd = reinterpret_cast<HWND>(window);
@@ -132,13 +144,25 @@ namespace
 
         return font;
     }
+
+    bool is_bottom_right_corner(const QImage& image, const int x, const int y)
+    {
+        return image.pixel(x,     y) == qRgb(212, 208, 200)
+            && image.pixel(x + 1, y) == qRgb(128, 128, 128)
+            && image.pixel(x + 2, y) == qRgb(64, 64, 64)
+            && image.pixel(x,     y + 1) == qRgb(128, 128, 128)
+            && image.pixel(x + 1, y + 1) == qRgb(128, 128, 128)
+            && image.pixel(x + 2, y + 1) == qRgb(64, 64, 64)
+            && image.pixel(x,     y + 2) == qRgb(64, 64, 64)
+            && image.pixel(x + 1, y + 2) == qRgb(64, 64, 64)
+            && image.pixel(x + 2, y + 2) == qRgb(64, 64, 64);
+    }
 }
 
 fake_window::fake_window(int id, const QRect& rect)
     : rect_(rect)
     , id_(id)
     , wid_(0)
-    , border_(0)
     , title_font_(create_title_font())
 {
 }
@@ -151,103 +175,111 @@ bool fake_window::update(WId wid)
     if (!IsWindow(reinterpret_cast<HWND>(wid_)))
         return false;
 
-    window_rect_ = rect_;
+    window_rect_ = QRect();
+    client_rect_ = QRect();
+    window_image_ = QImage();
+    client_image_ = QImage();
 
-    const auto image = ::screenshot(wid_, window_rect_).toImage();
+    const auto image = ::screenshot(wid_, rect_).toImage();
 
-    border_ = 0;
+    int border = -1;
 
-    for (int x = 0; x < std::min(image.width(), image.height()); ++x)
+    if (image.pixel(0, 0) == qRgb(212, 208, 200)
+        && image.pixel(1, 1) == qRgb(255, 255, 255)
+        && image.pixel(2, 2) == qRgb(212, 208, 200))
     {
-        if (image.pixel(x, x) == qRgb(0, 0, 0))
+        if (image.pixel(3, 3) == qRgb(212, 208, 200))
+            border = 4;
+        else
+            border = 3;
+    }
+
+    if (border == -1)
+        return false; // no window
+
+    int width = -1;
+
+    for (int x = border; x < image.width(); ++x)
+    {
+        if (image.pixel(x, 0) == qRgb(64, 64, 64)
+            && image.pixel(x - 1, 1) == qRgb(128, 128, 128)
+            && image.pixel(x - 2, 2) == qRgb(212, 208, 200))
+        {
+            width = x + 1;
             break;
-
-        ++border_;
+        }
     }
 
-    int width = 0;
-    int height = 0;
+    int height = -1;
 
-    if (border_ > 0)
+    for (int y = border; y < image.height(); ++y)
     {
-        for (int x = border_; x < image.width(); ++x)
+        if (image.pixel(0, y) == qRgb(64, 64, 64)
+            && image.pixel(1, y - 1) == qRgb(128, 128, 128)
+            && image.pixel(2, y - 2) == qRgb(212, 208, 200))
         {
-            if (image.pixel(x, border_) != qRgb(0, 0, 0))
-                break;
-
-            ++width;
+            height = y + 1;
+            break;
         }
-
-        width += 2 * border_;
-
-        for (int y = border_; y < image.height(); ++y)
-        {
-            if (image.pixel(border_, y) != qRgb(0, 0, 0))
-                break;
-
-            ++height;
-        }
-
-        height += 2 * border_;
-
-        border_ += 1; // client area inside black border
     }
 
-    if (width > 0 && height > 0)
+    if (width == -1 && height != -1)
     {
-        window_rect_.setWidth(width);
-        window_rect_.setHeight(height);
-
-        static const int WINDOW_BUTTONS_WIDTH = 60; // worst case: min, max, close
-        static const int TITLE_HEIGHT = 20;
-        static const int ICON_BORDER_X = 3;
-        static const int ICON_BORDER_Y = 2;
-        static const int ICON_WIDTH = 16;
-        static const int ICON_HEIGHT = 16;
-
-        bool icon = false;
-
-        // image is in window_rect_ space
-        for (int x = border_ + ICON_BORDER_X; x < border_ + ICON_BORDER_X + ICON_WIDTH; ++x)
+        for (int x = border; x < image.width(); ++x)
         {
-            for (int y = border_ + ICON_BORDER_Y; y < border_ + ICON_BORDER_Y + ICON_HEIGHT; ++y)
+            if (is_bottom_right_corner(image, x - 2, height - 3))
             {
-                if (image.pixel(x, y) != qRgb(255, 255, 255)
-                    && image.pixel(x, y) != qRgb(0, 128, 0)
-                    && image.pixel(x, y) != qRgb(128, 0, 128))
-                {
-                    icon = true;
-                    break;
-                }
-            }
-
-            if (icon)
+                width = x + 1;
                 break;
+            }
         }
+    }
+    else if (width != -1 && height == -1)
+    {
+        for (int y = border; y < image.height(); ++y)
+        {
+            if (is_bottom_right_corner(image, width - 3, y - 2))
+            {
+                height = y + 1;
+                break;
+            }
+        }
+    }
 
-        title_rect_ = QRect(window_rect_.left() + border_, window_rect_.top() + border_,
-            window_rect_.width() - 2 * border_ - WINDOW_BUTTONS_WIDTH, TITLE_HEIGHT);
+    if (width == -1 || height == -1)
+        throw std::runtime_error("Unable to determine window size");
+
+    window_rect_ = QRect(rect_.left(), rect_.top(), width, height);
+
+    bool icon = false;
+
+    // image is in window_rect_ space
+    for (int x = border + ICON_BORDER_X; x < border + ICON_BORDER_X + ICON_WIDTH; ++x)
+    {
+        for (int y = border + ICON_BORDER_Y; y < border + ICON_BORDER_Y + ICON_HEIGHT; ++y)
+        {
+            if (image.pixel(x, y) != qRgb(255, 255, 255)
+                && image.pixel(x, y) != qRgb(0, 0, 0))
+            {
+                icon = true;
+                break;
+            }
+        }
 
         if (icon)
-            title_rect_.adjust(ICON_WIDTH + 2 * ICON_BORDER_X, 0, 0, 0);
-
-        client_rect_ = window_rect_.adjusted(border_, border_ + title_rect_.height() + 1, -border_, -border_);
-    }
-    else
-    {
-        window_rect_ = QRect();
-        client_rect_ = QRect();
+            break;
     }
 
-    if (window_rect_.isValid())
-        window_image_ = ::screenshot(wid_, window_rect_).toImage();
-    else
-        window_image_ = QImage();
+    title_rect_ = QRect(window_rect_.left() + border, window_rect_.top() + border,
+        window_rect_.width() - 2 * border - WINDOW_BUTTONS_WIDTH, TITLE_HEIGHT);
 
-    if (client_rect_.isValid())
-        client_image_ = ::screenshot(wid_, client_rect_).toImage();
-    else
-        client_image_ = QImage();
+    if (icon)
+        title_rect_.adjust(ICON_WIDTH + 2 * ICON_BORDER_X, 0, 0, 0);
+
+    client_rect_ = window_rect_.adjusted(border, border + title_rect_.height() + TITLE_OFFSET, -border, -border);
+
+    window_image_ = ::screenshot(wid_, window_rect_).toImage();
+    client_image_ = ::screenshot(wid_, client_rect_).toImage();
 
     return is_valid();
 }
@@ -260,10 +292,7 @@ bool fake_window::is_valid() const
     if (!window_rect_.isValid() || !client_rect_.isValid() || window_image_.isNull() || client_image_.isNull())
         return false;
 
-    return window_image_.pixel(0, 0) == qRgb(255, 255, 255)
-        && window_image_.pixel(window_rect_.width() - 1, 0) == qRgb(255, 255, 255)
-        && window_image_.pixel(0, window_rect_.height() - 1) == qRgb(255, 255, 255)
-        && window_image_.pixel(window_rect_.width() - 1, window_rect_.height() - 1) == qRgb(255, 255, 255);
+    return true;
 }
 
 bool fake_window::click_button(input_manager& input, const window_utils::button_data& button, bool double_click) const
@@ -304,7 +333,8 @@ int fake_window::get_id() const
 
 std::string fake_window::get_window_text() const
 {
-    const auto rect = title_rect_.translated(-window_rect_.topLeft()).adjusted(0, 5, 0, -4);
+    const auto rect = title_rect_.translated(-window_rect_.topLeft()).adjusted(TITLE_TEXT_LEFT_OFFSET,
+        TITLE_TEXT_TOP_OFFSET, TITLE_TEXT_BOTTOM_OFFSET, TITLE_TEXT_RIGHT_OFFSET);
 
     return window_utils::parse_image_text(&window_image_, rect, qRgb(255, 255, 255), title_font_);
 }
