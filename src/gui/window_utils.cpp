@@ -171,7 +171,7 @@ pixel_data read_xml_pixel(QXmlStreamReader& reader)
 
 bool is_pixel(const QImage* image, const pixel_data& pixel)
 {
-    return image && image->pixel(pixel.point) == pixel.color;
+    return image && is_similar(image->pixel(pixel.point), pixel.color);
 }
 
 bool is_button(const QImage* image, const button_data& button)
