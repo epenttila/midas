@@ -26,6 +26,7 @@ public:
     void button_up();
     void move_click(int x, int y, int width, int height, bool double_click);
     void move_random(double capture_interval, bool force);
+    void set_double_click_delay(double min, double max);
 
 private:
     void wind_mouse_impl(double xs, double ys, double xe, double ye, double gravity, double wind, double min_wait,
@@ -35,4 +36,5 @@ private:
     std::mt19937 engine_;
     std::array<double, 2> delay_;
     std::array<double, 2> mouse_speed_;
+    std::array<double, 2> double_click_delay_;
 };

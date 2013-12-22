@@ -271,6 +271,8 @@ main_window::main_window()
     action_delay_[1] = settings.value("action-delay-max", 2.0).toDouble();
     input_manager_->set_delay(settings.value("input-delay-min", 0.5).toDouble(),
         settings.value("input-delay-max", 1.0).toDouble());
+    input_manager_->set_double_click_delay(settings.value("double-click-delay-min", 0.1).toDouble(),
+        settings.value("double-click-delay-max", 0.3).toDouble());
     lobby_interval_ = settings.value("lobby-interval", 1.0).toDouble();
     const auto autolobby_hotkey = settings.value("autolobby-hotkey", VK_F1).toInt();
     input_manager_->set_mouse_speed(settings.value("mouse-speed-min", 1.5).toDouble(),

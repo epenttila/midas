@@ -231,9 +231,10 @@ void input_manager::left_double_click()
 {
     left_click();
 
-    const auto max = GetDoubleClickTime();
+    const auto val = static_cast<int>(get_normal_random(engine_, double_click_delay_[0], double_click_delay_[1])
+        * 1000.0);
 
-    Sleep(static_cast<DWORD>(get_normal_random(engine_, max * 0.5, max * 0.75)));
+    Sleep(val);
 
     left_click();
 }
@@ -310,4 +311,10 @@ void input_manager::move_random(double capture_interval, bool force)
 
         move_mouse(new_x, new_y);
     }
+}
+
+void input_manager::set_double_click_delay(double min, double max)
+{
+    double_click_delay_[0] = min;
+    double_click_delay_[1] = max;
 }
