@@ -297,8 +297,11 @@ void table_manager::raise(double amount, double fraction, double minbet, double 
 
 std::string table_manager::get_stack_text(int position) const
 {
-    const bool flashing = is_pixel(image_.get(), stack_hilight_pixels_[position]);
+    const bool flashing = flash_stack_labels_[position].font.empty()
+        ? false
+        : is_pixel(image_.get(), stack_hilight_pixels_[position]);
     const auto& label = flashing ? flash_stack_labels_[position] : stack_labels_[position];
+
     return parse_image_text(mono_image_.get(), label.rect, label.color, fonts_.at(label.font));
 }
 
