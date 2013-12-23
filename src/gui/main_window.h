@@ -72,7 +72,6 @@ private:
     std::unique_ptr<input_manager> input_manager_;
     std::array<double, 2> action_delay_;
     std::unique_ptr<lobby_manager> lobby_;
-    double lobby_interval_;
     QSpinBox* table_count_;
     QAction* autoplay_action_;
     state_widget* state_widget_;
