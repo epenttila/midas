@@ -39,7 +39,6 @@ private:
     int registered_;
     double registration_wait_;
     double popup_wait_;
-    std::vector<window_utils::popup_data> reg_fail_popups_;
     std::vector<window_utils::popup_data> reg_success_popups_;
     std::vector<window_utils::button_data> register_buttons_;
     std::vector<window_utils::button_data> game_lists_;

@@ -39,10 +39,6 @@ lobby_manager::lobby_manager(const std::string& filename, input_manager& input_m
         {
             reg_success_popups_.push_back(window_utils::read_xml_popup(reader));
         }
-        else if (reader.name() == "reg-fail-popup")
-        {
-            reg_fail_popups_.push_back(window_utils::read_xml_popup(reader));
-        }
         else if (reader.name() == "register-button")
         {
             register_buttons_.push_back(window_utils::read_xml_button(reader));
@@ -103,12 +99,6 @@ void lobby_manager::register_sng()
             BOOST_LOG_TRIVIAL(info) << "Registration success (" << registered_ << " active)";
             return;
         }
-
-        if (close_popups(input_manager_, *popup_window_, reg_fail_popups_, popup_wait_))
-        {
-            BOOST_LOG_TRIVIAL(info) << "Registration failed (" << registered_ << " active)";
-            return;
-        }
     }
 
     if (reg_success_popups_.empty())
@@ -118,7 +108,7 @@ void lobby_manager::register_sng()
         return;
     }
 
-    throw std::runtime_error("Unable to verify registration result");
+    BOOST_LOG_TRIVIAL(warning) << "Unable to verify registration result";
 }
 
 int lobby_manager::get_registered_sngs() const
