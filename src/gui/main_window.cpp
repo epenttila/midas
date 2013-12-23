@@ -599,24 +599,22 @@ void main_window::process_snapshot(const fake_window& window)
     ENSURE(stack_size > 0);
 
     const auto now = QDateTime::currentDateTime();
-    const auto time_it = next_action_times_.find(window.get_id());
+    auto time_it = next_action_times_.find(window.get_id());
 
     if (time_it == next_action_times_.end())
     {
-        const double wait = site_->is_opponent_sitout() ? action_delay_[0] : get_normal_random(engine_,
-            action_delay_[0], action_delay_[1]);
+        const double wait = std::max(0.0, (site_->is_opponent_sitout() ? action_delay_[0] : get_normal_random(engine_,
+            action_delay_[0], action_delay_[1])));
 
         BOOST_LOG_TRIVIAL(info) << QString("[%2] Waiting for %1 seconds before acting").arg(wait).arg(window.get_id())
             .toStdString();
 
-        next_action_times_[window.get_id()] = now.addMSecs(static_cast<qint64>(wait * 1000));
+        time_it = next_action_times_.insert(std::make_pair(window.get_id(),
+            now.addMSecs(static_cast<qint64>(wait * 1000)))).first;
+    }
 
+    if (now < time_it->second)
         return;
-    }
-    else if (now < time_it->second)
-    {
-        return;
-    }
 
     next_action_times_.erase(time_it);
 
