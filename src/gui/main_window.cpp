@@ -882,9 +882,14 @@ void main_window::handle_schedule()
         schedule_active_ = active;
 
         if (schedule_active_)
+        {
             BOOST_LOG_TRIVIAL(info) << "Enabling scheduled registration";
+            lobby_->reset();
+        }
         else
+        {
             BOOST_LOG_TRIVIAL(info) << "Disabling scheduled registration";
+        }
 
         BOOST_LOG_TRIVIAL(info) << QString("Next scheduled %1 in %2").arg(schedule_active_ ? "break" : "activity")
             .arg(secs_to_hms(time_to_next_activity_)).toStdString();
