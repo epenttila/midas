@@ -498,7 +498,7 @@ void main_window::process_snapshot(const fake_window& window)
     // these should work for observed tables
     visualizer_->clear_row(window.get_id());
     visualizer_->set_active(window.get_id());
-    visualizer_->set_dealer(window.get_id(), site_->get_dealer());
+    visualizer_->set_dealer(window.get_id(), site_->get_dealer_mask());
     visualizer_->set_big_blind(window.get_id(), site_->get_big_blind());
     visualizer_->set_real_pot(window.get_id(), site_->get_total_pot());
     visualizer_->set_real_bets(window.get_id(), site_->get_bet(0), site_->get_bet(1));
@@ -565,7 +565,7 @@ void main_window::process_snapshot(const fake_window& window)
     ENSURE(site_->get_total_pot() != -1);
     ENSURE(site_->get_bet(0) != -1);
     ENSURE(site_->get_bet(1) != -1);
-    ENSURE(site_->get_dealer() != -1);
+    ENSURE(site_->get_dealer_mask() != 0);
 
     // wait until we see stack sizes
     if (site_->get_stack(0) == 0 || (site_->get_stack(1) == 0 && !site_->is_opponent_allin() && !site_->is_opponent_sitout()))
@@ -657,19 +657,39 @@ void main_window::process_snapshot(const fake_window& window)
     auto it = find_nearest(strategies_, stack_size);
     auto& strategy = *it->second;
     auto& current_state = states_[window.get_id()];
+    auto& current_game_info = game_infos_[window.get_id()];
 
     BOOST_LOG_TRIVIAL(info) << QString("Strategy file: %1")
         .arg(QFileInfo(strategy.get_strategy().get_filename().c_str()).fileName()).toStdString();
 
-    const bool new_game = round == 0
-        && ((site_->get_dealer() == 0 && site_->get_bet(0) < site_->get_big_blind())
-        || (site_->get_dealer() == 1 && site_->get_bet(0) == site_->get_big_blind()));
-
-    if (new_game && round == 0)
+    if (round == PREFLOP
+        && ((site_->is_dealer(0) && site_->is_dealer(1)
+            && (site_->get_dealer_mask() != current_game_info.dealer_mask || hole != current_game_info.hole))
+        || (site_->is_dealer(0) && site_->get_bet(0) < site_->get_big_blind())
+        || (site_->is_dealer(1) && site_->get_bet(0) == site_->get_big_blind())))
     {
         BOOST_LOG_TRIVIAL(info) << "New game";
+
         current_state = &strategy.get_root_state();
+        current_game_info.dealer_mask = site_->get_dealer_mask();
+        current_game_info.hole = hole;
+
+        if (site_->get_bet(0) < site_->get_big_blind())
+            current_game_info.dealer = 0;
+        else if (site_->get_bet(0) == site_->get_big_blind())
+            current_game_info.dealer = 1;
+        else
+            current_game_info.dealer = -1;
     }
+
+    const auto dealer = (site_->is_dealer(0) && site_->is_dealer(1))
+        ? current_game_info.dealer
+        : (site_->is_dealer(0) ? 0 : (site_->is_dealer(1) ? 1 : -1));
+
+    if (site_->is_dealer(0) && site_->is_dealer(1))
+        BOOST_LOG_TRIVIAL(warning) << "Multiple dealers";
+    
+    BOOST_LOG_TRIVIAL(info) << "Dealer is " << dealer;
 
     auto original_state = current_state;
     bool commit = false;
@@ -714,12 +734,12 @@ void main_window::process_snapshot(const fake_window& window)
         BOOST_LOG_TRIVIAL(info) << QString("Opponent raised %1x pot").arg(fraction).toStdString();
         current_state = current_state->raise(fraction); // there is an outstanding bet/raise
     }
-    else if (current_state->get_round() == PREFLOP && site_->get_dealer() == 1 && site_->get_bet(1) <= site_->get_big_blind())
+    else if (current_state->get_round() == PREFLOP && dealer == 1 && site_->get_bet(1) <= site_->get_big_blind())
     {
         BOOST_LOG_TRIVIAL(info) << "Facing big blind sized bet out of position preflop; opponent called";
         current_state = current_state->call();
     }
-    else if (current_state->get_round() > PREFLOP && site_->get_dealer() == 0 && site_->get_bet(1) == 0)
+    else if (current_state->get_round() > PREFLOP && dealer == 0 && site_->get_bet(1) == 0)
     {
         // we are in position facing 0 sized bet, opponent has checked
         // we are oop facing big blind sized bet preflop, opponent has called
@@ -734,8 +754,8 @@ void main_window::process_snapshot(const fake_window& window)
     BOOST_LOG_TRIVIAL(info) << QString("State: %1").arg(ss.str().c_str()).toStdString();
 
     // ensure it is our turn
-    ENSURE((site_->get_dealer() == 0 && current_state->get_player() == 0)
-            || (site_->get_dealer() == 1 && current_state->get_player() == 1));
+    ENSURE((dealer == 0 && current_state->get_player() == 0)
+        || (dealer == 1 && current_state->get_player() == 1));
 
     // ensure rounds match
     ENSURE(current_state->get_round() == round);
@@ -861,7 +881,8 @@ void main_window::handle_lobby()
     if (!autolobby_action_->isChecked())
         return;
 
-    lobby_->detect_closed_tables();
+    for (const auto i : lobby_->detect_closed_tables())
+        game_infos_.erase(static_cast<int>(i));
 
     if (lobby_->get_registered_sngs() < table_count_->value() && (!schedule_action_->isChecked() || schedule_active_))
         lobby_->register_sng();

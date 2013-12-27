@@ -18,12 +18,13 @@ class table_manager : private boost::noncopyable
 public:
     enum { FOLD, CALL, RAISE, ALLIN, SITOUT };
     enum { FOLD_BUTTON = 0x1, CALL_BUTTON = 0x2, RAISE_BUTTON = 0x4 };
+    enum { PLAYER = 0x1, OPPONENT = 0x2 };
 
     table_manager(const std::string& filename, input_manager& input_manager);
     void update(const fake_window& window);
     void get_hole_cards(std::array<int, 2>& hole) const;
     void get_board_cards(std::array<int, 5>& board) const;
-    int get_dealer() const;
+    int get_dealer_mask() const;
     void fold(double max_wait) const;
     void call(double max_wait) const;
     void raise(double amount, double fraction, double minbet, double max_wait) const;
@@ -38,6 +39,7 @@ public:
     bool is_opponent_sitout() const;
     void save_snapshot() const;
     double get_pot() const;
+    bool is_dealer(int position) const;
 
 private:
     std::string get_stack_text(int position) const;

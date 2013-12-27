@@ -23,7 +23,7 @@ public:
     void register_sng();
     int get_registered_sngs() const;
     void reset();
-    void detect_closed_tables();
+    std::unordered_set<WId> detect_closed_tables();
     std::unordered_set<WId> get_active_tables() const;
     double get_registration_wait() const;
     std::string get_filename() const;

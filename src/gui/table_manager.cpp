@@ -194,15 +194,27 @@ void table_manager::get_board_cards(std::array<int, 5>& board) const
     }
 }
 
-int table_manager::get_dealer() const
+int table_manager::get_dealer_mask() const
 {
-    for (int i = 0; i < dealer_pixels_.size(); ++i)
-    {
-        if (is_pixel(image_.get(), dealer_pixels_[i]))
-            return i;
-    }
+    int dealer = 0;
 
-    return -1;
+    if (is_pixel(image_.get(), dealer_pixels_[0]))
+        dealer |= PLAYER;
+
+    if (is_pixel(image_.get(), dealer_pixels_[1]))
+        dealer |= OPPONENT;
+
+    return dealer;
+}
+
+bool table_manager::is_dealer(int position) const
+{
+    if (position == 0)
+        return (get_dealer_mask() & PLAYER) == PLAYER;
+    else if (position == 1)
+        return (get_dealer_mask() & OPPONENT) == OPPONENT;
+
+    return false;
 }
 
 void table_manager::fold(double max_wait) const

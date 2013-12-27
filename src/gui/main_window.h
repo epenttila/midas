@@ -49,6 +49,14 @@ public slots:
     void state_widget_state_changed();
 
 private:
+    struct game_info_t
+    {
+        game_info_t() : dealer_mask(-1), dealer(-1) { hole.fill(-1); }
+        int dealer_mask;
+        int dealer;
+        std::array<int, 2> hole;
+    };
+
     void process_snapshot(const fake_window& window);
     void perform_action(const fake_window& window, const nlhe_strategy& strategy);
     bool nativeEvent(const QByteArray& eventType, void* message, long* result);
@@ -85,6 +93,7 @@ private:
     QAction* autolobby_action_;
     double activity_variance_;
     std::unordered_map<int, const nlhe_state_base*> states_;
+    std::unordered_map<int, game_info_t> game_infos_;
     QLabel* site_label_;
     QLabel* strategy_label_;
     std::unordered_map<int, QDateTime> next_action_times_;
