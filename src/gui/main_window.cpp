@@ -19,7 +19,6 @@
 #include <boost/log/support/date_time.hpp>
 #include <boost/log/utility/setup/from_settings.hpp>
 #include <boost/log/utility/setup/from_stream.hpp>
-#include <boost/scope_exit.hpp>
 #include <Windows.h>
 #include <QPlainTextEdit>
 #include <QVBoxLayout>
@@ -610,6 +609,17 @@ void main_window::process_snapshot(const fake_window& window)
 
     next_action_time = QDateTime();
 
+    if (snapshot.hole == table_data.snapshot.hole
+        && snapshot.board == table_data.snapshot.board
+        && snapshot.stack == table_data.snapshot.stack
+        && snapshot.bet == table_data.snapshot.bet)
+    {
+        BOOST_LOG_TRIVIAL(error) << "Identical snapshots; previous action not fulfilled; reverting state";
+        table_data.state = table_data.initial_state;
+    }
+
+    table_data.initial_state = table_data.state;
+
     BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
 
     BOOST_LOG_TRIVIAL(info) << "Window: " << window.get_id() << " (" << window.get_window_text() << ")";
@@ -681,18 +691,6 @@ void main_window::process_snapshot(const fake_window& window)
     
     BOOST_LOG_TRIVIAL(info) << "Dealer is " << dealer;
 
-    auto original_state = current_state;
-    bool commit = false;
-
-    BOOST_SCOPE_EXIT(&current_state, &original_state, &commit)
-    {
-        if (!commit)
-        {
-            BOOST_LOG_TRIVIAL(warning) << "Reverting state";
-            current_state = original_state;
-        }
-    } BOOST_SCOPE_EXIT_END
-
     ENSURE(current_state != nullptr);
     ENSURE(!current_state->is_terminal());
 
@@ -757,7 +755,6 @@ void main_window::process_snapshot(const fake_window& window)
 
     perform_action(window, strategy, snapshot);
 
-    commit = true;
     table_data.snapshot = snapshot;
 }
 
