@@ -12,13 +12,30 @@
 #include "table_manager.h"
 #include "fake_window.h"
 
+namespace
+{
+    std::string get_table_string(const std::unordered_set<WId>& tables)
+    {
+        std::string s;
+
+        for (const auto& i : tables)
+        {
+            if (!s.empty())
+                s += ",";
+
+            s += std::to_string(i);
+        }
+
+        return "[" + s + "]";
+    }
+}
+
 lobby_manager::lobby_manager(const std::string& filename, input_manager& input_manager)
     : input_manager_(input_manager)
     , registered_(0)
     , registration_wait_(5.0)
     , popup_wait_(5.0)
     , filename_(filename)
-    , table_count_(0)
 {
     BOOST_LOG_TRIVIAL(info) << "Loading lobby settings: " << filename;
 
@@ -123,53 +140,64 @@ void lobby_manager::reset()
     BOOST_LOG_TRIVIAL(info) << "Resetting registrations (" << registered_ << " active)";
 }
 
-bool lobby_manager::detect_closed_tables()
+void lobby_manager::detect_closed_tables()
 {
-    const auto new_table_count = get_active_tables();
-    bool ret = false;
+    const auto new_active_tables = get_active_tables();
+    const auto old_regs = registered_;
 
-    if (registered_ >= new_table_count)
+    if (new_active_tables == active_tables_)
+        return; // no change
+
+    if (new_active_tables.size() > registered_)
     {
-        if (new_table_count < table_count_)
-        {
-            registered_ -= table_count_ - new_table_count;
-            BOOST_LOG_TRIVIAL(info) << QString("Tournament finished (regs: %1; tables: %2 -> %3)")
-                .arg(registered_).arg(table_count_).arg(new_table_count).toStdString();
-        }
+        // assume we missed a registration confirmation
+        registered_ = static_cast<int>(new_active_tables.size());
+        active_tables_ = new_active_tables;
 
-        if (registered_ < 0)
-        {
-            BOOST_LOG_TRIVIAL(warning) << QString("Negative registrations (regs: %1; tables: %2 -> %3)")
-                .arg(registered_).arg(table_count_).arg(new_table_count).toStdString();
-            registered_ = 0;
-        }
+        BOOST_LOG_TRIVIAL(warning) << QString(
+            "There are more tables than registrations (regs: %1 -> %2; tables: %3 -> %4)")
+            .arg(old_regs).arg(registered_).arg(get_table_string(active_tables_).c_str())
+            .arg(get_table_string(new_active_tables).c_str()).toStdString();
 
-        ret = true;
-    }
-    else
-    {
-        // wait until we get rid of the extra tables
-        BOOST_LOG_TRIVIAL(warning) << QString("There are more tables than registrations (regs: %1; tables: %2 -> %3)")
-            .arg(registered_).arg(table_count_).arg(new_table_count).toStdString();
-        ret = false;
+        return;
     }
 
-    table_count_ = new_table_count;
+    // find closed tables
+    for (const auto& i : active_tables_)
+    {
+        if (new_active_tables.find(i) == new_active_tables.end())
+        {
+            --registered_;
 
-    return ret;
+            BOOST_LOG_TRIVIAL(info) << QString("Tournament finished (regs: %1 -> %2; tables: %3 -> %4)")
+                .arg(old_regs).arg(registered_).arg(get_table_string(active_tables_).c_str())
+                .arg(get_table_string(new_active_tables).c_str()).toStdString();
+        }
+    }
+
+    if (registered_ < 0)
+    {
+        registered_ = 0;
+
+        BOOST_LOG_TRIVIAL(warning) << QString("Negative registrations (regs: %1 -> %2; tables: %3 -> %4)")
+            .arg(old_regs).arg(registered_).arg(get_table_string(active_tables_).c_str())
+            .arg(get_table_string(new_active_tables).c_str()).toStdString();
+    }
+
+    active_tables_ = new_active_tables;
 }
 
-int lobby_manager::get_active_tables() const
+std::unordered_set<WId> lobby_manager::get_active_tables() const
 {
-    int count = 0;
+    std::unordered_set<WId> active;
 
     for (const auto& i : table_windows_)
     {
         if (i->is_valid())
-            ++count;
+            active.insert(i->get_id());
     }
 
-    return count;
+    return active;
 }
 
 double lobby_manager::get_registration_wait() const

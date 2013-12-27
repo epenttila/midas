@@ -861,13 +861,10 @@ void main_window::handle_lobby()
     if (!autolobby_action_->isChecked())
         return;
 
-    const auto table_count_ok = lobby_->detect_closed_tables();
+    lobby_->detect_closed_tables();
 
-    if (table_count_ok && lobby_->get_registered_sngs() < table_count_->value()
-        && (!schedule_action_->isChecked() || schedule_active_))
-    {
+    if (lobby_->get_registered_sngs() < table_count_->value() && (!schedule_action_->isChecked() || schedule_active_))
         lobby_->register_sng();
-    }
 }
 
 void main_window::handle_schedule()
@@ -1000,7 +997,7 @@ void main_window::update_statusbar()
 
     registered_label_->setText(QString("Registrations: %1/%2 - Tables: %3/%2")
         .arg(lobby_ ? lobby_->get_registered_sngs() : 0)
-        .arg(table_count_->value()).arg(lobby_ ? lobby_->get_active_tables() : 0));
+        .arg(table_count_->value()).arg(lobby_ ? lobby_->get_active_tables().size() : 0));
 }
 
 void main_window::find_capture_window()
