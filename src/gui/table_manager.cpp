@@ -402,6 +402,9 @@ int table_manager::get_buttons() const
     if (is_any_button(image_.get(), raise_buttons_))
         buttons |= RAISE_BUTTON;
 
+    if (is_any_button(image_.get(), bet_input_buttons_))
+        buttons |= INPUT_BUTTON;
+
     return buttons;
 }
 

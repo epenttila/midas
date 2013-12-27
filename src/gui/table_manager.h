@@ -17,7 +17,7 @@ class table_manager : private boost::noncopyable
 {
 public:
     enum { FOLD, CALL, RAISE, ALLIN, SITOUT };
-    enum { FOLD_BUTTON = 0x1, CALL_BUTTON = 0x2, RAISE_BUTTON = 0x4 };
+    enum { FOLD_BUTTON = 0x1, CALL_BUTTON = 0x2, RAISE_BUTTON = 0x4, INPUT_BUTTON = 0x8 };
     enum { PLAYER = 0x1, OPPONENT = 0x2 };
 
     struct snapshot_t

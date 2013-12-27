@@ -609,6 +609,20 @@ void main_window::process_snapshot(const fake_window& window)
 
     next_action_time = QDateTime();
 
+    // wait until we see bet input
+    const auto to_call = snapshot.bet[1] - snapshot.bet[0];
+    const auto minbet = std::max(snapshot.big_blind, to_call) + to_call;
+
+    if (!((snapshot.buttons & table_manager::INPUT_BUTTON) == table_manager::INPUT_BUTTON)
+        && !snapshot.all_in[1]
+        && !snapshot.sit_out[1]
+        && snapshot.stack[0] > minbet)
+    {
+        BOOST_LOG_TRIVIAL(warning) << QString("Missing bet input when stack is greater than minbet (%1 > %2)")
+            .arg(snapshot.stack[0]).arg(minbet).toStdString();
+        return;
+    }
+
     if (snapshot.hole == table_data.snapshot.hole
         && snapshot.board == table_data.snapshot.board
         && snapshot.stack == table_data.snapshot.stack
