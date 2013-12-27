@@ -307,11 +307,11 @@ bool fake_window::click_button(input_manager& input, const window_utils::button_
     return true;
 }
 
-bool fake_window::click_any_button(input_manager& input, const std::vector<window_utils::button_data>& buttons) const
+bool fake_window::click_any_button(input_manager& input, const std::vector<window_utils::button_data>& buttons, bool double_click) const
 {
     for (int i = 0; i < buttons.size(); ++i)
     {
-        if (click_button(input, buttons[i]))
+        if (click_button(input, buttons[i], double_click))
             return true;
     }
 

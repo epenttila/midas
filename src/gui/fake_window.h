@@ -16,7 +16,7 @@ public:
     fake_window(int id, const QRect& rect);
     bool is_valid() const;
     bool click_button(input_manager& input, const window_utils::button_data& button, bool double_click = false) const;
-    bool click_any_button(input_manager& input, const std::vector<window_utils::button_data>& buttons) const;
+    bool click_any_button(input_manager& input, const std::vector<window_utils::button_data>& buttons, bool double_click = false) const;
     int get_id() const;
     std::string get_window_text() const;
     bool update(WId wid = -1);

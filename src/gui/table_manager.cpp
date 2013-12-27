@@ -131,7 +131,7 @@ table_manager::table_manager(const std::string& filename, input_manager& input_m
         }
         else if (reader.name() == "bet-input-button")
         {
-            bet_input_button_ = window_utils::read_xml_button(reader);
+            bet_input_buttons_.push_back(window_utils::read_xml_button(reader));
         }
         else if (reader.name() == "window-size")
         {
@@ -278,7 +278,7 @@ void table_manager::raise(double amount, double fraction, double minbet, double 
     // type bet size manually
     if (!ok)
     {
-        if (window_->click_button(input_, bet_input_button_, true))
+        if (window_->click_any_button(input_, bet_input_buttons_, true))
         {
             input_.sleep();
 
