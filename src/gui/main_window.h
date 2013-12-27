@@ -8,7 +8,10 @@
 #include <array>
 #include <memory>
 #include <unordered_map>
+#include <QDateTime>
 #pragma warning(pop)
+
+#include "table_manager.h"
 
 class QPlainTextEdit;
 class holdem_abstraction;
@@ -49,16 +52,23 @@ public slots:
     void state_widget_state_changed();
 
 private:
-    struct game_info_t
+    struct table_data_t
     {
-        game_info_t() : dealer_mask(-1), dealer(-1) { hole.fill(-1); }
-        int dealer_mask;
+        table_data_t() : dealer(-1), initial_state(nullptr), state(nullptr) {}
+
         int dealer;
-        std::array<int, 2> hole;
+
+        table_manager::snapshot_t snapshot;
+
+        const nlhe_state_base* initial_state;
+        const nlhe_state_base* state;
+
+        QDateTime next_action_time;
     };
 
     void process_snapshot(const fake_window& window);
-    void perform_action(const fake_window& window, const nlhe_strategy& strategy);
+    void perform_action(const fake_window& window, const nlhe_strategy& strategy,
+        const table_manager::snapshot_t& snapshot);
     bool nativeEvent(const QByteArray& eventType, void* message, long* result);
     void update_strategy_widget(const fake_window& window, const nlhe_strategy& strategy, const std::array<int, 2>& hole,
         const std::array<int, 5>& board);
@@ -92,11 +102,9 @@ private:
     QLabel* registered_label_;
     QAction* autolobby_action_;
     double activity_variance_;
-    std::unordered_map<int, const nlhe_state_base*> states_;
-    std::unordered_map<int, game_info_t> game_infos_;
+    std::unordered_map<int, table_data_t> table_data_;
     QLabel* site_label_;
     QLabel* strategy_label_;
-    std::unordered_map<int, QDateTime> next_action_times_;
     double time_to_next_activity_;
     WId capture_window_;
     smtp* smtp_;

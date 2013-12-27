@@ -151,7 +151,7 @@ table_manager::table_manager(const std::string& filename, input_manager& input_m
     }
 }
 
-void table_manager::update(const fake_window& window)
+table_manager::snapshot_t table_manager::update(const fake_window& window)
 {
     // window contents have been updated previously in main_window
     window_.reset(new fake_window(window));
@@ -174,6 +174,32 @@ void table_manager::update(const fake_window& window)
         mono_image_.reset(new QImage);
 
     *mono_image_ = image_->convertToFormat(QImage::Format_Mono, Qt::ThresholdDither);
+
+    snapshot_t s;
+
+    s.big_blind = get_big_blind();
+    s.total_pot = get_total_pot();
+    s.buttons = get_buttons();
+
+    s.dealer[0] = is_dealer(0);
+    s.dealer[1] = is_dealer(1);
+    s.stack[0] = get_stack(0);
+    s.stack[1] = get_stack(1);
+    s.bet[0] = get_bet(0);
+    s.bet[1] = get_bet(1);
+    s.all_in[0] = is_all_in(0);
+    s.all_in[1] = is_all_in(1);
+    s.sit_out[0] = is_sit_out(0);
+    s.sit_out[1] = is_sit_out(1);
+
+    get_board_cards(s.board);
+
+    if (s.buttons)
+        get_hole_cards(s.hole);
+    else
+        s.hole.fill(-1);
+
+    return s;
 }
 
 void table_manager::get_hole_cards(std::array<int, 2>& hole) const
@@ -382,16 +408,6 @@ int table_manager::get_buttons() const
 bool table_manager::is_sit_out(int position) const
 {
     return is_pixel(image_.get(), sit_out_pixels_[position]);
-}
-
-bool table_manager::is_opponent_allin() const
-{
-    return is_all_in(1);
-}
-
-bool table_manager::is_opponent_sitout() const
-{
-    return is_sit_out(1);
 }
 
 void table_manager::save_snapshot() const

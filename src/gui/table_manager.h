@@ -20,14 +20,42 @@ public:
     enum { FOLD_BUTTON = 0x1, CALL_BUTTON = 0x2, RAISE_BUTTON = 0x4 };
     enum { PLAYER = 0x1, OPPONENT = 0x2 };
 
+    struct snapshot_t
+    {
+        snapshot_t() : big_blind(-1), total_pot(-1), buttons(0)
+        {
+            board.fill(-1);
+            hole.fill(-1);
+            dealer.fill(false);
+            stack.fill(-1);
+            bet.fill(-1);
+            all_in.fill(false);
+            sit_out.fill(false);
+        }
+
+        std::array<int, 5> board;
+        std::array<int, 2> hole;
+        std::array<bool, 2> dealer;
+        std::array<double, 2> stack;
+        std::array<double, 2> bet;
+        double big_blind;
+        double total_pot;
+        std::array<bool, 2> all_in;
+        int buttons;
+        std::array<bool, 2> sit_out;
+    };
+
     table_manager(const std::string& filename, input_manager& input_manager);
-    void update(const fake_window& window);
-    void get_hole_cards(std::array<int, 2>& hole) const;
-    void get_board_cards(std::array<int, 5>& board) const;
-    int get_dealer_mask() const;
+    snapshot_t update(const fake_window& window);
     void fold(double max_wait) const;
     void call(double max_wait) const;
     void raise(double amount, double fraction, double minbet, double max_wait) const;
+    void save_snapshot() const;
+
+private:
+    void get_hole_cards(std::array<int, 2>& hole) const;
+    void get_board_cards(std::array<int, 5>& board) const;
+    int get_dealer_mask() const;
     double get_stack(int position) const;
     double get_bet(int position) const;
     double get_big_blind() const;
@@ -35,13 +63,9 @@ public:
     bool is_all_in(int position) const;
     int get_buttons() const;
     bool is_sit_out(int position) const;
-    bool is_opponent_allin() const;
-    bool is_opponent_sitout() const;
-    void save_snapshot() const;
     double get_pot() const;
     bool is_dealer(int position) const;
 
-private:
     std::string get_stack_text(int position) const;
 
     std::unique_ptr<fake_window> window_;

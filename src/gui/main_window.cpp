@@ -472,13 +472,15 @@ void main_window::process_snapshot(const fake_window& window)
     if (!site_)
         return;
 
-    site_->update(window);
+    auto& table_data = table_data_[window.get_id()];
+
+    const auto& snapshot = site_->update(window);
 
     if (save_images_->isChecked())
         site_->save_snapshot();
 
     // consider sitout fatal
-    if (site_->is_sit_out(0))
+    if (snapshot.sit_out[0])
     {
         if (table_count_->value() > 0)
         {
@@ -498,46 +500,40 @@ void main_window::process_snapshot(const fake_window& window)
     // these should work for observed tables
     visualizer_->clear_row(window.get_id());
     visualizer_->set_active(window.get_id());
-    visualizer_->set_dealer(window.get_id(), site_->get_dealer_mask());
-    visualizer_->set_big_blind(window.get_id(), site_->get_big_blind());
-    visualizer_->set_real_pot(window.get_id(), site_->get_total_pot());
-    visualizer_->set_real_bets(window.get_id(), site_->get_bet(0), site_->get_bet(1));
-    visualizer_->set_sit_out(window.get_id(), site_->is_sit_out(0), site_->is_sit_out(1));
-    visualizer_->set_stacks(window.get_id(), site_->get_stack(0), site_->get_stack(1));
-    visualizer_->set_buttons(window.get_id(), site_->get_buttons());
-    visualizer_->set_all_in(window.get_id(), site_->is_all_in(0), site_->is_all_in(1));
+    visualizer_->set_dealer(window.get_id(), snapshot.dealer[0]);
+    visualizer_->set_big_blind(window.get_id(), snapshot.big_blind);
+    visualizer_->set_real_pot(window.get_id(), snapshot.total_pot);
+    visualizer_->set_real_bets(window.get_id(), snapshot.bet[0], snapshot.bet[1]);
+    visualizer_->set_sit_out(window.get_id(), snapshot.sit_out[0], snapshot.sit_out[1]);
+    visualizer_->set_stacks(window.get_id(), snapshot.stack[0], snapshot.stack[1]);
+    visualizer_->set_buttons(window.get_id(), snapshot.buttons);
+    visualizer_->set_all_in(window.get_id(), snapshot.all_in[0], snapshot.all_in[1]);
 
     int round = -1;
-    std::array<int, 5> board;
 
-    // read board only when autoplay is off (observed tables) or we see buttons (our turn)
-    if (!autoplay_action_->isChecked() || site_->get_buttons() != 0)
+    visualizer_->set_board_cards(window.get_id(), snapshot.board);
+
+    if (snapshot.board[0] != -1 && snapshot.board[1] != -1 && snapshot.board[2] != -1)
     {
-        site_->get_board_cards(board);
-        visualizer_->set_board_cards(window.get_id(), board);
-
-        if (board[0] != -1 && board[1] != -1 && board[2] != -1)
+        if (snapshot.board[3] != -1)
         {
-            if (board[3] != -1)
-            {
-                if (board[4] != -1)
-                    round = RIVER;
-                else
-                    round = TURN;
-            }
+            if (snapshot.board[4] != -1)
+                round = RIVER;
             else
-            {
-                round = FLOP;
-            }
-        }
-        else if (board[0] == -1 && board[1] == -1 && board[2] == -1)
-        {
-            round = PREFLOP;
+                round = TURN;
         }
         else
         {
-            round = -1;
+            round = FLOP;
         }
+    }
+    else if (snapshot.board[0] == -1 && snapshot.board[1] == -1 && snapshot.board[2] == -1)
+    {
+        round = PREFLOP;
+    }
+    else
+    {
+        round = -1;
     }
 
     // do not manipulate state when autoplay is off
@@ -545,107 +541,104 @@ void main_window::process_snapshot(const fake_window& window)
         return;
 
     // wait until we see buttons
-    if (site_->get_buttons() == 0)
+    if (snapshot.buttons == 0)
         return;
 
     // read hole cards only when autoplay is on and we see buttons
-    std::array<int, 2> hole;
-    site_->get_hole_cards(hole);
-    visualizer_->set_hole_cards(window.get_id(), hole);
+    visualizer_->set_hole_cards(window.get_id(), snapshot.hole);
 
     // wait for visible cards
-    if (hole[0] == -1 || hole[1] == -1)
+    if (snapshot.hole[0] == -1 || snapshot.hole[1] == -1)
         return;
 
     // this will most likely fail if we can't read the cards
     ENSURE(round != -1);
 
     // make sure we read everything fine
-    ENSURE(site_->get_big_blind() != -1);
-    ENSURE(site_->get_total_pot() != -1);
-    ENSURE(site_->get_bet(0) != -1);
-    ENSURE(site_->get_bet(1) != -1);
-    ENSURE(site_->get_dealer_mask() != 0);
+    ENSURE(snapshot.big_blind != -1);
+    ENSURE(snapshot.total_pot != -1);
+    ENSURE(snapshot.bet[0] != -1);
+    ENSURE(snapshot.bet[1] != -1);
+    ENSURE(snapshot.dealer[0] || snapshot.dealer[1]);
 
     // wait until we see stack sizes
-    if (site_->get_stack(0) == 0 || (site_->get_stack(1) == 0 && !site_->is_opponent_allin() && !site_->is_opponent_sitout()))
+    if (snapshot.stack[0] == 0 || (snapshot.stack[1] == 0 && !snapshot.all_in[1] && !snapshot.sit_out[1]))
         return;
 
     // our stack size should always be visible
-    ENSURE(site_->get_stack(0) > 0);
+    ENSURE(snapshot.stack[0] > 0);
     // opponent stack might be obstructed by all-in or sitout statuses
-    ENSURE(site_->get_stack(1) > 0 || site_->is_opponent_allin() || site_->is_opponent_sitout());
+    ENSURE(snapshot.stack[1] > 0 || snapshot.all_in[1] || snapshot.sit_out[1]);
 
     std::array<double, 2> stacks;
 
-    stacks[0] = site_->get_stack(0) + (site_->get_total_pot() - site_->get_bet(0) - site_->get_bet(1)) / 2.0
-        + site_->get_bet(0);
+    stacks[0] = snapshot.stack[0] + (snapshot.total_pot - snapshot.bet[0] - snapshot.bet[1]) / 2.0
+        + snapshot.bet[0];
 
-    if (site_->is_opponent_sitout())
+    if (snapshot.sit_out[1])
     {
         stacks[1] = ALLIN_BET_SIZE; // can't see stack due to sitout, assume worst case
     }
     else
     {
-        stacks[1] = site_->get_stack(1) + (site_->get_total_pot() - site_->get_bet(0) - site_->get_bet(1)) / 2.0
-            + site_->get_bet(1);
+        stacks[1] = snapshot.stack[1] + (snapshot.total_pot - snapshot.bet[0] - snapshot.bet[1]) / 2.0
+            + snapshot.bet[1];
     }
 
     ENSURE(stacks[0] > 0 && stacks[1] > 0);
 
-    const auto stack_size = int(std::ceil(std::min(stacks[0], stacks[1]) / site_->get_big_blind() * 2.0));
+    const auto stack_size = int(std::ceil(std::min(stacks[0], stacks[1]) / snapshot.big_blind * 2.0));
 
     ENSURE(stack_size > 0);
 
     const auto now = QDateTime::currentDateTime();
-    auto time_it = next_action_times_.find(window.get_id());
+    auto& next_action_time = table_data.next_action_time;
 
-    if (time_it == next_action_times_.end())
+    if (!next_action_time.isValid())
     {
-        const double wait = std::max(0.0, (site_->is_opponent_sitout() ? action_delay_[0] : get_normal_random(engine_,
+        const double wait = std::max(0.0, (snapshot.sit_out[1] ? action_delay_[0] : get_normal_random(engine_,
             action_delay_[0], action_delay_[1])));
 
         BOOST_LOG_TRIVIAL(info) << QString("[%2] Waiting for %1 seconds before acting").arg(wait).arg(window.get_id())
             .toStdString();
 
-        time_it = next_action_times_.insert(std::make_pair(window.get_id(),
-            now.addMSecs(static_cast<qint64>(wait * 1000)))).first;
+        next_action_time = now.addMSecs(static_cast<qint64>(wait * 1000));
     }
 
-    if (now < time_it->second)
+    if (now < next_action_time)
         return;
 
-    next_action_times_.erase(time_it);
+    next_action_time = QDateTime();
 
     BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
 
     BOOST_LOG_TRIVIAL(info) << "Window: " << window.get_id() << " (" << window.get_window_text() << ")";
     BOOST_LOG_TRIVIAL(info) << "Stack: " << stack_size << " SB";
 
-    if (hole[0] != -1 && hole[1] != -1)
+    if (snapshot.hole[0] != -1 && snapshot.hole[1] != -1)
     {
-        BOOST_LOG_TRIVIAL(info) << QString("Hole: [%1 %2]").arg(get_card_string(hole[0]).c_str())
-            .arg(get_card_string(hole[1]).c_str()).toStdString();
+        BOOST_LOG_TRIVIAL(info) << QString("Hole: [%1 %2]").arg(get_card_string(snapshot.hole[0]).c_str())
+            .arg(get_card_string(snapshot.hole[1]).c_str()).toStdString();
     }
 
     QString board_string;
 
-    if (board[4] != -1)
+    if (snapshot.board[4] != -1)
     {
-        board_string = QString("Board: [%1 %2 %3 %4] [%5]").arg(get_card_string(board[0]).c_str())
-            .arg(get_card_string(board[1]).c_str()).arg(get_card_string(board[2]).c_str())
-            .arg(get_card_string(board[3]).c_str()).arg(get_card_string(board[4]).c_str());
+        board_string = QString("Board: [%1 %2 %3 %4] [%5]").arg(get_card_string(snapshot.board[0]).c_str())
+            .arg(get_card_string(snapshot.board[1]).c_str()).arg(get_card_string(snapshot.board[2]).c_str())
+            .arg(get_card_string(snapshot.board[3]).c_str()).arg(get_card_string(snapshot.board[4]).c_str());
     }
-    else if (board[3] != -1)
+    else if (snapshot.board[3] != -1)
     {
-        board_string = QString("Board: [%1 %2 %3] [%4]").arg(get_card_string(board[0]).c_str())
-            .arg(get_card_string(board[1]).c_str()).arg(get_card_string(board[2]).c_str())
-            .arg(get_card_string(board[3]).c_str());
+        board_string = QString("Board: [%1 %2 %3] [%4]").arg(get_card_string(snapshot.board[0]).c_str())
+            .arg(get_card_string(snapshot.board[1]).c_str()).arg(get_card_string(snapshot.board[2]).c_str())
+            .arg(get_card_string(snapshot.board[3]).c_str());
     }
-    else if (board[0] != -1)
+    else if (snapshot.board[0] != -1)
     {
-        board_string = QString("Board: [%1 %2 %3]").arg(get_card_string(board[0]).c_str())
-            .arg(get_card_string(board[1]).c_str()).arg(get_card_string(board[2]).c_str());
+        board_string = QString("Board: [%1 %2 %3]").arg(get_card_string(snapshot.board[0]).c_str())
+            .arg(get_card_string(snapshot.board[1]).c_str()).arg(get_card_string(snapshot.board[2]).c_str());
     }
 
     if (!board_string.isEmpty())
@@ -656,37 +649,34 @@ void main_window::process_snapshot(const fake_window& window)
 
     auto it = find_nearest(strategies_, stack_size);
     auto& strategy = *it->second;
-    auto& current_state = states_[window.get_id()];
-    auto& current_game_info = game_infos_[window.get_id()];
+    auto& current_state = table_data.state;
 
     BOOST_LOG_TRIVIAL(info) << QString("Strategy file: %1")
         .arg(QFileInfo(strategy.get_strategy().get_filename().c_str()).fileName()).toStdString();
 
     if (round == PREFLOP
-        && ((site_->is_dealer(0) && site_->is_dealer(1)
-            && (site_->get_dealer_mask() != current_game_info.dealer_mask || hole != current_game_info.hole))
-        || (site_->is_dealer(0) && site_->get_bet(0) < site_->get_big_blind())
-        || (site_->is_dealer(1) && site_->get_bet(0) == site_->get_big_blind())))
+        && ((snapshot.dealer[0] && snapshot.dealer[1]
+            && (snapshot.dealer != table_data.snapshot.dealer || snapshot.hole != table_data.snapshot.hole))
+        || (snapshot.dealer[0] && snapshot.bet[0] < snapshot.big_blind)
+        || (snapshot.dealer[1] && snapshot.bet[0] == snapshot.big_blind)))
     {
         BOOST_LOG_TRIVIAL(info) << "New game";
 
         current_state = &strategy.get_root_state();
-        current_game_info.dealer_mask = site_->get_dealer_mask();
-        current_game_info.hole = hole;
 
-        if (site_->get_bet(0) < site_->get_big_blind())
-            current_game_info.dealer = 0;
-        else if (site_->get_bet(0) == site_->get_big_blind())
-            current_game_info.dealer = 1;
+        if (snapshot.bet[0] < snapshot.big_blind)
+            table_data.dealer = 0;
+        else if (snapshot.bet[0] == snapshot.big_blind)
+            table_data.dealer = 1;
         else
-            current_game_info.dealer = -1;
+            table_data.dealer = -1;
     }
 
-    const auto dealer = (site_->is_dealer(0) && site_->is_dealer(1))
-        ? current_game_info.dealer
-        : (site_->is_dealer(0) ? 0 : (site_->is_dealer(1) ? 1 : -1));
+    const auto dealer = (snapshot.dealer[0] && snapshot.dealer[1])
+        ? table_data.dealer
+        : (snapshot.dealer[0] ? 0 : (snapshot.dealer[1] ? 1 : -1));
 
-    if (site_->is_dealer(0) && site_->is_dealer(1))
+    if (snapshot.dealer[0] && snapshot.dealer[1])
         BOOST_LOG_TRIVIAL(warning) << "Multiple dealers";
     
     BOOST_LOG_TRIVIAL(info) << "Dealer is " << dealer;
@@ -718,28 +708,28 @@ void main_window::process_snapshot(const fake_window& window)
     ENSURE(current_state != nullptr);
 
     // note: we modify the current state normally as this will be interpreted as a check
-    if (site_->is_opponent_sitout())
+    if (snapshot.sit_out[1])
         BOOST_LOG_TRIVIAL(info) << "Opponent is sitting out";
 
-    if (site_->is_opponent_allin())
+    if (snapshot.all_in[1])
         BOOST_LOG_TRIVIAL(info) << "Opponent is all-in";
 
-    if ((current_state->get_round() == PREFLOP && (site_->get_bet(1) > site_->get_big_blind()))
-        || (current_state->get_round() > PREFLOP && (site_->get_bet(1) > 0)))
+    if ((current_state->get_round() == PREFLOP && (snapshot.bet[1] > snapshot.big_blind))
+        || (current_state->get_round() > PREFLOP && (snapshot.bet[1] > 0)))
     {
         // make sure opponent allin is always terminal on his part and doesnt get translated to something else
-        const double fraction = site_->is_opponent_allin() ? ALLIN_BET_SIZE : (site_->get_bet(1) - site_->get_bet(0))
-            / (site_->get_total_pot() - (site_->get_bet(1) - site_->get_bet(0)));
+        const double fraction = snapshot.all_in[1] ? ALLIN_BET_SIZE : (snapshot.bet[1] - snapshot.bet[0])
+            / (snapshot.total_pot - (snapshot.bet[1] - snapshot.bet[0]));
         ENSURE(fraction > 0);
         BOOST_LOG_TRIVIAL(info) << QString("Opponent raised %1x pot").arg(fraction).toStdString();
         current_state = current_state->raise(fraction); // there is an outstanding bet/raise
     }
-    else if (current_state->get_round() == PREFLOP && dealer == 1 && site_->get_bet(1) <= site_->get_big_blind())
+    else if (current_state->get_round() == PREFLOP && dealer == 1 && snapshot.bet[1] <= snapshot.big_blind)
     {
         BOOST_LOG_TRIVIAL(info) << "Facing big blind sized bet out of position preflop; opponent called";
         current_state = current_state->call();
     }
-    else if (current_state->get_round() > PREFLOP && dealer == 0 && site_->get_bet(1) == 0)
+    else if (current_state->get_round() > PREFLOP && dealer == 0 && snapshot.bet[1] == 0)
     {
         // we are in position facing 0 sized bet, opponent has checked
         // we are oop facing big blind sized bet preflop, opponent has called
@@ -763,34 +753,31 @@ void main_window::process_snapshot(const fake_window& window)
     // we should never reach terminal states when we have a pending action
     ENSURE(current_state->get_id() != -1);
 
-    update_strategy_widget(window, strategy, hole, board);
+    update_strategy_widget(window, strategy, snapshot.hole, snapshot.board);
 
-    perform_action(window, strategy);
+    perform_action(window, strategy, snapshot);
 
     commit = true;
+    table_data.snapshot = snapshot;
 }
 
 #pragma warning(pop)
 
-void main_window::perform_action(const fake_window& window, const nlhe_strategy& strategy)
+void main_window::perform_action(const fake_window& window, const nlhe_strategy& strategy,
+    const table_manager::snapshot_t& snapshot)
 {
     ENSURE(site_ && !strategies_.empty());
 
-    std::array<int, 2> hole;
-    site_->get_hole_cards(hole);
-    std::array<int, 5> board;
-    site_->get_board_cards(board);
-
-    const int c0 = hole[0];
-    const int c1 = hole[1];
-    const int b0 = board[0];
-    const int b1 = board[1];
-    const int b2 = board[2];
-    const int b3 = board[3];
-    const int b4 = board[4];
+    const int c0 = snapshot.hole[0];
+    const int c1 = snapshot.hole[1];
+    const int b0 = snapshot.board[0];
+    const int b1 = snapshot.board[1];
+    const int b2 = snapshot.board[2];
+    const int b3 = snapshot.board[3];
+    const int b4 = snapshot.board[4];
     int bucket = -1;
     const auto& abstraction = strategy.get_abstraction();
-    auto& current_state = states_[window.get_id()];
+    auto& current_state = table_data_[window.get_id()].state;
 
     ENSURE(current_state != nullptr);
     ENSURE(!current_state->is_terminal());
@@ -804,7 +791,7 @@ void main_window::perform_action(const fake_window& window, const nlhe_strategy&
 
     ENSURE(bucket != -1);
 
-    const int index = site_->is_opponent_sitout() ? nlhe_state_base::CALL + 1
+    const int index = snapshot.sit_out[1] ? nlhe_state_base::CALL + 1
         : strategy.get_strategy().get_action(current_state->get_id(), bucket);
     const nlhe_state_base::holdem_action action = current_state->get_action(index);
     const QString s = current_state->get_action_name(action).c_str();
@@ -857,12 +844,12 @@ void main_window::perform_action(const fake_window& window, const nlhe_strategy&
         break;
     case table_manager::RAISE:
         {
-            const double total_pot = site_->get_total_pot();
-            const double my_bet = site_->get_bet(0);
-            const double op_bet = site_->get_bet(1);
+            const double total_pot = snapshot.total_pot;
+            const double my_bet = snapshot.bet[0];
+            const double op_bet = snapshot.bet[1];
             const double to_call = op_bet - my_bet;
             const double amount = raise_fraction * (total_pot + to_call) + to_call + my_bet;
-            const double minbet = std::max(site_->get_big_blind(), to_call) + to_call + my_bet;
+            const double minbet = std::max(snapshot.big_blind, to_call) + to_call + my_bet;
 
             BOOST_LOG_TRIVIAL(info) << QString("Raising %1 (%2x pot) (%3 min)").arg(amount).arg(raise_fraction)
                 .arg(minbet).toStdString();
@@ -882,7 +869,7 @@ void main_window::handle_lobby()
         return;
 
     for (const auto i : lobby_->detect_closed_tables())
-        game_infos_.erase(static_cast<int>(i));
+        table_data_.erase(static_cast<int>(i));
 
     if (lobby_->get_registered_sngs() < table_count_->value() && (!schedule_action_->isChecked() || schedule_active_))
         lobby_->register_sng();
@@ -951,7 +938,7 @@ void main_window::state_widget_board_changed(const QString& board)
 void main_window::update_strategy_widget(const fake_window& window, const nlhe_strategy& strategy, const std::array<int, 2>& hole,
     const std::array<int, 5>& board)
 {
-    const auto state = states_[window.get_id()];
+    const auto state = table_data_[window.get_id()].state;
 
     if (!state)
         return;
