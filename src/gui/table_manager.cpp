@@ -192,12 +192,16 @@ table_manager::snapshot_t table_manager::update(const fake_window& window)
     s.sit_out[0] = is_sit_out(0);
     s.sit_out[1] = is_sit_out(1);
 
-    get_board_cards(s.board);
-
     if (s.buttons)
+    {
         get_hole_cards(s.hole);
+        get_board_cards(s.board);
+    }
     else
+    {
         s.hole.fill(-1);
+        s.board.fill(-1);
+    }
 
     return s;
 }
