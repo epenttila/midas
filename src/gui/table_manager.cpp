@@ -160,7 +160,7 @@ table_manager::snapshot_t table_manager::update(const fake_window& window)
     mono_image_.reset();
 
     if (!window.is_valid())
-        throw std::runtime_error(QString("Window %1 is invalid").arg(window_->get_id()).toStdString());
+        throw std::runtime_error("Invalid window");
 
     if (!image_)
         image_.reset(new QImage);
@@ -168,7 +168,7 @@ table_manager::snapshot_t table_manager::update(const fake_window& window)
     *image_ = window_->get_client_image();
 
     if (image_->isNull())
-        throw std::runtime_error(QString("Capture for window %1 is invalid").arg(window_->get_id()).toStdString());
+        throw std::runtime_error("Invalid image");
 
     if (!mono_image_)
         mono_image_.reset(new QImage);

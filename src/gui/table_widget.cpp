@@ -17,6 +17,7 @@ namespace
 {
     enum
     {
+        WINDOW_COLUMN,
         BIGBLIND_COLUMN,
         PSTACK_COLUMN,
         OSTACK_COLUMN,
@@ -36,6 +37,7 @@ namespace
 
     static const char* labels[MAX_COLUMNS] =
     {
+        "ID",
         "BB",
         "PStack",
         "OStack",
@@ -183,22 +185,49 @@ void table_widget::set_real_pot(WId window, double pot)
     item(get_row(window), POT_COLUMN)->setData(Qt::DisplayRole, pot);
 }
 
-void table_widget::set_tables(int count)
+void table_widget::set_tables(const std::unordered_set<WId>& tables)
 {
-    const auto old = rowCount();
+    std::unordered_set<WId> existing;
 
-    setRowCount(count);
-
-    for (int row = old; row < rowCount(); ++row)
+    for (int row = 0; row < rowCount(); ++row)
     {
+        const auto window = item(row, WINDOW_COLUMN)->data(Qt::DisplayRole).toInt();
+
+        if (tables.find(window) != tables.end())
+        {
+            existing.insert(window);
+            continue;
+        }
+
+        removeRow(row--);
+    }
+
+    for (auto window : tables)
+    {
+        if (existing.find(window) != existing.end())
+            continue;
+
+        auto row = rowCount();
+        insertRow(row);
+
         for (int col = 0; col < MAX_COLUMNS; ++col)
             setItem(row, col, new QTableWidgetItem);
+
+        item(row, WINDOW_COLUMN)->setData(Qt::DisplayRole, static_cast<int>(window));
     }
 }
 
 int table_widget::get_row(WId window) const
 {
-    return static_cast<int>(window);
+    for (int row = 0; row < rowCount(); ++row)
+    {
+        const auto x = item(row, WINDOW_COLUMN)->data(Qt::DisplayRole).toInt();
+
+        if (window == x)
+            return row;
+    }
+
+    return -1;
 }
 
 void table_widget::set_active(WId window)
@@ -215,7 +244,7 @@ void table_widget::clear_row(WId window)
 {
     const auto row = get_row(window);
 
-    for (int col = 0; col < MAX_COLUMNS; ++col)
+    for (int col = WINDOW_COLUMN + 1; col < MAX_COLUMNS; ++col)
         setItem(row, col, new QTableWidgetItem);
 }
 

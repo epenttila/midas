@@ -76,16 +76,21 @@ lobby_manager::lobby_manager(const std::string& filename, input_manager& input_m
         }
         else if (reader.name() == "lobby-window")
         {
-            lobby_window_.reset(new fake_window(0, window_utils::read_xml_rect(reader)));
+            lobby_window_.reset(new fake_window(window_utils::read_xml_rect(reader)));
         }
         else if (reader.name() == "popup-window")
         {
-            popup_window_.reset(new fake_window(0, window_utils::read_xml_rect(reader)));
+            popup_window_.reset(new fake_window(window_utils::read_xml_rect(reader)));
         }
         else if (reader.name() == "table-window")
         {
             table_windows_.push_back(std::unique_ptr<fake_window>(new fake_window(
-                static_cast<int>(table_windows_.size()), window_utils::read_xml_rect(reader))));
+                window_utils::read_xml_rect(reader))));
+        }
+        else if (reader.name() == "tournament-id-regex")
+        {
+            tournament_id_regex_ = std::regex(reader.attributes().value("pattern").toUtf8());
+            reader.skipCurrentElement();
         }
         else
         {
@@ -199,7 +204,7 @@ std::unordered_set<WId> lobby_manager::get_active_tables() const
     for (const auto& i : table_windows_)
     {
         if (i->is_valid())
-            active.insert(i->get_id());
+            active.insert(get_tournament_id(*i));
     }
 
     return active;
@@ -286,3 +291,15 @@ void lobby_manager::update_windows(WId wid)
     for (auto& i : table_windows_)
         i->update(wid);
 }
+
+int lobby_manager::get_tournament_id(const fake_window& window) const
+{
+    const auto title = window.get_window_text();
+    std::smatch match;
+
+    if (std::regex_match(title, match, tournament_id_regex_))
+        return std::stoi(match[1].str());
+
+    return -1;
+}
+

@@ -359,11 +359,11 @@ void main_window::capture_timer_timeout()
 
         if (lobby_)
         {
-            visualizer_->set_tables(static_cast<int>(lobby_->get_tables().size()));
-
             lobby_->update_windows(capture_window_);
 
             handle_lobby();
+
+            visualizer_->set_tables(lobby_->get_active_tables());
 
             for (const auto& window : lobby_->get_tables())
             {
@@ -468,10 +468,14 @@ void main_window::autoplay_changed(const bool checked)
 
 void main_window::process_snapshot(const fake_window& window)
 {
-    if (!site_)
+    if (!site_ && !lobby_)
         return;
 
-    auto& table_data = table_data_[window.get_id()];
+    const auto tournament_id = lobby_->get_tournament_id(window);
+
+    ENSURE(tournament_id != -1);
+
+    auto& table_data = table_data_[tournament_id];
 
     const auto& snapshot = site_->update(window);
 
@@ -497,20 +501,20 @@ void main_window::process_snapshot(const fake_window& window)
     }
 
     // these should work for observed tables
-    visualizer_->clear_row(window.get_id());
-    visualizer_->set_active(window.get_id());
-    visualizer_->set_dealer(window.get_id(), snapshot.dealer[0]);
-    visualizer_->set_big_blind(window.get_id(), snapshot.big_blind);
-    visualizer_->set_real_pot(window.get_id(), snapshot.total_pot);
-    visualizer_->set_real_bets(window.get_id(), snapshot.bet[0], snapshot.bet[1]);
-    visualizer_->set_sit_out(window.get_id(), snapshot.sit_out[0], snapshot.sit_out[1]);
-    visualizer_->set_stacks(window.get_id(), snapshot.stack[0], snapshot.stack[1]);
-    visualizer_->set_buttons(window.get_id(), snapshot.buttons);
-    visualizer_->set_all_in(window.get_id(), snapshot.all_in[0], snapshot.all_in[1]);
+    visualizer_->clear_row(tournament_id);
+    visualizer_->set_active(tournament_id);
+    visualizer_->set_dealer(tournament_id, snapshot.dealer[0]);
+    visualizer_->set_big_blind(tournament_id, snapshot.big_blind);
+    visualizer_->set_real_pot(tournament_id, snapshot.total_pot);
+    visualizer_->set_real_bets(tournament_id, snapshot.bet[0], snapshot.bet[1]);
+    visualizer_->set_sit_out(tournament_id, snapshot.sit_out[0], snapshot.sit_out[1]);
+    visualizer_->set_stacks(tournament_id, snapshot.stack[0], snapshot.stack[1]);
+    visualizer_->set_buttons(tournament_id, snapshot.buttons);
+    visualizer_->set_all_in(tournament_id, snapshot.all_in[0], snapshot.all_in[1]);
 
     int round = -1;
 
-    visualizer_->set_board_cards(window.get_id(), snapshot.board);
+    visualizer_->set_board_cards(tournament_id, snapshot.board);
 
     if (snapshot.board[0] != -1 && snapshot.board[1] != -1 && snapshot.board[2] != -1)
     {
@@ -544,7 +548,7 @@ void main_window::process_snapshot(const fake_window& window)
         return;
 
     // read hole cards only when autoplay is on and we see buttons
-    visualizer_->set_hole_cards(window.get_id(), snapshot.hole);
+    visualizer_->set_hole_cards(tournament_id, snapshot.hole);
 
     // wait for visible cards
     if (snapshot.hole[0] == -1 || snapshot.hole[1] == -1)
@@ -598,7 +602,7 @@ void main_window::process_snapshot(const fake_window& window)
         const double wait = std::max(0.0, (snapshot.sit_out[1] ? action_delay_[0] : get_normal_random(engine_,
             action_delay_[0], action_delay_[1])));
 
-        BOOST_LOG_TRIVIAL(info) << QString("[%2] Waiting for %1 seconds before acting").arg(wait).arg(window.get_id())
+        BOOST_LOG_TRIVIAL(info) << QString("[%2] Waiting for %1 seconds before acting").arg(wait).arg(tournament_id)
             .toStdString();
 
         next_action_time = now.addMSecs(static_cast<qint64>(wait * 1000));
@@ -636,7 +640,7 @@ void main_window::process_snapshot(const fake_window& window)
 
     BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
 
-    BOOST_LOG_TRIVIAL(info) << "Window: " << window.get_id() << " (" << window.get_window_text() << ")";
+    BOOST_LOG_TRIVIAL(info) << "Window: " << tournament_id << " (" << window.get_window_text() << ")";
     BOOST_LOG_TRIVIAL(info) << "Stack: " << stack_size << " SB";
 
     if (snapshot.hole[0] != -1 && snapshot.hole[1] != -1)
@@ -765,16 +769,16 @@ void main_window::process_snapshot(const fake_window& window)
     // we should never reach terminal states when we have a pending action
     ENSURE(current_state->get_id() != -1);
 
-    update_strategy_widget(window, strategy, snapshot.hole, snapshot.board);
+    update_strategy_widget(tournament_id, strategy, snapshot.hole, snapshot.board);
 
-    perform_action(window, strategy, snapshot);
+    perform_action(tournament_id, strategy, snapshot);
 
     table_data.snapshot = snapshot;
 }
 
 #pragma warning(pop)
 
-void main_window::perform_action(const fake_window& window, const nlhe_strategy& strategy,
+void main_window::perform_action(const int tournament_id, const nlhe_strategy& strategy,
     const table_manager::snapshot_t& snapshot)
 {
     ENSURE(site_ && !strategies_.empty());
@@ -788,7 +792,7 @@ void main_window::perform_action(const fake_window& window, const nlhe_strategy&
     const int b4 = snapshot.board[4];
     int bucket = -1;
     const auto& abstraction = strategy.get_abstraction();
-    auto& current_state = table_data_[window.get_id()].state;
+    auto& current_state = table_data_[tournament_id].state;
 
     ENSURE(current_state != nullptr);
     ENSURE(!current_state->is_terminal());
@@ -946,10 +950,10 @@ void main_window::state_widget_board_changed(const QString& board)
     strategy_widget_->set_board(b);
 }
 
-void main_window::update_strategy_widget(const fake_window& window, const nlhe_strategy& strategy, const std::array<int, 2>& hole,
-    const std::array<int, 5>& board)
+void main_window::update_strategy_widget(const int tournament_id, const nlhe_strategy& strategy,
+                                         const std::array<int, 2>& hole, const std::array<int, 5>& board)
 {
-    const auto state = table_data_[window.get_id()].state;
+    const auto state = table_data_[tournament_id].state;
 
     if (!state)
         return;

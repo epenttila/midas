@@ -29,6 +29,7 @@ public:
     std::string get_filename() const;
     const table_vector_t& get_tables() const;
     void update_windows(WId wid);
+    int get_tournament_id(const fake_window& window) const;
 
 private:
     bool close_popups(input_manager& input, fake_window& window, const std::vector<window_utils::popup_data>& popups,
@@ -46,4 +47,5 @@ private:
     std::string filename_;
     std::unique_ptr<fake_window> popup_window_;
     std::unordered_set<WId> active_tables_;
+    std::regex tournament_id_regex_;
 };

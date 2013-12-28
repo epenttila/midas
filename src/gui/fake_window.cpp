@@ -159,9 +159,8 @@ namespace
     }
 }
 
-fake_window::fake_window(int id, const QRect& rect)
+fake_window::fake_window(const QRect& rect)
     : rect_(rect)
-    , id_(id)
     , wid_(0)
     , title_font_(create_title_font())
 {
@@ -324,11 +323,6 @@ QPoint fake_window::client_to_screen(const QPoint& point) const
     POINT p = { tmp.x(), tmp.y() };
     ClientToScreen(reinterpret_cast<HWND>(wid_), &p);
     return QPoint(p.x, p.y);
-}
-
-int fake_window::get_id() const
-{
-    return id_;
 }
 
 std::string fake_window::get_window_text() const

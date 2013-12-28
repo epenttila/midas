@@ -13,11 +13,10 @@ class input_manager;
 class fake_window
 {
 public:
-    fake_window(int id, const QRect& rect);
+    fake_window(const QRect& rect);
     bool is_valid() const;
     bool click_button(input_manager& input, const window_utils::button_data& button, bool double_click = false) const;
     bool click_any_button(input_manager& input, const std::vector<window_utils::button_data>& buttons, bool double_click = false) const;
-    int get_id() const;
     std::string get_window_text() const;
     bool update(WId wid = -1);
     QImage get_window_image() const;
@@ -29,7 +28,6 @@ private:
     WId wid_;
     QRect window_rect_;
     QRect client_rect_;
-    int id_;
     QRect rect_;
     window_utils::font_data title_font_;
     QRect title_rect_;

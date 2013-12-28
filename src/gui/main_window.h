@@ -67,10 +67,9 @@ private:
     };
 
     void process_snapshot(const fake_window& window);
-    void perform_action(const fake_window& window, const nlhe_strategy& strategy,
-        const table_manager::snapshot_t& snapshot);
+    void perform_action(int tournament_id, const nlhe_strategy& strategy, const table_manager::snapshot_t& snapshot);
     bool nativeEvent(const QByteArray& eventType, void* message, long* result);
-    void update_strategy_widget(const fake_window& window, const nlhe_strategy& strategy, const std::array<int, 2>& hole,
+    void update_strategy_widget(int tournament_id, const nlhe_strategy& strategy, const std::array<int, 2>& hole,
         const std::array<int, 5>& board);
     void ensure(bool expression, const std::string& s, int line);
     void update_statusbar();
