@@ -1020,7 +1020,7 @@ void main_window::update_statusbar()
 
     registered_label_->setText(QString("Registrations: %1/%2 - Tables: %3/%2")
         .arg(lobby_ ? lobby_->get_registered_sngs() : 0)
-        .arg(table_count_->value()).arg(lobby_ ? lobby_->get_active_tables().size() : 0));
+        .arg(table_count_->value()).arg(visualizer_->rowCount()));
 }
 
 void main_window::find_capture_window()
