@@ -277,8 +277,8 @@ bool fake_window::update(WId wid)
 
     client_rect_ = window_rect_.adjusted(border, border + title_rect_.height() + TITLE_OFFSET, -border, -border);
 
-    window_image_ = ::screenshot(wid_, window_rect_).toImage();
-    client_image_ = ::screenshot(wid_, client_rect_).toImage();
+    window_image_ = image.copy(window_rect_.translated(-window_rect_.topLeft()));
+    client_image_ = image.copy(client_rect_.translated(-window_rect_.topLeft()));
 
     return is_valid();
 }

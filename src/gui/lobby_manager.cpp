@@ -300,6 +300,6 @@ int lobby_manager::get_tournament_id(const fake_window& window) const
     if (std::regex_match(title, match, tournament_id_regex_))
         return std::stoi(match[1].str());
 
-    return -1;
+    throw std::runtime_error("Unknown tournament id");
 }
 
