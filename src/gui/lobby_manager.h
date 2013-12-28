@@ -5,6 +5,7 @@
 #include <memory>
 #include <boost/noncopyable.hpp>
 #include <QWidget>
+#include <QTime>
 #pragma warning(pop)
 
 #include "site_settings.h"
@@ -22,8 +23,7 @@ public:
     void register_sng();
     int get_registered_sngs() const;
     void reset();
-    void detect_closed_tables();
-    std::unordered_set<tid_t> get_active_tables() const;
+    void detect_closed_tables(const std::unordered_set<tid_t>& new_active_tables);
     const table_vector_t& get_tables() const;
     void update_windows(WId wid);
     tid_t get_tournament_id(const fake_window& window) const;
@@ -36,4 +36,5 @@ private:
     std::unique_ptr<fake_window> popup_window_;
     std::unordered_set<tid_t> active_tables_;
     const site_settings* settings_;
+    QTime registration_time_;
 };

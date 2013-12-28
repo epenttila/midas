@@ -261,14 +261,14 @@ main_window::~main_window()
 
 void main_window::capture_timer_timeout()
 {
-    if (const auto p = settings_->get_interval("capture"))
-    {
-        const auto interval = get_uniform_random(engine_, p->first, p->second);
-        capture_timer_->setInterval(static_cast<int>(interval * 1000.0));
-    }
-
     try
     {
+        if (const auto p = settings_->get_interval("capture"))
+        {
+            const auto interval = get_uniform_random(engine_, p->first, p->second);
+            capture_timer_->setInterval(static_cast<int>(interval * 1000.0));
+        }
+
         if (const auto p = settings_->get_number("mark"))
         {
             if (mark_time_.elapsed() >= static_cast<int>(*p * 1000.0))
@@ -297,18 +297,17 @@ void main_window::capture_timer_timeout()
         {
             lobby_->update_windows(capture_window_);
 
-            handle_lobby();
-
-            visualizer_->set_tables(lobby_->get_active_tables());
-
             for (const auto& window : lobby_->get_tables())
             {
                 if (window->is_valid())
                     process_snapshot(*window);
             }
-        }
 
-        remove_old_table_data();
+            remove_old_table_data();
+
+            if (autolobby_action_->isChecked())
+                handle_lobby();
+        }
 
         if (autolobby_action_->isChecked() && (!schedule_action_->isChecked() || schedule_active_))
         {
@@ -452,7 +451,6 @@ void main_window::process_snapshot(const fake_window& window)
 
     // these should work for observed tables
     visualizer_->clear_row(tournament_id);
-    visualizer_->set_active(tournament_id);
     visualizer_->set_dealer(tournament_id, snapshot.dealer[0]);
     visualizer_->set_big_blind(tournament_id, snapshot.big_blind);
     visualizer_->set_real_pot(tournament_id, snapshot.total_pot);
@@ -837,13 +835,14 @@ void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy&
 
 void main_window::handle_lobby()
 {
-    if (!lobby_)
-        return;
+    assert(lobby_);
 
-    if (!autolobby_action_->isChecked())
-        return;
+    std::unordered_set<tid_t> active_tournaments;
 
-    lobby_->detect_closed_tables();
+    for (const auto& i : table_data_)
+        active_tournaments.insert(i.first);
+
+    lobby_->detect_closed_tables(active_tournaments);
 
     if (lobby_->get_registered_sngs() < table_count_->value() && (!schedule_action_->isChecked() || schedule_active_))
         lobby_->register_sng();
@@ -991,9 +990,12 @@ void main_window::remove_old_table_data()
 {
     for (auto i = table_data_.begin(); i != table_data_.end();)
     {
-        if (i->second.timestamp < QDateTime::currentDateTime().addSecs(-3600))
+        if (QDateTime::currentDateTime() >= i->second.timestamp.addMSecs(
+            static_cast<int>(*settings_->get_number("tournament-prune-time") * 1000)))
         {
             BOOST_LOG_TRIVIAL(info) << "Removing table data for tournament " << i->first;
+
+            visualizer_->remove(i->first);
             i = table_data_.erase(i);
         }
         else

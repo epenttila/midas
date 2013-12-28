@@ -97,34 +97,39 @@ lobby_manager::lobby_manager(const site_settings& settings, input_manager& input
 
 void lobby_manager::register_sng()
 {
-    lobby_window_->click_any_button(input_manager_, settings_->get_buttons("game-list"));
-
-    if (!lobby_window_->click_any_button(input_manager_, settings_->get_buttons("register")))
-        return;
-
-    BOOST_LOG_TRIVIAL(info) << "Registering... (" << registered_ << " active)";
-
     const auto& registration_wait = *settings_->get_number("reg-wait");
 
-    BOOST_LOG_TRIVIAL(info) << "Waiting " << registration_wait << " seconds for registration to complete";
-
-    const auto& popup_wait = *settings_->get_number("popup-wait");
-
-    QTime t;
-    t.start();
-
-    while (t.elapsed() <= registration_wait * 1000)
+    if (registration_time_.isNull())
     {
+        lobby_window_->click_any_button(input_manager_, settings_->get_buttons("game-list"));
+
+        if (!lobby_window_->click_any_button(input_manager_, settings_->get_buttons("register")))
+            return;
+
+        BOOST_LOG_TRIVIAL(info) << QString("Registering (waiting %1 seconds to complete)...").arg(registration_wait)
+            .toStdString();
+
+        registration_time_.start();
+    }
+    else if (registration_time_.elapsed() < registration_wait * 1000)
+    {
+        const auto& popup_wait = *settings_->get_number("popup-wait");
+
         if (close_popups(input_manager_, *popup_window_, settings_->get_popups("reg-ok"), popup_wait))
         {
+            registration_time_ = QTime();
             ++registered_;
 
-            BOOST_LOG_TRIVIAL(info) << "Registration success (" << registered_ << " active)";
-            return;
+            BOOST_LOG_TRIVIAL(info) << QString("Registration success (regs: %1 -> %2)").arg(registered_ - 1)
+                .arg(registered_).toStdString();
         }
     }
+    else
+    {
+        registration_time_ = QTime();
 
-    BOOST_LOG_TRIVIAL(warning) << "Unable to verify registration result";
+        BOOST_LOG_TRIVIAL(warning) << "Unable to verify registration result";
+    }
 }
 
 int lobby_manager::get_registered_sngs() const
@@ -139,38 +144,43 @@ void lobby_manager::reset()
     BOOST_LOG_TRIVIAL(info) << "Resetting registrations (" << registered_ << " active)";
 }
 
-void lobby_manager::detect_closed_tables()
+void lobby_manager::detect_closed_tables(const std::unordered_set<tid_t>& new_active_tables)
 {
-    const auto new_active_tables = get_active_tables();
-    const auto old_regs = registered_;
+    if (registration_time_.isValid())
+        return;
 
     if (new_active_tables == active_tables_)
         return; // no change
 
-    if (new_active_tables.size() > registered_)
+    const auto old_regs = registered_;
+    const auto old_tables = active_tables_;
+
+    active_tables_ = new_active_tables;
+
+    BOOST_LOG_TRIVIAL(info) << QString("Updating active tables (%1 -> %2)")
+        .arg(get_table_string(old_tables).c_str()).arg(get_table_string(active_tables_).c_str()).toStdString();
+
+    if (active_tables_.size() > registered_)
     {
         // assume we missed a registration confirmation
-        registered_ = static_cast<int>(new_active_tables.size());
-        active_tables_ = new_active_tables;
+        registered_ = static_cast<int>(active_tables_.size());
+        registration_time_ = QTime();
 
-        BOOST_LOG_TRIVIAL(warning) << QString(
-            "There are more tables than registrations (regs: %1 -> %2; tables: %3 -> %4)")
-            .arg(old_regs).arg(registered_).arg(get_table_string(active_tables_).c_str())
-            .arg(get_table_string(new_active_tables).c_str()).toStdString();
+        BOOST_LOG_TRIVIAL(warning) << QString("There are more tables than registrations (%1 -> %2)").arg(old_regs)
+            .arg(registered_).toStdString();
 
         return;
     }
 
     // find closed tables
-    for (const auto& i : active_tables_)
+    for (const auto& i : old_tables)
     {
-        if (new_active_tables.find(i) == new_active_tables.end())
+        if (active_tables_.find(i) == active_tables_.end())
         {
             --registered_;
 
-            BOOST_LOG_TRIVIAL(info) << QString("Tournament finished (regs: %1 -> %2; tables: %3 -> %4)")
-                .arg(old_regs).arg(registered_).arg(get_table_string(active_tables_).c_str())
-                .arg(get_table_string(new_active_tables).c_str()).toStdString();
+            BOOST_LOG_TRIVIAL(info) << QString("Tournament %3 finished (%1 -> %2)").arg(old_regs).arg(registered_)
+                .arg(i).toStdString();
         }
     }
 
@@ -178,25 +188,9 @@ void lobby_manager::detect_closed_tables()
     {
         registered_ = 0;
 
-        BOOST_LOG_TRIVIAL(warning) << QString("Negative registrations (regs: %1 -> %2; tables: %3 -> %4)")
-            .arg(old_regs).arg(registered_).arg(get_table_string(active_tables_).c_str())
-            .arg(get_table_string(new_active_tables).c_str()).toStdString();
+        BOOST_LOG_TRIVIAL(warning) << QString("Negative registrations (%1 -> %2)").arg(old_regs).arg(registered_)
+            .toStdString();
     }
-
-    active_tables_ = new_active_tables;
-}
-
-std::unordered_set<lobby_manager::tid_t> lobby_manager::get_active_tables() const
-{
-    std::unordered_set<tid_t> active;
-
-    for (const auto& i : table_windows_)
-    {
-        if (i->is_valid())
-            active.insert(get_tournament_id(*i));
-    }
-
-    return active;
 }
 
 const lobby_manager::table_vector_t& lobby_manager::get_tables() const

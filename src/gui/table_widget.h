@@ -29,13 +29,12 @@ public:
     void set_sit_out(tid_t window, bool sitout1, bool sitout2);
     void set_stacks(tid_t window, double stack1, double stack2);
     void set_buttons(tid_t window, int buttons);
-    void set_tables(const std::unordered_set<tid_t>& tables);
-    void set_active(tid_t window);
+    void remove(tid_t window);
     void clear_row(tid_t window);
     void set_all_in(tid_t window, bool allin1, bool allin2);
 
 private:
-    int get_row(tid_t window) const;
+    int get_row(tid_t window);
 
     std::unique_ptr<QPixmap> dealer_image_;
     std::array<std::unique_ptr<QPixmap>, 52> card_images_;

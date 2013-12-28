@@ -185,39 +185,12 @@ void table_widget::set_real_pot(tid_t window, double pot)
     item(get_row(window), POT_COLUMN)->setData(Qt::DisplayRole, pot);
 }
 
-void table_widget::set_tables(const std::unordered_set<tid_t>& tables)
+void table_widget::remove(tid_t window)
 {
-    std::unordered_set<tid_t> existing;
-
-    for (int row = 0; row < rowCount(); ++row)
-    {
-        const auto window = item(row, WINDOW_COLUMN)->data(Qt::DisplayRole).toInt();
-
-        if (tables.find(window) != tables.end())
-        {
-            existing.insert(window);
-            continue;
-        }
-
-        removeRow(row--);
-    }
-
-    for (auto window : tables)
-    {
-        if (existing.find(window) != existing.end())
-            continue;
-
-        auto row = rowCount();
-        insertRow(row);
-
-        for (int col = 0; col < MAX_COLUMNS; ++col)
-            setItem(row, col, new QTableWidgetItem);
-
-        item(row, WINDOW_COLUMN)->setData(Qt::DisplayRole, static_cast<int>(window));
-    }
+    removeRow(get_row(window));
 }
 
-int table_widget::get_row(tid_t window) const
+int table_widget::get_row(tid_t window)
 {
     for (int row = 0; row < rowCount(); ++row)
     {
@@ -227,17 +200,15 @@ int table_widget::get_row(tid_t window) const
             return row;
     }
 
-    return -1;
-}
+    const auto row = rowCount();
+    insertRow(row);
 
-void table_widget::set_active(tid_t window)
-{
-    const auto row = get_row(window);
+    for (int col = 0; col < MAX_COLUMNS; ++col)
+        setItem(row, col, new QTableWidgetItem);
 
-    if (row == -1)
-        return;
+    item(row, WINDOW_COLUMN)->setData(Qt::DisplayRole, static_cast<int>(window));
 
-    selectRow(row);
+    return row;
 }
 
 void table_widget::clear_row(tid_t window)
