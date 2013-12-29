@@ -31,6 +31,7 @@ public:
             bet.fill(-1);
             all_in.fill(false);
             sit_out.fill(false);
+            highlight.fill(false);
         }
 
         std::array<int, 5> board;
@@ -43,6 +44,7 @@ public:
         std::array<bool, 2> all_in;
         int buttons;
         std::array<bool, 2> sit_out;
+        std::array<bool, 2> highlight;
     };
 
     table_manager(const std::string& filename, input_manager& input_manager);
@@ -65,6 +67,7 @@ private:
     bool is_sit_out(int position) const;
     double get_pot() const;
     bool is_dealer(int position) const;
+    bool is_highlight(int position) const;
 
     std::string get_stack_text(int position) const;
 

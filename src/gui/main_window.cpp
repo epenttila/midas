@@ -543,6 +543,10 @@ void main_window::process_snapshot(const fake_window& window)
     if (!autoplay_action_->isChecked())
         return;
 
+    // wait until our box is highlighted
+    if (!snapshot.highlight[0])
+        return;
+
     // wait until we see buttons
     if (snapshot.buttons == 0)
         return;

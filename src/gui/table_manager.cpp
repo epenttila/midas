@@ -191,6 +191,8 @@ table_manager::snapshot_t table_manager::update(const fake_window& window)
     s.all_in[1] = is_all_in(1);
     s.sit_out[0] = is_sit_out(0);
     s.sit_out[1] = is_sit_out(1);
+    s.highlight[0] = is_highlight(0);
+    s.highlight[1] = is_highlight(1);
 
     if (s.buttons)
     {
@@ -339,9 +341,7 @@ void table_manager::raise(double amount, double fraction, double minbet, double 
 
 std::string table_manager::get_stack_text(int position) const
 {
-    const bool flashing = flash_stack_labels_[position].font.empty()
-        ? false
-        : is_pixel(image_.get(), stack_hilight_pixels_[position]);
+    const bool flashing = flash_stack_labels_[position].font.empty() ? false : is_highlight(position);
     const auto& label = flashing ? flash_stack_labels_[position] : stack_labels_[position];
 
     return parse_image_text(mono_image_.get(), label.rect, label.color, fonts_.at(label.font));
@@ -433,4 +433,9 @@ void table_manager::save_snapshot() const
 double table_manager::get_pot() const
 {
     return pot_label_.font.empty() ? 0 : parse_image_bet(mono_image_.get(), pot_label_, fonts_.at(pot_label_.font));
+}
+
+bool table_manager::is_highlight(int position) const
+{
+    return is_pixel(image_.get(), stack_hilight_pixels_[position]);
 }
