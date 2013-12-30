@@ -64,6 +64,7 @@ private:
         const nlhe_state_base* state;
 
         QDateTime next_action_time;
+        QDateTime timestamp;
     };
 
     void process_snapshot(const fake_window& window);
@@ -76,6 +77,7 @@ private:
     void find_capture_window();
     void handle_lobby();
     void handle_schedule();
+    void remove_old_table_data();
 
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<nlhe_strategy>> strategies_;

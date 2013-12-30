@@ -377,6 +377,8 @@ void main_window::capture_timer_timeout()
             }
         }
 
+        remove_old_table_data();
+
         if (autolobby_action_->isChecked() && (!schedule_action_->isChecked() || schedule_active_))
             input_manager_->move_random(interval, false);
     }
@@ -481,6 +483,7 @@ void main_window::process_snapshot(const fake_window& window)
     ENSURE(tournament_id != -1);
 
     auto& table_data = table_data_[tournament_id];
+    table_data.timestamp = QDateTime::currentDateTime();
 
     const auto& snapshot = site_->update(window);
 
@@ -892,8 +895,7 @@ void main_window::handle_lobby()
     if (!autolobby_action_->isChecked())
         return;
 
-    for (const auto i : lobby_->detect_closed_tables())
-        table_data_.erase(static_cast<int>(i));
+    lobby_->detect_closed_tables();
 
     if (lobby_->get_registered_sngs() < table_count_->value() && (!schedule_action_->isChecked() || schedule_active_))
         lobby_->register_sng();
@@ -1045,4 +1047,18 @@ void main_window::find_capture_window()
         capture_window_ = reinterpret_cast<WId>(window);
     else
         capture_window_ = 0;
+}
+
+void main_window::remove_old_table_data()
+{
+    for (auto i = table_data_.begin(); i != table_data_.end();)
+    {
+        if (i->second.timestamp < QDateTime::currentDateTime().addSecs(-3600))
+        {
+            BOOST_LOG_TRIVIAL(info) << "Removing table data for tournament " << i->first;
+            i = table_data_.erase(i);
+        }
+        else
+            ++i;
+    }
 }
