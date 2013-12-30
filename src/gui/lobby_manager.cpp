@@ -76,16 +76,19 @@ lobby_manager::lobby_manager(const std::string& filename, input_manager& input_m
         }
         else if (reader.name() == "lobby-window")
         {
-            lobby_window_.reset(new fake_window(window_utils::read_xml_rect(reader)));
+            const auto icon = reader.attributes().value("icon").toInt() ? true : false;
+            lobby_window_.reset(new fake_window(window_utils::read_xml_rect(reader), icon));
         }
         else if (reader.name() == "popup-window")
         {
-            popup_window_.reset(new fake_window(window_utils::read_xml_rect(reader)));
+            const auto icon = reader.attributes().value("icon").toInt() ? true : false;
+            popup_window_.reset(new fake_window(window_utils::read_xml_rect(reader), icon));
         }
         else if (reader.name() == "table-window")
         {
+            const auto icon = reader.attributes().value("icon").toInt() ? true : false;
             table_windows_.push_back(std::unique_ptr<fake_window>(new fake_window(
-                window_utils::read_xml_rect(reader))));
+                window_utils::read_xml_rect(reader), icon)));
         }
         else if (reader.name() == "tournament-id-regex")
         {

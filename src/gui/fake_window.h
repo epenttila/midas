@@ -13,7 +13,7 @@ class input_manager;
 class fake_window
 {
 public:
-    fake_window(const QRect& rect);
+    fake_window(const QRect& rect, bool icon);
     bool is_valid() const;
     bool click_button(input_manager& input, const window_utils::button_data& button, bool double_click = false) const;
     bool click_any_button(input_manager& input, const std::vector<window_utils::button_data>& buttons, bool double_click = false) const;
@@ -33,4 +33,5 @@ private:
     QRect title_rect_;
     QImage window_image_;
     QImage client_image_;
+    bool icon_;
 };
