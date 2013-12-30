@@ -265,7 +265,8 @@ main_window::main_window()
     }
 
     QSettings settings("settings.ini", QSettings::IniFormat);
-    capture_interval_ = settings.value("capture-interval", 1).toDouble();
+    capture_interval_[0] = settings.value("capture-interval-min", 1).toDouble();
+    capture_interval_[1] = settings.value("capture-interval-max", 1).toDouble();
     action_delay_[0] = settings.value("action-delay-min", 0.5).toDouble();
     action_delay_[1] = settings.value("action-delay-max", 2.0).toDouble();
     input_manager_->set_delay(settings.value("input-delay-min", 0.5).toDouble(),
@@ -329,7 +330,7 @@ main_window::main_window()
 
     BOOST_LOG_TRIVIAL(info) << "Starting capture";
 
-    capture_timer_->start(int(capture_interval_ * 1000.0));
+    capture_timer_->start();
 
     setWindowTitle("Window");
 }
@@ -340,6 +341,10 @@ main_window::~main_window()
 
 void main_window::capture_timer_timeout()
 {
+    const auto interval = get_uniform_random(engine_, capture_interval_[0], capture_interval_[1]);
+
+    capture_timer_->setInterval(static_cast<int>(interval * 1000.0));
+
     try
     {
         if (!autolobby_action_->isChecked() && QFileInfo("enable.txt").exists())
@@ -373,7 +378,7 @@ void main_window::capture_timer_timeout()
         }
 
         if (autolobby_action_->isChecked() && (!schedule_action_->isChecked() || schedule_active_))
-            input_manager_->move_random(capture_interval_, false);
+            input_manager_->move_random(interval, false);
     }
     catch (const std::exception& e)
     {
@@ -387,7 +392,7 @@ void main_window::capture_timer_timeout()
 
         // ensure we can move after exceptions in case of visible tool tips disturbing scraping
         if (autolobby_action_->isChecked())
-            input_manager_->move_random(capture_interval_, true);
+            input_manager_->move_random(interval, true);
     }
 
     update_statusbar();

@@ -85,7 +85,7 @@ private:
     QLineEdit* title_filter_;
     holdem_strategy_widget* strategy_widget_;
     std::mt19937 engine_;
-    double capture_interval_;
+    std::array<double, 2> capture_interval_;
     std::unique_ptr<input_manager> input_manager_;
     std::array<double, 2> action_delay_;
     std::unique_ptr<lobby_manager> lobby_;
