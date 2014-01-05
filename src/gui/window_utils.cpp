@@ -135,7 +135,7 @@ double parse_image_bet(const QImage* image, const label_data& text, const font_d
         return -1;
 
     const auto s = parse_image_text(image, text.rect, qRgb(255, 255, 255), font);
-    double d = std::atof(s.c_str());
+    double d = s.empty() ? 0 : std::stof(s);
         
     if (!s.empty() && s[s.length() - 1] == 'c')
         d /= 100;

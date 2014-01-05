@@ -370,7 +370,7 @@ double table_manager::get_big_blind() const
     double big_blind = -1;
 
     if (std::regex_match(title, match, title_bb_regex_))
-        big_blind = std::atof(match[1].str().c_str());
+        big_blind = std::stof(match[1].str());
 
     return big_blind;
 }
