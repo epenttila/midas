@@ -113,4 +113,5 @@ private:
     QString smtp_to_;
     QTime mark_time_;
     double mark_interval_;
+    double activity_day_variance_;
 };

@@ -103,7 +103,8 @@ namespace
         return datetime_to_secs(QDateTime::fromString(str, "HH:mm:ss"));
     }
 
-    bool is_schedule_active(const double var, const main_window::spans_t& daily_spans, double* time)
+    bool is_schedule_active(const double var, const double day_variance, const main_window::spans_t& daily_spans,
+        double* time)
     {
         assert(daily_spans.size() == 7);
 
@@ -114,10 +115,12 @@ namespace
 
         std::mt19937_64 engine(t.date().toJulianDay());
 
+        const auto offset = get_uniform_random(engine, -day_variance, day_variance);
+
         for (const auto span : spans)
         {
-            const auto first = get_uniform_random(engine, span.first - var / 2.0, span.first + var / 2.0);
-            const auto second = get_uniform_random(engine, span.second - var / 2.0, span.second + var / 2.0);
+            const auto first = get_uniform_random(engine, span.first - var + offset, span.first + var + offset);
+            const auto second = get_uniform_random(engine, span.second - var + offset, span.second + var + offset);
 
             if (now < first)
             {
@@ -279,6 +282,7 @@ main_window::main_window()
     activity_variance_ = settings.value("activity-variance", 0.0).toDouble();
     title_filter_->setText(settings.value("title-filter").toString());
     mark_interval_ = settings.value("mark-interval", 3600.0).toDouble();
+    activity_day_variance_ = settings.value("activity-day-variance", 0.0).toDouble();
 
     for (int day = 0; day < 7; ++day)
     {
@@ -914,7 +918,8 @@ void main_window::handle_schedule()
     if (!schedule_action_->isChecked())
         return;
 
-    const auto active = is_schedule_active(activity_variance_, activity_spans_, &time_to_next_activity_);
+    const auto active = is_schedule_active(activity_variance_, activity_day_variance_, activity_spans_,
+        &time_to_next_activity_);
 
     if (active != schedule_active_)
     {
