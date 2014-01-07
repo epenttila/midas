@@ -111,4 +111,6 @@ private:
     smtp* smtp_;
     QString smtp_from_;
     QString smtp_to_;
+    QTime mark_time_;
+    double mark_interval_;
 };

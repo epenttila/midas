@@ -278,6 +278,7 @@ main_window::main_window()
         settings.value("mouse-speed-max", 2.5).toDouble());
     activity_variance_ = settings.value("activity-variance", 0.0).toDouble();
     title_filter_->setText(settings.value("title-filter").toString());
+    mark_interval_ = settings.value("mark-interval", 3600.0).toDouble();
 
     for (int day = 0; day < 7; ++day)
     {
@@ -331,6 +332,7 @@ main_window::main_window()
     BOOST_LOG_TRIVIAL(info) << "Starting capture";
 
     capture_timer_->start();
+    mark_time_.start();
 
     setWindowTitle("Window");
 }
@@ -347,6 +349,12 @@ void main_window::capture_timer_timeout()
 
     try
     {
+        if (mark_time_.elapsed() >= static_cast<int>(mark_interval_ * 1000.0))
+        {
+            mark_time_.restart();
+            BOOST_LOG_TRIVIAL(info) << "-- MARK --";
+        }
+
         if (!autolobby_action_->isChecked() && QFileInfo("enable.txt").exists())
         {
             BOOST_LOG_TRIVIAL(info) << "enable.txt found, enabling autolobby";
