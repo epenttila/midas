@@ -123,7 +123,7 @@ table_widget::table_widget(QWidget* parent)
     resizeColumnsToContents();
 }
 
-void table_widget::set_board_cards(WId window, const std::array<int, 5>& board)
+void table_widget::set_board_cards(tid_t window, const std::array<int, 5>& board)
 {
     QList<QVariant> list;
 
@@ -135,7 +135,7 @@ void table_widget::set_board_cards(WId window, const std::array<int, 5>& board)
     resizeColumnToContents(BOARD_COLUMN);
 }
 
-void table_widget::set_hole_cards(WId window, const std::array<int, 2>& cards)
+void table_widget::set_hole_cards(tid_t window, const std::array<int, 2>& cards)
 {
     QList<QVariant> list;
 
@@ -147,47 +147,47 @@ void table_widget::set_hole_cards(WId window, const std::array<int, 2>& cards)
     resizeColumnToContents(HOLE_COLUMN);
 }
 
-void table_widget::set_dealer(WId window, int dealer)
+void table_widget::set_dealer(tid_t window, int dealer)
 {
     item(get_row(window), DEALER_COLUMN)->setData(Qt::DisplayRole, dealer);
 }
 
-void table_widget::set_big_blind(WId window, double big_blind)
+void table_widget::set_big_blind(tid_t window, double big_blind)
 {
     item(get_row(window), BIGBLIND_COLUMN)->setData(Qt::DisplayRole, big_blind);
 }
 
-void table_widget::set_sit_out(WId window, bool sitout1, bool sitout2)
+void table_widget::set_sit_out(tid_t window, bool sitout1, bool sitout2)
 {
     item(get_row(window), PSITOUT_COLUMN)->setData(Qt::DisplayRole, sitout1);
     item(get_row(window), OSITOUT_COLUMN)->setData(Qt::DisplayRole, sitout2);
 }
 
-void table_widget::set_stacks(WId window, double stack1, double stack2)
+void table_widget::set_stacks(tid_t window, double stack1, double stack2)
 {
     item(get_row(window), PSTACK_COLUMN)->setData(Qt::DisplayRole, stack1);
     item(get_row(window), OSTACK_COLUMN)->setData(Qt::DisplayRole, stack2);
 }
 
-void table_widget::set_buttons(WId window, int buttons)
+void table_widget::set_buttons(tid_t window, int buttons)
 {
     item(get_row(window), BUTTONS_COLUMN)->setData(Qt::DisplayRole, buttons);
 }
 
-void table_widget::set_real_bets(WId window, double bet1, double bet2)
+void table_widget::set_real_bets(tid_t window, double bet1, double bet2)
 {
     item(get_row(window), PBET_COLUMN)->setData(Qt::DisplayRole, bet1);
     item(get_row(window), OBET_COLUMN)->setData(Qt::DisplayRole, bet2);
 }
 
-void table_widget::set_real_pot(WId window, double pot)
+void table_widget::set_real_pot(tid_t window, double pot)
 {
     item(get_row(window), POT_COLUMN)->setData(Qt::DisplayRole, pot);
 }
 
-void table_widget::set_tables(const std::unordered_set<WId>& tables)
+void table_widget::set_tables(const std::unordered_set<tid_t>& tables)
 {
-    std::unordered_set<WId> existing;
+    std::unordered_set<tid_t> existing;
 
     for (int row = 0; row < rowCount(); ++row)
     {
@@ -217,7 +217,7 @@ void table_widget::set_tables(const std::unordered_set<WId>& tables)
     }
 }
 
-int table_widget::get_row(WId window) const
+int table_widget::get_row(tid_t window) const
 {
     for (int row = 0; row < rowCount(); ++row)
     {
@@ -230,7 +230,7 @@ int table_widget::get_row(WId window) const
     return -1;
 }
 
-void table_widget::set_active(WId window)
+void table_widget::set_active(tid_t window)
 {
     const auto row = get_row(window);
 
@@ -240,7 +240,7 @@ void table_widget::set_active(WId window)
     selectRow(row);
 }
 
-void table_widget::clear_row(WId window)
+void table_widget::clear_row(tid_t window)
 {
     const auto row = get_row(window);
 
@@ -248,7 +248,7 @@ void table_widget::clear_row(WId window)
         setItem(row, col, new QTableWidgetItem);
 }
 
-void table_widget::set_all_in(WId window, bool allin1, bool allin2)
+void table_widget::set_all_in(tid_t window, bool allin1, bool allin2)
 {
     item(get_row(window), PALLIN_COLUMN)->setData(Qt::DisplayRole, allin1);
     item(get_row(window), OALLIN_COLUMN)->setData(Qt::DisplayRole, allin2);

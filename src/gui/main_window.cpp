@@ -802,7 +802,7 @@ void main_window::process_snapshot(const fake_window& window)
 
 #pragma warning(pop)
 
-void main_window::perform_action(const int tournament_id, const nlhe_strategy& strategy,
+void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy& strategy,
     const table_manager::snapshot_t& snapshot)
 {
     ENSURE(site_ && !strategies_.empty());
@@ -977,7 +977,7 @@ void main_window::state_widget_board_changed(const QString& board)
     strategy_widget_->set_board(b);
 }
 
-void main_window::update_strategy_widget(const int tournament_id, const nlhe_strategy& strategy,
+void main_window::update_strategy_widget(const tid_t tournament_id, const nlhe_strategy& strategy,
                                          const std::array<int, 2>& hole, const std::array<int, 5>& board)
 {
     const auto state = table_data_[tournament_id].state;

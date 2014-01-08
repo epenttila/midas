@@ -14,7 +14,7 @@
 
 namespace
 {
-    std::string get_table_string(const std::unordered_set<WId>& tables)
+    std::string get_table_string(const std::unordered_set<lobby_manager::tid_t>& tables)
     {
         std::string s;
 
@@ -148,9 +148,9 @@ void lobby_manager::reset()
     BOOST_LOG_TRIVIAL(info) << "Resetting registrations (" << registered_ << " active)";
 }
 
-std::unordered_set<WId> lobby_manager::detect_closed_tables()
+std::unordered_set<lobby_manager::tid_t> lobby_manager::detect_closed_tables()
 {
-    std::unordered_set<WId> closed;
+    std::unordered_set<tid_t> closed;
     const auto new_active_tables = get_active_tables();
     const auto old_regs = registered_;
 
@@ -200,9 +200,9 @@ std::unordered_set<WId> lobby_manager::detect_closed_tables()
     return closed;
 }
 
-std::unordered_set<WId> lobby_manager::get_active_tables() const
+std::unordered_set<lobby_manager::tid_t> lobby_manager::get_active_tables() const
 {
-    std::unordered_set<WId> active;
+    std::unordered_set<tid_t> active;
 
     for (const auto& i : table_windows_)
     {
@@ -295,14 +295,13 @@ void lobby_manager::update_windows(WId wid)
         i->update(wid);
 }
 
-int lobby_manager::get_tournament_id(const fake_window& window) const
+lobby_manager::tid_t lobby_manager::get_tournament_id(const fake_window& window) const
 {
     const auto title = window.get_window_text();
     std::smatch match;
 
     if (std::regex_match(title, match, tournament_id_regex_))
-        return std::stoi(match[1].str());
+        return std::stoll(match[1].str());
 
     throw std::runtime_error("Unknown tournament id");
 }
-

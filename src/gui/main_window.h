@@ -12,6 +12,7 @@
 #pragma warning(pop)
 
 #include "table_manager.h"
+#include "lobby_manager.h"
 
 class QPlainTextEdit;
 class holdem_abstraction;
@@ -36,6 +37,7 @@ class main_window : public QMainWindow
 
 public:
     typedef std::array<std::vector<std::pair<double, double>>, 7> spans_t;
+    typedef lobby_manager::tid_t tid_t;
 
     main_window();
     ~main_window();
@@ -68,9 +70,9 @@ private:
     };
 
     void process_snapshot(const fake_window& window);
-    void perform_action(int tournament_id, const nlhe_strategy& strategy, const table_manager::snapshot_t& snapshot);
+    void perform_action(tid_t tournament_id, const nlhe_strategy& strategy, const table_manager::snapshot_t& snapshot);
     bool nativeEvent(const QByteArray& eventType, void* message, long* result);
-    void update_strategy_widget(int tournament_id, const nlhe_strategy& strategy, const std::array<int, 2>& hole,
+    void update_strategy_widget(tid_t tournament_id, const nlhe_strategy& strategy, const std::array<int, 2>& hole,
         const std::array<int, 5>& board);
     void ensure(bool expression, const std::string& s, int line);
     void update_statusbar();
@@ -103,7 +105,7 @@ private:
     QLabel* registered_label_;
     QAction* autolobby_action_;
     double activity_variance_;
-    std::unordered_map<int, table_data_t> table_data_;
+    std::unordered_map<tid_t, table_data_t> table_data_;
     QLabel* site_label_;
     QLabel* strategy_label_;
     double time_to_next_activity_;
