@@ -19,6 +19,7 @@
 #include <boost/log/support/date_time.hpp>
 #include <boost/log/utility/setup/from_settings.hpp>
 #include <boost/log/utility/setup/from_stream.hpp>
+#include <boost/log/attributes/scoped_attribute.hpp>
 #include <Windows.h>
 #include <QPlainTextEdit>
 #include <QVBoxLayout>
@@ -503,6 +504,8 @@ void main_window::process_snapshot(const fake_window& window)
 
     const auto tournament_id = lobby_->get_tournament_id(window);
 
+    BOOST_LOG_SCOPED_THREAD_TAG("TournamentID", tournament_id);
+
     ENSURE(tournament_id != -1);
 
     auto& table_data = table_data_[tournament_id];
@@ -637,8 +640,7 @@ void main_window::process_snapshot(const fake_window& window)
         const double wait = std::max(0.0, (snapshot.sit_out[1] ? action_delay_[0] : get_normal_random(engine_,
             action_delay_[0], action_delay_[1])));
 
-        BOOST_LOG_TRIVIAL(info) << QString("[%2] Waiting for %1 seconds before acting").arg(wait).arg(tournament_id)
-            .toStdString();
+        BOOST_LOG_TRIVIAL(info) << QString("Waiting for %1 seconds before acting").arg(wait).toStdString();
 
         next_action_time = now.addMSecs(static_cast<qint64>(wait * 1000));
     }
@@ -675,7 +677,7 @@ void main_window::process_snapshot(const fake_window& window)
 
     BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
 
-    BOOST_LOG_TRIVIAL(info) << "Window: " << tournament_id << " (" << window.get_window_text() << ")";
+    BOOST_LOG_TRIVIAL(info) << "Window: " << window.get_window_text();
     BOOST_LOG_TRIVIAL(info) << "Stack: " << stack_size << " SB";
 
     if (snapshot.hole[0] != -1 && snapshot.hole[1] != -1)
