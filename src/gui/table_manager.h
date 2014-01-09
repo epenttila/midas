@@ -19,6 +19,7 @@ public:
     enum { FOLD, CALL, RAISE, ALLIN, SITOUT };
     enum { FOLD_BUTTON = 0x1, CALL_BUTTON = 0x2, RAISE_BUTTON = 0x4, INPUT_BUTTON = 0x8 };
     enum { PLAYER = 0x1, OPPONENT = 0x2 };
+    enum raise_method { DOUBLE_CLICK_INPUT, CLICK_TABLE, MAX_METHODS };
 
     struct snapshot_t
     {
@@ -51,7 +52,7 @@ public:
     snapshot_t update(const fake_window& window);
     void fold(double max_wait) const;
     void call(double max_wait) const;
-    void raise(double amount, double fraction, double minbet, double max_wait) const;
+    void raise(double amount, double fraction, double minbet, double max_wait, raise_method method) const;
     void save_snapshot() const;
 
 private:
@@ -103,6 +104,7 @@ private:
     std::vector<window_utils::button_data> raise_buttons_;
     std::vector<window_utils::button_data> bet_input_buttons_;
     std::unordered_multimap<double, window_utils::button_data> size_buttons_;
+    window_utils::button_data focus_button_;
 
     std::array<int, 2> window_size_;
     QString table_pattern_;

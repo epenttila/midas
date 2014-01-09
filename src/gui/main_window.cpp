@@ -284,6 +284,9 @@ main_window::main_window()
     mark_interval_ = settings.value("mark-interval", 3600.0).toDouble();
     activity_day_variance_ = settings.value("activity-day-variance", 0.0).toDouble();
 
+    for (const auto i : settings.value("bet-method-probabilities").toStringList())
+        bet_method_probabilities_.push_back(i.toDouble());
+
     for (int day = 0; day < 7; ++day)
     {
         for (auto i : settings.value(QString("activity-spans-%1").arg(day)).toStringList())
@@ -892,11 +895,13 @@ void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy&
             const double to_call = op_bet - my_bet;
             const double amount = raise_fraction * (total_pot + to_call) + to_call + my_bet;
             const double minbet = std::max(snapshot.big_blind, to_call) + to_call + my_bet;
+            const auto method = static_cast<table_manager::raise_method>(get_weighted_int(engine_,
+                bet_method_probabilities_));
 
-            BOOST_LOG_TRIVIAL(info) << QString("Raising %1 (%2x pot) (%3 min)").arg(amount).arg(raise_fraction)
-                .arg(minbet).toStdString();
+            BOOST_LOG_TRIVIAL(info) << QString("Raising %1 (%2x pot) (%3 min) (method %4)").arg(amount).arg(raise_fraction)
+                .arg(minbet).arg(method).toStdString();
 
-            site_->raise(amount, raise_fraction, minbet, action_delay_[1]);
+            site_->raise(amount, raise_fraction, minbet, action_delay_[1], method);
         }
         break;
     }

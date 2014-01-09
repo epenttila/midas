@@ -21,3 +21,22 @@ double get_uniform_random(T& engine, double min, double max)
 
     return boost::algorithm::clamp(x, min, max);
 }
+
+template<class T>
+int get_weighted_int(T& engine, const std::vector<double>& probabilities)
+{
+    std::uniform_real_distribution<double> dist;
+    auto x = dist(engine);
+
+    for (int i = 0; i < probabilities.size(); ++i)
+    {
+        const auto p = probabilities[i];
+
+        if (x < p && p > 0)
+            return i;
+
+        x -= p;
+    }
+
+    return -1;
+}

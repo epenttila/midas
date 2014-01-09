@@ -144,6 +144,10 @@ table_manager::table_manager(const std::string& filename, input_manager& input_m
             stack_all_in_text_ = reader.attributes().value("text").toString().toStdString();
             reader.skipCurrentElement();
         }
+        else if (reader.name() == "focus-button")
+        {
+            focus_button_ = window_utils::read_xml_button(reader);
+        }
         else
         {
             reader.skipCurrentElement();
@@ -279,7 +283,7 @@ void table_manager::call(double max_wait) const
     }
 }
 
-void table_manager::raise(double amount, double fraction, double minbet, double max_wait) const
+void table_manager::raise(double amount, double fraction, double minbet, double max_wait, raise_method method) const
 {
     if ((get_buttons() & RAISE_BUTTON) != RAISE_BUTTON)
     {
@@ -310,7 +314,15 @@ void table_manager::raise(double amount, double fraction, double minbet, double 
     // type bet size manually
     if (!ok)
     {
-        if (window_->click_any_button(input_, bet_input_buttons_, true))
+        bool focused = false;
+
+        if (method == CLICK_TABLE && focus_button_.rect.isValid())
+            focused = window_->click_button(input_, focus_button_);
+
+        if (!focused)
+            focused = window_->click_any_button(input_, bet_input_buttons_, true);
+
+        if (focused)
         {
             input_.sleep();
 

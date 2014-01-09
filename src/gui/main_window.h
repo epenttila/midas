@@ -116,4 +116,5 @@ private:
     QTime mark_time_;
     double mark_interval_;
     double activity_day_variance_;
+    std::vector<double> bet_method_probabilities_;
 };
