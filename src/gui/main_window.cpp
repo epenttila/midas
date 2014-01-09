@@ -287,6 +287,9 @@ main_window::main_window()
     for (const auto i : settings.value("bet-method-probabilities").toStringList())
         bet_method_probabilities_.push_back(i.toDouble());
 
+    for (const auto i : settings.value("idle-move-probabilities").toStringList())
+        idle_move_probabilities_.push_back(i.toDouble());
+
     for (int day = 0; day < 7; ++day)
     {
         for (auto i : settings.value(QString("activity-spans-%1").arg(day)).toStringList())
@@ -395,7 +398,12 @@ void main_window::capture_timer_timeout()
         remove_old_table_data();
 
         if (autolobby_action_->isChecked() && (!schedule_action_->isChecked() || schedule_active_))
-            input_manager_->move_random(interval, false);
+        {
+            const auto method = static_cast<input_manager::idle_move>(get_weighted_int(engine_,
+                idle_move_probabilities_));
+
+            input_manager_->move_random(method);
+        }
     }
     catch (const std::exception& e)
     {
@@ -409,7 +417,7 @@ void main_window::capture_timer_timeout()
 
         // ensure we can move after exceptions in case of visible tool tips disturbing scraping
         if (autolobby_action_->isChecked())
-            input_manager_->move_random(interval, true);
+            input_manager_->move_random(input_manager::IDLE_MOVE_DESKTOP);
     }
 
     update_statusbar();

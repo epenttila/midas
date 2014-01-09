@@ -10,6 +10,8 @@
 class input_manager
 {
 public:
+    enum idle_move { IDLE_MOVE_DESKTOP, IDLE_MOVE_OFFSET, IDLE_NO_MOVE, MAX_IDLE_MOVES };
+
     input_manager();
     void send_keypress(short vk);
     void send_string(const std::string& s);
@@ -25,7 +27,7 @@ public:
     void button_down();
     void button_up();
     void move_click(int x, int y, int width, int height, bool double_click);
-    void move_random(double capture_interval, bool force);
+    void move_random(idle_move method);
     void set_double_click_delay(double min, double max);
 
 private:

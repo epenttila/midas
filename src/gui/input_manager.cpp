@@ -287,29 +287,29 @@ void input_manager::move_click(int x, int y, int width, int height, bool double_
     //move_mouse(iround(pt.x + cos_angle * dist), iround(pt.y + sin_angle * dist));
 }
 
-void input_manager::move_random(double capture_interval, bool force)
+void input_manager::move_random(idle_move method)
 {
-    static const std::uniform_real_distribution<> d(0.0, 1.0);
-    const auto x = d(engine_) / capture_interval; // normalize probability to x per second
-
-    if (x < 0.1 || force) // 0.0-0.1, 10%, once every 10 seconds
+    switch (method)
     {
+    case IDLE_MOVE_DESKTOP:
         move_mouse(0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN), true);
-    }
-    else if (x < 0.3) // 0.1-0.3, 20%, once every 5 seconds
-    {
-        const auto angle = std::uniform_real_distribution<>(0, 2 * boost::math::constants::pi<double>())(engine_);
-        const auto sin_angle = std::sin(angle);
-        const auto cos_angle = std::cos(angle);
-        const auto dist = std::uniform_real_distribution<>(0, 100)(engine_);
+        break;
+    case IDLE_MOVE_OFFSET:
+        {
+            const auto angle = std::uniform_real_distribution<>(0, 2 * boost::math::constants::pi<double>())(engine_);
+            const auto sin_angle = std::sin(angle);
+            const auto cos_angle = std::cos(angle);
+            const auto dist = std::uniform_real_distribution<>(0, 100)(engine_);
 
-        POINT pt;
-        GetCursorPos(&pt);
+            POINT pt;
+            GetCursorPos(&pt);
 
-        const auto new_x = boost::math::iround(pt.x + cos_angle * dist);
-        const auto new_y = boost::math::iround(pt.y + sin_angle * dist);
+            const auto new_x = boost::math::iround(pt.x + cos_angle * dist);
+            const auto new_y = boost::math::iround(pt.y + sin_angle * dist);
 
-        move_mouse(new_x, new_y);
+            move_mouse(new_x, new_y);
+        }
+        break;
     }
 }
 

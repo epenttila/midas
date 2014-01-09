@@ -117,4 +117,5 @@ private:
     double mark_interval_;
     double activity_day_variance_;
     std::vector<double> bet_method_probabilities_;
+    std::vector<double> idle_move_probabilities_;
 };
