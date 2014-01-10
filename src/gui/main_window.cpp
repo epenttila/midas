@@ -282,6 +282,7 @@ main_window::main_window()
         settings.value("mouse-speed-max", 2.5).toDouble());
     activity_variance_ = settings.value("activity-variance", 0.0).toDouble();
     title_filter_->setText(settings.value("title-filter").toString());
+    table_count_->setValue(settings.value("table-count").toInt());
     mark_interval_ = settings.value("mark-interval", 3600.0).toDouble();
     activity_day_variance_ = settings.value("activity-day-variance", 0.0).toDouble();
 
