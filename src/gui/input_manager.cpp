@@ -208,7 +208,7 @@ void input_manager::left_click(int x, int y, int width, int height)
 {
     using namespace boost::math;
 
-    static const int CLICK_SIZE = 2; // Windows constant
+    static const int CLICK_SIZE = 1; // Windows constant
 
     button_down();
     sleep();
