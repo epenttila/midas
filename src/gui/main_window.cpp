@@ -20,6 +20,8 @@
 #include <boost/log/utility/setup/from_settings.hpp>
 #include <boost/log/utility/setup/from_stream.hpp>
 #include <boost/log/attributes/scoped_attribute.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
 #include <Windows.h>
 #include <QPlainTextEdit>
 #include <QVBoxLayout>
@@ -32,13 +34,13 @@
 #include <QToolBar>
 #include <QLineEdit>
 #include <QComboBox>
-#include <QSettings>
 #include <QCoreApplication>
 #include <QApplication>
 #include <QSpinBox>
 #include <QDateTime>
 #include <QMessageBox>
 #include <QHostInfo>
+#include <QXmlStreamReader>
 #pragma warning(pop)
 
 #include "cfrlib/holdem_game.h"
@@ -184,7 +186,13 @@ main_window::main_window()
     , input_manager_(new input_manager)
     , schedule_active_(false)
     , time_to_next_activity_(0)
+    , activity_variance_(0)
+    , mark_interval_(3600.0)
+    , activity_day_variance_(0)
 {
+    capture_interval_.fill(1);
+    action_delay_.fill(1);
+
     auto widget = new QWidget(this);
     widget->setFocus();
 
@@ -256,90 +264,6 @@ main_window::main_window()
     boost::log::add_common_attributes();
     boost::log::register_sink_factory("Window", boost::make_shared<qt_sink_factory>(*log_));
     boost::log::register_simple_formatter_factory<boost::log::trivial::severity_level, char>("Severity");
-
-    try
-    {
-        std::ifstream file("settings.ini");
-        boost::log::init_from_stream(file);
-    }
-    catch (const std::exception& e)
-    {
-        QMessageBox::critical(this, "Exception", e.what());
-        BOOST_LOG_TRIVIAL(error) << e.what();
-    }
-
-    QSettings settings("settings.ini", QSettings::IniFormat);
-    capture_interval_[0] = settings.value("capture-interval-min", 1).toDouble();
-    capture_interval_[1] = settings.value("capture-interval-max", 1).toDouble();
-    action_delay_[0] = settings.value("action-delay-min", 0.5).toDouble();
-    action_delay_[1] = settings.value("action-delay-max", 2.0).toDouble();
-    input_manager_->set_delay(settings.value("input-delay-min", 0.5).toDouble(),
-        settings.value("input-delay-max", 1.0).toDouble());
-    input_manager_->set_double_click_delay(settings.value("double-click-delay-min", 0.1).toDouble(),
-        settings.value("double-click-delay-max", 0.3).toDouble());
-    const auto autolobby_hotkey = settings.value("autolobby-hotkey", VK_F1).toInt();
-    input_manager_->set_mouse_speed(settings.value("mouse-speed-min", 1.5).toDouble(),
-        settings.value("mouse-speed-max", 2.5).toDouble());
-    activity_variance_ = settings.value("activity-variance", 0.0).toDouble();
-    title_filter_->setText(settings.value("title-filter").toString());
-    table_count_->setValue(settings.value("table-count").toInt());
-    mark_interval_ = settings.value("mark-interval", 3600.0).toDouble();
-    activity_day_variance_ = settings.value("activity-day-variance", 0.0).toDouble();
-
-    for (const auto i : settings.value("bet-method-probabilities").toStringList())
-        bet_method_probabilities_.push_back(i.toDouble());
-
-    for (const auto i : settings.value("idle-move-probabilities").toStringList())
-        idle_move_probabilities_.push_back(i.toDouble());
-
-    for (int day = 0; day < 7; ++day)
-    {
-        for (auto i : settings.value(QString("activity-spans-%1").arg(day)).toStringList())
-        {
-            if (i == "0")
-                continue;
-
-            const auto j = i.split(QChar('-'));
-
-            if (j.size() != 2)
-            {
-                BOOST_LOG_TRIVIAL(error) << "Invalid activity span setting";
-                continue;
-            }
-
-            activity_spans_[day].push_back(std::make_pair(hms_to_secs(j.at(0)), hms_to_secs(j.at(1))));
-        }
-    }
-
-    BOOST_LOG_TRIVIAL(info) << QString("Loaded program settings: %1").arg(settings.fileName()).toStdString();
-
-    if (RegisterHotKey(reinterpret_cast<HWND>(winId()), 0, MOD_ALT | MOD_CONTROL, autolobby_hotkey))
-    {
-        BOOST_LOG_TRIVIAL(info) << QString("Registered autolobby hotkey Ctrl+Alt+%1")
-            .arg(get_key_text(autolobby_hotkey)).toStdString();
-    }
-    else
-    {
-        BOOST_LOG_TRIVIAL(info) << QString("Unable to register hotkey Ctrl+Alt+%1")
-            .arg(get_key_text(autolobby_hotkey)).toStdString();
-    }
-
-    const auto smtp_host = settings.value("smtp-host").toString();
-    const auto smtp_port = static_cast<std::uint16_t>(settings.value("smtp-port").toUInt());
-    smtp_from_ = settings.value("smtp-from").toString();
-    smtp_to_ = settings.value("smtp-to").toString();
-
-    if (!smtp_host.isEmpty())
-    {
-        smtp_ = new smtp(smtp_host, smtp_port);
-
-        connect(smtp_, &smtp::status, [](const QString& s)
-        {
-            BOOST_LOG_TRIVIAL(info) << s.toStdString();
-        });
-    }
-    else
-        smtp_ = nullptr;
 
     BOOST_LOG_TRIVIAL(info) << "Starting capture";
 
@@ -448,6 +372,7 @@ void main_window::open_strategy()
         if (info.suffix() == "xml")
         {
             const auto filename = i->toStdString();
+            load_settings(filename);
             lobby_.reset(new lobby_manager(filename, *input_manager_));
             site_.reset(new table_manager(filename, *input_manager_));
 
@@ -959,17 +884,6 @@ void main_window::handle_schedule()
     }
 }
 
-bool main_window::nativeEvent(const QByteArray& /*eventType*/, void* message, long* /*result*/)
-{
-    if (reinterpret_cast<MSG*>(message)->message == WM_HOTKEY)
-    {
-        autolobby_action_->trigger();
-        return true;
-    }
-
-    return false;
-}
-
 void main_window::modify_state_changed()
 {
     state_widget_->setVisible(!state_widget_->isVisible());
@@ -1093,4 +1007,169 @@ void main_window::remove_old_table_data()
         else
             ++i;
     }
+}
+
+void main_window::load_settings(const std::string& filename)
+{
+    BOOST_LOG_TRIVIAL(info) << "Loading general settings: " << filename;
+
+    QFile file(filename.c_str());
+
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+        throw std::runtime_error("unable to open xml file");
+
+    QXmlStreamReader reader(&file);
+
+    while (reader.readNextStartElement())
+    {
+        if (reader.name() == "site")
+        {
+            // do nothing
+        }
+        else if (reader.name() == "capture-interval")
+        {
+            capture_interval_[0] = reader.attributes().value("min").toDouble();
+            capture_interval_[1] = reader.attributes().value("max").toDouble();
+            reader.skipCurrentElement();
+        }
+        else if (reader.name() == "action-delay")
+        {
+            action_delay_[0] = reader.attributes().value("min").toDouble();
+            action_delay_[1] = reader.attributes().value("max").toDouble();
+            reader.skipCurrentElement();
+        }
+        else if (reader.name() == "input-delay")
+        {
+            input_manager_->set_delay(
+                reader.attributes().value("min").toDouble(),
+                reader.attributes().value("max").toDouble());
+            reader.skipCurrentElement();
+        }
+        else if (reader.name() == "double-click-delay")
+        {
+            input_manager_->set_double_click_delay(
+                reader.attributes().value("min").toDouble(),
+                reader.attributes().value("max").toDouble());
+            reader.skipCurrentElement();
+        }
+        else if (reader.name() == "mouse-speed")
+        {
+            input_manager_->set_mouse_speed(
+                reader.attributes().value("min").toDouble(),
+                reader.attributes().value("max").toDouble());
+            reader.skipCurrentElement();
+        }
+        else if (reader.name() == "activity-variance")
+        {
+            activity_variance_ = reader.attributes().value("value").toDouble();
+            reader.skipCurrentElement();
+        }
+        else if (reader.name() == "title-filter")
+        {
+            title_filter_->setText(reader.attributes().value("value").toString());
+            reader.skipCurrentElement();
+        }
+        else if (reader.name() == "table-count")
+        {
+            table_count_->setValue(reader.attributes().value("value").toInt());
+            reader.skipCurrentElement();
+        }
+        else if (reader.name() == "mark-interval")
+        {
+            mark_interval_ = reader.attributes().value("value").toDouble();
+            reader.skipCurrentElement();
+        }
+        else if (reader.name() == "activity-day-variance")
+        {
+            activity_day_variance_ = reader.attributes().value("value").toDouble();
+            reader.skipCurrentElement();
+        }
+        else if (reader.name() == "bet-method-probabilities")
+        {
+            bet_method_probabilities_.clear();
+
+            for (const auto& i : reader.attributes().value("value").toString().split(","))
+                bet_method_probabilities_.push_back(i.toDouble());
+
+            reader.skipCurrentElement();
+        }
+        else if (reader.name() == "idle-move-probabilities")
+        {
+            idle_move_probabilities_.clear();
+
+            for (const auto& i : reader.attributes().value("value").toString().split(","))
+                idle_move_probabilities_.push_back(i.toDouble());
+
+            reader.skipCurrentElement();
+        }
+        else if (reader.name() == "activity-spans")
+        {
+            activity_spans_.fill(spans_t::value_type());
+
+            while (reader.readNextStartElement())
+            {
+                if (reader.name() == "span")
+                {
+                    const auto day = reader.attributes().value("day").toInt();
+
+                    for (const auto& i : reader.attributes().value("value").toString().split(","))
+                    {
+                        if (i == "0")
+                            continue;
+
+                        const auto j = i.split(QChar('-'));
+
+                        if (j.size() != 2)
+                        {
+                            BOOST_LOG_TRIVIAL(error) << "Invalid activity span setting";
+                            continue;
+                        }
+
+                        activity_spans_[day].push_back(std::make_pair(hms_to_secs(j.at(0)), hms_to_secs(j.at(1))));
+                    }
+
+                    reader.skipCurrentElement();
+                }
+            }
+        }
+        else if (reader.name() == "smtp")
+        {
+            smtp_host_ = reader.attributes().value("host").toString();
+            smtp_port_ = static_cast<std::uint16_t>(reader.attributes().value("port").toUInt());
+            smtp_from_ = reader.attributes().value("from").toString();
+            smtp_to_ = reader.attributes().value("to").toString();
+            reader.skipCurrentElement();
+        }
+        else
+        {
+            reader.skipCurrentElement();
+        }
+    }
+
+    try
+    {
+        boost::log::core::get()->remove_all_sinks();
+
+        boost::property_tree::ptree ptree;
+        boost::property_tree::read_xml(filename, ptree);
+        boost::log::init_from_settings(boost::log::settings(ptree.get_child("site.log")));
+    }
+    catch (const std::exception& e)
+    {
+        BOOST_LOG_TRIVIAL(error) << e.what();
+    }
+
+    capture_timer_->setInterval(static_cast<int>(capture_interval_[0] * 1000.0));
+
+    if (!smtp_host_.isEmpty())
+    {
+        smtp_ = new smtp(smtp_host_, smtp_port_);
+
+        connect(smtp_, &smtp::status, [](const QString& s)
+        {
+            BOOST_LOG_TRIVIAL(info) << s.toStdString();
+        });
+    }
+    else
+        smtp_ = nullptr;
 }

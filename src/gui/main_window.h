@@ -71,7 +71,6 @@ private:
 
     void process_snapshot(const fake_window& window);
     void perform_action(tid_t tournament_id, const nlhe_strategy& strategy, const table_manager::snapshot_t& snapshot);
-    bool nativeEvent(const QByteArray& eventType, void* message, long* result);
     void update_strategy_widget(tid_t tournament_id, const nlhe_strategy& strategy, const std::array<int, 2>& hole,
         const std::array<int, 5>& board);
     void ensure(bool expression, const std::string& s, int line);
@@ -80,6 +79,7 @@ private:
     void handle_lobby();
     void handle_schedule();
     void remove_old_table_data();
+    void load_settings(const std::string& filename);
 
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<nlhe_strategy>> strategies_;
@@ -111,6 +111,8 @@ private:
     double time_to_next_activity_;
     WId capture_window_;
     smtp* smtp_;
+    QString smtp_host_;
+    std::uint16_t smtp_port_;
     QString smtp_from_;
     QString smtp_to_;
     QTime mark_time_;

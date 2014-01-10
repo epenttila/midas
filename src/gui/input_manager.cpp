@@ -12,6 +12,9 @@
 input_manager::input_manager()
     : engine_(std::random_device()())
 {
+    delay_.fill(1);
+    mouse_speed_.fill(1);
+    double_click_delay_.fill(1);
 }
 
 void input_manager::send_keypress(short vk)
