@@ -148,14 +148,13 @@ void lobby_manager::reset()
     BOOST_LOG_TRIVIAL(info) << "Resetting registrations (" << registered_ << " active)";
 }
 
-std::unordered_set<lobby_manager::tid_t> lobby_manager::detect_closed_tables()
+void lobby_manager::detect_closed_tables()
 {
-    std::unordered_set<tid_t> closed;
     const auto new_active_tables = get_active_tables();
     const auto old_regs = registered_;
 
     if (new_active_tables == active_tables_)
-        return closed; // no change
+        return; // no change
 
     if (new_active_tables.size() > registered_)
     {
@@ -168,7 +167,7 @@ std::unordered_set<lobby_manager::tid_t> lobby_manager::detect_closed_tables()
             .arg(old_regs).arg(registered_).arg(get_table_string(active_tables_).c_str())
             .arg(get_table_string(new_active_tables).c_str()).toStdString();
 
-        return closed;
+        return;
     }
 
     // find closed tables
@@ -176,8 +175,6 @@ std::unordered_set<lobby_manager::tid_t> lobby_manager::detect_closed_tables()
     {
         if (new_active_tables.find(i) == new_active_tables.end())
         {
-            closed.insert(i);
-
             --registered_;
 
             BOOST_LOG_TRIVIAL(info) << QString("Tournament finished (regs: %1 -> %2; tables: %3 -> %4)")
@@ -196,8 +193,6 @@ std::unordered_set<lobby_manager::tid_t> lobby_manager::detect_closed_tables()
     }
 
     active_tables_ = new_active_tables;
-
-    return closed;
 }
 
 std::unordered_set<lobby_manager::tid_t> lobby_manager::get_active_tables() const
