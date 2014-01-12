@@ -30,6 +30,7 @@ class state_widget;
 class fake_window;
 class smtp;
 class site_settings;
+class captcha_manager;
 
 class main_window : public QMainWindow
 {
@@ -112,4 +113,5 @@ private:
     smtp* smtp_;
     QTime mark_time_;
     std::unique_ptr<site_settings> settings_;
+    std::unique_ptr<captcha_manager> captcha_manager_;
 };

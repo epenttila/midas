@@ -137,6 +137,7 @@ table_manager::snapshot_t table_manager::update(const fake_window& window)
     s.sit_out[1] = is_sit_out(1);
     s.highlight[0] = is_highlight(0);
     s.highlight[1] = is_highlight(1);
+    s.captcha = is_captcha();
 
     get_hole_cards(s.hole);
     get_board_cards(s.board);
@@ -422,4 +423,23 @@ bool table_manager::is_highlight(int position) const
     static const std::array<const char*, 2> ids = { "active-0", "active-1" };
 
     return window_utils::is_pixel(image_.get(), *settings_->get_pixel(ids[position]));
+}
+
+bool table_manager::is_captcha() const
+{
+    if (const auto p = settings_->get_pixel("captcha"))
+        return window_utils::is_pixel(image_.get(), *p);
+    else
+        return false;
+}
+
+void table_manager::input_captcha(const std::string& str) const
+{
+    const auto& button = settings_->get_button("captcha");
+
+    if (button && window_->click_button(input_, *button))
+    {
+        input_.send_string(str);
+        input_.sleep();
+    }
 }

@@ -47,7 +47,7 @@ void input_manager::send_string(const std::string& s)
         if (it != s.begin())
             sleep();
 
-        send_keypress(*it);
+        send_keypress(static_cast<short>(std::toupper(*it)));
     }
 }
 

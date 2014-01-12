@@ -23,7 +23,7 @@ public:
 
     struct snapshot_t
     {
-        snapshot_t() : total_pot(-1), buttons(0)
+        snapshot_t() : total_pot(-1), buttons(0), captcha(false)
         {
             board.fill(-1);
             hole.fill(-1);
@@ -45,6 +45,7 @@ public:
         int buttons;
         std::array<bool, 2> sit_out;
         std::array<bool, 2> highlight;
+        bool captcha;
     };
 
     table_manager(const site_settings& settings, input_manager& input_manager);
@@ -53,6 +54,7 @@ public:
     void call(double max_wait) const;
     void raise(const std::string& action, double amount, double minbet, double max_wait, raise_method method) const;
     void save_snapshot() const;
+    void input_captcha(const std::string& str) const;
 
 private:
     void get_hole_cards(std::array<int, 2>& hole) const;
@@ -67,6 +69,7 @@ private:
     double get_pot() const;
     bool is_dealer(int position) const;
     bool is_highlight(int position) const;
+    bool is_captcha() const;
 
     std::string get_stack_text(int position) const;
 

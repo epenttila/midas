@@ -26,6 +26,8 @@ set(gui_SOURCES
     smtp.h
     site_settings.cpp
     site_settings.h
+    captcha_manager.cpp
+    captcha_manager.h
 )
 
 set(gui_RESOURCES

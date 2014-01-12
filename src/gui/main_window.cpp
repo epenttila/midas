@@ -56,6 +56,7 @@
 #include "smtp.h"
 #include "site_settings.h"
 #include "util/version.h"
+#include "captcha_manager.h"
 
 #define ENSURE(x) ensure(x, #x, __LINE__)
 
@@ -174,6 +175,7 @@ main_window::main_window()
     , time_to_next_activity_(0)
     , settings_(new site_settings)
     , smtp_(nullptr)
+    , captcha_manager_(new captcha_manager)
 {
     auto widget = new QWidget(this);
     widget->setFocus();
@@ -497,6 +499,28 @@ void main_window::process_snapshot(const fake_window& window)
     // do not manipulate state when autoplay is off
     if (!autoplay_action_->isChecked())
         return;
+
+    if (snapshot.captcha)
+    {
+        if (captcha_manager_->upload_image(window.get_window_image()))
+        {
+            if (smtp_)
+            {
+                smtp_->send(settings_->get_string("smtp-from")->c_str(), settings_->get_string("smtp-to")->c_str(),
+                    "[midas] " + QHostInfo::localHostName() + " requests solution", ".");
+            }
+        }
+
+        captcha_manager_->query_solution();
+
+        const auto solution = captcha_manager_->get_solution();
+
+        if (!solution.empty())
+        {
+            site_->input_captcha(solution + '\x0d');
+            captcha_manager_->reset();
+        }
+    }
 
     // wait until our box is highlighted
     if (!snapshot.highlight[0])
@@ -1027,6 +1051,12 @@ void main_window::load_settings(const std::string& filename)
     }
     else
         smtp_ = nullptr;
+
+    if (const auto p = settings_->get_string("captcha-read-url"))
+        captcha_manager_->set_read_url(*p);
+
+    if (const auto p = settings_->get_string("captcha-upload-url"))
+        captcha_manager_->set_upload_url(*p);
 }
 
 int main_window::get_effective_stack(const table_manager::snapshot_t& snapshot, const double big_blind) const
