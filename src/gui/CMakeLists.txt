@@ -24,6 +24,8 @@ set(gui_SOURCES
     fake_window.h
     smtp.cpp
     smtp.h
+    site_settings.cpp
+    site_settings.h
 )
 
 set(gui_RESOURCES

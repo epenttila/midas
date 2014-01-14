@@ -165,11 +165,11 @@ namespace
     }
 }
 
-fake_window::fake_window(const QRect& rect, bool icon, const window_utils::font_data& title_font)
-    : rect_(rect)
+fake_window::fake_window(const site_settings::window_t& window, const site_settings& settings)
+    : rect_(window.rect)
     , wid_(0)
-    , title_font_(title_font)
-    , icon_(icon)
+    , title_font_(settings.get_font(window.font))
+    , icon_(window.icon)
 {
 }
 
@@ -231,7 +231,7 @@ bool fake_window::is_valid() const
     return true;
 }
 
-bool fake_window::click_button(input_manager& input, const window_utils::button_data& button, bool double_click) const
+bool fake_window::click_button(input_manager& input, const site_settings::button_t& button, bool double_click) const
 {
     // check if button is there
     if (!window_utils::is_button(&client_image_, button))
@@ -243,11 +243,11 @@ bool fake_window::click_button(input_manager& input, const window_utils::button_
     return true;
 }
 
-bool fake_window::click_any_button(input_manager& input, const std::vector<window_utils::button_data>& buttons, bool double_click) const
+bool fake_window::click_any_button(input_manager& input, const site_settings::button_range& buttons, bool double_click) const
 {
-    for (int i = 0; i < buttons.size(); ++i)
+    for (const auto& i : buttons)
     {
-        if (click_button(input, buttons[i], double_click))
+        if (click_button(input, *i.second, double_click))
             return true;
     }
 
@@ -267,7 +267,7 @@ std::string fake_window::get_window_text() const
     const auto rect = title_rect_.translated(-window_rect_.topLeft()).adjusted(TITLE_TEXT_LEFT_OFFSET,
         TITLE_TEXT_TOP_OFFSET, TITLE_TEXT_BOTTOM_OFFSET, TITLE_TEXT_RIGHT_OFFSET);
 
-    return window_utils::parse_image_text(&window_image_, rect, qRgb(255, 255, 255), title_font_, 0);
+    return window_utils::parse_image_text(&window_image_, rect, qRgb(255, 255, 255), *title_font_);
 }
 
 QImage fake_window::get_window_image() const

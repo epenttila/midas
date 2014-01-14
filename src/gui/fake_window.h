@@ -6,17 +6,17 @@
 #include <QWidget>
 #pragma warning(pop)
 
-#include "window_utils.h"
+#include "site_settings.h"
 
 class input_manager;
 
 class fake_window
 {
 public:
-    fake_window(const QRect& rect, bool icon, const window_utils::font_data& title_font);
+    fake_window(const site_settings::window_t& window, const site_settings& settings);
     bool is_valid() const;
-    bool click_button(input_manager& input, const window_utils::button_data& button, bool double_click = false) const;
-    bool click_any_button(input_manager& input, const std::vector<window_utils::button_data>& buttons, bool double_click = false) const;
+    bool click_button(input_manager& input, const site_settings::button_t& button, bool double_click = false) const;
+    bool click_any_button(input_manager& input, const site_settings::button_range& buttons, bool double_click = false) const;
     std::string get_window_text() const;
     bool update(WId wid = -1);
     QImage get_window_image() const;
@@ -29,7 +29,7 @@ private:
     QRect window_rect_;
     QRect client_rect_;
     QRect rect_;
-    window_utils::font_data title_font_;
+    const site_settings::font_t* title_font_;
     QRect title_rect_;
     QImage window_image_;
     QImage client_image_;

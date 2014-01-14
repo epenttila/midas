@@ -48,11 +48,11 @@ public:
         std::array<bool, 2> highlight;
     };
 
-    table_manager(const std::string& filename, input_manager& input_manager);
+    table_manager(const site_settings& settings, input_manager& input_manager);
     snapshot_t update(const fake_window& window);
     void fold(double max_wait) const;
     void call(double max_wait) const;
-    void raise(double amount, double fraction, double minbet, double max_wait, raise_method method) const;
+    void raise(const std::string& action, double amount, double minbet, double max_wait, raise_method method) const;
     void save_snapshot() const;
 
 private:
@@ -77,35 +77,5 @@ private:
     std::unique_ptr<QImage> image_;
     std::unique_ptr<QImage> mono_image_;
 
-    std::array<window_utils::pixel_data, 2> dealer_pixels_;
-    std::array<window_utils::pixel_data, 2> sit_out_pixels_;
-    std::array<window_utils::pixel_data, 2> all_in_pixels_;
-    std::array<window_utils::pixel_data, 2> stack_hilight_pixels_;
-
-    std::regex title_bb_regex_;
-
-    std::unordered_map<std::string, window_utils::font_data> fonts_;
-
-    window_utils::label_data total_pot_label_;
-    window_utils::label_data pot_label_;
-    std::array<window_utils::label_data, 2> bet_labels_;
-    std::array<window_utils::label_data, 2> stack_labels_;
-    std::array<window_utils::label_data, 2> flash_stack_labels_;
-    std::string stack_all_in_text_;
-
-    std::array<QRect, 5> board_card_rects_;
-    std::array<QRect, 2> hole_card_rects_;
-    std::array<QRgb, 4> suit_colors_;
-    QRgb card_color_;
-    QRgb card_back_color_;
-
-    std::vector<window_utils::button_data> fold_buttons_;
-    std::vector<window_utils::button_data> call_buttons_;
-    std::vector<window_utils::button_data> raise_buttons_;
-    std::vector<window_utils::button_data> bet_input_buttons_;
-    std::unordered_multimap<double, window_utils::button_data> size_buttons_;
-    window_utils::button_data focus_button_;
-
-    std::array<int, 2> window_size_;
-    QString table_pattern_;
+    const site_settings* settings_;
 };

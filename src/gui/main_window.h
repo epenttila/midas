@@ -30,13 +30,13 @@ class QSpinBox;
 class state_widget;
 class fake_window;
 class smtp;
+class site_settings;
 
 class main_window : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    typedef std::array<std::vector<std::pair<double, double>>, 7> spans_t;
     typedef lobby_manager::tid_t tid_t;
 
     main_window();
@@ -89,35 +89,24 @@ private:
     QLineEdit* title_filter_;
     holdem_strategy_widget* strategy_widget_;
     std::mt19937 engine_;
-    std::array<double, 2> capture_interval_;
     std::unique_ptr<input_manager> input_manager_;
-    std::array<double, 2> action_delay_;
     std::unique_ptr<lobby_manager> lobby_;
     QSpinBox* table_count_;
     QAction* autoplay_action_;
     state_widget* state_widget_;
     QAction* open_action_;
     QAction* save_images_;
-    spans_t activity_spans_;
     QAction* schedule_action_;
     bool schedule_active_;
     QLabel* schedule_label_;
     QLabel* registered_label_;
     QAction* autolobby_action_;
-    double activity_variance_;
     std::unordered_map<tid_t, table_data_t> table_data_;
     QLabel* site_label_;
     QLabel* strategy_label_;
     double time_to_next_activity_;
     WId capture_window_;
     smtp* smtp_;
-    QString smtp_host_;
-    std::uint16_t smtp_port_;
-    QString smtp_from_;
-    QString smtp_to_;
     QTime mark_time_;
-    double mark_interval_;
-    double activity_day_variance_;
-    std::vector<double> bet_method_probabilities_;
-    std::vector<double> idle_move_probabilities_;
+    std::unique_ptr<site_settings> settings_;
 };

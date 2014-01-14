@@ -7,6 +7,7 @@
 #include <QFile>
 #include <QDateTime>
 #include <Windows.h>
+#include <unordered_set>
 #pragma warning(pop)
 
 #include "util/card.h"
@@ -15,144 +16,10 @@
 #include "window_utils.h"
 #include "fake_window.h"
 
-table_manager::table_manager(const std::string& filename, input_manager& input_manager)
+table_manager::table_manager(const site_settings& settings, input_manager& input_manager)
     : input_(input_manager)
+    , settings_(&settings)
 {
-    window_size_.fill(0);
-
-    QFile file(filename.c_str());
-
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-        throw std::runtime_error("unable to open xml file");
-
-    QXmlStreamReader reader(&file);
-
-    while (reader.readNextStartElement())
-    {
-        if (reader.name() == "site")
-        {
-            // do nothing
-        }
-        else if (reader.name() == "dealer-pixel")
-        {
-            const int id = reader.attributes().value("id").toString().toInt();
-            dealer_pixels_[id] = window_utils::read_xml_pixel(reader);
-        }
-        else if (reader.name() == "fold-button")
-        {
-            fold_buttons_.push_back(window_utils::read_xml_button(reader));
-        }
-        else if (reader.name() == "call-button")
-        {
-            call_buttons_.push_back(window_utils::read_xml_button(reader));
-        }
-        else if (reader.name() == "raise-button")
-        {
-            raise_buttons_.push_back(window_utils::read_xml_button(reader));
-        }
-        else if (reader.name() == "title-bb-regex")
-        {
-            title_bb_regex_ = std::regex(reader.attributes().value("pattern").toUtf8());
-            reader.skipCurrentElement();
-        }
-        else if (reader.name() == "sit-out-pixel")
-        {
-            const int id = reader.attributes().value("id").toString().toInt();
-            sit_out_pixels_[id] = window_utils::read_xml_pixel(reader);
-        }
-        else if (reader.name() == "all-in-pixel")
-        {
-            const int id = reader.attributes().value("id").toString().toInt();
-            all_in_pixels_[id] = window_utils::read_xml_pixel(reader);
-        }
-        else if (reader.name() == "bet-size-button")
-        {
-            const double fraction = reader.attributes().value("fraction").toString().toDouble();
-            size_buttons_.insert(std::make_pair(fraction, window_utils::read_xml_button(reader)));
-        }
-        else if (reader.name() == "font")
-        {
-            const std::string id = reader.attributes().value("id").toUtf8();
-            fonts_[id] = window_utils::read_xml_font(reader);
-        }
-        else if (reader.name() == "total-pot-label")
-        {
-            total_pot_label_ = window_utils::read_xml_label(reader);
-        }
-        else if (reader.name() == "pot-label")
-        {
-            pot_label_ = window_utils::read_xml_label(reader);
-        }
-        else if (reader.name() == "bet-label")
-        {
-            const int id = reader.attributes().value("id").toString().toInt();
-            bet_labels_[id] = window_utils::read_xml_label(reader);
-        }
-        else if (reader.name() == "stack-label")
-        {
-            const int id = reader.attributes().value("id").toString().toInt();
-            stack_labels_[id] = window_utils::read_xml_label(reader);
-        }
-        else if (reader.name() == "stack-hilight-label")
-        {
-            const int id = reader.attributes().value("id").toString().toInt();
-            flash_stack_labels_[id] = window_utils::read_xml_label(reader);
-        }
-        else if (reader.name() == "board-card")
-        {
-            const int id = reader.attributes().value("id").toString().toInt();
-            board_card_rects_[id] = window_utils::read_xml_rect(reader);
-        }
-        else if (reader.name() == "suit")
-        {
-            const int id = reader.attributes().value("id").toString().toInt();
-            suit_colors_[id] = QColor(reader.attributes().value("color").toString()).rgb();
-            reader.skipCurrentElement();
-        }
-        else if (reader.name() == "card-color")
-        {
-            card_color_ = QColor(reader.attributes().value("color").toString()).rgb();
-            reader.skipCurrentElement();
-        }
-        else if (reader.name() == "card-back-color")
-        {
-            card_back_color_ = QColor(reader.attributes().value("color").toString()).rgb();
-            reader.skipCurrentElement();
-        }
-        else if (reader.name() == "hole-card")
-        {
-            const int id = reader.attributes().value("id").toString().toInt();
-            hole_card_rects_[id] = window_utils::read_xml_rect(reader);
-        }
-        else if (reader.name() == "stack-hilight-pixel")
-        {
-            const int id = reader.attributes().value("id").toString().toInt();
-            stack_hilight_pixels_[id] = window_utils::read_xml_pixel(reader);
-        }
-        else if (reader.name() == "bet-input-button")
-        {
-            bet_input_buttons_.push_back(window_utils::read_xml_button(reader));
-        }
-        else if (reader.name() == "window-size")
-        {
-            window_size_[0] = reader.attributes().value("width").toString().toInt();
-            window_size_[1] = reader.attributes().value("height").toString().toInt();
-            reader.skipCurrentElement();
-        }
-        else if (reader.name() == "stack-all-in-text")
-        {
-            stack_all_in_text_ = reader.attributes().value("text").toString().toStdString();
-            reader.skipCurrentElement();
-        }
-        else if (reader.name() == "focus-button")
-        {
-            focus_button_ = window_utils::read_xml_button(reader);
-        }
-        else
-        {
-            reader.skipCurrentElement();
-        }
-    }
 }
 
 table_manager::snapshot_t table_manager::update(const fake_window& window)
@@ -206,30 +73,28 @@ table_manager::snapshot_t table_manager::update(const fake_window& window)
 
 void table_manager::get_hole_cards(std::array<int, 2>& hole) const
 {
+    static const std::array<const char*, 2> ids = { "hole-0", "hole-1" };
+
     for (int i = 0; i < hole.size(); ++i)
-    {
-        hole[i] = parse_image_card(image_.get(), mono_image_.get(), hole_card_rects_[i], suit_colors_, card_color_,
-            card_back_color_, fonts_.at("rank"));
-    }
+        hole[i] = window_utils::parse_image_card(image_.get(), mono_image_.get(), *settings_, ids[i]);
 }
 
 void table_manager::get_board_cards(std::array<int, 5>& board) const
 {
-    for (int i = 0; i < board_card_rects_.size(); ++i)
-    {
-        board[i] = parse_image_card(image_.get(), mono_image_.get(), board_card_rects_[i], suit_colors_, card_color_,
-            card_back_color_, fonts_.at("rank"));
-    }
+    static const std::array<const char*, 5> ids = { "board-0", "board-1", "board-2", "board-3", "board-4" };
+
+    for (int i = 0; i < board.size(); ++i)
+        board[i] = window_utils::parse_image_card(image_.get(), mono_image_.get(), *settings_, ids[i]);
 }
 
 int table_manager::get_dealer_mask() const
 {
     int dealer = 0;
 
-    if (is_pixel(image_.get(), dealer_pixels_[0]))
+    if (window_utils::is_pixel(image_.get(), *settings_->get_pixel("dealer-0")))
         dealer |= PLAYER;
 
-    if (is_pixel(image_.get(), dealer_pixels_[1]))
+    if (window_utils::is_pixel(image_.get(), *settings_->get_pixel("dealer-1")))
         dealer |= OPPONENT;
 
     return dealer;
@@ -250,7 +115,7 @@ void table_manager::fold(double max_wait) const
     QTime t;
     t.start();
 
-    while (!window_->click_any_button(input_, fold_buttons_))
+    while (!window_->click_any_button(input_, settings_->get_buttons("fold")))
     {
         if (t.elapsed() > max_wait * 1000.0)
         {
@@ -265,7 +130,7 @@ void table_manager::call(double max_wait) const
     QTime t;
     t.start();
 
-    while (!window_->click_any_button(input_, call_buttons_))
+    while (!window_->click_any_button(input_, settings_->get_buttons("call")))
     {
         if (t.elapsed() > max_wait * 1000.0)
         {
@@ -275,7 +140,7 @@ void table_manager::call(double max_wait) const
     }
 }
 
-void table_manager::raise(double amount, double fraction, double minbet, double max_wait, raise_method method) const
+void table_manager::raise(const std::string& action, double amount, double minbet, double max_wait, raise_method method) const
 {
     if ((get_buttons() & RAISE_BUTTON) != RAISE_BUTTON)
     {
@@ -290,17 +155,10 @@ void table_manager::raise(double amount, double fraction, double minbet, double 
     // press bet size buttons
     if (!ok)
     {
-        const auto range = size_buttons_.equal_range(fraction);
+        ok = window_->click_any_button(input_, settings_->get_buttons(action));
 
-        for (auto i = range.first; i != range.second; ++i)
-        {
-            if (window_->click_button(input_, i->second))
-            {
-                input_.sleep();
-                ok = true;
-                break;
-            }
-        }
+        if (ok)
+            input_.sleep();
     }
 
     // type bet size manually
@@ -308,11 +166,13 @@ void table_manager::raise(double amount, double fraction, double minbet, double 
     {
         bool focused = false;
 
-        if (method == CLICK_TABLE && focus_button_.rect.isValid())
-            focused = window_->click_button(input_, focus_button_);
+        const auto& focus_button = *settings_->get_button("focus");
+
+        if (method == CLICK_TABLE && focus_button.rect.isValid())
+            focused = window_->click_button(input_, focus_button);
 
         if (!focused)
-            focused = window_->click_any_button(input_, bet_input_buttons_, true);
+            focused = window_->click_any_button(input_, settings_->get_buttons("input"), true);
 
         if (focused)
         {
@@ -324,7 +184,7 @@ void table_manager::raise(double amount, double fraction, double minbet, double 
             input_.send_string(std::to_string(static_cast<int>(amount)));
             input_.sleep();
         }
-        else if (fraction != ALLIN_BET_SIZE)
+        else if (action != "RAISE_A")
         {
             throw std::runtime_error("Unable to specify pot size");
         }
@@ -333,7 +193,7 @@ void table_manager::raise(double amount, double fraction, double minbet, double 
     QTime t;
     t.start();
 
-    while (!window_->click_any_button(input_, raise_buttons_))
+    while (!window_->click_any_button(input_, settings_->get_buttons("raise")))
     {
         if (t.elapsed() > max_wait * 1000.0)
         {
@@ -345,17 +205,25 @@ void table_manager::raise(double amount, double fraction, double minbet, double 
 
 std::string table_manager::get_stack_text(int position) const
 {
-    const bool flashing = flash_stack_labels_[position].font.empty() ? false : is_highlight(position);
-    const auto& label = flashing ? flash_stack_labels_[position] : stack_labels_[position];
+    static const std::array<const char*, 2> stack_ids = { "stack-0", "stack-1" };
+    static const std::array<const char*, 2> active_stack_ids = { "active-stack-0", "active-stack-1" };
 
-    return parse_image_text(mono_image_.get(), label.rect, label.color, fonts_.at(label.font), 0);
+    const auto active_stack_label = settings_->get_label(active_stack_ids[position]);
+
+    const auto label = (active_stack_label && is_highlight(position))
+        ? active_stack_label
+        : settings_->get_label(stack_ids[position]);
+
+    return window_utils::parse_image_label(mono_image_.get(), *settings_, *label);
 }
 
 double table_manager::get_stack(int position) const
 {
+    const auto stack_allin = settings_->get_string("stack-allin");
+
     const auto s = get_stack_text(position);
 
-    if (s.empty() || s == stack_all_in_text_)
+    if (s.empty() || (stack_allin && s == *stack_allin))
         return 0;
 
     return std::stof(s);
@@ -363,7 +231,11 @@ double table_manager::get_stack(int position) const
 
 double table_manager::get_bet(int position) const
 {
-    return parse_image_bet(mono_image_.get(), bet_labels_[position], fonts_.at(bet_labels_[position].font));
+    static const std::array<const char*, 2> ids = { "bet-0", "bet-1" };
+
+    const auto s = window_utils::parse_image_label(mono_image_.get(), *settings_, *settings_->get_label(ids[position]));
+
+    return s.empty() ? 0 : std::stof(s);
 }
 
 double table_manager::get_big_blind() const
@@ -373,7 +245,7 @@ double table_manager::get_big_blind() const
 
     double big_blind = -1;
 
-    if (std::regex_match(title, match, title_bb_regex_))
+    if (std::regex_match(title, match, *settings_->get_regex("bb")))
         big_blind = std::stof(match[1].str());
 
     return big_blind;
@@ -381,7 +253,8 @@ double table_manager::get_big_blind() const
 
 double table_manager::get_total_pot() const
 {
-    const auto total = parse_image_bet(mono_image_.get(), total_pot_label_, fonts_.at(total_pot_label_.font));
+    const auto s = window_utils::parse_image_label(mono_image_.get(), *settings_, *settings_->get_label("total-pot"));
+    const auto total = s.empty() ? 0 : std::stof(s);
 
     if (total > 0)
         return total;
@@ -391,26 +264,30 @@ double table_manager::get_total_pot() const
 
 bool table_manager::is_all_in(int position) const
 {
-    if (!stack_all_in_text_.empty())
-        return get_stack_text(position) == stack_all_in_text_;
+    static const std::array<const char*, 2> ids = { "allin-0", "allin-1" };
+
+    if (const auto p = settings_->get_string("stack-allin"))
+        return get_stack_text(position) == *p;
+    else if (const auto p = settings_->get_pixel(ids[position]))
+        return window_utils::is_pixel(image_.get(), *p);
     else
-        return is_pixel(image_.get(), all_in_pixels_[position]);
+        return false;
 }
 
 int table_manager::get_buttons() const
 {
     int buttons = 0;
 
-    if (is_any_button(image_.get(), fold_buttons_))
+    if (window_utils::is_any_button(image_.get(), settings_->get_buttons("fold")))
         buttons |= FOLD_BUTTON;
 
-    if (is_any_button(image_.get(), call_buttons_))
+    if (window_utils::is_any_button(image_.get(), settings_->get_buttons("call")))
         buttons |= CALL_BUTTON;
 
-    if (is_any_button(image_.get(), raise_buttons_))
+    if (window_utils::is_any_button(image_.get(), settings_->get_buttons("raise")))
         buttons |= RAISE_BUTTON;
 
-    if (is_any_button(image_.get(), bet_input_buttons_))
+    if (window_utils::is_any_button(image_.get(), settings_->get_buttons("input")))
         buttons |= INPUT_BUTTON;
 
     return buttons;
@@ -418,7 +295,9 @@ int table_manager::get_buttons() const
 
 bool table_manager::is_sit_out(int position) const
 {
-    return is_pixel(image_.get(), sit_out_pixels_[position]);
+    static const std::array<const char*, 2> ids = { "sitout-0", "sitout-1" };
+
+    return window_utils::is_pixel(image_.get(), *settings_->get_pixel(ids[position]));
 }
 
 void table_manager::save_snapshot() const
@@ -436,10 +315,18 @@ void table_manager::save_snapshot() const
 
 double table_manager::get_pot() const
 {
-    return pot_label_.font.empty() ? 0 : parse_image_bet(mono_image_.get(), pot_label_, fonts_.at(pot_label_.font));
+    if (const auto p = settings_->get_label("pot"))
+    {
+        const auto s = window_utils::parse_image_label(mono_image_.get(), *settings_, *p);
+        return s.empty() ? 0 : std::stof(s);
+    }
+    else
+        return 0;
 }
 
 bool table_manager::is_highlight(int position) const
 {
-    return is_pixel(image_.get(), stack_hilight_pixels_[position]);
+    static const std::array<const char*, 2> ids = { "active-0", "active-1" };
+
+    return window_utils::is_pixel(image_.get(), *settings_->get_pixel(ids[position]));
 }

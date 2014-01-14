@@ -59,6 +59,7 @@
 #include "qt_log_sink.h"
 #include "fake_window.h"
 #include "smtp.h"
+#include "site_settings.h"
 
 #define ENSURE(x) ensure(x, #x, __LINE__)
 
@@ -95,18 +96,7 @@ namespace
         return QString("%1:%2:%3").arg(hours).arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 10, QChar('0'));
     }
 
-    double datetime_to_secs(const QDateTime& dt)
-    {
-        return dt.toString("H").toInt() * 3600 + dt.toString("m").toInt() * 60 + dt.toString("s").toInt()
-            + dt.toString("z").toInt() / 1000.0;
-    }
-
-    double hms_to_secs(const QString& str)
-    {
-        return datetime_to_secs(QDateTime::fromString(str, "HH:mm:ss"));
-    }
-
-    bool is_schedule_active(const double var, const double day_variance, const main_window::spans_t& daily_spans,
+    bool is_schedule_active(const double var, const double day_variance, const site_settings::spans_t& daily_spans,
         double* time)
     {
         assert(daily_spans.size() == 7);
@@ -114,7 +104,7 @@ namespace
         const auto t = QDateTime::currentDateTime();
         const auto day = t.date().dayOfWeek() - 1;
         const auto& spans = daily_spans[day];
-        const auto now = datetime_to_secs(t);
+        const auto now = window_utils::datetime_to_secs(t);
 
         std::mt19937_64 engine(t.date().toJulianDay());
 
@@ -186,13 +176,8 @@ main_window::main_window()
     , input_manager_(new input_manager)
     , schedule_active_(false)
     , time_to_next_activity_(0)
-    , activity_variance_(0)
-    , mark_interval_(3600.0)
-    , activity_day_variance_(0)
+    , settings_(new site_settings)
 {
-    capture_interval_.fill(1);
-    action_delay_.fill(1);
-
     auto widget = new QWidget(this);
     widget->setFocus();
 
@@ -267,7 +252,7 @@ main_window::main_window()
 
     BOOST_LOG_TRIVIAL(info) << "Starting capture";
 
-    capture_timer_->start();
+    capture_timer_->start(1000);
     mark_time_.start();
 
     setWindowTitle("Window");
@@ -279,16 +264,21 @@ main_window::~main_window()
 
 void main_window::capture_timer_timeout()
 {
-    const auto interval = get_uniform_random(engine_, capture_interval_[0], capture_interval_[1]);
-
-    capture_timer_->setInterval(static_cast<int>(interval * 1000.0));
+    if (const auto p = settings_->get_interval("capture"))
+    {
+        const auto interval = get_uniform_random(engine_, p->first, p->second);
+        capture_timer_->setInterval(static_cast<int>(interval * 1000.0));
+    }
 
     try
     {
-        if (mark_time_.elapsed() >= static_cast<int>(mark_interval_ * 1000.0))
+        if (const auto p = settings_->get_number("mark"))
         {
-            mark_time_.restart();
-            BOOST_LOG_TRIVIAL(info) << "-- MARK --";
+            if (mark_time_.elapsed() >= static_cast<int>(*p * 1000.0))
+            {
+                mark_time_.restart();
+                BOOST_LOG_TRIVIAL(info) << "-- MARK --";
+            }
         }
 
         if (!autolobby_action_->isChecked() && QFileInfo("enable.txt").exists())
@@ -326,7 +316,7 @@ void main_window::capture_timer_timeout()
         if (autolobby_action_->isChecked() && (!schedule_action_->isChecked() || schedule_active_))
         {
             const auto method = static_cast<input_manager::idle_move>(get_weighted_int(engine_,
-                idle_move_probabilities_));
+                *settings_->get_number_list("idle-move-probabilities")));
 
             input_manager_->move_random(method);
         }
@@ -373,8 +363,8 @@ void main_window::open_strategy()
         {
             const auto filename = i->toStdString();
             load_settings(filename);
-            lobby_.reset(new lobby_manager(filename, *input_manager_));
-            site_.reset(new table_manager(filename, *input_manager_));
+            lobby_.reset(new lobby_manager(*settings_, *input_manager_));
+            site_.reset(new table_manager(*settings_, *input_manager_));
 
             BOOST_LOG_TRIVIAL(info) << QString("Loaded site settings: %1").arg(filename.c_str()).toStdString();
         }
@@ -454,7 +444,10 @@ void main_window::process_snapshot(const fake_window& window)
             site_->save_snapshot();
 
             if (smtp_)
-                smtp_->send(smtp_from_, smtp_to_, "[midas] " + QHostInfo::localHostName() + " needs attention", ".");
+            {
+                smtp_->send(settings_->get_string("smtp-from")->c_str(), settings_->get_string("stmp-to")->c_str(),
+                    "[midas] " + QHostInfo::localHostName() + " needs attention", ".");
+            }
         }
 
         return;
@@ -561,8 +554,10 @@ void main_window::process_snapshot(const fake_window& window)
 
     if (!next_action_time.isValid())
     {
-        const double wait = std::max(0.0, (snapshot.sit_out[1] ? action_delay_[0] : get_normal_random(engine_,
-            action_delay_[0], action_delay_[1])));
+        const auto& action_delay = *settings_->get_interval("action-delay");
+
+        const double wait = std::max(0.0, (snapshot.sit_out[1] ? action_delay.first
+            : get_normal_random(engine_, action_delay.first, action_delay.second)));
 
         BOOST_LOG_TRIVIAL(info) << QString("Waiting for %1 seconds before acting").arg(wait).toStdString();
 
@@ -811,15 +806,17 @@ void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy&
 
     ENSURE(current_state != nullptr);
 
+    const auto& action_delay = *settings_->get_interval("action-delay");
+
     switch (next_action)
     {
     case table_manager::FOLD:
         BOOST_LOG_TRIVIAL(info) << "Folding";
-        site_->fold(action_delay_[1]);
+        site_->fold(action_delay.second);
         break;
     case table_manager::CALL:
         BOOST_LOG_TRIVIAL(info) << "Calling";
-        site_->call(action_delay_[1]);
+        site_->call(action_delay.second);
         break;
     case table_manager::RAISE:
         {
@@ -830,12 +827,12 @@ void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy&
             const double amount = raise_fraction * (total_pot + to_call) + to_call + my_bet;
             const double minbet = std::max(snapshot.big_blind, to_call) + to_call + my_bet;
             const auto method = static_cast<table_manager::raise_method>(get_weighted_int(engine_,
-                bet_method_probabilities_));
+                *settings_->get_number_list("bet-method-probabilities")));
 
             BOOST_LOG_TRIVIAL(info) << QString("Raising %1 (%2x pot) (%3 min) (method %4)").arg(amount).arg(raise_fraction)
                 .arg(minbet).arg(method).toStdString();
 
-            site_->raise(amount, raise_fraction, minbet, action_delay_[1], method);
+            site_->raise(s.toStdString(), amount, minbet, action_delay.second, method);
         }
         break;
     }
@@ -860,8 +857,8 @@ void main_window::handle_schedule()
     if (!schedule_action_->isChecked())
         return;
 
-    const auto active = is_schedule_active(activity_variance_, activity_day_variance_, activity_spans_,
-        &time_to_next_activity_);
+    const auto active = is_schedule_active(*settings_->get_number("activity-span-variance"),
+        *settings_->get_number("activity-day-variance"), settings_->get_activity_spans(), &time_to_next_activity_);
 
     if (active != schedule_active_)
     {
@@ -956,7 +953,7 @@ void main_window::state_widget_state_changed()
 
 void main_window::update_statusbar()
 {
-    site_label_->setText(lobby_ ? QFileInfo(lobby_->get_filename().c_str()).fileName() : "No site");
+    site_label_->setText(settings_->get_filename().c_str());
     strategy_label_->setText(QString("%1 strategies").arg(strategies_.size()));
 
     QString s;
@@ -1009,159 +1006,24 @@ void main_window::remove_old_table_data()
 
 void main_window::load_settings(const std::string& filename)
 {
-    BOOST_LOG_TRIVIAL(info) << "Loading general settings: " << filename;
+    settings_->load(filename);
 
-    QFile file(filename.c_str());
+    const auto& input_delay = *settings_->get_interval("input-delay");
+    const auto& double_click_delay = *settings_->get_interval("double-click-delay");
+    const auto& mouse_speed = *settings_->get_interval("mouse-speed");
 
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-        throw std::runtime_error("unable to open xml file");
+    input_manager_->set_delay(input_delay.first, input_delay.second);
+    input_manager_->set_double_click_delay(double_click_delay.first, double_click_delay.second);
+    input_manager_->set_mouse_speed(mouse_speed.first, mouse_speed.second);
 
-    QXmlStreamReader reader(&file);
+    title_filter_->setText(settings_->get_string("title-filter")->c_str());
+    table_count_->setValue(static_cast<int>(*settings_->get_number("table-count")));
 
-    while (reader.readNextStartElement())
+    capture_timer_->setInterval(static_cast<int>(settings_->get_interval("capture")->first * 1000.0));
+
+    if (const auto smtp_host = settings_->get_string("smtp-host"))
     {
-        if (reader.name() == "site")
-        {
-            // do nothing
-        }
-        else if (reader.name() == "capture-interval")
-        {
-            capture_interval_[0] = reader.attributes().value("min").toDouble();
-            capture_interval_[1] = reader.attributes().value("max").toDouble();
-            reader.skipCurrentElement();
-        }
-        else if (reader.name() == "action-delay")
-        {
-            action_delay_[0] = reader.attributes().value("min").toDouble();
-            action_delay_[1] = reader.attributes().value("max").toDouble();
-            reader.skipCurrentElement();
-        }
-        else if (reader.name() == "input-delay")
-        {
-            input_manager_->set_delay(
-                reader.attributes().value("min").toDouble(),
-                reader.attributes().value("max").toDouble());
-            reader.skipCurrentElement();
-        }
-        else if (reader.name() == "double-click-delay")
-        {
-            input_manager_->set_double_click_delay(
-                reader.attributes().value("min").toDouble(),
-                reader.attributes().value("max").toDouble());
-            reader.skipCurrentElement();
-        }
-        else if (reader.name() == "mouse-speed")
-        {
-            input_manager_->set_mouse_speed(
-                reader.attributes().value("min").toDouble(),
-                reader.attributes().value("max").toDouble());
-            reader.skipCurrentElement();
-        }
-        else if (reader.name() == "activity-variance")
-        {
-            activity_variance_ = reader.attributes().value("value").toDouble();
-            reader.skipCurrentElement();
-        }
-        else if (reader.name() == "title-filter")
-        {
-            title_filter_->setText(reader.attributes().value("value").toString());
-            reader.skipCurrentElement();
-        }
-        else if (reader.name() == "table-count")
-        {
-            table_count_->setValue(reader.attributes().value("value").toInt());
-            reader.skipCurrentElement();
-        }
-        else if (reader.name() == "mark-interval")
-        {
-            mark_interval_ = reader.attributes().value("value").toDouble();
-            reader.skipCurrentElement();
-        }
-        else if (reader.name() == "activity-day-variance")
-        {
-            activity_day_variance_ = reader.attributes().value("value").toDouble();
-            reader.skipCurrentElement();
-        }
-        else if (reader.name() == "bet-method-probabilities")
-        {
-            bet_method_probabilities_.clear();
-
-            for (const auto& i : reader.attributes().value("value").toString().split(","))
-                bet_method_probabilities_.push_back(i.toDouble());
-
-            reader.skipCurrentElement();
-        }
-        else if (reader.name() == "idle-move-probabilities")
-        {
-            idle_move_probabilities_.clear();
-
-            for (const auto& i : reader.attributes().value("value").toString().split(","))
-                idle_move_probabilities_.push_back(i.toDouble());
-
-            reader.skipCurrentElement();
-        }
-        else if (reader.name() == "activity-spans")
-        {
-            activity_spans_.fill(spans_t::value_type());
-
-            while (reader.readNextStartElement())
-            {
-                if (reader.name() == "span")
-                {
-                    const auto day = reader.attributes().value("day").toInt();
-
-                    for (const auto& i : reader.attributes().value("value").toString().split(","))
-                    {
-                        if (i == "0")
-                            continue;
-
-                        const auto j = i.split(QChar('-'));
-
-                        if (j.size() != 2)
-                        {
-                            BOOST_LOG_TRIVIAL(error) << "Invalid activity span setting";
-                            continue;
-                        }
-
-                        activity_spans_[day].push_back(std::make_pair(hms_to_secs(j.at(0)), hms_to_secs(j.at(1))));
-                    }
-
-                    reader.skipCurrentElement();
-                }
-            }
-        }
-        else if (reader.name() == "smtp")
-        {
-            smtp_host_ = reader.attributes().value("host").toString();
-            smtp_port_ = static_cast<std::uint16_t>(reader.attributes().value("port").toUInt());
-            smtp_from_ = reader.attributes().value("from").toString();
-            smtp_to_ = reader.attributes().value("to").toString();
-            reader.skipCurrentElement();
-        }
-        else
-        {
-            reader.skipCurrentElement();
-        }
-    }
-
-    try
-    {
-        boost::log::core::get()->remove_all_sinks();
-
-        boost::property_tree::ptree ptree;
-        boost::property_tree::read_xml(filename, ptree);
-        boost::log::init_from_settings(boost::log::settings(ptree.get_child("site.log")));
-    }
-    catch (const std::exception& e)
-    {
-        BOOST_LOG_TRIVIAL(error) << e.what();
-    }
-
-    capture_timer_->setInterval(static_cast<int>(capture_interval_[0] * 1000.0));
-
-    if (!smtp_host_.isEmpty())
-    {
-        smtp_ = new smtp(smtp_host_, smtp_port_);
+        smtp_ = new smtp(smtp_host->c_str(), static_cast<std::uint16_t>(*settings_->get_number("smtp-port")));
 
         connect(smtp_, &smtp::status, [](const QString& s)
         {
