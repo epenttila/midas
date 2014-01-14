@@ -474,6 +474,7 @@ void main_window::process_snapshot(const fake_window& window)
 
     int round = -1;
 
+    visualizer_->set_hole_cards(tournament_id, snapshot.hole);
     visualizer_->set_board_cards(tournament_id, snapshot.board);
 
     if (snapshot.board[0] != -1 && snapshot.board[1] != -1 && snapshot.board[2] != -1)
@@ -510,9 +511,6 @@ void main_window::process_snapshot(const fake_window& window)
     // wait until we see buttons
     if (snapshot.buttons == 0)
         return;
-
-    // read hole cards only when autoplay is on and we see buttons
-    visualizer_->set_hole_cards(tournament_id, snapshot.hole);
 
     // wait for visible cards
     if (snapshot.hole[0] == -1 || snapshot.hole[1] == -1)

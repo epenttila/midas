@@ -198,16 +198,8 @@ table_manager::snapshot_t table_manager::update(const fake_window& window)
     s.highlight[0] = is_highlight(0);
     s.highlight[1] = is_highlight(1);
 
-    if (s.buttons)
-    {
-        get_hole_cards(s.hole);
-        get_board_cards(s.board);
-    }
-    else
-    {
-        s.hole.fill(-1);
-        s.board.fill(-1);
-    }
+    get_hole_cards(s.hole);
+    get_board_cards(s.board);
 
     return s;
 }
