@@ -356,7 +356,7 @@ std::string table_manager::get_stack_text(int position) const
     const bool flashing = flash_stack_labels_[position].font.empty() ? false : is_highlight(position);
     const auto& label = flashing ? flash_stack_labels_[position] : stack_labels_[position];
 
-    return parse_image_text(mono_image_.get(), label.rect, label.color, fonts_.at(label.font));
+    return parse_image_text(mono_image_.get(), label.rect, label.color, fonts_.at(label.font), 0);
 }
 
 double table_manager::get_stack(int position) const

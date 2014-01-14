@@ -29,10 +29,17 @@ namespace window_utils
         pixel_data pixel;
     };
 
+    struct glyph_data
+    {
+        std::vector<std::uint32_t> columns;
+        std::string ch;
+        int popcnt;
+    };
+
     struct font_data
     {
-        std::unordered_map<std::uint32_t, font_data> children;
-        std::unordered_map<std::uint32_t, std::pair<std::string, int>> masks;
+        std::uint32_t max_width;
+        std::unordered_map<std::size_t, glyph_data> masks;
     };
 
     struct label_data
@@ -49,9 +56,8 @@ namespace window_utils
     };
 
     std::uint32_t calculate_mask(const QImage& image, const int x, const int top, const int height, const QRgb& color);
-    std::pair<std::string, int> parse_image_char(const QImage& image, const int x, const int y, const int height,
-        const QRgb& color, const font_data& font);
-    std::string parse_image_text(const QImage* image, const QRect& rect, const QRgb& color, const font_data& font);
+    std::string parse_image_text(const QImage* image, const QRect& rect, const QRgb& color, const font_data& font,
+        double tolerance);
     int parse_image_card(const QImage* image, const QImage* mono, const QRect& rect, const std::array<QRgb, 4>& colors,
         const QRgb& color, const QRgb& back_color, const font_data& font);
     double parse_image_bet(const QImage* image, const label_data& text, const font_data& font);

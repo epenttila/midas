@@ -49,4 +49,5 @@ private:
     std::unique_ptr<fake_window> popup_window_;
     std::unordered_set<tid_t> active_tables_;
     std::regex tournament_id_regex_;
+    window_utils::font_data title_font_;
 };

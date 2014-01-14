@@ -77,23 +77,30 @@ lobby_manager::lobby_manager(const std::string& filename, input_manager& input_m
         else if (reader.name() == "lobby-window")
         {
             const auto icon = reader.attributes().value("icon").toInt() ? true : false;
-            lobby_window_.reset(new fake_window(window_utils::read_xml_rect(reader), icon));
+            lobby_window_.reset(new fake_window(window_utils::read_xml_rect(reader), icon, title_font_));
         }
         else if (reader.name() == "popup-window")
         {
             const auto icon = reader.attributes().value("icon").toInt() ? true : false;
-            popup_window_.reset(new fake_window(window_utils::read_xml_rect(reader), icon));
+            popup_window_.reset(new fake_window(window_utils::read_xml_rect(reader), icon, title_font_));
         }
         else if (reader.name() == "table-window")
         {
             const auto icon = reader.attributes().value("icon").toInt() ? true : false;
             table_windows_.push_back(std::unique_ptr<fake_window>(new fake_window(
-                window_utils::read_xml_rect(reader), icon)));
+                window_utils::read_xml_rect(reader), icon, title_font_)));
         }
         else if (reader.name() == "tournament-id-regex")
         {
             tournament_id_regex_ = std::regex(reader.attributes().value("pattern").toUtf8());
             reader.skipCurrentElement();
+        }
+        else if (reader.name() == "font")
+        {
+            if (reader.attributes().value("id") == "title")
+                title_font_ = window_utils::read_xml_font(reader);
+            else
+                reader.skipCurrentElement();
         }
         else
         {

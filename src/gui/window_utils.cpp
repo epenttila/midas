@@ -2,6 +2,7 @@
 
 #pragma warning(push, 1)
 #include <boost/log/trivial.hpp>
+#include <boost/functional/hash.hpp>
 #include <QXmlStreamReader>
 #include <QDateTime>
 #include <QTime>
@@ -29,43 +30,117 @@ std::uint32_t calculate_mask(const QImage& image, const int x, const int top, co
     return bitmap;
 }
 
-std::pair<std::string, int> parse_image_char(const QImage& image, const int x, const int y, const int height,
-    const QRgb& color, const font_data& font)
+std::uint32_t get_hamming_distance(const std::uint32_t x, const std::uint32_t y)
 {
-    const auto mask = calculate_mask(image, x, y, height, color);
+    std::uint32_t dist = 0;
+    auto val = x ^ y;
 
-    const auto i = font.masks.find(mask);
-
-    if (i != font.masks.end())
-        return std::make_pair(i->second.first, x + i->second.second);
-
-    const auto j = font.children.find(mask);
-
-    if (j != font.children.end())
-        return parse_image_char(image, x + 1, y, height, color, j->second);
-
-    if (mask == 0)
-        return std::make_pair("", 0);
-
-    throw std::runtime_error(QString("Unable to parse non-zero mask (0x%1) at (%2,%3)").arg(mask, 0, 16).arg(x).arg(y)
-        .toStdString());
+    while (val)
+    {
+        ++dist; 
+        val &= val - 1;
+    }
+ 
+    return dist;
 }
 
-std::string parse_image_text(const QImage* image, const QRect& rect, const QRgb& color, const font_data& font)
+const glyph_data* parse_exact_glyph(const QImage& image, const QRect& rect, const QRgb& color, const font_data& font)
+{
+    const glyph_data* match = nullptr;
+    std::size_t hash = 0;
+
+    for (int i = 0; i < rect.width(); ++i)
+    {
+        const auto mask = calculate_mask(image, rect.left() + i, rect.top(), rect.height(), color);
+
+        boost::hash_combine(hash, mask);
+
+        const auto it = font.masks.find(hash);
+
+        if (it != font.masks.end())
+            match = &it->second;
+    }
+
+    return match;
+}
+
+const glyph_data* parse_fuzzy_glyph(const QImage& image, const QRect& rect, const QRgb& color, const font_data& font,
+    double tolerance)
+{
+    std::vector<std::uint32_t> columns;
+
+    for (int i = 0; i < rect.width(); ++i)
+    {
+        const auto mask = calculate_mask(image, rect.left() + i, rect.top(), rect.height(), color);
+        columns.push_back(mask);
+    }
+
+    const glyph_data* match = nullptr;
+    double min_error = std::numeric_limits<double>::max();
+    int max_match_width = 0;
+
+    for (const auto& glyph : font.masks)
+    {
+        int dist = 0;
+        double error = 0;
+
+        for (int i = 0; i < columns.size() && i < glyph.second.columns.size(); ++i)
+        {
+            dist += get_hamming_distance(columns[i], glyph.second.columns[i]);
+            error = static_cast<double>(dist) / glyph.second.popcnt;
+
+            if (error > tolerance || error > min_error)
+                break;
+        }
+
+        const auto width = static_cast<int>(glyph.second.columns.size());
+
+        if (error <= tolerance && (error < min_error || (error == min_error && width > max_match_width)))
+        {
+            match = &glyph.second;
+            min_error = error;
+            max_match_width = width;
+        }
+    }
+
+    return match;
+}
+
+const glyph_data* parse_image_char(const QImage& image, const QRect& rect, const QRgb& color, const font_data& font,
+    double tolerance)
+{
+    if (tolerance == 0)
+        return parse_exact_glyph(image, rect, color, font);
+    else
+        return parse_fuzzy_glyph(image, rect, color, font, tolerance);
+}
+
+std::string parse_image_text(const QImage* image, const QRect& rect, const QRgb& color, const font_data& font,
+    double tolerance)
 {
     if (!image)
         return "";
 
     std::string s;
 
-    for (int x = rect.left(); x < rect.left() + rect.width(); )
+    for (int x = rect.left(); x < rect.left() + rect.width();)
     {
-        const auto val = parse_image_char(*image, x, rect.top(), rect.height(), color, font);
+        const auto mask = calculate_mask(*image, x, rect.top(), rect.height(), color);
 
-        if (val.second > 0)
+        if (mask == 0)
         {
-            s += val.first;
-            x = val.second;
+            ++x;
+            continue;
+        }
+
+        const auto max_width = std::min(static_cast<int>(font.max_width), rect.left() + rect.width() - x);
+        const QRect glyph_rect(x, rect.top(), max_width, rect.height());
+        const auto val = parse_image_char(*image, glyph_rect, color, font, tolerance);
+
+        if (val)
+        {
+            s += val->ch;
+            x += static_cast<int>(val->columns.size());
         }
         else
         {
@@ -121,7 +196,7 @@ int parse_image_card(const QImage* image, const QImage* mono, const QRect& rect,
     if (suit == -1)
         throw std::runtime_error("Unknown suit color");
 
-    const auto s = parse_image_text(mono, rect, color, font);
+    const auto s = parse_image_text(mono, rect, color, font, 0);
 
     if (!s.empty())
         return get_card(string_to_rank(s), suit);
@@ -134,13 +209,15 @@ double parse_image_bet(const QImage* image, const label_data& text, const font_d
     if (!image)
         return -1;
 
-    const auto s = parse_image_text(image, text.rect, qRgb(255, 255, 255), font);
-    double d = s.empty() ? 0 : std::stof(s);
-        
-    if (!s.empty() && s[s.length() - 1] == 'c')
-        d /= 100;
+    const auto s = parse_image_text(image, text.rect, qRgb(255, 255, 255), font, 0);
 
-    return d;
+    static const std::regex re(".*?(\\d+)");
+    std::smatch match;
+
+    if (std::regex_match(s, match, re))
+        return std::stof(match[1].str());
+  
+    return 0;
 }
 
 QRect read_xml_rect(QXmlStreamReader& reader)
@@ -192,31 +269,35 @@ bool is_any_button(const QImage* image, const std::vector<button_data>& buttons)
 
 font_data read_xml_font(QXmlStreamReader& reader)
 {
-    font_data d;
+    font_data font;
+
+    font.max_width = reader.attributes().value("max-width").toUInt();
 
     while (reader.readNextStartElement())
     {
         if (reader.name() == "entry")
         {
-            const std::uint32_t mask = reader.attributes().value("mask").toString().toUInt(0, 16);
+            glyph_data glyph = {};
 
-            if (reader.attributes().hasAttribute("value"))
+            for (const auto& column : reader.attributes().value("mask").toString().split(','))
             {
-                assert(d.masks.find(mask) == d.masks.end());
-
-                d.masks[mask] = std::make_pair(reader.attributes().value("value").toUtf8(),
-                    reader.attributes().value("width").toString().toInt());
-
-                reader.skipCurrentElement();
+                const auto val = column.toUInt(nullptr, 16);
+                glyph.columns.push_back(val);
+                glyph.popcnt += __popcnt(val);
             }
-            else
-            {
-                d.children[mask] = read_xml_font(reader);
-            }
+
+            const auto hash = boost::hash_range(glyph.columns.begin(), glyph.columns.end());
+            glyph.ch = reader.attributes().value("value").toString().toStdString();
+
+            assert(font.masks.find(hash) == font.masks.end());
+
+            font.masks[hash] = glyph;
+
+            reader.skipCurrentElement();
         }
     }
 
-    return d;
+    return font;
 }
 
 label_data read_xml_label(QXmlStreamReader& reader)

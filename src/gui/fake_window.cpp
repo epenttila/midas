@@ -21,9 +21,9 @@ namespace
     static const int ICON_HEIGHT = 16;
     static const int TITLE_OFFSET = 1;
     static const int TITLE_TEXT_LEFT_OFFSET = 0;
-    static const int TITLE_TEXT_TOP_OFFSET = 4;
+    static const int TITLE_TEXT_TOP_OFFSET = 2;
     static const int TITLE_TEXT_RIGHT_OFFSET = 0;
-    static const int TITLE_TEXT_BOTTOM_OFFSET = -4;
+    static const int TITLE_TEXT_BOTTOM_OFFSET = -3;
 
     QPixmap screenshot(WId window, const QRect& rect)
     {
@@ -46,103 +46,6 @@ namespace
         ReleaseDC(0, display_dc);
 
         return pixmap;
-    }
-
-    window_utils::font_data create_title_font()
-    {
-        window_utils::font_data font;
-
-        font.children[0x0001].masks[0x0001] = std::make_pair("T", 5);
-        font.children[0x0001].masks[0x01c1] = std::make_pair("7", 5);
-
-        font.masks[0x0002] = std::make_pair("1", 4);
-
-        font.children[0x0003].masks[0x0007] = std::make_pair("Y", 7);
-        font.children[0x0003].children[0x001f].children[0x007c].children[0x03e0].children[0x03e0].children[0x007c].masks[0x001f] = std::make_pair("V", 1);
-        font.children[0x0003].children[0x001f].children[0x007c].children[0x03e0].children[0x03e0].children[0x007c].masks[0x007c] = std::make_pair("W", 6);
-
-        font.masks[0x0007] = std::make_pair("'", 2);
-
-        font.masks[0x0018] = std::make_pair("v", 6);
-        font.masks[0x0020] = std::make_pair("-", 3);
-        font.masks[0x0044] = std::make_pair("#", 7);
-        font.masks[0x0060] = std::make_pair("4", 6);
-        font.masks[0x0078] = std::make_pair("w", 8);
-        font.masks[0x0082] = std::make_pair("3", 6);
-        font.masks[0x008c] = std::make_pair("$", 6);
-
-        font.children[0x008e].children[0x019f].children[0x0111].children[0x0111].masks[0x01f3] = std::make_pair("S", 2);
-        font.children[0x008e].children[0x019f].children[0x0111].children[0x0111].masks[0x01ff] = std::make_pair("9", 2);
-
-        font.masks[0x0090] = std::make_pair("s", 5);
-        font.masks[0x009f] = std::make_pair("5", 6);
-
-        font.children[0x00c0].masks[0x01c0] = std::make_pair("J", 4);
-        font.children[0x00c0].masks[0x01e8] = std::make_pair("a", 5);
-
-        font.masks[0x00e6] = std::make_pair("&", 6);
-        font.masks[0x00ee] = std::make_pair("8", 6);
-
-        font.children[0x00f0].children[0x01f8].children[0x0108].children[0x0108].masks[0x0198] = std::make_pair("c", 2);
-        font.children[0x00f0].children[0x01f8].children[0x0108].children[0x0108].masks[0x01f8] = std::make_pair("o", 2);
-        font.children[0x00f0].children[0x01f8].children[0x0108].children[0x0108].masks[0x01ff] = std::make_pair("d", 2);
-        font.children[0x00f0].children[0x01f8].children[0x0108].children[0x0108].masks[0x07f8] = std::make_pair("q", 2);
-        font.children[0x00f0].children[0x01f8].masks[0x0128] = std::make_pair("e", 4);
-
-        font.masks[0x00f8] = std::make_pair("u", 6);
-
-        font.children[0x00fe].masks[0x01fe] = std::make_pair("t", 3);
-        font.children[0x00fe].children[0x01ff].children[0x0101].children[0x0101].children[0x0101].masks[0x0183] = std::make_pair("C", 2);
-        font.children[0x00fe].children[0x01ff].children[0x0101].children[0x0101].children[0x0101].masks[0x01ff] = std::make_pair("O", 2);
-        font.children[0x00fe].children[0x01ff].children[0x0101].children[0x0101].masks[0x01ff] = std::make_pair("0", 2);
-        font.children[0x00fe].children[0x01ff].children[0x0101].masks[0x0111] = std::make_pair("G", 4);
-        font.children[0x00fe].children[0x01ff].children[0x0101].masks[0x0141] = std::make_pair("Q", 4);
-        font.children[0x00fe].children[0x01ff].masks[0x0111] = std::make_pair("6", 5);
-
-        font.masks[0x00ff] = std::make_pair("U", 7);
-        font.masks[0x0100] = std::make_pair(".", 2);
-        font.masks[0x0108] = std::make_pair(":", 2);
-
-        font.children[0x0180].masks[0x01e0] = std::make_pair("/", 5);
-        font.children[0x0180].masks[0x01f0] = std::make_pair("A", 8);
-
-        font.masks[0x0181] = std::make_pair("Z", 8);
-        font.masks[0x0182] = std::make_pair("2", 6);
-        font.masks[0x0183] = std::make_pair("X", 8);
-        font.masks[0x0188] = std::make_pair("z", 5);
-        font.masks[0x0198] = std::make_pair("x", 5);
-
-        font.children[0x01f8].children[0x01f8].children[0x0008].masks[0x0000] = std::make_pair("r", 0);
-        font.children[0x01f8].children[0x01f8].children[0x0008].masks[0x01f8] = std::make_pair("m", 5);
-        font.children[0x01f8].children[0x01f8].masks[0x0018] = std::make_pair("n", 4);
-
-        font.masks[0x01f9] = std::make_pair("i", 2);
-        font.masks[0x01fe] = std::make_pair("f", 3);
-
-        font.children[0x01ff].children[0x01ff].masks[0x0000] = std::make_pair("I", 0);
-        font.children[0x01ff].children[0x01ff].masks[0x0000] = std::make_pair("l", 0);
-        font.children[0x01ff].children[0x01ff].masks[0x0010] = std::make_pair("H", 5);
-        font.children[0x01ff].children[0x01ff].children[0x0011].children[0x0011].children[0x0011].masks[0x0001] = std::make_pair("F", 1);
-        font.children[0x01ff].children[0x01ff].children[0x0011].children[0x0011].children[0x0011].masks[0x001f] = std::make_pair("P", 2);
-        font.children[0x01ff].children[0x01ff].children[0x0011].children[0x0011].children[0x0011].masks[0x01ff] = std::make_pair("R", 2);
-        font.children[0x01ff].children[0x01ff].masks[0x0018] = std::make_pair("h", 4);
-        font.children[0x01ff].children[0x01ff].masks[0x001e] = std::make_pair("N", 5);
-        font.children[0x01ff].children[0x01ff].children[0x003c].masks[0x0066] = std::make_pair("K", 4);
-        font.children[0x01ff].children[0x01ff].children[0x003c].masks[0x00f0] = std::make_pair("M", 5);
-        font.children[0x01ff].children[0x01ff].masks[0x0070] = std::make_pair("k", 4);
-        font.children[0x01ff].children[0x01ff].masks[0x0100] = std::make_pair("L", 4);
-        font.children[0x01ff].children[0x01ff].children[0x0101].masks[0x0101] = std::make_pair("D", 4);
-        font.children[0x01ff].children[0x01ff].masks[0x0108] = std::make_pair("b", 4);
-        font.children[0x01ff].children[0x01ff].children[0x0111].children[0x0111].masks[0x0111] = std::make_pair("E", 2);
-        font.children[0x01ff].children[0x01ff].children[0x0111].children[0x0111].masks[0x01ff] = std::make_pair("B", 2);
-
-        font.masks[0x0200] = std::make_pair(",", 3);
-        font.masks[0x0400] = std::make_pair("y", 6);
-        font.masks[0x04f0] = std::make_pair("g", 6);
-        font.masks[0x07f8] = std::make_pair("p", 6);
-        font.masks[0x07f9] = std::make_pair("j", 2);
-
-        return font;
     }
 
     bool is_top_left_corner(const QImage& image, const int x, const int y)
@@ -262,10 +165,10 @@ namespace
     }
 }
 
-fake_window::fake_window(const QRect& rect, bool icon)
+fake_window::fake_window(const QRect& rect, bool icon, const window_utils::font_data& title_font)
     : rect_(rect)
     , wid_(0)
-    , title_font_(create_title_font())
+    , title_font_(title_font)
     , icon_(icon)
 {
 }
@@ -364,7 +267,7 @@ std::string fake_window::get_window_text() const
     const auto rect = title_rect_.translated(-window_rect_.topLeft()).adjusted(TITLE_TEXT_LEFT_OFFSET,
         TITLE_TEXT_TOP_OFFSET, TITLE_TEXT_BOTTOM_OFFSET, TITLE_TEXT_RIGHT_OFFSET);
 
-    return window_utils::parse_image_text(&window_image_, rect, qRgb(255, 255, 255), title_font_);
+    return window_utils::parse_image_text(&window_image_, rect, qRgb(255, 255, 255), title_font_, 0);
 }
 
 QImage fake_window::get_window_image() const
