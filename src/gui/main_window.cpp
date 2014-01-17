@@ -451,7 +451,7 @@ void main_window::process_snapshot(const fake_window& window)
 
     // these should work for observed tables
     visualizer_->clear_row(tournament_id);
-    visualizer_->set_dealer(tournament_id, snapshot.dealer[0]);
+    visualizer_->set_dealer(tournament_id, snapshot.dealer[0] ? 0 : (snapshot.dealer[1] ? 1 : -1));
     visualizer_->set_big_blind(tournament_id, snapshot.big_blind);
     visualizer_->set_real_pot(tournament_id, snapshot.total_pot);
     visualizer_->set_real_bets(tournament_id, snapshot.bet[0], snapshot.bet[1]);
