@@ -32,9 +32,6 @@ public:
     tid_t get_tournament_id(const fake_window& window) const;
 
 private:
-    bool close_popups(input_manager& input, fake_window& window, const site_settings::popup_range& popups,
-        const double max_wait);
-
     std::unique_ptr<fake_window> lobby_window_;
     input_manager& input_manager_;
     int registered_;

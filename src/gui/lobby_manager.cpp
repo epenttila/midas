@@ -29,6 +29,61 @@ namespace
 
         return "[" + s + "]";
     }
+
+    bool close_popups(input_manager& input, fake_window& window, const site_settings::popup_range& popups,
+        const double max_wait)
+    {
+        if (!window.update())
+            return false;
+
+        const auto title = window.get_window_text();
+        bool found = false;
+
+        for (const auto& i : popups)
+        {
+            if (std::regex_match(title, i.second->regex))
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found)
+            return false;
+
+        // not all windows will be closed when clicking OK, so can't use IsWindow here
+        QTime t;
+        t.start();
+
+        const int wait = static_cast<int>(max_wait * 1000);
+
+        while (window.update())
+        {
+            for (const auto& i : popups)
+            {
+                if (!std::regex_match(title, i.second->regex))
+                    continue;
+
+                if (i.second->button.rect.isValid())
+                {
+                    window.click_button(input, i.second->button);
+                    input.sleep();
+                }
+                else
+                {
+                    throw std::runtime_error("Do not know how to close popup");
+                }
+            }
+
+            if (t.elapsed() > wait)
+            {
+                BOOST_LOG_TRIVIAL(warning) << "Failed to close window after " << t.elapsed() << " ms (" << title << ")";
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
 
 lobby_manager::lobby_manager(const site_settings& settings, input_manager& input_manager)
@@ -150,61 +205,6 @@ std::unordered_set<lobby_manager::tid_t> lobby_manager::get_active_tables() cons
 const lobby_manager::table_vector_t& lobby_manager::get_tables() const
 {
     return table_windows_;
-}
-
-bool lobby_manager::close_popups(input_manager& input, fake_window& window, const site_settings::popup_range& popups,
-    const double max_wait)
-{
-    if (!window.update())
-        return false;
-
-    const auto title = window.get_window_text();
-    bool found = false;
-
-    for (const auto& i : popups)
-    {
-        if (std::regex_match(title, i.second->regex))
-        {
-            found = true;
-            break;
-        }
-    }
-
-    if (!found)
-        return false;
-
-    // not all windows will be closed when clicking OK, so can't use IsWindow here
-    QTime t;
-    t.start();
-
-    const int wait = static_cast<int>(max_wait * 1000);
-
-    while (window.update())
-    {
-        for (const auto& i : popups)
-        {
-            if (!std::regex_match(title, i.second->regex))
-                continue;
-
-            if (i.second->button.rect.isValid())
-            {
-                window.click_button(input, i.second->button);
-                input.sleep();
-            }
-            else
-            {
-                throw std::runtime_error("Do not know how to close popup");
-            }
-        }
-
-        if (t.elapsed() > wait)
-        {
-            BOOST_LOG_TRIVIAL(warning) << "Failed to close window after " << t.elapsed() << " ms (" << title << ")";
-            return false;
-        }
-    }
-
-    return true;
 }
 
 void lobby_manager::update_windows(WId wid)
