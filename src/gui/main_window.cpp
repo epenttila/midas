@@ -297,7 +297,14 @@ void main_window::capture_timer_timeout()
         {
             lobby_->update_windows(capture_window_);
 
+            std::vector<const fake_window*> tables;
+            
             for (const auto& window : lobby_->get_tables())
+                tables.push_back(window.get());
+
+            std::shuffle(tables.begin(), tables.end(), engine_);
+
+            for (const auto& window : tables)
             {
                 if (window->is_valid())
                     process_snapshot(*window);
