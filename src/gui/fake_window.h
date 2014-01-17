@@ -1,8 +1,6 @@
 #pragma once
 
 #pragma warning(push, 1)
-#include <vector>
-#include <QRect>
 #include <QWidget>
 #pragma warning(pop)
 

@@ -1,8 +1,6 @@
 #include "fake_window.h"
 
 #pragma warning(push, 1)
-#include <cassert>
-#include <QDateTime>
 #include <Windows.h>
 #pragma warning(pop)
 

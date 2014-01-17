@@ -1,6 +1,6 @@
 #pragma once
 
-#pragma warning(push, 3)
+#pragma warning(push, 1)
 #include <QMainWindow>
 #include <map>
 #include <random>

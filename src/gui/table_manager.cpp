@@ -2,12 +2,8 @@
 
 #pragma warning(push, 1)
 #include <boost/log/trivial.hpp>
-#include <QImage>
-#include <QXmlStreamReader>
-#include <QFile>
-#include <QDateTime>
-#include <Windows.h>
 #include <unordered_set>
+#include <QTime>
 #pragma warning(pop)
 
 #include "util/card.h"

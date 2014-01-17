@@ -1,13 +1,10 @@
 #pragma once
 
-#pragma warning(push, 3)
-#include <regex>
+#pragma warning(push, 1)
 #include <unordered_set>
 #include <memory>
 #include <boost/noncopyable.hpp>
 #include <QWidget>
-#include <Windows.h>
-#include <cstdint>
 #pragma warning(pop)
 
 #include "site_settings.h"

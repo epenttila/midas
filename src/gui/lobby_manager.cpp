@@ -1,15 +1,12 @@
 #include "lobby_manager.h"
 
-#pragma warning(push, 3)
+#pragma warning(push, 1)
 #include <boost/log/trivial.hpp>
-#include <QXmlStreamReader>
-#include <QFile>
 #include <QTime>
-#include <CommCtrl.h>
+#include <boost/range.hpp>
 #pragma warning(pop)
 
 #include "input_manager.h"
-#include "table_manager.h"
 #include "fake_window.h"
 #include "site_settings.h"
 

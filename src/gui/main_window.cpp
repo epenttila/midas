@@ -18,10 +18,7 @@
 #include <boost/log/expressions.hpp>
 #include <boost/log/support/date_time.hpp>
 #include <boost/log/utility/setup/from_settings.hpp>
-#include <boost/log/utility/setup/from_stream.hpp>
 #include <boost/log/attributes/scoped_attribute.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/xml_parser.hpp>
 #include <Windows.h>
 #include <QPlainTextEdit>
 #include <QVBoxLayout>

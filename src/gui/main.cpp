@@ -1,4 +1,4 @@
-#pragma warning(push, 3)
+#pragma warning(push, 1)
 #include <QApplication>
 #include "main_window.h"
 #pragma warning(pop)

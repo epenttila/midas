@@ -1,5 +1,5 @@
 #ifdef _MSC_VER
-#pragma warning(push, 3)
+#pragma warning(push, 1)
 #endif
 #include <iostream>
 #include <fstream>
