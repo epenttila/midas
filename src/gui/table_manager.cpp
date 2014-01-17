@@ -68,6 +68,31 @@ table_manager::snapshot_t table_manager::update(const fake_window& window)
     get_hole_cards(s.hole);
     get_board_cards(s.board);
 
+    std::array<int, 7> cards = { s.hole[0], s.hole[1], s.board[0], s.board[1], s.board[2], s.board[3], s.board[4] };
+    std::unordered_set<int> seen_cards;
+
+    for (const auto& card : cards)
+    {
+        if (card == -1)
+            continue;
+
+        if (seen_cards.count(card) != 0)
+        {
+            const auto hole_string = get_card_string(s.hole[0]) + " " + get_card_string(s.hole[1]);
+            const auto board_string =
+                get_card_string(s.board[0]) + " "
+                + get_card_string(s.board[1]) + " "
+                + get_card_string(s.board[2]) + " "
+                + get_card_string(s.board[3]) + " "
+                + get_card_string(s.board[4]);
+
+            throw std::runtime_error(QString("Duplicate card [%1] [%2]").arg(hole_string.c_str())
+                .arg(board_string.c_str()).toUtf8());
+        }
+
+        seen_cards.insert(card);
+    }
+
     return s;
 }
 
