@@ -267,7 +267,7 @@ std::string fake_window::get_window_text() const
     const auto rect = title_rect_.translated(-window_rect_.topLeft()).adjusted(TITLE_TEXT_LEFT_OFFSET,
         TITLE_TEXT_TOP_OFFSET, TITLE_TEXT_BOTTOM_OFFSET, TITLE_TEXT_RIGHT_OFFSET);
 
-    return window_utils::parse_image_text(&window_image_, rect, qRgb(255, 255, 255), *title_font_);
+    return window_utils::read_string(&window_image_, rect, qRgb(255, 255, 255), *title_font_);
 }
 
 QImage fake_window::get_window_image() const

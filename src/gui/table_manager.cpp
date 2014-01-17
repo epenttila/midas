@@ -16,6 +16,85 @@
 #include "window_utils.h"
 #include "fake_window.h"
 
+namespace
+{
+    int read_card(const QImage* image, const QImage* mono, const site_settings& settings, const std::string& id)
+    {
+        const auto& label = *settings.get_label(id);
+        const auto& pixel = *settings.get_pixel(id);
+        const auto& rect = label.rect;
+        const auto& font = *settings.get_font(label.font);
+        const std::array<site_settings::pixel_t, 4> suits = {
+            *settings.get_pixel("club"),
+            *settings.get_pixel("diamond"),
+            *settings.get_pixel("heart"),
+            *settings.get_pixel("spade"),
+        };
+        const auto& card_pixel = *settings.get_pixel("card");
+
+        if (!image)
+            return -1;
+
+        const auto s = window_utils::read_string(mono, rect, label.color, font, label.tolerance, label.shift);
+
+        if (s.empty())
+            return -1;
+
+        const auto avg = window_utils::get_average_color(*image, pixel.rect, card_pixel.color, card_pixel.tolerance);
+
+        int suit = -1;
+
+        for (int s = 0; s < suits.size(); ++s)
+        {
+            if (window_utils::get_color_distance(avg, suits[s].color) <= suits[s].tolerance)
+            {
+                if (suit != -1)
+                {
+                    throw std::runtime_error(QString("Unambiguous suit color (0x%1); was %2, could be %3")
+                        .arg(avg, 0, 16).arg(suit).arg(s).toUtf8());
+                }
+
+                suit = s;
+            }
+        }
+
+        if (suit == -1)
+            throw std::runtime_error(QString("Unknown suit color (0x%1)").arg(avg, 0, 16).toUtf8());
+
+        return get_card(string_to_rank(s), suit);
+    }
+
+    std::string read_label(const QImage* image, const site_settings& settings, const site_settings::label_t& label)
+    {
+        if (!image)
+            return "";
+
+        const auto s = window_utils::read_string(image, label.rect, label.color, *settings.get_font(label.font),
+            label.tolerance, label.shift);
+
+        if (label.regex.mark_count() == 0)
+            return s;
+
+        std::smatch match;
+
+        if (std::regex_match(s, match, label.regex))
+            return match[1].str();
+  
+        return "";
+    }
+
+    bool is_any_button(const QImage* image, const site_settings::button_range& buttons)
+    {
+        for (const auto& i : buttons)
+        {
+            if (window_utils::is_button(image, *i.second))
+                return true;
+        }
+
+        return false;
+    }
+}
+
 table_manager::table_manager(const site_settings& settings, input_manager& input_manager)
     : input_(input_manager)
     , settings_(&settings)
@@ -101,7 +180,7 @@ void table_manager::get_hole_cards(std::array<int, 2>& hole) const
     static const std::array<const char*, 2> ids = { "hole-0", "hole-1" };
 
     for (int i = 0; i < hole.size(); ++i)
-        hole[i] = window_utils::parse_image_card(image_.get(), mono_image_.get(), *settings_, ids[i]);
+        hole[i] = read_card(image_.get(), mono_image_.get(), *settings_, ids[i]);
 }
 
 void table_manager::get_board_cards(std::array<int, 5>& board) const
@@ -109,7 +188,7 @@ void table_manager::get_board_cards(std::array<int, 5>& board) const
     static const std::array<const char*, 5> ids = { "board-0", "board-1", "board-2", "board-3", "board-4" };
 
     for (int i = 0; i < board.size(); ++i)
-        board[i] = window_utils::parse_image_card(image_.get(), mono_image_.get(), *settings_, ids[i]);
+        board[i] = read_card(image_.get(), mono_image_.get(), *settings_, ids[i]);
 }
 
 int table_manager::get_dealer_mask() const
@@ -239,7 +318,7 @@ std::string table_manager::get_stack_text(int position) const
         ? active_stack_label
         : settings_->get_label(stack_ids[position]);
 
-    return window_utils::parse_image_label(mono_image_.get(), *settings_, *label);
+    return read_label(mono_image_.get(), *settings_, *label);
 }
 
 double table_manager::get_stack(int position) const
@@ -258,7 +337,7 @@ double table_manager::get_bet(int position) const
 {
     static const std::array<const char*, 2> ids = { "bet-0", "bet-1" };
 
-    const auto s = window_utils::parse_image_label(mono_image_.get(), *settings_, *settings_->get_label(ids[position]));
+    const auto s = read_label(mono_image_.get(), *settings_, *settings_->get_label(ids[position]));
 
     return s.empty() ? 0 : std::stof(s);
 }
@@ -278,7 +357,7 @@ double table_manager::get_big_blind() const
 
 double table_manager::get_total_pot() const
 {
-    const auto s = window_utils::parse_image_label(mono_image_.get(), *settings_, *settings_->get_label("total-pot"));
+    const auto s = read_label(mono_image_.get(), *settings_, *settings_->get_label("total-pot"));
     const auto total = s.empty() ? 0 : std::stof(s);
 
     if (total > 0)
@@ -303,16 +382,16 @@ int table_manager::get_buttons() const
 {
     int buttons = 0;
 
-    if (window_utils::is_any_button(image_.get(), settings_->get_buttons("fold")))
+    if (is_any_button(image_.get(), settings_->get_buttons("fold")))
         buttons |= FOLD_BUTTON;
 
-    if (window_utils::is_any_button(image_.get(), settings_->get_buttons("call")))
+    if (is_any_button(image_.get(), settings_->get_buttons("call")))
         buttons |= CALL_BUTTON;
 
-    if (window_utils::is_any_button(image_.get(), settings_->get_buttons("raise")))
+    if (is_any_button(image_.get(), settings_->get_buttons("raise")))
         buttons |= RAISE_BUTTON;
 
-    if (window_utils::is_any_button(image_.get(), settings_->get_buttons("input")))
+    if (is_any_button(image_.get(), settings_->get_buttons("input")))
         buttons |= INPUT_BUTTON;
 
     return buttons;
@@ -342,7 +421,7 @@ double table_manager::get_pot() const
 {
     if (const auto p = settings_->get_label("pot"))
     {
-        const auto s = window_utils::parse_image_label(mono_image_.get(), *settings_, *p);
+        const auto s = read_label(mono_image_.get(), *settings_, *p);
         return s.empty() ? 0 : std::stof(s);
     }
     else
