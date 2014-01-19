@@ -49,20 +49,7 @@ void nlhe_actor::act(nlhe_game& g)
             // TODO combine with main_window and nlhe_state
             const int to_call = g.get_to_call(id_);
             const int pot = g.get_pot(id_) - to_call;
-            double factor;
-
-            switch (action)
-            {
-            case nlhe_state_base::RAISE_H: factor = 0.5; break;
-            case nlhe_state_base::RAISE_Q: factor = 0.75; break;
-            case nlhe_state_base::RAISE_P: factor = 1.0; break;
-            case nlhe_state_base::RAISE_W: factor = 1.5; break;
-            case nlhe_state_base::RAISE_D: factor = 2.0; break;
-            case nlhe_state_base::RAISE_T: factor = 10.0; break;
-            case nlhe_state_base::RAISE_E: factor = 11.0; break;
-            case nlhe_state_base::RAISE_A: factor = ALLIN_BET_SIZE; break;
-            default: assert(false); factor = 1.0;
-            }
+            const auto factor = nlhe_state_base::get_raise_factor(static_cast<nlhe_state_base::holdem_action>(action));
 
             const int amount = g.get_bets(id_) + int(to_call + (2 * to_call + pot) * factor);
             g.raise(amount - g.get_bets(id_ ^ 1));

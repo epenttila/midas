@@ -30,6 +30,7 @@
 #include "cfrlib/cs_cfr_solver.h"
 #include "cfrlib/pure_cfr_solver.h"
 #include "abslib/holdem_abstraction_v2.h"
+#include "cfrlib/nlhe_state_v2.h"
 
 namespace
 {
@@ -68,6 +69,18 @@ namespace
             abs->read(filename);
             return create_solver<holdem_game<abstraction_t>>(variant, std::move(state), std::move(abs));
         }
+    }
+
+    template<int BITMASK>
+    std::unique_ptr<solver_base> create_nlhe_solver_v2(const std::string& variant, const int stack_size, const std::string& filename)
+    {
+        typedef nlhe_state_v2<BITMASK> state_type;
+        std::unique_ptr<state_type> state(new state_type(stack_size));
+
+        typedef holdem_abstraction_v2 abstraction_t;
+        std::unique_ptr<abstraction_t> abs(new abstraction_t);
+        abs->read(filename);
+        return create_solver<holdem_game<abstraction_t>>(variant, std::move(state), std::move(abs));
     }
 }
 
@@ -143,6 +156,7 @@ int main(int argc, char* argv[])
         BOOST_LOG_TRIVIAL(info) << "Using abstraction: " << abstraction;
 
         std::regex nlhe_regex("nlhe-([a-z]+)-([0-9]+)");
+        std::regex nlhe_v2_regex("nlhe2-([a-z]+)-([0-9]+)");
         std::smatch match;
 
         if (game == "kuhn")
@@ -175,22 +189,40 @@ int main(int argc, char* argv[])
             const std::string actions = match[1].str();
             const int stack_size = boost::lexical_cast<int>(match[2].str());
 
-            if (actions == "fca")
-                solver = create_nlhe_solver<F_MASK | C_MASK | A_MASK>(variant, stack_size, abstraction);
-            else if (actions == "fcpa")
-                solver = create_nlhe_solver<F_MASK | C_MASK | P_MASK | A_MASK>(variant, stack_size, abstraction);
-            else if (actions == "fchpa")
-                solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | P_MASK | A_MASK>(variant, stack_size, abstraction);
-            else if (actions == "fchqpa")
-                solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | A_MASK>(variant, stack_size, abstraction);
-            else if (actions == "fchqpda")
-                solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | D_MASK | A_MASK>(variant, stack_size, abstraction);
-            else if (actions == "fchqpdta")
-                solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | D_MASK | T_MASK | A_MASK>(variant, stack_size, abstraction);
-            else if (actions == "fchqpwdta")
-                solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | W_MASK | D_MASK | T_MASK | A_MASK>(variant, stack_size, abstraction);
-            else if (actions == "fchqpwdtea")
-                solver = create_nlhe_solver<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | W_MASK | D_MASK | T_MASK | E_MASK | A_MASK>(variant, stack_size, abstraction);
+            if (actions == "fchqpwdta")
+            {
+                solver = create_nlhe_solver<
+                    nlhe_state_base::F_MASK |
+                    nlhe_state_base::C_MASK |
+                    nlhe_state_base::H_MASK |
+                    nlhe_state_base::Q_MASK |
+                    nlhe_state_base::P_MASK |
+                    nlhe_state_base::W_MASK |
+                    nlhe_state_base::D_MASK |
+                    nlhe_state_base::T_MASK |
+                    nlhe_state_base::A_MASK>(variant, stack_size, abstraction);
+            }
+        }
+        else if (std::regex_match(game, match, nlhe_v2_regex))
+        {
+            const std::string actions = match[1].str();
+            const int stack_size = boost::lexical_cast<int>(match[2].str());
+
+            if (actions == "fcohqpwdvta")
+            {
+                solver = create_nlhe_solver_v2<
+                    nlhe_state_base::F_MASK |
+                    nlhe_state_base::C_MASK |
+                    nlhe_state_base::O_MASK |
+                    nlhe_state_base::H_MASK |
+                    nlhe_state_base::Q_MASK |
+                    nlhe_state_base::P_MASK |
+                    nlhe_state_base::W_MASK |
+                    nlhe_state_base::D_MASK |
+                    nlhe_state_base::V_MASK |
+                    nlhe_state_base::T_MASK |
+                    nlhe_state_base::A_MASK>(variant, stack_size, abstraction);
+            }
         }
 
         if (!solver)

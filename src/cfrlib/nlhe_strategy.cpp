@@ -20,35 +20,15 @@ nlhe_strategy::nlhe_strategy(const std::string& filepath)
     const std::string filename = boost::filesystem::path(filepath).filename().string();
     
     std::regex r("([^_]+)_([^_]+)(_.*)?\\.str");
-    std::regex r_nlhe("nlhe-([a-z]+)-([0-9]+)");
     std::smatch m;
-    std::smatch m_nlhe;
 
     if (!std::regex_match(filename, m, r))
         throw std::runtime_error("Unable to parse filename");
 
-    if (!std::regex_match(m[1].first, m[1].second, m_nlhe, r_nlhe))
-        throw std::runtime_error("Unable to parse filename");
-
-    const std::string actions = m_nlhe[1];
-
-    BOOST_LOG_TRIVIAL(info) << "Actions: " << actions;
-
-    stack_size_ = std::atoi(m_nlhe[2].str().c_str());
+    root_state_ = nlhe_state_base::create(m[1].str());
+    stack_size_ = root_state_->get_stack_size();
 
     BOOST_LOG_TRIVIAL(info) << "Stack size: " << stack_size_;
-
-    if (actions == "fchpa")
-        root_state_.reset(new nlhe_state<F_MASK | C_MASK | H_MASK | P_MASK | A_MASK>(stack_size_));
-    else if (actions == "fchqpa")
-        root_state_.reset(new nlhe_state<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | A_MASK>(stack_size_));
-    else if (actions == "fchqpwdta")
-    {
-        root_state_.reset(new nlhe_state<F_MASK | C_MASK | H_MASK | Q_MASK | P_MASK | W_MASK | D_MASK | T_MASK
-            | A_MASK>(stack_size_));
-    }
-    else
-        throw std::runtime_error("Unknown action abstraction");
 
     std::size_t state_count = 0;
     std::vector<const nlhe_state_base*> stack(1, root_state_.get());
