@@ -174,6 +174,7 @@ main_window::main_window()
     , schedule_active_(false)
     , time_to_next_activity_(0)
     , settings_(new site_settings)
+    , smtp_(nullptr)
 {
     auto widget = new QWidget(this);
     widget->setFocus();
@@ -448,7 +449,7 @@ void main_window::process_snapshot(const fake_window& window)
 
             if (smtp_)
             {
-                smtp_->send(settings_->get_string("smtp-from")->c_str(), settings_->get_string("stmp-to")->c_str(),
+                smtp_->send(settings_->get_string("smtp-from")->c_str(), settings_->get_string("smtp-to")->c_str(),
                     "[midas] " + QHostInfo::localHostName() + " needs attention", ".");
             }
         }
