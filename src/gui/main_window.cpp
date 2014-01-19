@@ -768,8 +768,7 @@ void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy&
     const int index = (snapshot.sit_out[1] && current_state->get_child(nlhe_state_base::CALL + 1))
         ? nlhe_state_base::CALL + 1
         : strategy.get_strategy().get_action(current_state->get_id(), bucket);
-    const nlhe_state_base::holdem_action action = current_state->get_action(index);
-    const QString s = current_state->get_action_name(action).c_str();
+    nlhe_state_base::holdem_action action = current_state->get_action(index);
 
     int next_action;
     double raise_fraction = -1;
@@ -786,6 +785,7 @@ void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy&
             // ensure the hand really terminates if our abstraction says so
             if (current_state->get_round() < RIVER && current_state->call()->is_terminal())
             {
+                action = nlhe_state_base::RAISE_A;
                 next_action = table_manager::RAISE;
                 raise_fraction = ALLIN_BET_SIZE;
                 BOOST_LOG_TRIVIAL(info) << "Translating pre-river call to all-in to ensure hand terminates";
@@ -802,6 +802,7 @@ void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy&
         break;
     }
 
+    const QString s = current_state->get_action_name(action).c_str();
     const double probability = strategy.get_strategy().get(current_state->get_id(), index, bucket);
     BOOST_LOG_TRIVIAL(info) << QString("Strategy: %1 (%2)").arg(s).arg(probability).toStdString();
 
