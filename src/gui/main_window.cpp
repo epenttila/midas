@@ -733,6 +733,9 @@ void main_window::process_snapshot(const fake_window& window)
     perform_action(tournament_id, strategy, snapshot);
 
     table_data.snapshot = snapshot;
+
+    // update snapshot timestamp again to ignore any input duration in old table calculation
+    table_data.timestamp = QDateTime::currentDateTime();
 }
 
 #pragma warning(pop)
@@ -999,6 +1002,7 @@ void main_window::remove_old_table_data()
 {
     for (auto i = table_data_.begin(); i != table_data_.end();)
     {
+        // it is possible to erroneously remove tables if many tables are performing actions during the same capture
         if (QDateTime::currentDateTime() >= i->second.timestamp.addMSecs(
             static_cast<int>(*settings_->get_number("tournament-prune-time") * 1000)))
         {
