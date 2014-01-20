@@ -12,7 +12,6 @@ public:
     typedef typename base_t::bucket_t bucket_t;
 
     static const int ACTIONS = base_t::ACTIONS;
-    static constexpr double EPSILON = base_t::EPSILON;
 
     cs_cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr<abstraction_t> abstraction);
     ~cs_cfr_solver();

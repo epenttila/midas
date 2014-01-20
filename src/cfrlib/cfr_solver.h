@@ -46,8 +46,6 @@ public:
     virtual void print(std::ostream& os) const;
 
 protected:
-    static const double EPSILON;
-
     struct data_type
     {
         data_type() : regret(0), strategy(0) {}

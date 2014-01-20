@@ -259,6 +259,3 @@ const typename cfr_solver<T, U, Data>::abstraction_t& cfr_solver<T, U, Data>::ge
 {
     return *abstraction_;
 }
-
-template<class T, class U, class Data>
-const double cfr_solver<T, U, Data>::EPSILON = 1e-7;

@@ -12,7 +12,6 @@ public:
     typedef typename base_t::abstraction_t abstraction_t;
 
     static const int ACTIONS = base_t::ACTIONS;
-    static constexpr double EPSILON = base_t::EPSILON;
 
     pcs_cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr< abstraction_t> abstraction);
     ~pcs_cfr_solver();

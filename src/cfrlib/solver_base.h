@@ -1,5 +1,7 @@
 #pragma once
 
+static const double EPSILON = 1e-7;
+
 class solver_base
 {
     friend std::ostream& operator<<(std::ostream& os, const solver_base& solver);

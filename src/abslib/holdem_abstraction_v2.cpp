@@ -214,10 +214,10 @@ namespace
     }
 
     std::vector<bucket_idx_t> create_buckets(const int round, const hand_indexer& indexer, const holdem_river_lut& river_lut,
-        const holdem_river_ochs_lut& river_ochs_lut, std::size_t cluster_count, std::size_t kmeans_max_iterations,
+        const holdem_river_ochs_lut& river_ochs_lut, int cluster_count, int kmeans_max_iterations,
         float tolerance, int runs)
     {
-        const auto index_count = indexer.get_size(indexer.get_rounds() - 1);
+        const auto index_count = static_cast<bucket_idx_t>(indexer.get_size(indexer.get_rounds() - 1));
 
         assert(cluster_count <= index_count);
 
