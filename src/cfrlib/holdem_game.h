@@ -3,6 +3,7 @@
 #include <random>
 #include <cstdint>
 #include "evallib/holdem_evaluator.h"
+#include "util/game.h"
 
 template<class Abstraction>
 class holdem_game : private boost::noncopyable

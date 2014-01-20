@@ -6,6 +6,14 @@ template<class T, class U>
 class cs_cfr_solver : public cfr_solver<T, U, double>
 {
 public:
+    typedef cfr_solver<T, U, double> base_t;
+    typedef typename base_t::game_state game_state;
+    typedef typename base_t::abstraction_t abstraction_t;
+    typedef typename base_t::bucket_t bucket_t;
+
+    static const int ACTIONS = base_t::ACTIONS;
+    static constexpr double EPSILON = base_t::EPSILON;
+
     cs_cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr<abstraction_t> abstraction);
     ~cs_cfr_solver();
 

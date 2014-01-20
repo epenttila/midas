@@ -1,13 +1,17 @@
 #include "holdem_abstraction_v2.h"
+#ifdef _MSC_VER
 #pragma warning(push, 1)
+#endif
 #include <fstream>
 #include <omp.h>
 #include <numeric>
-#include <regex>
+#include <boost/regex.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/filesystem.hpp>
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 #include "util/k_means.h"
 #include "util/binary_io.h"
 #include "lutlib/hand_indexer.h"
@@ -30,7 +34,7 @@ namespace
         for (std::int64_t i = 0; i < static_cast<std::int64_t>(data_points.size()); ++i)
         {
             auto& p = data_points[i];
-            std::fill(p.begin(), p.end(), point_t::value_type());
+            std::fill(p.begin(), p.end(), typename point_t::value_type());
 
             std::array<uint8_t, 2> cards;
             indexer.hand_unindex(indexer.get_rounds() - 1, i, cards.data());
@@ -100,7 +104,7 @@ namespace
         for (std::int64_t i = 0; i < static_cast<std::int64_t>(data_points.size()); ++i)
         {
             auto& p = data_points[i];
-            std::fill(p.begin(), p.end(), point_t::value_type());
+            std::fill(p.begin(), p.end(), typename point_t::value_type());
 
             std::array<uint8_t, 5> cards;
             indexer.hand_unindex(indexer.get_rounds() - 1, i, cards.data());
@@ -155,7 +159,7 @@ namespace
         for (std::int64_t i = 0; i < static_cast<std::int64_t>(data_points.size()); ++i)
         {
             auto& p = data_points[i];
-            std::fill(p.begin(), p.end(), point_t::value_type());
+            std::fill(p.begin(), p.end(), typename point_t::value_type());
 
             std::array<uint8_t, 6> cards;
             indexer.hand_unindex(indexer.get_rounds() - 1, i, cards.data());
@@ -210,8 +214,8 @@ namespace
     }
 
     std::vector<bucket_idx_t> create_buckets(const int round, const hand_indexer& indexer, const holdem_river_lut& river_lut,
-        const holdem_river_ochs_lut& river_ochs_lut, int cluster_count, int kmeans_max_iterations, float tolerance,
-        int runs)
+        const holdem_river_ochs_lut& river_ochs_lut, std::size_t cluster_count, std::size_t kmeans_max_iterations,
+        float tolerance, int runs)
     {
         const auto index_count = indexer.get_size(indexer.get_rounds() - 1);
 
@@ -250,10 +254,10 @@ namespace
     {
         const auto configuration = boost::filesystem::path(filename).stem().string();
 
-        std::regex r("(pr|ir)-(\\d+)-(\\d+)-(\\d+)-(\\d+).*");
-        std::smatch m;
+        boost::regex r("(pr|ir)-(\\d+)-(\\d+)-(\\d+)-(\\d+).*");
+        boost::smatch m;
 
-        if (!std::regex_match(configuration, m, r))
+        if (!boost::regex_match(configuration, m, r))
             throw std::runtime_error("Invalid abstraction configuration");
 
         *imperfect_recall = m[1] == "ir" ? true : false;
@@ -284,7 +288,7 @@ holdem_abstraction_v2::holdem_abstraction_v2()
 {
 }
 
-std::size_t holdem_abstraction_v2::get_bucket_count(const int round) const
+int holdem_abstraction_v2::get_bucket_count(const int round) const
 {
     return bucket_counts_[round];
 }
@@ -294,7 +298,7 @@ void holdem_abstraction_v2::get_buckets(const int c0, const int c1, const int b0
 {
     assert(c0 != -1 && c1 != -1);
 
-    std::array<card_t, 7> cards = { card_t(c0), card_t(c1), card_t(b0), card_t(b1), card_t(b2), card_t(b3), card_t(b4) };
+    std::array<card_t, 7> cards = {{card_t(c0), card_t(c1), card_t(b0), card_t(b1), card_t(b2), card_t(b3), card_t(b4)}};
 
     (*buckets)[PREFLOP] = read(PREFLOP, preflop_indexer_.hand_index_last(cards.data()));
     (*buckets)[FLOP] = (b0 != -1) ? read(FLOP, flop_indexer_.hand_index_last(cards.data())) : -1;
@@ -351,7 +355,7 @@ void holdem_abstraction_v2::write(const std::string& filename, const int kmeans_
 
 holdem_abstraction_v2::bucket_idx_t holdem_abstraction_v2::read(int round, hand_indexer::hand_index_t index) const
 {
-    if (round < 0 || round > RIVER || index < 0)
+    if (round < 0 || round > RIVER)
     {
         assert(false);
         return 0;

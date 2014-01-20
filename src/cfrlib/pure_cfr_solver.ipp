@@ -3,7 +3,7 @@
 
 template<class T, class U>
 pure_cfr_solver<T, U>::pure_cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr<abstraction_t> abstraction)
-    : cfr_solver(std::move(state), std::move(abstraction))
+    : base_t(std::move(state), std::move(abstraction))
 {
 }
 
@@ -18,8 +18,8 @@ void pure_cfr_solver<T, U>::run_iteration(T& game)
     bucket_t buckets;
     const int result = game.play(&buckets);
 
-    update(0, game.get_random_engine(), get_root_state(), buckets, result);
-    update(1, game.get_random_engine(), get_root_state(), buckets, result);
+    update(0, game.get_random_engine(), this->get_root_state(), buckets, result);
+    update(1, game.get_random_engine(), this->get_root_state(), buckets, result);
 }
 
 template<class T, class U>
@@ -30,13 +30,13 @@ typename pure_cfr_solver<T, U>::data_t pure_cfr_solver<T, U>::update(int positio
     const int bucket = buckets[player][state.get_round()];
     data_t total_ev = 0;
 
-    assert(bucket >= 0 && bucket < get_abstraction().get_bucket_count(state.get_round()));
+    assert(bucket >= 0 && bucket < this->get_abstraction().get_bucket_count(state.get_round()));
 
     const int choice = get_regret_strategy(engine, state, bucket);
 
     if (player != position)
     {
-        auto data = get_data(state.get_id(), bucket, 0);
+        auto data = this->get_data(state.get_id(), bucket, 0);
 
         assert(state.get_child(choice));
 
@@ -76,7 +76,7 @@ typename pure_cfr_solver<T, U>::data_t pure_cfr_solver<T, U>::update(int positio
         total_ev = action_ev[choice];
 
         // update regrets
-        auto data = get_data(state.get_id(), bucket, 0);
+        auto data = this->get_data(state.get_id(), bucket, 0);
 
         for (int i = 0; i < ACTIONS; ++i)
         {
@@ -108,10 +108,10 @@ typename pure_cfr_solver<T, U>::data_t pure_cfr_solver<T, U>::update(int positio
 template<class T, class U>
 int pure_cfr_solver<T, U>::get_regret_strategy(std::mt19937& engine, const game_state& state, const int bucket) const
 {
-    std::array<data_type, ACTIONS> data;
+    std::array<typename base_t::data_type, ACTIONS> data;
 
     for (int i = 0; i < ACTIONS; ++i)
-        data[i] = *get_data(state.get_id(), bucket, i);
+        data[i] = *this->get_data(state.get_id(), bucket, i);
 
     std::uint64_t bucket_sum = 0;
 
@@ -136,7 +136,7 @@ int pure_cfr_solver<T, U>::get_regret_strategy(std::mt19937& engine, const game_
             if (regret <= 0)
                 continue;
 
-            if (x <= regret)
+            if (x <= static_cast<std::uint64_t>(regret))
                 return i;
 
             x -= regret;

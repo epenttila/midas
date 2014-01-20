@@ -3,25 +3,6 @@
 #include "util/game.h"
 #include "holdem_game.h"
 
-namespace detail
-{
-    static const std::array<int, 2> INITIAL_POT = {{1, 2}};
-
-    int soft_translate(const double b1, const double b, const double b2);
-
-    template<unsigned int N>
-    struct count_bits
-    {
-        static const unsigned int value = count_bits<(N >> 1)>::value + (N % 2);
-    };
-
-    template<>
-    struct count_bits<0>
-    {
-        static const unsigned int value = 0;
-    };
-}
-
 template<int BITMASK>
 nlhe_state<BITMASK>::nlhe_state(const int stack_size)
     : id_(0)
@@ -348,9 +329,8 @@ bool nlhe_state<BITMASK>::is_action_enabled(holdem_action action) const
     case RAISE_T: return (BITMASK & T_MASK) == T_MASK;
     case RAISE_E: return (BITMASK & E_MASK) == E_MASK;
     case RAISE_A: return (BITMASK & A_MASK) == A_MASK;
+    default: throw std::runtime_error("invalid action");
     }
-
-    return false;
 }
 
 template<int BITMASK>

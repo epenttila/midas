@@ -16,9 +16,9 @@ namespace
 
 template<class Abstraction>
 holdem_game<Abstraction>::holdem_game(const evaluator_t& evaluator, const abstraction_t& abstraction, std::int64_t seed)
-    : evaluator_(evaluator)
+    : engine_(static_cast<unsigned long>(seed))
+    , evaluator_(evaluator)
     , abstraction_(abstraction)
-    , engine_(static_cast<unsigned long>(seed))
 {
     std::iota(deck_.begin(), deck_.end(), 0);
 
@@ -92,7 +92,7 @@ void holdem_game<Abstraction>::play_public(buckets_type& buckets)
         }
         else
         {
-            abstraction_t::bucket_type b;
+            typename abstraction_t::bucket_type b;
             abstraction_.get_buckets(hole_cards_[i].first, hole_cards_[i].second, board_[0], board_[1], board_[2], board_[3], board_[4], &b);
 
             for (int j = 0; j < ROUNDS; ++j)

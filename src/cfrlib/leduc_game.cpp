@@ -15,9 +15,9 @@ namespace
 }
 
 leduc_game::leduc_game(const evaluator_t& evaluator, const abstraction_t& abstraction, std::int64_t seed)
-    : evaluator_(evaluator)
+    : engine_(static_cast<unsigned long>(seed))
+    , evaluator_(evaluator)
     , abstraction_(abstraction)
-    , engine_(static_cast<unsigned long>(seed))
 {
     deck_[0] = 0;
     deck_[1] = 1;

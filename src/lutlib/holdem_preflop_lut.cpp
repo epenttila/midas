@@ -1,11 +1,15 @@
 #include "holdem_preflop_lut.h"
+#ifdef _MSC_VER
 #pragma warning(push, 1)
+#endif
 #include <bitset>
 #include <omp.h>
 #include <iostream>
 #include <boost/format.hpp>
 #include <boost/log/trivial.hpp>
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 #include "evallib/holdem_evaluator.h"
 #include "util/card.h"
 

@@ -3,7 +3,7 @@
 
 template<class T, class U>
 pcs_cfr_solver<T, U>::pcs_cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr<abstraction_t> abstraction)
-    : cfr_solver(std::move(state), std::move(abstraction))
+    : base_t(std::move(state), std::move(abstraction))
 {
 }
 
@@ -23,7 +23,7 @@ void pcs_cfr_solver<T, U>::run_iteration(T& game)
     reach[1].fill(1.0);
 
     ev_type utility = {{}};
-    update(game, get_root_state(), buckets, reach, utility);
+    update(game, this->get_root_state(), buckets, reach, utility);
 }
 
 template<class T, class U>
@@ -34,7 +34,7 @@ void pcs_cfr_solver<T, U>::update(const game_type& game, const game_state& state
     const int opponent = player ^ 1;
 
     // lookup infosets
-    const buckets_type::value_type& round_buckets = buckets[state.get_round()];
+    const typename buckets_type::value_type& round_buckets = buckets[state.get_round()];
 
     // regret matching & update average strategy
     std::array<std::array<double, PRIVATE>, ACTIONS> current_strategy = {{}};
@@ -46,7 +46,7 @@ void pcs_cfr_solver<T, U>::update(const game_type& game, const game_state& state
         if (bucket == -1)
             continue;
 
-        assert(bucket >= 0 && bucket < get_abstraction().get_bucket_count(state.get_round()));
+        assert(bucket >= 0 && bucket < this->get_abstraction().get_bucket_count(state.get_round()));
 
         std::array<double, ACTIONS> s;
         get_regret_strategy(state, bucket, s);
@@ -56,7 +56,7 @@ void pcs_cfr_solver<T, U>::update(const game_type& game, const game_state& state
 
         if (reach[player][infoset] > EPSILON)
         {
-            auto data = get_data(state.get_id(), bucket, 0);
+            auto data = this->get_data(state.get_id(), bucket, 0);
 
             for (int action = 0; action < ACTIONS; ++action)
             {
@@ -78,7 +78,7 @@ void pcs_cfr_solver<T, U>::update(const game_type& game, const game_state& state
             continue;
 
         reach_type new_reach;
-        std::array<double, 2> total_reach = {0, 0};
+        std::array<double, 2> total_reach = {{0, 0}};
 
         for (int infoset = 0; infoset < PRIVATE; ++infoset)
         {
@@ -97,7 +97,7 @@ void pcs_cfr_solver<T, U>::update(const game_type& game, const game_state& state
             const int new_player = next->get_player();
             const int new_opponent = new_player ^ 1;
 
-            std::array<T::results_type, 2> results = {{}};
+            std::array<typename T::results_type, 2> results = {{}};
             game.get_results(action, new_reach[new_opponent], results[new_player]);
             game.get_results(action, new_reach[new_player], results[new_opponent]);
 
@@ -133,7 +133,7 @@ void pcs_cfr_solver<T, U>::update(const game_type& game, const game_state& state
         if (bucket == -1)
             continue;
 
-        auto data = get_data(state.get_id(), bucket, 0);
+        auto data = this->get_data(state.get_id(), bucket, 0);
 
         for (int action = 0; action < ACTIONS; ++action)
         {
@@ -148,7 +148,7 @@ void pcs_cfr_solver<T, U>::update(const game_type& game, const game_state& state
 template<class T, class U>
 void pcs_cfr_solver<T, U>::get_regret_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out) const
 {
-    const auto data = get_data(state.get_id(), bucket, 0);
+    const auto data = this->get_data(state.get_id(), bucket, 0);
     double bucket_sum = 0;
 
     for (int i = 0; i < ACTIONS; ++i)

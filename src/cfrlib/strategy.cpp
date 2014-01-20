@@ -22,7 +22,7 @@ strategy::strategy(const std::string& filename, std::size_t states, int actions)
 
 double strategy::get(std::size_t state_id, int action, int bucket) const
 {
-    if (state_id < 0 || state_id >= states_ || action < 0 || action >= actions_ || bucket < 0)
+    if (state_id >= states_ || action < 0 || action >= actions_ || bucket < 0)
     {
         assert(false);
         return 0;
@@ -36,7 +36,7 @@ double strategy::get(std::size_t state_id, int action, int bucket) const
 
 int strategy::get_action(std::size_t state_id, int bucket) const
 {
-    if (state_id < 0 || state_id >= states_ || bucket < 0)
+    if (state_id >= states_ || bucket < 0)
     {
         assert(false);
         return -1;

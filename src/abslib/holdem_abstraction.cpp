@@ -7,7 +7,7 @@
 #include <string>
 #include <unordered_map>
 #include <fstream>
-#include <regex>
+#include <boost/regex.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/filesystem.hpp>
 #include "util/card.h"
@@ -195,9 +195,9 @@ namespace
 
 #pragma omp critical
             {
-                for (auto i = 0; i < flops.size(); ++i)
+                for (std::size_t i = 0; i < flops.size(); ++i)
                 {
-                    for (auto j = 0; j < flops[i].size(); ++j)
+                    for (std::size_t j = 0; j < flops[i].size(); ++j)
                         flops[i][j] += thread_flops[i][j];
                 }
             }
@@ -238,9 +238,9 @@ namespace
 
 #pragma omp critical
             {
-                for (auto i = 0; i < turns.size(); ++i)
+                for (std::size_t i = 0; i < turns.size(); ++i)
                 {
-                    for (auto j = 0; j < turns[i].size(); ++j)
+                    for (std::size_t j = 0; j < turns[i].size(); ++j)
                         turns[i][j] += thread_turns[i][j];
                 }
             }
@@ -278,10 +278,10 @@ namespace
     {
         const auto abstraction = boost::filesystem::path(filename).stem().string();
 
-        std::smatch m;
-        std::regex r("([a-z0-9]+)-([a-z0-9]+)-([a-z0-9]+)-([a-z0-9]+).*");
+        boost::smatch m;
+        boost::regex r("([a-z0-9]+)-([a-z0-9]+)-([a-z0-9]+)-([a-z0-9]+).*");
 
-        if (!std::regex_match(abstraction, m, r))
+        if (!boost::regex_match(abstraction, m, r))
             throw std::runtime_error("Invalid abstraction configuration");
 
         int round = 0;
@@ -396,14 +396,12 @@ void holdem_abstraction::get_buckets(const int c0, const int c1, const int b0, c
 
     // PREFLOP
     int preflop_hs2 = get_preflop_bucket(c0, c1);
-    int preflop_hs2_size = cfgs[PREFLOP].hs2;
 
     (*buckets)[PREFLOP] = preflop_hs2;
 
     if (cfgs[PREFLOP].forget_hs2)
     {
         preflop_hs2 = 0;
-        preflop_hs2_size = 1;
     }
 
     // FLOP

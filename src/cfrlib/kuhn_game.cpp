@@ -2,9 +2,9 @@
 #include "util/partial_shuffle.h"
 
 kuhn_game::kuhn_game(const evaluator_t& evaluator, const abstraction_t& abstraction, std::int64_t seed)
-    : evaluator_(evaluator)
+    : engine_(static_cast<unsigned long>(seed))
+    , evaluator_(evaluator)
     , abstraction_(abstraction)
-    , engine_(static_cast<unsigned long>(seed))
 {
     for (std::size_t i = 0; i < deck_.size(); ++i)
         deck_[i] = int(i);

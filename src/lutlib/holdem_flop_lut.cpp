@@ -1,10 +1,15 @@
 #include "holdem_flop_lut.h"
+#ifdef _MSC_VER
 #pragma warning(push, 1)
+#endif
 #include <omp.h>
 #include <iostream>
 #include <boost/format.hpp>
 #include <boost/log/trivial.hpp>
+#include <cstring>
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 #include "evallib/holdem_evaluator.h"
 #include "util/sort.h"
 #include "util/card.h"
@@ -14,19 +19,19 @@ namespace
 {
     static const bool board_rank_suits[holdem_flop_lut::RANK_COUNT][holdem_flop_lut::SUIT_COUNT] =
     {
-         0, 0, 0, 0, 1, // XXX (ABC)
-         0, 0, 1, 1, 1, // XXY (ABA, ABB, ABC)
-         0, 1, 1, 0, 1, // XYY (AAB, ABA, ABC)
-         1, 1, 1, 1, 1, // XYZ (*)
+         {0, 0, 0, 0, 1}, // XXX (ABC)
+         {0, 0, 1, 1, 1}, // XXY (ABA, ABB, ABC)
+         {0, 1, 1, 0, 1}, // XYY (AAB, ABA, ABC)
+         {1, 1, 1, 1, 1}, // XYZ (*)
     };
 
     static const int hole_suit_offsets[holdem_flop_lut::SUIT_COUNT][16] =
     {
-        0, -1, -1,  1, -1, -1, -1, -1, -1, -1, -1, -1,  2, -1, -1,  3,
-        0,  1, -1,  2,  3,  4, -1,  5, -1, -1, -1, -1,  6,  7, -1,  8,
-        0,  1, -1,  2,  3,  4, -1,  5, -1, -1, -1, -1,  6,  7, -1,  8,
-        0,  1, -1,  2,  3,  4, -1,  5, -1, -1, -1, -1,  6,  7, -1,  8,
-        0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
+        {0, -1, -1,  1, -1, -1, -1, -1, -1, -1, -1, -1,  2, -1, -1,  3},
+        {0,  1, -1,  2,  3,  4, -1,  5, -1, -1, -1, -1,  6,  7, -1,  8},
+        {0,  1, -1,  2,  3,  4, -1,  5, -1, -1, -1, -1,  6,  7, -1,  8},
+        {0,  1, -1,  2,  3,  4, -1,  5, -1, -1, -1, -1,  6,  7, -1,  8},
+        {0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15},
     };
 }
 
@@ -128,7 +133,7 @@ int holdem_flop_lut::get_key(const int c0, const int c1, const int b0, const int
     std::array<int, 4> suit_map = {{-1, -1, -1, -1}};
     int isomorphic_suit = 0;
 
-    for (int i = 0; i < board.size(); ++i)
+    for (std::size_t i = 0; i < board.size(); ++i)
     {
         const int suit = board_suits[i];
 

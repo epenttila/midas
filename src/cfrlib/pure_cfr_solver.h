@@ -1,13 +1,17 @@
 #pragma once
 
+#ifdef _MSC_VER
 #pragma warning(push, 1)
+#endif
 #include <ostream>
 #include <boost/noncopyable.hpp>
 #include <array>
 #include <vector>
 #include <cstdint>
 #include <boost/signals2.hpp>
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 
 class strategy;
 
@@ -15,6 +19,14 @@ template<class T, class U>
 class pure_cfr_solver : public cfr_solver<T, U, std::int32_t>
 {
 public:
+    typedef cfr_solver<T, U, std::int32_t> base_t;
+    typedef typename base_t::game_state game_state;
+    typedef typename base_t::abstraction_t abstraction_t;
+    typedef typename base_t::data_t data_t;
+    typedef typename base_t::bucket_t bucket_t;
+
+    static const int ACTIONS = base_t::ACTIONS;
+
     pure_cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr<abstraction_t> abstraction);
     ~pure_cfr_solver();
 

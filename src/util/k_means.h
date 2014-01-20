@@ -1,10 +1,14 @@
 #pragma once
 
+#ifdef _MSC_VER
 #pragma warning(push, 1)
+#endif
 #include <random>
 #include <cassert>
 #include <boost/log/trivial.hpp>
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 
 namespace detail
 {
@@ -29,7 +33,7 @@ namespace detail
     template<class T>
     typename T::value_type mean(const T& x)
     {
-        return std::accumulate(x.begin(), x.end(), T::value_type()) / x.size();
+        return std::accumulate(x.begin(), x.end(), typename T::value_type()) / x.size();
     }
 
     template<class T>
@@ -57,7 +61,7 @@ namespace detail
 
         return mean(variances);
     }
-};
+}
 
 enum init_type { RANDOM, PP, PARALLEL, OPTIMAL };
 
@@ -75,7 +79,7 @@ public:
     typedef std::size_t point_idx_t;
     typedef typename point_t::size_type dim_idx_t;
 
-    distance_t run(const point_vector_t& points, const int cluster_count, const int max_iterations,
+    distance_t run(const point_vector_t& points, const cluster_idx_t cluster_count, const std::size_t max_iterations,
         const distance_t tolerance, init_type init, const int runs, std::vector<cluster_idx_t>* point_clusters_out,
         point_vector_t* cluster_centers_out)
     {
@@ -106,13 +110,13 @@ public:
         return min_cost;
     }
 
-    distance_t run_single(const point_vector_t& points, const int cluster_count, const int max_iterations,
+    distance_t run_single(const point_vector_t& points, const cluster_idx_t cluster_count, const std::size_t max_iterations,
         const distance_t tolerance, init_type init, std::vector<cluster_idx_t>* point_clusters_out,
         point_vector_t* cluster_centers_out)
     {
         BOOST_LOG_TRIVIAL(info) << "Calculating k-means";
 
-        assert(cluster_count < points.size());
+        assert(cluster_count < static_cast<cluster_idx_t>(points.size()));
 
         auto& point_clusters = *point_clusters_out;
         auto& cluster_centers = *cluster_centers_out;
@@ -205,7 +209,7 @@ public:
             {
                 detail::vector_add(cluster_sizes, thread_data[tid].cluster_sizes);
 
-                for (cluster_idx_t i = 0; i < cluster_point_sums.size(); ++i)
+                for (cluster_idx_t i = 0; i < static_cast<cluster_idx_t>(cluster_point_sums.size()); ++i)
                     detail::vector_add(cluster_point_sums[i], thread_data[tid].cluster_point_sums[i]);
             }
 
@@ -248,7 +252,7 @@ private:
     {
         auto& distance_min = *old_distance;
 
-        for (cluster_idx_t cluster = new_clusters_idx; cluster < cluster_centers.size(); ++cluster)
+        for (cluster_idx_t cluster = new_clusters_idx; cluster < static_cast<cluster_idx_t>(cluster_centers.size()); ++cluster)
         {
             // k-means|| initialization uses d^2()
             const distance_t d = cost_fun_t()(point, cluster_centers[cluster]);
@@ -261,7 +265,7 @@ private:
         }
     }
 
-    static const point_vector_t init_random(const point_vector_t& points, const int cluster_count)
+    static const point_vector_t init_random(const point_vector_t& points, const std::size_t cluster_count)
     {
         BOOST_LOG_TRIVIAL(info) << "Performing random initialization";
 
@@ -273,18 +277,18 @@ private:
         std::uniform_int_distribution<point_idx_t> dist(0, points.size() - 1);
         point_vector_t cluster_centers(cluster_count);
 
-        for (cluster_idx_t i = 0; i < cluster_centers.size(); ++i)
+        for (cluster_idx_t i = 0; i < static_cast<cluster_idx_t>(cluster_centers.size()); ++i)
             cluster_centers[i] = points[dist(engine)];
 
         return cluster_centers;
     }
 
-    static const point_vector_t init_k_means_parallel(const point_vector_t& points, const int cluster_count,
+    static const point_vector_t init_k_means_parallel(const point_vector_t& points, const cluster_idx_t cluster_count,
         const std::size_t max_rounds, const double oversampling_factor)
     {
         BOOST_LOG_TRIVIAL(info) << "Performing k-means|| initialization";
 
-        if (points.size() <= cluster_count)
+        if (static_cast<cluster_idx_t>(points.size()) <= cluster_count)
             return points;
 
         std::random_device rd;
@@ -306,7 +310,9 @@ private:
 
         const std::size_t iterations_todo = static_cast<std::size_t>(std::ceil(std::log(total_cost)));
 
-        for (std::size_t i = 0; i < iterations_todo && (i < max_rounds || cluster_centers.size() < cluster_count) && total_cost > 0; ++i)
+        for (std::size_t i = 0; i < iterations_todo
+            && (i < max_rounds || static_cast<cluster_idx_t>(cluster_centers.size()) < cluster_count)
+            && total_cost > 0; ++i)
         {
             struct thread_data_t
             {
@@ -347,7 +353,7 @@ private:
             total_cost = std::accumulate(costs.begin(), costs.end(), distance_t());
         }
 
-        if (cluster_centers.size() <= cluster_count)
+        if (static_cast<cluster_idx_t>(cluster_centers.size()) <= cluster_count)
             return cluster_centers; // locally optimal seed already found
 
         std::vector<std::vector<std::size_t>> thread_cluster_weights(omp_get_max_threads());
@@ -372,7 +378,7 @@ private:
     {
         BOOST_LOG_TRIVIAL(info) << "Performing k-means++ initialization";
 
-        if (points.size() <= cluster_count)
+        if (static_cast<cluster_idx_t>(points.size()) <= cluster_count)
             return points;
 
         std::random_device rd;
@@ -426,7 +432,7 @@ private:
         distance_t distance_min = std::numeric_limits<distance_t>::max();
         distance_t second_distance_min = distance_min;
 
-        for (cluster_idx_t i = 0; i < cluster_centers.size(); ++i)
+        for (cluster_idx_t i = 0; i < static_cast<cluster_idx_t>(cluster_centers.size()); ++i)
         {
             // only relative values matter here so use the cost d^2() instead of possibly expensive distance
             // the distances to the closest and second closest points are calculated below
@@ -501,7 +507,7 @@ private:
         {
             detail::vector_add(cluster_sizes, thread_data[tid].cluster_sizes);
 
-            for (cluster_idx_t i = 0; i < cluster_point_sums.size(); ++i)
+            for (cluster_idx_t i = 0; i < static_cast<cluster_idx_t>(cluster_point_sums.size()); ++i)
                 detail::vector_add(cluster_point_sums[i], thread_data[tid].cluster_point_sums[i]);
         }
     }
@@ -513,7 +519,7 @@ private:
 #pragma omp parallel for
         for (std::int64_t i = 0; i < static_cast<std::int64_t>(cluster_centers.size()); ++i)
         {
-            for (cluster_idx_t j = 0; j < cluster_centers.size(); ++j)
+            for (cluster_idx_t j = 0; j < static_cast<cluster_idx_t>(cluster_centers.size()); ++j)
             {
                 if (i == j)
                     continue;
@@ -534,11 +540,11 @@ private:
         auto& cluster_centers = *cluster_centers_out;
         auto& cluster_move_distances = *cluster_move_distances_out;
 
-        for (cluster_idx_t cluster_idx = 0; cluster_idx < cluster_centers.size(); ++cluster_idx)
+        for (cluster_idx_t cluster_idx = 0; cluster_idx < static_cast<cluster_idx_t>(cluster_centers.size()); ++cluster_idx)
         {
             old_cluster_centers[cluster_idx] = cluster_centers[cluster_idx];
 
-            for (dim_idx_t dim_idx = 0; dim_idx < cluster_centers[cluster_idx].size(); ++dim_idx)
+            for (dim_idx_t dim_idx = 0; dim_idx < static_cast<dim_idx_t>(cluster_centers[cluster_idx].size()); ++dim_idx)
                 cluster_centers[cluster_idx][dim_idx] = cluster_point_sums[cluster_idx][dim_idx] / cluster_sizes[cluster_idx];
 
             // use d() as this value is used for things other than relative comparison
@@ -557,7 +563,7 @@ private:
         cluster_idx_t first_max_move_distance_idx = static_cast<cluster_idx_t>(-1);
         cluster_idx_t second_max_move_distance_idx = static_cast<cluster_idx_t>(-1);
 
-        for (cluster_idx_t i = 0; i < cluster_move_distances.size(); ++i)
+        for (cluster_idx_t i = 0; i < static_cast<cluster_idx_t>(cluster_move_distances.size()); ++i)
         {
             const auto distance = cluster_move_distances[i];
 

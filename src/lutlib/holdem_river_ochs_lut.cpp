@@ -1,12 +1,16 @@
 #include "holdem_river_ochs_lut.h"
+#ifdef _MSC_VER
 #pragma warning(push, 1)
+#endif
 #include <omp.h>
 #include <iostream>
 #include <numeric>
 #include <boost/format.hpp>
 #include <boost/assign.hpp>
 #include <boost/log/trivial.hpp>
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 #include "evallib/holdem_evaluator.h"
 #include "util/sort.h"
 #include "util/card.h"
@@ -31,7 +35,7 @@ holdem_river_ochs_lut::holdem_river_ochs_lut()
     std::cout << "create_preflop_buckets start\n";
 
     std::array<int, 169> preflop_clusters =
-    {
+    {{
         4, 1, 6, 1, 1, 6, 1, 1, 1, 6, 1, 1, 1,
         1, 7, 1, 1, 1, 2, 3, 7, 1, 1, 2, 2, 3,
         3, 8, 2, 2, 2, 2, 3, 3, 3, 8, 2, 2, 2,
@@ -45,7 +49,7 @@ holdem_river_ochs_lut::holdem_river_ochs_lut()
         4, 4, 5, 5, 5, 5, 4, 4, 4, 4, 5, 5, 5,
         5, 7, 7, 4, 6, 6, 6, 6, 6, 6, 7, 7, 7,
         7, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7
-    };
+    }};
 
     std::vector<card_t> cfg;
     cfg.push_back(2);

@@ -1,5 +1,6 @@
 #include "twoplustwo_evaluator.h"
 #include <fstream>
+#include <stdexcept>
 
 const int twoplustwo_evaluator::RANKS = 32487834;
 std::unique_ptr<int[]> twoplustwo_evaluator::ranks_ = std::unique_ptr<int[]>(new int[RANKS]);

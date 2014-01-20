@@ -3,7 +3,7 @@
 
 template<class T, class U>
 cs_cfr_solver<T, U>::cs_cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr<abstraction_t> abstraction)
-    : cfr_solver(std::move(state), std::move(abstraction))
+    : base_t(std::move(state), std::move(abstraction))
 {
 }
 
@@ -19,7 +19,7 @@ void cs_cfr_solver<T, U>::run_iteration(T& game)
     const int result = game.play(&buckets);
 
     std::array<double, 2> reach = {{1.0, 1.0}};
-    update(get_root_state(), buckets, reach, result);
+    update(this->get_root_state(), buckets, reach, result);
 }
 
 template<class T, class U>
@@ -30,13 +30,13 @@ double cs_cfr_solver<T, U>::update(const game_state& state, const bucket_t& buck
     const int bucket = buckets[player][state.get_round()];
     std::array<double, ACTIONS> action_probabilities;
 
-    assert(bucket >= 0 && bucket < get_abstraction().get_bucket_count(state.get_round()));
+    assert(bucket >= 0 && bucket < this->get_abstraction().get_bucket_count(state.get_round()));
 
     get_regret_strategy(state, bucket, action_probabilities);
 
     if (reach[player] > EPSILON)
     {
-        auto data = get_data(state.get_id(), bucket, 0);
+        auto data = this->get_data(state.get_id(), bucket, 0);
 
         for (int i = 0; i < ACTIONS; ++i)
         {
@@ -80,7 +80,7 @@ double cs_cfr_solver<T, U>::update(const game_state& state, const bucket_t& buck
     // update regrets
     if (reach[opponent] > EPSILON)
     {
-        auto data = get_data(state.get_id(), bucket, 0);
+        auto data = this->get_data(state.get_id(), bucket, 0);
 
         for (int i = 0; i < ACTIONS; ++i)
         {
@@ -103,7 +103,7 @@ double cs_cfr_solver<T, U>::update(const game_state& state, const bucket_t& buck
 template<class T, class U>
 void cs_cfr_solver<T, U>::get_regret_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out) const
 {
-    const auto data = get_data(state.get_id(), bucket, 0);
+    const auto data = this->get_data(state.get_id(), bucket, 0);
     double bucket_sum = 0;
 
     for (int i = 0; i < ACTIONS; ++i)

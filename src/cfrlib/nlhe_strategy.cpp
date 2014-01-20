@@ -1,9 +1,13 @@
 #include "nlhe_strategy.h"
+#ifdef _MSC_VER
 #pragma warning(push, 1)
+#endif
 #include <regex>
 #include <boost/filesystem.hpp>
 #include <boost/log/trivial.hpp>
+#ifdef MSC_VER_
 #pragma warning(pop)
+#endif
 #include "nlhe_state.h"
 #include "abslib/holdem_abstraction.h"
 #include "abslib/holdem_abstraction_v2.h"

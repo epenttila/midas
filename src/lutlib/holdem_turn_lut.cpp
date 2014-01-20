@@ -1,10 +1,15 @@
 #include "holdem_turn_lut.h"
+#ifdef _MSC_VER
 #pragma warning(push, 1)
+#endif
 #include <omp.h>
 #include <iostream>
 #include <boost/format.hpp>
 #include <boost/log/trivial.hpp>
+#include <cstring>
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 #include "evallib/holdem_evaluator.h"
 #include "util/sort.h"
 #include "util/card.h"
@@ -14,33 +19,33 @@ namespace
 {
     static const bool board_rank_suits[holdem_turn_lut::RANK_COUNT][holdem_turn_lut::SUIT_COUNT] =
     {
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, // XXXX
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, // XXXY
-        0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, // XXYY
-        0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, // XYYY
-        0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, // XXYZ
-        0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, // XYYZ
-        0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, // XYZZ
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // XYZU
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, // XXXX
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1}, // XXXY
+        {0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1}, // XXYY
+        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1}, // XYYY
+        {0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1}, // XXYZ
+        {0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1}, // XYYZ
+        {0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1}, // XYZZ
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, // XYZU
     };
 
     static const int hole_suit_offsets[holdem_turn_lut::SUIT_COUNT][9] =
     {
-         0, -1,  1, -1, -1, -1,  2, -1,  3,
-         0, -1,  1, -1, -1, -1,  2, -1,  3,
-         0, -1,  1, -1, -1, -1,  2, -1,  3,
-         0, -1,  1, -1, -1, -1,  2, -1,  3,
-         0, -1,  1, -1, -1, -1,  2, -1,  3,
-         0,  1,  2,  3,  4,  5,  6,  7,  8,
-         0,  1,  2,  3,  4,  5,  6,  7,  8,
-         0,  1,  2,  3,  4,  5,  6,  7,  8,
-         0, -1,  1, -1, -1, -1,  2, -1,  3,
-         0, -1,  1, -1, -1, -1,  2, -1,  3,
-         0, -1,  1, -1, -1, -1,  2, -1,  3,
-         0, -1,  1, -1, -1, -1,  2, -1,  3,
-         0, -1,  1, -1, -1, -1,  2, -1,  3,
-         0, -1,  1, -1, -1, -1,  2, -1,  3,
-        -1, -1, -1, -1, -1, -1, -1, -1,  0,
+         {0, -1,  1, -1, -1, -1,  2, -1,  3},
+         {0, -1,  1, -1, -1, -1,  2, -1,  3},
+         {0, -1,  1, -1, -1, -1,  2, -1,  3},
+         {0, -1,  1, -1, -1, -1,  2, -1,  3},
+         {0, -1,  1, -1, -1, -1,  2, -1,  3},
+         {0,  1,  2,  3,  4,  5,  6,  7,  8},
+         {0,  1,  2,  3,  4,  5,  6,  7,  8},
+         {0,  1,  2,  3,  4,  5,  6,  7,  8},
+         {0, -1,  1, -1, -1, -1,  2, -1,  3},
+         {0, -1,  1, -1, -1, -1,  2, -1,  3},
+         {0, -1,  1, -1, -1, -1,  2, -1,  3},
+         {0, -1,  1, -1, -1, -1,  2, -1,  3},
+         {0, -1,  1, -1, -1, -1,  2, -1,  3},
+         {0, -1,  1, -1, -1, -1,  2, -1,  3},
+        {-1, -1, -1, -1, -1, -1, -1, -1,  0},
     };
 }
 
@@ -142,13 +147,13 @@ int holdem_turn_lut::get_key(const int c0, const int c1, const int b0, const int
     // suit mapping base 3 (P=0, S=1, O=2)
     std::array<int, 4> suit_counts = {{}};
 
-    for (int i = 0; i < board.size(); ++i)
+    for (std::size_t i = 0; i < board.size(); ++i)
         ++suit_counts[board_suits[i]];
 
     std::array<int, 4> suit_map = {{2, 2, 2, 2}};
     int isomorphic_suit = 0;
 
-    for (int i = 0; i < suit_counts.size(); ++i)
+    for (std::size_t i = 0; i < suit_counts.size(); ++i)
     {
         if (suit_counts[i] >= 3)
             suit_map[i] = 0;

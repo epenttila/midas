@@ -6,7 +6,15 @@ template<class T, class U>
 class pcs_cfr_solver : public cfr_solver<T, U, double>
 {
 public:
-    pcs_cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr<abstraction_t> abstraction);
+    typedef cfr_solver<T, U, double> base_t;
+    typedef typename base_t::game_type game_type;
+    typedef typename base_t::game_state game_state;
+    typedef typename base_t::abstraction_t abstraction_t;
+
+    static const int ACTIONS = base_t::ACTIONS;
+    static constexpr double EPSILON = base_t::EPSILON;
+
+    pcs_cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr< abstraction_t> abstraction);
     ~pcs_cfr_solver();
 
 private:

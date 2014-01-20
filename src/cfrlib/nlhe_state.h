@@ -17,6 +17,25 @@ enum
     A_MASK = 0x200,
 };
 
+namespace detail
+{
+    static const std::array<int, 2> INITIAL_POT = {{1, 2}};
+
+    int soft_translate(const double b1, const double b, const double b2);
+
+    template<unsigned int N>
+    struct count_bits
+    {
+        static const unsigned int value = count_bits<(N >> 1)>::value + (N % 2);
+    };
+
+    template<>
+    struct count_bits<0>
+    {
+        static const unsigned int value = 0;
+    };
+}
+
 class nlhe_state_base
 {
 public:
@@ -61,7 +80,7 @@ public:
     static std::array<holdem_action, ACTIONS> index_to_action_;
 
     nlhe_state(const int stack_size);
-    ~nlhe_state();
+    virtual ~nlhe_state();
     int get_action_index() const;
     int get_round() const;
     const nlhe_state* get_parent() const;

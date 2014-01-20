@@ -13,6 +13,7 @@ set(abslib_SOURCES
 )
 
 add_library(abslib ${abslib_SOURCES})
+target_link_libraries(abslib lutlib evallib)
 
 if(MSVC)
     set_target_properties(abslib PROPERTIES

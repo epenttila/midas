@@ -1,13 +1,17 @@
 #pragma once
 
+#ifdef _MSC_VER
 #pragma warning(push, 1)
+#endif
 #include <ostream>
 #include <boost/noncopyable.hpp>
 #include <array>
 #include <vector>
 #include <cstdint>
 #include <boost/signals2.hpp>
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 
 #include "solver_base.h"
 
@@ -20,12 +24,12 @@ public:
     static const int ACTIONS = U::ACTIONS;
     static const int ROUNDS = T::ROUNDS;
 
-    typedef typename T game_type;
-    typedef typename U game_state;
+    typedef T game_type;
+    typedef U game_state;
     typedef typename T::bucket_t bucket_t;
     typedef typename T::evaluator_t evaluator_t;
     typedef typename T::abstraction_t abstraction_t;
-    typedef typename Data data_t;
+    typedef Data data_t;
 
     cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr<abstraction_t> abstraction);
     ~cfr_solver();

@@ -21,12 +21,12 @@ namespace
 nlhe_game::nlhe_game(const int stack_size, actor_base& a1, actor_base& a2)
     : actor1_(a1)
     , actor2_(a2)
-    , engine_(std::random_device()())
-    , dealer_(0)
-    , stack_size_(stack_size)
     , bankroll_(0)
-    , allin_(false)
     , eval_(new holdem_evaluator)
+    , dealer_(0)
+    , engine_(std::random_device()())
+    , stack_size_(stack_size)
+    , allin_(false)
 {
     a1.set_id(0);
     a2.set_id(1);

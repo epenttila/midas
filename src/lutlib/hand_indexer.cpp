@@ -1,8 +1,12 @@
 #include "hand_indexer.h"
 #include <functional>
 #include <cassert>
+#include <cstring>
+#include <cmath>
 
+#ifdef _MSC_VER
 #pragma warning(push, 1)
+#endif
 
 #define MAX_ROUNDS           8
 
@@ -26,6 +30,7 @@ struct hand_indexer_state_t {
     uint32_t used_ranks[SUITS];
 };
 
+#ifdef _MSC_VER
 std::uint8_t __builtin_ctz(std::uint32_t n)
 {
     unsigned long ret;
@@ -47,6 +52,7 @@ double log(hand_indexer::hand_index_t n)
 {
     return log(static_cast<long double>(n));
 }
+#endif
 
 static const int ROUND_SHIFT = 4;
 static const int ROUND_MASK = 0xf;
@@ -283,7 +289,7 @@ void tabulate_permutations(uint_fast32_t round, uint_fast32_t count[], void * da
     indexer->permutation_to_configuration[round][idx] = low;
 }
 
-void hand_indexer_state_init(const hand_indexer_t * indexer, hand_indexer_state_t * state) {
+void hand_indexer_state_init(const hand_indexer_t *, hand_indexer_state_t * state) {
     memset(state, 0, sizeof(hand_indexer_state_t));
 
     state->permutation_multiplier = 1;
@@ -409,7 +415,7 @@ hand_indexer::hand_index_t hand_indexer::hand_index_next_round(const uint8_t car
 
 bool hand_indexer::hand_unindex(int round, hand_index_t index, card_t cards[]) const
 {
-    if (round >= indexer->rounds || index >= indexer->round_size[round]) {
+    if (round >= static_cast<int>(indexer->rounds) || index >= indexer->round_size[round]) {
         return false;
     }
 
@@ -478,7 +484,9 @@ bool hand_indexer::hand_unindex(int round, hand_index_t index, card_t cards[]) c
     return true;
 }
 
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 
 hand_indexer::hand_indexer(const std::vector<std::uint8_t>& cards_per_round)
 {
@@ -489,7 +497,7 @@ hand_indexer::hand_indexer(const std::vector<std::uint8_t>& cards_per_round)
     }
 
     for(uint_fast32_t i=0; i<1<<RANKS; ++i) {
-        for(uint_fast32_t j=0, set=~i&(1<<RANKS)-1; j<RANKS; ++j, set&=set-1) {
+        for(uint_fast32_t j=0, set=~i&((1<<RANKS)-1); j<RANKS; ++j, set&=set-1) {
             nth_unset[i][j] = set?__builtin_ctz(set):0xff;
         }
     }

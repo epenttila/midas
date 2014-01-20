@@ -7,8 +7,8 @@ typedef std::uint8_t card_t;
 
 enum { CLUB, DIAMOND, HEART, SPADE, SUITS };
 
-static const int RANKS = 13;
-static const int CARDS = 52;
+static const unsigned int RANKS = 13;
+static const unsigned int CARDS = 52;
 
 inline int get_rank(const int card)
 {

@@ -1,6 +1,10 @@
 #include <omp.h>
 #include "util/binary_io.h"
 
+#ifdef _MSC_VER
+#define ftello _ftelli64
+#endif
+
 template<class T, class U, class Data>
 cfr_solver<T, U, Data>::cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr<abstraction_t> abstraction)
     : root_(std::move(state))
@@ -136,7 +140,7 @@ void cfr_solver<T, U, Data>::save_strategy(const std::string& filename) const
     {
         const auto& state = *i;
         assert(!state->is_terminal() && std::distance(states_.begin(), i) == state->get_id());
-        pointers.push_back(_ftelli64(file.get()));
+        pointers.push_back(ftello(file.get()));
 
         for (int bucket = 0; bucket < abstraction_->get_bucket_count(state->get_round()); ++bucket)
         {
@@ -216,7 +220,7 @@ typename cfr_solver<T, U, Data>::data_type* cfr_solver<T, U, Data>::get_data(std
 template<class T, class U, class Data>
 const typename cfr_solver<T, U, Data>::data_type* cfr_solver<T, U, Data>::get_data(std::size_t state_id, int bucket, int action) const
 {
-    assert(state_id >= 0 && state_id < states_.size());
+    assert(state_id < states_.size());
     assert(bucket >= 0 && bucket < abstraction_->get_bucket_count(states_[state_id]->get_round()));
 
     return &data_[positions_[state_id] + bucket * ACTIONS + action];
@@ -236,7 +240,7 @@ void cfr_solver<T, U, Data>::print(std::ostream& os) const
             std::array<double, ACTIONS> p;
             get_average_strategy(state, bucket, p);
 
-            for (int action = 0; action < p.size(); ++action)
+            for (std::size_t action = 0; action < p.size(); ++action)
                 os << (action > 0 ? ", " : "") << p[action];
 
             os << "\n";

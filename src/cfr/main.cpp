@@ -43,8 +43,8 @@ namespace
             return std::unique_ptr<pcs_cfr_solver<Game, State>>(new pcs_cfr_solver<Game, State>(std::move(state), std::move(abs)));
         else if (variant == "pure")
             return std::unique_ptr<pure_cfr_solver<Game, State>>(new pure_cfr_solver<Game, State>(std::move(state), std::move(abs)));
-        else
-            return std::unique_ptr<solver_base>();
+
+        return std::unique_ptr<solver_base>();
     }
 
     template<int BITMASK>
