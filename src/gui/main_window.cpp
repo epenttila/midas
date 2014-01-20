@@ -419,9 +419,6 @@ void main_window::autoplay_changed(const bool checked)
 
 void main_window::process_snapshot(const fake_window& window)
 {
-    if (!site_ && !lobby_)
-        return;
-
     const auto tournament_id = lobby_->get_tournament_id(window);
 
     BOOST_LOG_SCOPED_THREAD_TAG("TournamentID", tournament_id);

@@ -176,13 +176,13 @@ bool fake_window::update(WId wid)
     if (wid != -1)
         wid_ = wid;
 
-    if (!IsWindow(reinterpret_cast<HWND>(wid_)))
-        return false;
-
     window_rect_ = QRect();
     client_rect_ = QRect();
     window_image_ = QImage();
     client_image_ = QImage();
+
+    if (!IsWindow(reinterpret_cast<HWND>(wid_)))
+        return false;
 
     const auto image = ::screenshot(wid_, rect_).toImage();
 
@@ -268,12 +268,12 @@ std::string fake_window::get_window_text() const
     return window_utils::read_string(&window_image_, rect, qRgb(255, 255, 255), *title_font_);
 }
 
-QImage fake_window::get_window_image() const
+const QImage& fake_window::get_window_image() const
 {
     return window_image_;
 }
 
-QImage fake_window::get_client_image() const
+const QImage& fake_window::get_client_image() const
 {
     return client_image_;
 }
