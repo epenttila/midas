@@ -3,7 +3,7 @@
 #endif
 #include <iostream>
 #include <fstream>
-#include <regex>
+#include <boost/regex.hpp>
 #include <numeric>
 #include <cstdint>
 #include <omp.h>
@@ -127,10 +127,10 @@ int main(int argc, char* argv[])
         if (!plot_file.empty())
             plot_stream.open(plot_file);
 
-        std::regex nlhe_regex("nlhe-([0-9]+)");
-        std::smatch match;
+        boost::regex nlhe_regex("nlhe-([0-9]+)");
+        boost::smatch match;
 
-        if (!std::regex_match(game, match, nlhe_regex))
+        if (!boost::regex_match(game, match, nlhe_regex))
         {
             BOOST_LOG_TRIVIAL(error) << "Unknown game";
             return 1;

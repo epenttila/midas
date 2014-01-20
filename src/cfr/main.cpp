@@ -3,7 +3,7 @@
 #endif
 #include <iostream>
 #include <fstream>
-#include <regex>
+#include <boost/regex.hpp>
 #include <boost/program_options.hpp>
 #include <boost/format.hpp>
 #include <boost/date_time.hpp>
@@ -155,9 +155,9 @@ int main(int argc, char* argv[])
         BOOST_LOG_TRIVIAL(info) << "Using solver variant: " << variant;
         BOOST_LOG_TRIVIAL(info) << "Using abstraction: " << abstraction;
 
-        std::regex nlhe_regex("nlhe-([a-z]+)-([0-9]+)");
-        std::regex nlhe_v2_regex("nlhe2-([a-z]+)-([0-9]+)");
-        std::smatch match;
+        boost::regex nlhe_regex("nlhe-([a-z]+)-([0-9]+)");
+        boost::regex nlhe_v2_regex("nlhe2-([a-z]+)-([0-9]+)");
+        boost::smatch match;
 
         if (game == "kuhn")
         {
@@ -184,7 +184,7 @@ int main(int argc, char* argv[])
 
             solver = create_solver<holdem_game<holdem_abstraction>>(variant, std::move(state), std::move(abs));
         }
-        else if (std::regex_match(game, match, nlhe_regex))
+        else if (boost::regex_match(game, match, nlhe_regex))
         {
             const std::string actions = match[1].str();
             const int stack_size = boost::lexical_cast<int>(match[2].str());
@@ -203,7 +203,7 @@ int main(int argc, char* argv[])
                     nlhe_state_base::A_MASK>(variant, stack_size, abstraction);
             }
         }
-        else if (std::regex_match(game, match, nlhe_v2_regex))
+        else if (boost::regex_match(game, match, nlhe_v2_regex))
         {
             const std::string actions = match[1].str();
             const int stack_size = boost::lexical_cast<int>(match[2].str());

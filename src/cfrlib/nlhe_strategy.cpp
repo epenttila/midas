@@ -2,7 +2,7 @@
 #ifdef _MSC_VER
 #pragma warning(push, 1)
 #endif
-#include <regex>
+#include <boost/regex.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/log/trivial.hpp>
 #ifdef MSC_VER_
@@ -18,11 +18,11 @@ nlhe_strategy::nlhe_strategy(const std::string& filepath)
     BOOST_LOG_TRIVIAL(info) << "Opening strategy file: " << filepath;
 
     const std::string filename = boost::filesystem::path(filepath).filename().string();
-    
-    std::regex r("([^_]+)_([^_]+)(_.*)?\\.str");
-    std::smatch m;
 
-    if (!std::regex_match(filename, m, r))
+    boost::regex r("([^_]+)_([^_]+)(_.*)?\\.str");
+    boost::smatch m;
+
+    if (!boost::regex_match(filename, m, r))
         throw std::runtime_error("Unable to parse filename");
 
     root_state_ = nlhe_state_base::create(m[1].str());

@@ -13,7 +13,7 @@ public:
     static std::array<holdem_action, ACTIONS> index_to_action_;
 
     nlhe_state_v2(const int stack_size);
-    ~nlhe_state_v2();
+    virtual ~nlhe_state_v2();
     int get_action_index() const;
     int get_round() const;
     const nlhe_state_v2* get_parent() const;

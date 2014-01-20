@@ -1,5 +1,3 @@
-#pragma once
-
 #include "nlhe_state_base.h"
 #include <boost/regex.hpp>
 #include "nlhe_state.h"
