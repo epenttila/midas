@@ -114,9 +114,8 @@ int nlhe_state_base::soft_translate(const double b1, const double b, const doubl
     static std::random_device rd;
     static std::mt19937 engine(rd());
     static std::uniform_real_distribution<double> dist;
-    const double s1 = (b1 / b - b1 / b2) / (1 - b1 / b2);
-    const double s2 = (b / b2 - b1 / b2) / (1 - b1 / b2);
-    return dist(engine) < (s1 / (s1 + s2)) ? 0 : 1;
+    const auto f = ((b2 - b) * (1 + b1)) / ((b2 - b1) * (1 + b));
+    return dist(engine) < f ? 0 : 1;
 }
 
 std::ostream& operator<<(std::ostream& os, const nlhe_state_base& state)
