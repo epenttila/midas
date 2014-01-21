@@ -221,21 +221,6 @@ int nlhe_state<BITMASK>::get_child_count() const
 }
 
 template<int BITMASK>
-void nlhe_state<BITMASK>::print(std::ostream& os) const
-{
-    static const char actions[nlhe_state_base::MAX_ACTIONS] = {'f', 'c', 'h', 'q', 'p', 'w', 'd', 't', 'e', 'a'};
-    std::string line;
-
-    for (const nlhe_state<BITMASK>* s = this; s->get_parent() != nullptr; s = s->get_parent())
-    {
-        const char c = actions[index_to_action_[s->get_action_index()]];
-        line = char(s->get_parent()->get_player() == 0 ? c : toupper(c)) + line;
-    }
-
-    os << get_id() << ":" << line;
-}
-
-template<int BITMASK>
 const nlhe_state<BITMASK>* nlhe_state<BITMASK>::call() const
 {
     return children_[action_to_index_[CALL]];
@@ -244,50 +229,7 @@ const nlhe_state<BITMASK>* nlhe_state<BITMASK>::call() const
 template<int BITMASK>
 const nlhe_state<BITMASK>* nlhe_state<BITMASK>::raise(double fraction) const
 {
-    if (stack_size_ == pot_[1 - player_])
-        return nullptr;
-
-    std::array<double, MAX_ACTIONS> pot_sizes = {{
-        -1,
-        -1,
-        0.5,
-        0.75,
-        1.0,
-        1.5,
-        2.0,
-        10.0,
-        11.0,
-        (stack_size_ - pot_[1 - player_]) / double(2 * pot_[1 - player_]),
-    }};
-
-    holdem_action lower = INVALID_ACTION;
-    holdem_action upper = INVALID_ACTION;
-
-    for (holdem_action i = static_cast<holdem_action>(CALL + 1); i < MAX_ACTIONS; i = static_cast<holdem_action>(i + 1))
-    {
-        if (!is_action_enabled(i) || children_[action_to_index_[i]] == nullptr)
-            continue;
-
-        if (pot_sizes[i] <= fraction && (lower == INVALID_ACTION || pot_sizes[i] > pot_sizes[lower]))
-            lower = i;
-        else if (pot_sizes[i] >= fraction && (upper == INVALID_ACTION || pot_sizes[i] < pot_sizes[upper]))
-            upper = i;
-    }
-
-    assert(lower != INVALID_ACTION || upper != INVALID_ACTION);
-
-    holdem_action action;
-
-    if (lower == INVALID_ACTION)
-        action = upper;
-    else if (upper == INVALID_ACTION)
-        action = lower;
-    else if (lower == upper)
-        action = lower;
-    else
-        action = soft_translate(pot_sizes[lower], fraction, pot_sizes[upper]) == 0 ? lower : upper;
-
-    return children_[action_to_index_[action]];
+    return static_cast<const nlhe_state<BITMASK>*>(nlhe_state_base::raise(*this, fraction));
 }
 
 template<int BITMASK>
@@ -339,6 +281,12 @@ template<int BITMASK>
 int nlhe_state<BITMASK>::get_stack_size() const
 {
     return stack_size_;
+}
+
+template<int BITMASK>
+int nlhe_state<BITMASK>::get_action_index(holdem_action action) const
+{
+    return action_to_index_[action];
 }
 
 template<int BITMASK>

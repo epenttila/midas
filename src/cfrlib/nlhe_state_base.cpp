@@ -120,6 +120,81 @@ int nlhe_state_base::soft_translate(const double b1, const double b, const doubl
 
 std::ostream& operator<<(std::ostream& os, const nlhe_state_base& state)
 {
-    state.print(os);
+    static const char actions[nlhe_state_base::MAX_ACTIONS + 1] = "fcohqpwdvta";
+    std::string line;
+
+    for (auto s = &state; s->get_parent() != nullptr; s = s->get_parent())
+    {
+        const char c = actions[s->get_action(s->get_action_index())];
+        line = char(s->get_parent()->get_player() == 0 ? c : toupper(c)) + line;
+    }
+
+    os << state.get_id() << ":" << line;
+
     return os;
+}
+
+const nlhe_state_base* nlhe_state_base::raise(const nlhe_state_base& state, double fraction)
+{
+    const auto stack_size = state.get_stack_size();
+    const auto& pot = state.get_pot();
+    const auto player = state.get_player();
+
+    if (state.get_stack_size() == pot[1 - player])
+        return nullptr;
+
+    const auto to_call = pot[1 - player] - pot[player];
+    const auto in_pot = pot[1 - player] + pot[player];
+
+    std::array<double, MAX_ACTIONS> pot_sizes = {{
+        -1,
+        -1,
+        get_raise_factor(RAISE_O),
+        get_raise_factor(RAISE_H),
+        get_raise_factor(RAISE_Q),
+        get_raise_factor(RAISE_P),
+        get_raise_factor(RAISE_W),
+        get_raise_factor(RAISE_D),
+        get_raise_factor(RAISE_V),
+        get_raise_factor(RAISE_T),
+        static_cast<double>(stack_size - to_call) / (to_call + in_pot), // to_call + x * (to_call + in_pot) = stack_size
+    }};
+
+    holdem_action lower = INVALID_ACTION;
+    holdem_action upper = INVALID_ACTION;
+
+    for (holdem_action i = static_cast<holdem_action>(CALL + 1); i < MAX_ACTIONS; i = static_cast<holdem_action>(i + 1))
+    {
+        const auto action_index = state.get_action_index(i);
+
+        if (action_index == -1 || state.get_child(action_index) == nullptr)
+            continue;
+
+        if (pot_sizes[i] <= fraction && (lower == INVALID_ACTION || pot_sizes[i] > pot_sizes[lower]))
+            lower = i;
+        else if (pot_sizes[i] >= fraction && (upper == INVALID_ACTION || pot_sizes[i] < pot_sizes[upper]))
+            upper = i;
+    }
+
+    assert(lower != INVALID_ACTION || upper != INVALID_ACTION);
+
+    holdem_action action;
+
+    if (lower == INVALID_ACTION)
+        action = upper;
+    else if (upper == INVALID_ACTION)
+        action = lower;
+    else if (lower == upper)
+        action = lower;
+    else
+        action = soft_translate(pot_sizes[lower], fraction, pot_sizes[upper]) == 0 ? lower : upper;
+
+    return state.get_child(state.get_action_index(action));
+}
+
+int nlhe_state_base::get_new_player_pot(const int player_pot, const int to_call, const int in_pot,
+    const holdem_action action, int stack_size)
+{
+    const auto factor = get_raise_factor(action);
+    return std::min(player_pot + int(to_call + (2 * to_call + in_pot) * factor), stack_size);
 }

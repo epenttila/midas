@@ -30,6 +30,7 @@ public:
     holdem_action get_action(int index) const;
     std::string get_action_name(holdem_action action) const;
     int get_stack_size() const;
+    int get_action_index(holdem_action action) const;
 
 private:
     nlhe_state_v2(const nlhe_state_v2* parent, const int action_index, const int player,
@@ -39,7 +40,6 @@ private:
     bool is_action_enabled(holdem_action action) const;
     holdem_action get_max_action() const;
     int get_new_player_pot(int player_pot, int to_call, int in_pot, holdem_action action) const;
-    void print(std::ostream& os) const;
 
     const int id_;
     const nlhe_state_v2* parent_;

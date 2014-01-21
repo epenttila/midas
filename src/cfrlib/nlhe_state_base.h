@@ -60,7 +60,6 @@ public:
     static int get_action_mask(holdem_action action);
     static double get_raise_factor(const holdem_action action);
     static std::string get_action_name(const holdem_action action);
-    static int soft_translate(const double b1, const double b, const double b2);
 
     virtual const nlhe_state_base* call() const = 0;
     virtual const nlhe_state_base* raise(double fraction) const = 0;
@@ -71,10 +70,17 @@ public:
     virtual const nlhe_state_base* get_child(int index) const = 0;
     virtual int get_action_count() const = 0;
     virtual holdem_action get_action(int index) const = 0;
-    virtual void print(std::ostream& os) const = 0;
     virtual int get_action_index() const = 0;
     virtual int get_player() const = 0;
     virtual int get_stack_size() const = 0;
+    virtual const nlhe_state_base* get_parent() const = 0;
+    virtual int get_action_index(holdem_action action) const = 0;
+
+protected:
+    static int soft_translate(const double b1, const double b, const double b2);
+    static const nlhe_state_base* raise(const nlhe_state_base& state, double fraction);
+    static int get_new_player_pot(const int player_pot, const int to_call, const int in_pot, 
+        const holdem_action action, int stack_size);
 };
 
 std::ostream& operator<<(std::ostream& os, const nlhe_state_base& state);
