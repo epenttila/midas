@@ -7,6 +7,7 @@ add_subdirectory(lut)
 add_subdirectory(abs)
 add_subdirectory(util)
 add_subdirectory(play)
+add_subdirectory(purify)
 
 if(BUILD_GUI)
     add_subdirectory(gui)
