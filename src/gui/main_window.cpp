@@ -212,15 +212,18 @@ main_window::main_window()
     table_count_->setRange(0, 100);
     toolbar->addWidget(table_count_);
     toolbar->addSeparator();
-    autoplay_action_ = toolbar->addAction(QIcon(":/icons/control_play.png"), "Autoplay");
-    autoplay_action_->setCheckable(true);
-    connect(autoplay_action_, &QAction::toggled, this, &main_window::autoplay_changed);
-    autolobby_action_ = toolbar->addAction(QIcon(":/icons/layout.png"), "Autolobby");
-    autolobby_action_->setCheckable(true);
-    connect(autolobby_action_, &QAction::toggled, this, &main_window::autolobby_changed);
+
     schedule_action_ = toolbar->addAction(QIcon(":/icons/time.png"), "Schedule");
     schedule_action_->setCheckable(true);
     connect(schedule_action_, &QAction::toggled, this, &main_window::schedule_changed);
+
+    autoplay_action_ = toolbar->addAction(QIcon(":/icons/control_play.png"), "Autoplay");
+    autoplay_action_->setCheckable(true);
+    connect(autoplay_action_, &QAction::toggled, this, &main_window::autoplay_changed);
+
+    autolobby_action_ = toolbar->addAction(QIcon(":/icons/layout.png"), "Autolobby");
+    autolobby_action_->setCheckable(true);
+    connect(autolobby_action_, &QAction::toggled, this, &main_window::autolobby_changed);
 
     log_ = new QPlainTextEdit(this);
     log_->setReadOnly(true);
@@ -409,9 +412,9 @@ void main_window::show_strategy_changed()
 void main_window::autoplay_changed(const bool checked)
 {
     if (checked)
-        BOOST_LOG_TRIVIAL(info) << "Starting autoplay";
+        BOOST_LOG_TRIVIAL(info) << "Enabling autoplay";
     else
-        BOOST_LOG_TRIVIAL(info) << "Stopping autoplay";
+        BOOST_LOG_TRIVIAL(info) << "Disabling autoplay";
 }
 
 #pragma warning(push)
@@ -941,8 +944,14 @@ void main_window::schedule_changed(const bool checked)
 
 void main_window::autolobby_changed(bool checked)
 {
-    if (!checked)
+    if (checked)
     {
+        BOOST_LOG_TRIVIAL(info) << "Enabling autolobby";
+    }
+    else
+    {
+        BOOST_LOG_TRIVIAL(info) << "Disabling autolobby";
+
         if (lobby_)
             lobby_->reset();
     }
