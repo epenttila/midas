@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
             return 1;
         }
 
-        const int stack_size = std::atoi(match[1].str().c_str());
+        const int stack_size = std::stoi(match[1].str());
 
         BOOST_LOG_TRIVIAL(info) << "Playing " << iterations << " games";
 

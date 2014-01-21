@@ -263,12 +263,12 @@ namespace
 
             if (j->at(0) == 'p')
             {
-                *pub = std::atoi(j->substr(1).c_str());
+                *pub = std::stoi(j->substr(1));
                 *forget_pub = forget;
             }
             else
             {
-                *hs2 = std::atoi(j->c_str());
+                *hs2 = std::stoi(*j);
                 *forget_hs2 = forget;
             }
         }

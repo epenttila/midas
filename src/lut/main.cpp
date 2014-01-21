@@ -56,8 +56,8 @@ int main(int argc, char* argv[])
     if (argc != 3)
         return 1;
 
-    const bool generate = std::atoi(argv[1]) ? true : false;
-    const int round = std::atoi(argv[2]);
+    const bool generate = std::stoi(argv[1]) ? true : false;
+    const int round = std::stoi(argv[2]);
 
     if (generate)
     {
