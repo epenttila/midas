@@ -28,8 +28,8 @@ public:
     typedef std::pair<float, float> data_type;
 
     holdem_flop_lut();
-    holdem_flop_lut(std::istream&& is);
-    void save(std::ostream& os) const;
+    holdem_flop_lut(const std::string& filename);
+    void save(const std::string& filename) const;
     const data_type& get(int c0, int c1, int b0, int b1, int b2) const;
     int get_key(int c0, int c1, int b0, int b1, int b2) const;
 

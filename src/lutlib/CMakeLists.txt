@@ -16,7 +16,7 @@ set(lutlib_SOURCES
 )
 
 add_library(lutlib ${lutlib_SOURCES})
-target_link_libraries(lutlib evallib)
+target_link_libraries(lutlib evallib util)
 
 if(MSVC)
     set_target_properties(lutlib PROPERTIES

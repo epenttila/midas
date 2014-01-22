@@ -34,7 +34,7 @@ set(cfrlib_SOURCES
 )
 
 add_library(cfrlib ${cfrlib_SOURCES})
-target_link_libraries(cfrlib evallib abslib)
+target_link_libraries(cfrlib evallib abslib util)
 
 if(MSVC)
     set_target_properties(cfrlib PROPERTIES

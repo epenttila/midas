@@ -2,7 +2,6 @@
 #ifdef _MSC_VER
 #pragma warning(push, 1)
 #endif
-#include <fstream>
 #include <omp.h>
 #include <numeric>
 #include <boost/regex.hpp>
@@ -325,10 +324,8 @@ void holdem_abstraction_v2::write(const std::string& filename, const int kmeans_
 
     parse_configuration(filename, &imperfect_recall_, &bucket_counts_);
 
-    std::unique_ptr<holdem_river_lut> river_lut(new holdem_river_lut(std::ifstream("holdem_river_lut.dat",
-        std::ios::binary)));
-    std::shared_ptr<holdem_river_ochs_lut> river_ochs_lut(new holdem_river_ochs_lut(
-        std::ifstream("holdem_river_ochs_lut.dat", std::ios::binary)));
+    std::unique_ptr<holdem_river_lut> river_lut(new holdem_river_lut("holdem_river_lut.dat"));
+    std::shared_ptr<holdem_river_ochs_lut> river_ochs_lut(new holdem_river_ochs_lut("holdem_river_ochs_lut.dat"));
 
     const auto preflop_buckets = create_buckets(PREFLOP, preflop_indexer_, *river_lut, *river_ochs_lut,
         bucket_counts_[PREFLOP], kmeans_max_iterations, tolerance, runs);
@@ -341,16 +338,16 @@ void holdem_abstraction_v2::write(const std::string& filename, const int kmeans_
 
     BOOST_LOG_TRIVIAL(info) << "Saving abstraction: " << filename;
 
-    std::ofstream os(filename, std::ios::binary);
+    auto file = binary_open(filename.c_str(), "wb");
 
-    if (!os)
+    if (!file)
         throw std::runtime_error("Unable to open file");
 
-    binary_write(os, imperfect_recall_);
-    binary_write(os, preflop_buckets);
-    binary_write(os, flop_buckets);
-    binary_write(os, turn_buckets);
-    binary_write(os, river_buckets);
+    binary_write(*file, imperfect_recall_);
+    binary_write(*file, preflop_buckets);
+    binary_write(*file, flop_buckets);
+    binary_write(*file, turn_buckets);
+    binary_write(*file, river_buckets);
 }
 
 holdem_abstraction_v2::bucket_idx_t holdem_abstraction_v2::read(int round, hand_indexer::hand_index_t index) const

@@ -15,6 +15,7 @@
 #include "util/sort.h"
 #include "util/card.h"
 #include "util/holdem_loops.h"
+#include "util/binary_io.h"
 
 namespace
 {
@@ -107,25 +108,26 @@ holdem_river_ochs_lut::holdem_river_ochs_lut()
     }
 }
 
-holdem_river_ochs_lut::holdem_river_ochs_lut(std::istream&& is)
+holdem_river_ochs_lut::holdem_river_ochs_lut(const std::string& filename)
     : indexer_(create())
 {
-    BOOST_LOG_TRIVIAL(info) << "Loading river OCHS lut from TODO";
+    BOOST_LOG_TRIVIAL(info) << "Loading river OCHS lut from: " << filename;
 
     data_.resize(indexer_->get_size(indexer_->get_rounds() - 1));
 
-    if (!is)
-        throw std::runtime_error("bad istream");
+    auto file = binary_open(filename, "rb");
 
-    is.read(reinterpret_cast<char*>(&data_[0]), sizeof(data_type) * data_.size());
+    if (!file)
+        throw std::runtime_error("bad file");
 
-    if (!is)
-        throw std::runtime_error("read failed");
+    binary_read(*file, data_.data(), data_.size());
 }
 
-void holdem_river_ochs_lut::save(std::ostream& os) const
+void holdem_river_ochs_lut::save(const std::string& filename) const
 {
-    os.write(reinterpret_cast<const char*>(&data_[0]), sizeof(data_type) * data_.size());
+    auto file = binary_open(filename, "wb");
+
+    binary_write(*file, data_.data(), data_.size());
 }
 
 const holdem_river_ochs_lut::data_type& holdem_river_ochs_lut::get_data(const std::array<card_t, 7>& cards) const

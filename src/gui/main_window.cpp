@@ -2,7 +2,6 @@
 
 #pragma warning(push, 1)
 #include <array>
-#include <fstream>
 #include <sstream>
 #include <regex>
 #include <boost/lexical_cast.hpp>

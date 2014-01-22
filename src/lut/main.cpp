@@ -66,36 +66,31 @@ int main(int argc, char* argv[])
         case 0:
             {
                 holdem_preflop_lut lut;
-                std::ofstream f("holdem_preflop_lut.dat", std::ios::binary);
-                lut.save(f);
+                lut.save("holdem_preflop_lut.dat");
             }
             break;
         case 1:
             {
                 holdem_flop_lut lut;
-                std::ofstream f("holdem_flop_lut.dat", std::ios::binary);
-                lut.save(f);
+                lut.save("holdem_flop_lut.dat");
             }
             break;
         case 2:
             {
                 holdem_turn_lut lut;
-                std::ofstream f("holdem_turn_lut.dat", std::ios::binary);
-                lut.save(f);
+                lut.save("holdem_turn_lut.dat");
             }
             break;
         case 3:
             {
                 holdem_river_lut lut;
-                std::ofstream f("holdem_river_lut.dat", std::ios::binary);
-                lut.save(f);
+                lut.save("holdem_river_lut.dat");
             }
             break;
         case 4:
             {
                 holdem_river_ochs_lut lut;
-                std::ofstream f("holdem_river_ochs_lut.dat", std::ios::binary);
-                lut.save(f);
+                lut.save("holdem_river_ochs_lut.dat");
             }
             break;
         }
@@ -106,25 +101,25 @@ int main(int argc, char* argv[])
         {
         case 0:
             {
-                const holdem_preflop_lut lut(std::ifstream("holdem_preflop_lut.dat", std::ios::binary));
+                const holdem_preflop_lut lut("holdem_preflop_lut.dat");
                 //test_flop(lut);
             }
             break;
         case 1:
             {
-                const holdem_flop_lut lut(std::ifstream("holdem_flop_lut.dat", std::ios::binary));
+                const holdem_flop_lut lut("holdem_flop_lut.dat");
                 //test_flop(lut);
             }
             break;
         case 2:
             {
-                const holdem_turn_lut lut(std::ifstream("holdem_turn_lut.dat", std::ios::binary));
+                const holdem_turn_lut lut("holdem_turn_lut.dat");
                 //test_turn(lut);
             }
             break;
         case 3:
             {
-                const holdem_river_lut lut(std::ifstream("holdem_river_lut.dat", std::ios::binary));
+                const holdem_river_lut lut("holdem_river_lut.dat");
                 test_river(lut);
             }
             break;

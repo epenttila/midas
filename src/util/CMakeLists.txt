@@ -2,6 +2,7 @@ project(util)
 
 set(util_SOURCES
     binary_io.h
+    binary_io.cpp
     card.h
     choose.h
     holdem_loops.h
@@ -13,4 +14,4 @@ set(util_SOURCES
     random.h
 )
 
-add_custom_target(util SOURCES ${util_SOURCES})
+add_library(util ${util_SOURCES})

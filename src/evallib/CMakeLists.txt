@@ -12,6 +12,7 @@ set(evallib_SOURCES
 )
 
 add_library(evallib ${evallib_SOURCES})
+target_link_libraries(evallib util)
 
 if(MSVC)
     set_target_properties(evallib PROPERTIES

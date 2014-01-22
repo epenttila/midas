@@ -12,6 +12,7 @@
 #endif
 #include "evallib/holdem_evaluator.h"
 #include "util/card.h"
+#include "util/binary_io.h"
 
 holdem_preflop_lut::holdem_preflop_lut()
 {
@@ -60,22 +61,23 @@ holdem_preflop_lut::holdem_preflop_lut()
     }
 }
 
-holdem_preflop_lut::holdem_preflop_lut(std::istream&& is)
+holdem_preflop_lut::holdem_preflop_lut(const std::string& filename)
 {
-    BOOST_LOG_TRIVIAL(info) << "Loading preflop lut from TODO";
+    BOOST_LOG_TRIVIAL(info) << "Loading preflop lut from: " << filename;
 
-    if (!is)
-        throw std::runtime_error("bad istream");
+    auto file = binary_open(filename, "rb");
 
-    is.read(reinterpret_cast<char*>(&data_), sizeof(data_));
+    if (!file)
+        throw std::runtime_error("bad file");
 
-    if (!is)
-        throw std::runtime_error("read failed");
+    binary_read(*file, data_.data(), data_.size());
 }
 
-void holdem_preflop_lut::save(std::ostream& os) const
+void holdem_preflop_lut::save(const std::string& filename) const
 {
-    os.write(reinterpret_cast<const char*>(&data_), sizeof(data_));
+    auto file = binary_open(filename, "wb");
+
+    binary_write(*file, data_.data(), data_.size());
 }
 
 const holdem_preflop_lut::data_type& holdem_preflop_lut::get(int c0, int c1) const

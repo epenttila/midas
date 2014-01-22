@@ -1,12 +1,10 @@
 #include "holdem_abstraction.h"
-#include <fstream>
 #include <iostream>
 #include <map>
 #include <omp.h>
 #include <numeric>
 #include <string>
 #include <unordered_map>
-#include <fstream>
 #include <boost/regex.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/filesystem.hpp>
@@ -308,10 +306,10 @@ holdem_abstraction::bucket_cfg::bucket_cfg()
 holdem_abstraction::holdem_abstraction()
 {
     evaluator_.reset(new evaluator);
-    preflop_lut_.reset(new holdem_preflop_lut(std::ifstream("holdem_preflop_lut.dat", std::ios::binary)));
-    flop_lut_.reset(new holdem_flop_lut(std::ifstream("holdem_flop_lut.dat", std::ios::binary)));
-    turn_lut_.reset(new holdem_turn_lut(std::ifstream("holdem_turn_lut.dat", std::ios::binary)));
-    river_lut_.reset(new holdem_river_lut(std::ifstream("holdem_river_lut.dat", std::ios::binary)));
+    preflop_lut_.reset(new holdem_preflop_lut("holdem_preflop_lut.dat"));
+    flop_lut_.reset(new holdem_flop_lut("holdem_flop_lut.dat"));
+    turn_lut_.reset(new holdem_turn_lut("holdem_turn_lut.dat"));
+    river_lut_.reset(new holdem_river_lut("holdem_river_lut.dat"));
 }
 
 void holdem_abstraction::generate(const std::string& configuration, const int kmeans_max_iterations,
@@ -535,18 +533,18 @@ void holdem_abstraction::write(const std::string& filename) const
 {
     BOOST_LOG_TRIVIAL(info) << "Saving abstraction: " << filename;
 
-    std::ofstream os(filename, std::ios::binary);
+    auto file = binary_open(filename.c_str(), "wb");
 
-    if (!os)
+    if (!file)
         throw std::runtime_error("Unable to open file");
 
-    binary_write(os, bucket_cfgs_);
-    binary_write(os, preflop_ehs2_percentiles_);
-    binary_write(os, flop_ehs2_percentiles_);
-    binary_write(os, turn_ehs2_percentiles_);
-    binary_write(os, river_ehs_percentiles_);
-    binary_write(os, public_flop_buckets_);
-    binary_write(os, public_turn_buckets_);
+    binary_write(*file, bucket_cfgs_);
+    binary_write(*file, preflop_ehs2_percentiles_);
+    binary_write(*file, flop_ehs2_percentiles_);
+    binary_write(*file, turn_ehs2_percentiles_);
+    binary_write(*file, river_ehs_percentiles_);
+    binary_write(*file, public_flop_buckets_);
+    binary_write(*file, public_turn_buckets_);
 }
 
 void holdem_abstraction::read(const std::string& filename)
@@ -555,16 +553,16 @@ void holdem_abstraction::read(const std::string& filename)
 
     parse_configuration(filename);
 
-    std::ifstream is(filename, std::ios::binary);
+    auto file = binary_open(filename.c_str(), "rb");
 
-    if (!is)
+    if (!file)
         throw std::runtime_error("Unable to open file");
 
-    binary_read(is, bucket_cfgs_);
-    binary_read(is, preflop_ehs2_percentiles_);
-    binary_read(is, flop_ehs2_percentiles_);
-    binary_read(is, turn_ehs2_percentiles_);
-    binary_read(is, river_ehs_percentiles_);
-    binary_read(is, public_flop_buckets_);
-    binary_read(is, public_turn_buckets_);
+    binary_read(*file, bucket_cfgs_);
+    binary_read(*file, preflop_ehs2_percentiles_);
+    binary_read(*file, flop_ehs2_percentiles_);
+    binary_read(*file, turn_ehs2_percentiles_);
+    binary_read(*file, river_ehs_percentiles_);
+    binary_read(*file, public_flop_buckets_);
+    binary_read(*file, public_turn_buckets_);
 }

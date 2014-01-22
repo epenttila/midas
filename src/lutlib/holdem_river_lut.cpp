@@ -14,6 +14,7 @@
 #include "util/sort.h"
 #include "util/card.h"
 #include "util/holdem_loops.h"
+#include "util/binary_io.h"
 
 namespace
 {
@@ -104,23 +105,25 @@ holdem_river_lut::holdem_river_lut()
     }
 }
 
-holdem_river_lut::holdem_river_lut(std::istream&& is)
+holdem_river_lut::holdem_river_lut(const std::string& filename)
 {
-    BOOST_LOG_TRIVIAL(info) << "Loading river lut from TODO";
-
-    if (!is)
-        throw std::runtime_error("bad istream");
+    BOOST_LOG_TRIVIAL(info) << "Loading river lut from: " << filename;
 
     init();
-    is.read(reinterpret_cast<char*>(&data_[0]), sizeof(data_type) * data_.size());
 
-    if (!is)
-        throw std::runtime_error("read failed");
+    auto file = binary_open(filename, "rb");
+
+    if (!file)
+        throw std::runtime_error("bad file");
+
+    binary_read(*file, data_.data(), data_.size());
 }
 
-void holdem_river_lut::save(std::ostream& os) const
+void holdem_river_lut::save(const std::string& filename) const
 {
-    os.write(reinterpret_cast<const char*>(&data_[0]), sizeof(data_type) * data_.size());
+    auto file = binary_open(filename, "wb");
+
+    binary_write(*file, data_.data(), data_.size());
 }
 
 const holdem_river_lut::data_type& holdem_river_lut::get(int c0, int c1, int b0, int b1, int b2, int b3, int b4) const

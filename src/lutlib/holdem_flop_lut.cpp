@@ -14,6 +14,7 @@
 #include "util/sort.h"
 #include "util/card.h"
 #include "util/holdem_loops.h"
+#include "util/binary_io.h"
 
 namespace
 {
@@ -82,24 +83,25 @@ holdem_flop_lut::holdem_flop_lut()
     }
 }
 
-holdem_flop_lut::holdem_flop_lut(std::istream&& is)
+holdem_flop_lut::holdem_flop_lut(const std::string& filename)
 {
-    BOOST_LOG_TRIVIAL(info) << "Loading flop lut from TODO";
-
-    if (!is)
-        throw std::runtime_error("bad istream");
+    BOOST_LOG_TRIVIAL(info) << "Loading flop lut from: " << filename;
 
     init();
 
-    is.read(reinterpret_cast<char*>(&data_[0]), sizeof(data_type) * data_.size());
+    auto file = binary_open(filename, "rb");
 
-    if (!is)
-        throw std::runtime_error("read failed");
+    if (!file)
+        throw std::runtime_error("bad file");
+
+    binary_read(*file, data_.data(), data_.size());
 }
 
-void holdem_flop_lut::save(std::ostream& os) const
+void holdem_flop_lut::save(const std::string& filename) const
 {
-    os.write(reinterpret_cast<const char*>(&data_[0]), sizeof(data_type) * data_.size());
+    auto file = binary_open(filename, "wb");
+
+    binary_write(*file, data_.data(), data_.size());
 }
 
 const std::pair<float, float>& holdem_flop_lut::get(int c0, int c1, int b0, int b1, int b2) const

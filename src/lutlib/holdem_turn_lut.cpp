@@ -14,6 +14,7 @@
 #include "util/sort.h"
 #include "util/card.h"
 #include "util/holdem_loops.h"
+#include "util/binary_io.h"
 
 namespace
 {
@@ -96,23 +97,25 @@ holdem_turn_lut::holdem_turn_lut()
     }
 }
 
-holdem_turn_lut::holdem_turn_lut(std::istream&& is)
+holdem_turn_lut::holdem_turn_lut(const std::string& filename)
 {
-    BOOST_LOG_TRIVIAL(info) << "Loading turn lut from TODO";
-
-    if (!is)
-        throw std::runtime_error("bad istream");
+    BOOST_LOG_TRIVIAL(info) << "Loading turn lut from: " << filename;
 
     init();
-    is.read(reinterpret_cast<char*>(&data_[0]), sizeof(data_type) * data_.size());
 
-    if (!is)
-        throw std::runtime_error("read failed");
+    auto file = binary_open(filename, "rb");
+
+    if (!file)
+        throw std::runtime_error("bad file");
+
+    binary_read(*file, data_.data(), data_.size());
 }
 
-void holdem_turn_lut::save(std::ostream& os) const
+void holdem_turn_lut::save(const std::string& filename) const
 {
-    os.write(reinterpret_cast<const char*>(&data_[0]), sizeof(data_type) * data_.size());
+    auto file = binary_open(filename, "wb");
+
+    binary_write(*file, data_.data(), data_.size());
 }
 
 const std::pair<float, float>& holdem_turn_lut::get(int c0, int c1, int b0, int b1, int b2, int b3) const

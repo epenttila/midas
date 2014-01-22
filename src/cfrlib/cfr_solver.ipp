@@ -109,9 +109,13 @@ void cfr_solver<T, U, Data>::get_average_strategy(const game_state& state, const
 template<class T, class U, class Data>
 void cfr_solver<T, U, Data>::save_state(const std::string& filename) const
 {
-    std::ofstream os(filename, std::ios::binary);
-    binary_write(os, total_iterations_);
-    binary_write(os, data_);
+    auto file = binary_open(filename, "wb");
+
+    if (!file)
+        throw std::runtime_error("unable to create state file");
+
+    binary_write(*file, total_iterations_);
+    binary_write(*file, data_);
 
     BOOST_LOG_TRIVIAL(info) << "State with " << total_iterations_ << " iterations saved";
 }
@@ -119,13 +123,13 @@ void cfr_solver<T, U, Data>::save_state(const std::string& filename) const
 template<class T, class U, class Data>
 void cfr_solver<T, U, Data>::load_state(const std::string& filename)
 {
-    std::ifstream is(filename, std::ios::binary);
+    auto file = binary_open(filename, "rb");
 
-    if (!is)
+    if (!file)
         return;
 
-    binary_read(is, total_iterations_);
-    binary_read(is, data_);
+    binary_read(*file, total_iterations_);
+    binary_read(*file, data_);
 
     BOOST_LOG_TRIVIAL(info) << "State with " << total_iterations_ << " iterations loaded";
 }
