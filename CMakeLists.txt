@@ -19,19 +19,19 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 elseif(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /WX /wd4503 /wd4251 /wd4714 /bigobj /DNOMINMAX")
 
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2 /Oi /Ot /Oy /GL /fp:fast")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")
+
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /Ob2 /Oi /Ot /Oy /GL /fp:fast /MD")
     set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG /OPT:REF,ICF")
 
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /O2 /Ob2 /Oi /Ot /Oy /GL /fp:fast")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /O2 /Ob2 /Oi /Ot /Oy /GL /fp:fast /MD")
     set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} /LTCG /INCREMENTAL:NO /OPT:REF,ICF")
-
-    set(CMAKE_PREFIX_PATH "C:\\Program Files (x86)\\Windows Kits\\8.0\\Lib\\win8\\um\\x64")
 
     set(Boost_USE_STATIC_LIBS ON)
     set(Boost_USE_MULTITHREADED ON)
     set(Boost_USE_STATIC_RUNTIME OFF)
 
-    add_definitions(-DBOOST_ALL_NO_LIB -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
+    add_definitions(-DBOOST_ALL_NO_LIB -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_VARIADIC_MAX=10)
 endif()
 
 option(BUILD_GUI "Build gui" ON)
@@ -55,4 +55,13 @@ endif()
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
 
+set(GTEST_ROOT "ext/gtest")
+set(GTEST_INCLUDE_DIR "${GTEST_ROOT}/include")
+set(gtest_force_shared_crt ON)
+
+enable_testing() 
+include_directories(${GTEST_INCLUDE_DIR}) 
+
 add_subdirectory(src)
+add_subdirectory(ext)
+add_subdirectory(test)
