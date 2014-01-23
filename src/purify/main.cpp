@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
 
         std::size_t count = 0;
 
-        for (int state_id = 0; state_id < 10; ++state_id)
+        for (int state_id = 0; state_id < states.size(); ++state_id)
         {
             const auto& state = *dynamic_cast<const nlhe_state_base*>(states[state_id]);
 
