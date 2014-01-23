@@ -1,12 +1,11 @@
 #pragma once
 
-#include <boost/noncopyable.hpp>
 #include <array>
 
 #include "nlhe_state_base.h"
 
 template<int BITMASK>
-class nlhe_state : public nlhe_state_base, private boost::noncopyable
+class nlhe_state : public nlhe_state_base
 {
 public:
     static const int ACTIONS = detail::count_bits<BITMASK>::value;

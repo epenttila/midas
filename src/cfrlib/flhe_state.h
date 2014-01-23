@@ -1,9 +1,9 @@
 #pragma once
 
-#include <boost/noncopyable.hpp>
 #include <array>
+#include "game_state_base.h"
 
-class flhe_state : private boost::noncopyable
+class flhe_state : public game_state_base
 {
 public:
     enum holdem_action
@@ -24,6 +24,7 @@ public:
     int get_player() const;
     int get_terminal_ev(int result) const;
     int get_child_count() const;
+    int get_action_count() const;
 
 private:
     flhe_state(const flhe_state* parent, int action, int player, const std::array<int, 2>& pot, int round,

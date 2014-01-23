@@ -1,9 +1,9 @@
 #pragma once
 
-#include <boost/noncopyable.hpp>
 #include <array>
+#include "game_state_base.h"
 
-class kuhn_state : private boost::noncopyable
+class kuhn_state : public game_state_base
 {
 public:
     enum kuhn_action
@@ -23,6 +23,7 @@ public:
     int get_action() const;
     int get_child_count() const;
     int get_round() const;
+    int get_action_count() const;
 
 private:
     typedef std::array<int, 2> pot_t;

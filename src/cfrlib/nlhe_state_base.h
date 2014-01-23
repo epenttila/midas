@@ -3,6 +3,8 @@
 #include <memory>
 #include <string>
 #include <array>
+#include <vector>
+#include "game_state_base.h"
 
 namespace detail
 {
@@ -21,7 +23,7 @@ namespace detail
     };
 }
 
-class nlhe_state_base
+class nlhe_state_base : public game_state_base
 {
 public:
     enum

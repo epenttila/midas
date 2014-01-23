@@ -121,3 +121,8 @@ std::ostream& operator<<(std::ostream& os, const kuhn_state& state)
 
     return (os << state.get_id() << ":" << line);
 }
+
+int kuhn_state::get_action_count() const
+{
+    return ACTIONS;
+}

@@ -194,3 +194,63 @@ TEST(nlhe_state, many_halfpots)
     EXPECT_EQ(state->get_pot()[0], 50);
     EXPECT_EQ(state->get_pot()[1], 32);
 }
+
+TEST(nlhe_state, state_counts_nlhe_fchqpwdta_50)
+{
+    const nlhe_state<
+        nlhe_state_base::F_MASK |
+        nlhe_state_base::C_MASK |
+        nlhe_state_base::H_MASK |
+        nlhe_state_base::Q_MASK |
+        nlhe_state_base::P_MASK |
+        nlhe_state_base::W_MASK |
+        nlhe_state_base::D_MASK |
+        nlhe_state_base::T_MASK |
+        nlhe_state_base::A_MASK> root(50);
+
+    std::vector<const nlhe_state_base*> states;
+
+    for (const auto p : game_state_base::get_state_vector(root))
+        states.push_back(dynamic_cast<const nlhe_state_base*>(p));
+
+    EXPECT_EQ(states.size(), 29104);
+
+    std::vector<int> counts(RIVER + 1);
+    std::for_each(states.begin(), states.end(), [&](const nlhe_state_base* s) { ++counts[s->get_round()]; });
+
+    EXPECT_EQ(counts[0], 344);
+    EXPECT_EQ(counts[1], 2176);
+    EXPECT_EQ(counts[2], 7512);
+    EXPECT_EQ(counts[3], 19072);
+}
+
+TEST(nlhe_state, state_counts_nlhe_fcOHQpwdvta_40)
+{
+    const nlhe_state<
+        nlhe_state_base::F_MASK |
+        nlhe_state_base::C_MASK |
+        nlhe_state_base::O_MASK |
+        nlhe_state_base::H_MASK |
+        nlhe_state_base::Q_MASK |
+        nlhe_state_base::P_MASK |
+        nlhe_state_base::W_MASK |
+        nlhe_state_base::D_MASK |
+        nlhe_state_base::V_MASK |
+        nlhe_state_base::T_MASK |
+        nlhe_state_base::A_MASK> root(40, nlhe_state_base::O_MASK | nlhe_state_base::H_MASK | nlhe_state_base::Q_MASK);
+
+    std::vector<const nlhe_state_base*> states;
+
+    for (const auto p : game_state_base::get_state_vector(root))
+        states.push_back(dynamic_cast<const nlhe_state_base*>(p));
+
+    EXPECT_EQ(states.size(), 88640);
+
+    std::vector<int> counts(RIVER + 1);
+    std::for_each(states.begin(), states.end(), [&](const nlhe_state_base* s) { ++counts[s->get_round()]; });
+
+    EXPECT_EQ(counts[0], 468);
+    EXPECT_EQ(counts[1], 4140);
+    EXPECT_EQ(counts[2], 19396);
+    EXPECT_EQ(counts[3], 64636);
+}

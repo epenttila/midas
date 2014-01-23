@@ -162,3 +162,8 @@ std::ostream& operator<<(std::ostream& os, const flhe_state& state)
 
     return (os << state.get_id() << ":" << line);
 }
+
+int flhe_state::get_action_count() const
+{
+    return ACTIONS;
+}

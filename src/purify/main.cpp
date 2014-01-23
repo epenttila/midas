@@ -53,13 +53,13 @@ int main(int argc, char* argv[])
         BOOST_LOG_TRIVIAL(info) << "Purifying " << strategy_file;
 
         nlhe_strategy strategy(strategy_file, false);
-        const auto states = strategy.get_state_vector();
+        const auto states = game_state_base::get_state_vector(strategy.get_root_state());
 
         std::size_t count = 0;
 
         for (int state_id = 0; state_id < 10; ++state_id)
         {
-            const auto& state = *states[state_id];
+            const auto& state = *dynamic_cast<const nlhe_state_base*>(states[state_id]);
 
             for (int bucket = 0; bucket < strategy.get_abstraction().get_bucket_count(state.get_round()); ++bucket)
             {

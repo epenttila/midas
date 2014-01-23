@@ -161,3 +161,8 @@ std::ostream& operator<<(std::ostream& os, const leduc_state& state)
 
     return (os << state.get_id() << ":" << line);
 }
+
+int leduc_state::get_action_count() const
+{
+    return ACTIONS;
+}

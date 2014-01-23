@@ -29,6 +29,8 @@ set(cfrlib_SOURCES
     pure_cfr_solver.ipp
     nlhe_state_base.h
     nlhe_state_base.cpp
+    game_state_base.h
+    game_state_base.cpp
 )
 
 add_library(cfrlib ${cfrlib_SOURCES})

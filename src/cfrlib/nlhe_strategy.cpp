@@ -30,7 +30,7 @@ nlhe_strategy::nlhe_strategy(const std::string& filepath, bool read_only)
 
     BOOST_LOG_TRIVIAL(info) << "Stack size: " << stack_size_;
 
-    const auto state_count = get_state_vector().size();
+    const auto state_count = nlhe_state_base::get_state_vector(*root_state_).size();
 
     const auto abs_name = m[2].str();
 
@@ -69,30 +69,4 @@ strategy& nlhe_strategy::get_strategy()
 int nlhe_strategy::get_stack_size() const
 {
     return stack_size_;
-}
-
-std::vector<const nlhe_state_base*> nlhe_strategy::get_state_vector() const
-{
-    std::vector<const nlhe_state_base*> states;
-    std::vector<const nlhe_state_base*> stack(1, root_state_.get());
-
-    while (!stack.empty())
-    {
-        const nlhe_state_base* s = stack.back();
-        stack.pop_back();
-
-        if (!s->is_terminal())
-        {
-            assert(s->get_id() == int(states.size()));
-            states.push_back(s);
-        }
-
-        for (int i = s->get_action_count() - 1; i >= 0; --i)
-        {
-            if (const nlhe_state_base* child = s->get_child(i))
-                stack.push_back(child);
-        }
-    }
-
-    return states;
 }

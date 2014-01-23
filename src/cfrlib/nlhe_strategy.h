@@ -16,7 +16,6 @@ public:
     const strategy& get_strategy() const;
     strategy& get_strategy();
     int get_stack_size() const;
-    std::vector<const nlhe_state_base*> get_state_vector() const;
 
 private:
     std::unique_ptr<nlhe_state_base> root_state_;
