@@ -1,8 +1,8 @@
 project(test)
 
 set(test_SOURCES
-    nlhe_state_v2_tests.cpp
-    binary_io_tests.cpp
+    nlhe_state_v2_test.cpp
+    binary_io_test.cpp
 )
 
 add_executable(testrunner ${test_SOURCES})
