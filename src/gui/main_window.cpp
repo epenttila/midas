@@ -769,8 +769,8 @@ void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy&
 
     const int index = (snapshot.sit_out[1] && current_state->get_child(nlhe_state_base::CALL + 1))
         ? nlhe_state_base::CALL + 1
-        : strategy.get_strategy().get_action(current_state->get_id(), bucket);
-    nlhe_state_base::holdem_action action = current_state->get_action(index);
+        : strategy.get_strategy().get_random_child(*current_state, bucket);
+    nlhe_state_base::holdem_action action = current_state->get_child(index)->get_action();
 
     int next_action;
     double raise_fraction = -1;
@@ -805,7 +805,7 @@ void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy&
     }
 
     const QString s = current_state->get_action_name(action).c_str();
-    const double probability = strategy.get_strategy().get(current_state->get_id(), index, bucket);
+    const double probability = strategy.get_strategy().get_probability(*current_state, index, bucket);
     BOOST_LOG_TRIVIAL(info) << QString("Strategy: %1 (%2)").arg(s).arg(probability).toStdString();
 
     current_state = current_state->get_child(index);

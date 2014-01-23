@@ -220,12 +220,11 @@ int main(int argc, char* argv[])
                     holdem_abstraction_base::bucket_type buckets;
                     strategy.get_abstraction().get_buckets(hole[0], hole[1], board[0], board[1], board[2],
                         board[3], board[4], &buckets);
-                    const int index = strategy.get_strategy().get_action(state->get_id(), buckets[state->get_round()]);
-                    action = static_cast<nlhe_state_base::holdem_action>(state->get_action(index));
+                    const int index = strategy.get_strategy().get_random_child(*state, buckets[state->get_round()]);
+                    action = static_cast<nlhe_state_base::holdem_action>(state->get_child(index)->get_action());
                 }
 
-                if (action != nlhe_state_base::FOLD
-                    && (state->get_action_index() != -1 && state->get_action(state->get_action_index()) == nlhe_state_base::RAISE_A))
+                if (action != nlhe_state_base::FOLD && state->get_action() == nlhe_state_base::RAISE_A)
                 {
                     action = nlhe_state_base::RAISE_A;
                 }
@@ -271,7 +270,7 @@ int main(int argc, char* argv[])
                     break;
                 }
 
-                ms.state = ms.state->get_child(ms.state->get_action_index(action));
+                ms.state = ms.state->get_action_child(action);
                 ms.index += static_cast<int>(action_str.size());
 
                 buf += action_str + "\r\n";

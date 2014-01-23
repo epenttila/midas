@@ -55,7 +55,7 @@ public:
         RAISE_V = 8,
         RAISE_T = 9,
         RAISE_A = 10,
-        MAX_ACTIONS,
+        ACTIONS,
     };
 
     static std::unique_ptr<nlhe_state_base> create(const std::string& config);
@@ -70,13 +70,11 @@ public:
     virtual std::array<int, 2> get_pot() const = 0;
     virtual bool is_terminal() const = 0;
     virtual const nlhe_state_base* get_child(int index) const = 0;
-    virtual int get_action_count() const = 0;
-    virtual holdem_action get_action(int index) const = 0;
-    virtual int get_action_index() const = 0;
+    virtual const nlhe_state_base* get_action_child(int action) const = 0;
+    virtual holdem_action get_action() const = 0;
     virtual int get_player() const = 0;
     virtual int get_stack_size() const = 0;
     virtual const nlhe_state_base* get_parent() const = 0;
-    virtual int get_action_index(holdem_action action) const = 0;
 
 protected:
     static int soft_translate(const double b1, const double b, const double b2);

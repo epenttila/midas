@@ -1,61 +1,62 @@
 #include "gtest/gtest.h"
 #include "cfrlib/nlhe_state.h"
+#include "util/game.h"
 
 TEST(nlhe_state, raise_translation)
 {
-    const nlhe_state<
+    const nlhe_state root(10,
         nlhe_state_base::F_MASK |
         nlhe_state_base::C_MASK |
         nlhe_state_base::H_MASK |
         nlhe_state_base::P_MASK |
-        nlhe_state_base::A_MASK> root(10);
+        nlhe_state_base::A_MASK, 0);
 
     auto state = root.raise(0.5);
 
     ASSERT_NE(state, nullptr);
-    EXPECT_EQ(state->get_action(state->get_action_index()), nlhe_state_base::RAISE_H);
+    EXPECT_EQ(state->get_action(), nlhe_state_base::RAISE_H);
 
     state = root.raise(1.0);
 
     ASSERT_NE(state, nullptr);
-    EXPECT_EQ(state->get_action(state->get_action_index()), nlhe_state_base::RAISE_P);
+    EXPECT_EQ(state->get_action(), nlhe_state_base::RAISE_P);
 
     state = root.raise(0.75);
 
     ASSERT_NE(state, nullptr);
-    EXPECT_TRUE(state->get_action(state->get_action_index()) == nlhe_state_base::RAISE_H
-        || state->get_action(state->get_action_index()) == nlhe_state_base::RAISE_P);
+    EXPECT_TRUE(state->get_action() == nlhe_state_base::RAISE_H
+        || state->get_action() == nlhe_state_base::RAISE_P);
 }
 
 TEST(nlhe_state, quarter_pot_first_act)
 {
-    const nlhe_state<
+    const nlhe_state root(10,
         nlhe_state_base::F_MASK |
         nlhe_state_base::C_MASK |
         nlhe_state_base::O_MASK |
         nlhe_state_base::H_MASK |
         nlhe_state_base::P_MASK |
-        nlhe_state_base::A_MASK> root(10);
+        nlhe_state_base::A_MASK, 0);
 
-    auto state = root.get_child(root.get_action_index(nlhe_state_base::RAISE_O));
+    auto state = root.get_action_child(nlhe_state_base::RAISE_O);
     
     EXPECT_EQ(state, nullptr);
 
     state = root.raise(0.25);
 
     ASSERT_NE(state, nullptr);
-    EXPECT_EQ(state->get_action(state->get_action_index()), nlhe_state_base::RAISE_H);
+    EXPECT_EQ(state->get_action(), nlhe_state_base::RAISE_H);
 }
 
 TEST(nlhe_state, pot_sizes)
 {
-    const nlhe_state<
+    const nlhe_state root(10, 
         nlhe_state_base::F_MASK |
         nlhe_state_base::C_MASK |
         nlhe_state_base::O_MASK |
         nlhe_state_base::H_MASK |
         nlhe_state_base::P_MASK |
-        nlhe_state_base::A_MASK> root(10);
+        nlhe_state_base::A_MASK, 0);
 
     auto state = &root;
 
@@ -78,19 +79,19 @@ TEST(nlhe_state, pot_sizes)
     state = state->raise(1.0);
 
     ASSERT_NE(state, nullptr);
-    EXPECT_EQ(state->get_action(state->get_action_index()), nlhe_state_base::RAISE_A);
+    EXPECT_EQ(state->get_action(), nlhe_state_base::RAISE_A);
     EXPECT_EQ(state->get_pot()[0], 10);
     EXPECT_EQ(state->get_pot()[1], 6);
 }
 
 TEST(nlhe_state, combine_actions)
 {
-    const nlhe_state<
+    const nlhe_state root(50,
         nlhe_state_base::F_MASK |
         nlhe_state_base::C_MASK |
         nlhe_state_base::H_MASK |
         nlhe_state_base::P_MASK |
-        nlhe_state_base::A_MASK> root(50);
+        nlhe_state_base::A_MASK, 0);
 
     auto state = &root;
 
@@ -122,18 +123,18 @@ TEST(nlhe_state, combine_actions)
     EXPECT_EQ(state->get_pot()[0], 18);
     EXPECT_EQ(state->get_pot()[1], 6);
     EXPECT_EQ(state->get_child_count(), 4);
-    EXPECT_TRUE(state->get_child(state->get_action_index(nlhe_state_base::FOLD)) != nullptr);
-    EXPECT_TRUE(state->get_child(state->get_action_index(nlhe_state_base::CALL)) != nullptr);
-    EXPECT_TRUE(state->get_child(state->get_action_index(nlhe_state_base::RAISE_H)) != nullptr);
-    EXPECT_TRUE(state->get_child(state->get_action_index(nlhe_state_base::RAISE_P)) == nullptr);
-    EXPECT_TRUE(state->get_child(state->get_action_index(nlhe_state_base::RAISE_A)) != nullptr);
+    EXPECT_TRUE(state->get_action_child(nlhe_state_base::FOLD) != nullptr);
+    EXPECT_TRUE(state->get_action_child(nlhe_state_base::CALL) != nullptr);
+    EXPECT_TRUE(state->get_action_child(nlhe_state_base::RAISE_H) != nullptr);
+    EXPECT_TRUE(state->get_action_child(nlhe_state_base::RAISE_P) == nullptr);
+    EXPECT_TRUE(state->get_action_child(nlhe_state_base::RAISE_A) != nullptr);
 
     state = state->raise(1.5);
 
     EXPECT_EQ(state->get_round(), FLOP);
     EXPECT_EQ(state->get_pot()[0], 18);
     EXPECT_EQ(state->get_pot()[1], 50);
-    EXPECT_EQ(state->get_action(state->get_action_index()), nlhe_state_base::RAISE_A);
+    EXPECT_EQ(state->get_action(), nlhe_state_base::RAISE_A);
 
     state = state->call();
 
@@ -145,12 +146,12 @@ TEST(nlhe_state, combine_actions)
 
 TEST(nlhe_state, many_halfpots)
 {
-    const nlhe_state<
+    const nlhe_state root(50,
         nlhe_state_base::F_MASK |
         nlhe_state_base::C_MASK |
         nlhe_state_base::H_MASK |
         nlhe_state_base::P_MASK |
-        nlhe_state_base::A_MASK> root(50);
+        nlhe_state_base::A_MASK, 0);
 
     auto state = &root;
 
@@ -197,7 +198,7 @@ TEST(nlhe_state, many_halfpots)
 
 TEST(nlhe_state, state_counts_nlhe_fchqpwdta_50)
 {
-    const nlhe_state<
+    const nlhe_state root(50,
         nlhe_state_base::F_MASK |
         nlhe_state_base::C_MASK |
         nlhe_state_base::H_MASK |
@@ -206,7 +207,7 @@ TEST(nlhe_state, state_counts_nlhe_fchqpwdta_50)
         nlhe_state_base::W_MASK |
         nlhe_state_base::D_MASK |
         nlhe_state_base::T_MASK |
-        nlhe_state_base::A_MASK> root(50);
+        nlhe_state_base::A_MASK, 0);
 
     std::vector<const nlhe_state_base*> states;
 
@@ -226,7 +227,7 @@ TEST(nlhe_state, state_counts_nlhe_fchqpwdta_50)
 
 TEST(nlhe_state, state_counts_nlhe_fcOHQpwdvta_40)
 {
-    const nlhe_state<
+    const nlhe_state root(40, 
         nlhe_state_base::F_MASK |
         nlhe_state_base::C_MASK |
         nlhe_state_base::O_MASK |
@@ -237,7 +238,10 @@ TEST(nlhe_state, state_counts_nlhe_fcOHQpwdvta_40)
         nlhe_state_base::D_MASK |
         nlhe_state_base::V_MASK |
         nlhe_state_base::T_MASK |
-        nlhe_state_base::A_MASK> root(40, nlhe_state_base::O_MASK | nlhe_state_base::H_MASK | nlhe_state_base::Q_MASK);
+        nlhe_state_base::A_MASK,
+        nlhe_state_base::O_MASK |
+        nlhe_state_base::H_MASK |
+        nlhe_state_base::Q_MASK);
 
     std::vector<const nlhe_state_base*> states;
 
@@ -257,7 +261,7 @@ TEST(nlhe_state, state_counts_nlhe_fcOHQpwdvta_40)
 
 TEST(nlhe_state, minimum_bet_size_preflop)
 {
-    const nlhe_state<
+    const nlhe_state root(50,
         nlhe_state_base::F_MASK |
         nlhe_state_base::C_MASK |
         nlhe_state_base::O_MASK |
@@ -268,7 +272,7 @@ TEST(nlhe_state, minimum_bet_size_preflop)
         nlhe_state_base::D_MASK |
         nlhe_state_base::V_MASK |
         nlhe_state_base::T_MASK |
-        nlhe_state_base::A_MASK> root(50);
+        nlhe_state_base::A_MASK, 0);
 
     auto state = &root;
 
@@ -331,7 +335,7 @@ TEST(nlhe_state, minimum_bet_size_preflop)
 
 TEST(nlhe_state, minimum_bet_size_postflop)
 {
-    const nlhe_state<
+    const nlhe_state root(50,
         nlhe_state_base::F_MASK |
         nlhe_state_base::C_MASK |
         nlhe_state_base::O_MASK |
@@ -342,7 +346,7 @@ TEST(nlhe_state, minimum_bet_size_postflop)
         nlhe_state_base::D_MASK |
         nlhe_state_base::V_MASK |
         nlhe_state_base::T_MASK |
-        nlhe_state_base::A_MASK> root(50);
+        nlhe_state_base::A_MASK, 0);
 
     auto state = &root;
 
@@ -373,12 +377,12 @@ TEST(nlhe_state, minimum_bet_size_postflop)
     EXPECT_EQ(state->get_round(), FLOP);
 
     EXPECT_EQ(state->get_child_count(), 5);
-    EXPECT_TRUE(state->get_child(state->get_action_index(nlhe_state_base::FOLD)) != nullptr);
-    EXPECT_TRUE(state->get_child(state->get_action_index(nlhe_state_base::CALL)) != nullptr);
-    EXPECT_TRUE(state->get_child(state->get_action_index(nlhe_state_base::RAISE_O)) != nullptr);
-    EXPECT_TRUE(state->get_child(state->get_action_index(nlhe_state_base::RAISE_H)) != nullptr);
-    EXPECT_TRUE(state->get_child(state->get_action_index(nlhe_state_base::RAISE_P)) == nullptr);
-    EXPECT_TRUE(state->get_child(state->get_action_index(nlhe_state_base::RAISE_A)) != nullptr);
+    EXPECT_TRUE(state->get_action_child(nlhe_state_base::FOLD) != nullptr);
+    EXPECT_TRUE(state->get_action_child(nlhe_state_base::CALL) != nullptr);
+    EXPECT_TRUE(state->get_action_child(nlhe_state_base::RAISE_O) != nullptr);
+    EXPECT_TRUE(state->get_action_child(nlhe_state_base::RAISE_H) != nullptr);
+    EXPECT_TRUE(state->get_action_child(nlhe_state_base::RAISE_P) == nullptr);
+    EXPECT_TRUE(state->get_action_child(nlhe_state_base::RAISE_A) != nullptr);
 
     state = state->raise(0.25);
 
@@ -406,7 +410,7 @@ TEST(nlhe_state, minimum_bet_size_postflop)
 
 TEST(nlhe_state, round_up_bets)
 {
-    const nlhe_state<
+    const nlhe_state root(50,
         nlhe_state_base::F_MASK |
         nlhe_state_base::C_MASK |
         nlhe_state_base::O_MASK |
@@ -417,7 +421,7 @@ TEST(nlhe_state, round_up_bets)
         nlhe_state_base::D_MASK |
         nlhe_state_base::V_MASK |
         nlhe_state_base::T_MASK |
-        nlhe_state_base::A_MASK> root(50);
+        nlhe_state_base::A_MASK, 0);
 
     auto state = &root;
 
@@ -433,9 +437,9 @@ TEST(nlhe_state, round_up_bets)
     EXPECT_EQ(state->get_pot()[1], 2);
     EXPECT_EQ(state->get_round(), PREFLOP);
 
-    EXPECT_TRUE(state->raise(5.0) == state->get_child(state->get_action_index(nlhe_state_base::RAISE_V)));
+    EXPECT_TRUE(state->raise(5.0) == state->get_action_child(nlhe_state_base::RAISE_V));
 
-    state = state->get_child(state->get_action_index(nlhe_state_base::RAISE_V));
+    state = state->get_action_child(nlhe_state_base::RAISE_V);
 
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 2);
@@ -449,9 +453,9 @@ TEST(nlhe_state, round_up_bets)
     EXPECT_EQ(state->get_pot()[1], 22);
     EXPECT_EQ(state->get_round(), FLOP);
 
-    EXPECT_TRUE(state->raise(0.25) == state->get_child(state->get_action_index(nlhe_state_base::RAISE_O)));
+    EXPECT_TRUE(state->raise(0.25) == state->get_action_child(nlhe_state_base::RAISE_O));
 
-    state = state->get_child(state->get_action_index(nlhe_state_base::RAISE_O));
+    state = state->get_action_child(nlhe_state_base::RAISE_O);
 
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 22);
@@ -466,11 +470,11 @@ TEST(nlhe_state, round_up_bets)
     EXPECT_EQ(state->get_round(), TURN);
 
     EXPECT_EQ(state->get_child_count(), 2);
-    EXPECT_TRUE(state->get_child(state->get_action_index(nlhe_state_base::FOLD)) == nullptr);
-    EXPECT_TRUE(state->get_child(state->get_action_index(nlhe_state_base::CALL)) != nullptr);
-    EXPECT_TRUE(state->get_child(state->get_action_index(nlhe_state_base::RAISE_O)) == nullptr);
-    EXPECT_TRUE(state->get_child(state->get_action_index(nlhe_state_base::RAISE_H)) == nullptr);
-    EXPECT_TRUE(state->get_child(state->get_action_index(nlhe_state_base::RAISE_P)) == nullptr);
-    EXPECT_TRUE(state->get_child(state->get_action_index(nlhe_state_base::RAISE_A)) != nullptr);
-    EXPECT_TRUE(state->raise(0.25) == state->get_child(state->get_action_index(nlhe_state_base::RAISE_A)));
+    EXPECT_TRUE(state->get_action_child(nlhe_state_base::FOLD) == nullptr);
+    EXPECT_TRUE(state->get_action_child(nlhe_state_base::CALL) != nullptr);
+    EXPECT_TRUE(state->get_action_child(nlhe_state_base::RAISE_O) == nullptr);
+    EXPECT_TRUE(state->get_action_child(nlhe_state_base::RAISE_H) == nullptr);
+    EXPECT_TRUE(state->get_action_child(nlhe_state_base::RAISE_P) == nullptr);
+    EXPECT_TRUE(state->get_action_child(nlhe_state_base::RAISE_A) != nullptr);
+    EXPECT_TRUE(state->raise(0.25) == state->get_action_child(nlhe_state_base::RAISE_A));
 }

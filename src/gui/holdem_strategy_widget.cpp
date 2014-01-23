@@ -149,10 +149,10 @@ void holdem_strategy_widget::update(const nlhe_strategy& strategy, const nlhe_st
             auto& names = cells_[i][j].names;
             names.clear();
 
-            for (int index = 0; index < strategy.get_root_state().get_action_count(); ++index)
+            for (int index = 0; index < state.get_child_count(); ++index)
             {
-                const double p = strategy.get_strategy().get(state.get_id(), index, bucket);
-                const auto action = strategy.get_root_state().get_action(index);
+                const double p = strategy.get_strategy().get_probability(state, index, bucket);
+                const auto action = state.get_child(index)->get_action();
 
                 if (action == 0)
                     fold_p = p;
@@ -164,7 +164,7 @@ void holdem_strategy_widget::update(const nlhe_strategy& strategy, const nlhe_st
                 if (action > 0)
                     names += "\n";
 
-                names += QString("%1 (%2)").arg(strategy.get_root_state().get_action_name(action).c_str()).arg(p);
+                names += QString("%1 (%2)").arg(nlhe_state_base::get_action_name(action).c_str()).arg(p);
             }
 
             fold_p = std::min(fold_p, 1.0);

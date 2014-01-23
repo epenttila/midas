@@ -58,14 +58,13 @@ typename pure_cfr_solver<T, U>::data_t pure_cfr_solver<T, U>::update(int positio
     }
     else
     {
-        std::array<int, ACTIONS> action_ev;
+        std::array<int, game_state::ACTIONS> action_ev;
 
-        for (int i = 0; i < ACTIONS; ++i)
+        for (int i = 0; i < state.get_child_count(); ++i)
         {
             const game_state* next = state.get_child(i);
 
-            if (!next)
-                continue; // impossible action
+            assert(next);
 
             if (next->is_terminal())
                 action_ev[i] = next->get_terminal_ev(result);
@@ -78,10 +77,9 @@ typename pure_cfr_solver<T, U>::data_t pure_cfr_solver<T, U>::update(int positio
         // update regrets
         auto data = this->get_data(state.get_id(), bucket, 0);
 
-        for (int i = 0; i < ACTIONS; ++i)
+        for (int i = 0; i < state.get_child_count(); ++i)
         {
-            if (!state.get_child(i))
-                continue;
+            assert(state.get_child(i));
 
             // counterfactual regret
             data_t delta_regret = action_ev[i] - total_ev;
@@ -108,14 +106,12 @@ typename pure_cfr_solver<T, U>::data_t pure_cfr_solver<T, U>::update(int positio
 template<class T, class U>
 int pure_cfr_solver<T, U>::get_regret_strategy(std::mt19937& engine, const game_state& state, const int bucket) const
 {
-    std::array<typename base_t::data_type, ACTIONS> data;
-
-    for (int i = 0; i < ACTIONS; ++i)
-        data[i] = *this->get_data(state.get_id(), bucket, i);
+    const auto size = state.get_child_count();
+    const auto data = this->get_data(state.get_id(), bucket, 0);
 
     std::uint64_t bucket_sum = 0;
 
-    for (int i = 0; i < ACTIONS; ++i)
+    for (int i = 0; i < size; ++i)
     {
         assert(state.get_child(i) || data[i].regret <= 0);
 
@@ -129,7 +125,7 @@ int pure_cfr_solver<T, U>::get_regret_strategy(std::mt19937& engine, const game_
         std::uniform_int_distribution<std::uint64_t> dist(0, bucket_sum);
         std::uint64_t x = dist(engine);
 
-        for (int i = 0; i < ACTIONS; ++i)
+        for (int i = 0; i < size; ++i)
         {
             const auto& regret = data[i].regret;
 
@@ -154,7 +150,7 @@ int pure_cfr_solver<T, U>::get_regret_strategy(std::mt19937& engine, const game_
         }
 
         // sample an action from a uniform distribution
-        std::uniform_int_distribution<int> dist(0, ACTIONS - 1);
+        std::uniform_int_distribution<int> dist(0, size - 1);
 
         for (;;)
         {

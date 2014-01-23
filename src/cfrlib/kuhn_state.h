@@ -18,6 +18,7 @@ public:
     int get_player() const;
     bool is_terminal() const;
     kuhn_state* get_child(int action) const;
+    const kuhn_state* get_action_child(int action) const;
     int get_terminal_ev(int result) const;
     const kuhn_state* get_parent() const;
     int get_action() const;

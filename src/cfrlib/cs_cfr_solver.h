@@ -11,14 +11,12 @@ public:
     typedef typename base_t::abstraction_t abstraction_t;
     typedef typename base_t::bucket_t bucket_t;
 
-    static const int ACTIONS = base_t::ACTIONS;
-
     cs_cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr<abstraction_t> abstraction);
     ~cs_cfr_solver();
 
 private:
     double update(const game_state& state, const bucket_t& buckets, std::array<double, 2>& reach, const int result);
-    void get_regret_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out) const;
+    void get_regret_strategy(const game_state& state, const int bucket, double* out) const;
     virtual void run_iteration(T& game);
 };
 

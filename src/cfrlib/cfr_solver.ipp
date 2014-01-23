@@ -65,12 +65,13 @@ void cfr_solver<T, U, Data>::solve(const std::uint64_t iterations, std::int64_t 
 }
 
 template<class T, class U, class Data>
-void cfr_solver<T, U, Data>::get_average_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out) const
+void cfr_solver<T, U, Data>::get_average_strategy(const game_state& state, const int bucket, double* out) const
 {
+    const auto action_count = state.get_child_count();
     const auto data = get_data(state.get_id(), bucket, 0);
     double bucket_sum = 0;
 
-    for (int i = 0; i < ACTIONS; ++i)
+    for (int i = 0; i < action_count; ++i)
     {
         assert(state.get_child(i) || data[i].strategy <= EPSILON);
         assert(data[i].strategy >= 0);
@@ -79,12 +80,12 @@ void cfr_solver<T, U, Data>::get_average_strategy(const game_state& state, const
 
     if (bucket_sum > EPSILON)
     {
-        for (int i = 0; i < ACTIONS; ++i)
+        for (int i = 0; i < action_count; ++i)
             out[i] = data[i].strategy / bucket_sum;
     }
     else
     {
-        for (int i = 0; i < ACTIONS; ++i)
+        for (int i = 0; i < action_count; ++i)
             out[i] = state.get_child(i) ? 1.0 / state.get_child_count() : 0.0;
     }
 }
@@ -131,8 +132,8 @@ void cfr_solver<T, U, Data>::save_strategy(const std::string& filename) const
 
         for (int bucket = 0; bucket < abstraction_->get_bucket_count(state->get_round()); ++bucket)
         {
-            std::array<double, ACTIONS> p;
-            get_average_strategy(*state, bucket, p);
+            std::vector<double> p(state->get_child_count());
+            get_average_strategy(*state, bucket, p.data());
             fwrite(reinterpret_cast<char*>(&p[0]), sizeof(p[0]), p.size(), file.get());
         }
     }
@@ -150,7 +151,7 @@ void cfr_solver<T, U, Data>::init_storage()
     for (auto i = states_.begin(); i != states_.end(); ++i)
     {
         positions_[(*i)->get_id()] = pos;
-        pos += abstraction_->get_bucket_count((*i)->get_round()) * ACTIONS;
+        pos += abstraction_->get_bucket_count((*i)->get_round()) * (*i)->get_child_count();
     }
 
     assert(pos == data_.size());
@@ -181,7 +182,7 @@ std::size_t cfr_solver<T, U, Data>::get_required_values() const
     std::size_t n = 0;
 
     for (auto i = states_.begin(); i != states_.end(); ++i)
-        n += abstraction_->get_bucket_count((*i)->get_round()) * ACTIONS;
+        n += abstraction_->get_bucket_count((*i)->get_round()) * (*i)->get_child_count();
 
     return n;
 }
@@ -210,7 +211,7 @@ const typename cfr_solver<T, U, Data>::data_type* cfr_solver<T, U, Data>::get_da
     assert(state_id < states_.size());
     assert(bucket >= 0 && bucket < abstraction_->get_bucket_count(states_[state_id]->get_round()));
 
-    return &data_[positions_[state_id] + bucket * ACTIONS + action];
+    return &data_[positions_[state_id] + bucket * states_[state_id]->get_child_count() + action];
 }
 
 template<class T, class U, class Data>
@@ -224,8 +225,8 @@ void cfr_solver<T, U, Data>::print(std::ostream& os) const
         {
             os << state << ":" << bucket << ": ";
 
-            std::array<double, ACTIONS> p;
-            get_average_strategy(state, bucket, p);
+            std::vector<double> p(state.get_child_count());
+            get_average_strategy(state, bucket, p.data());
 
             for (std::size_t action = 0; action < p.size(); ++action)
                 os << (action > 0 ? ", " : "") << p[action];

@@ -21,7 +21,6 @@ template<class T, class U, class Data>
 class cfr_solver : public solver_base, private boost::noncopyable
 {
 public:
-    static const int ACTIONS = U::ACTIONS;
     static const int ROUNDS = T::ROUNDS;
 
     typedef T game_type;
@@ -60,7 +59,7 @@ protected:
     const abstraction_t& get_abstraction() const;
 
 private:
-    void get_average_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out) const;
+    void get_average_strategy(const game_state& state, const int bucket, double* out) const;
 
     std::vector<const game_state*> states_;
     std::vector<data_type> data_;

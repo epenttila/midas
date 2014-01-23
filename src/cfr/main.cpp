@@ -23,35 +23,34 @@
 #include "cfrlib/flhe_state.h"
 #include "cfrlib/nlhe_state.h"
 #include "cfrlib/strategy.h"
-#include "cfrlib/pcs_cfr_solver.h"
+//#include "cfrlib/pcs_cfr_solver.h"
 #include "cfrlib/leduc_state.h"
 #include "abslib/leduc_abstraction.h"
 #include "cfrlib/leduc_game.h"
-#include "cfrlib/cs_cfr_solver.h"
+//#include "cfrlib/cs_cfr_solver.h"
 #include "cfrlib/pure_cfr_solver.h"
 
 namespace
 {
     template<class Game, class State>
-    std::unique_ptr<solver_base> create_solver(const std::string& variant, std::unique_ptr<State> state,
+    std::unique_ptr<solver_base> create_solver(const std::string& /*variant*/, std::unique_ptr<State> state,
         std::unique_ptr<typename Game::abstraction_t> abs)
     {
-        if (variant == "cs")
+        /*if (variant == "cs")
             return std::unique_ptr<cs_cfr_solver<Game, State>>(new cs_cfr_solver<Game, State>(std::move(state), std::move(abs)));
         else if (variant == "pcs")
             return std::unique_ptr<pcs_cfr_solver<Game, State>>(new pcs_cfr_solver<Game, State>(std::move(state), std::move(abs)));
-        else if (variant == "pure")
+        else if (variant == "pure")*/
             return std::unique_ptr<pure_cfr_solver<Game, State>>(new pure_cfr_solver<Game, State>(std::move(state), std::move(abs)));
 
-        return std::unique_ptr<solver_base>();
+        //return std::unique_ptr<solver_base>();
     }
 
-    template<int BITMASK>
     std::unique_ptr<solver_base> create_nlhe_solver(const std::string& variant, const int stack_size,
-        int limited_actions, const std::string& filename)
+        int enabled_actions, int limited_actions, const std::string& filename)
     {
-        typedef nlhe_state<BITMASK> state_type;
-        std::unique_ptr<state_type> state(new state_type(stack_size, limited_actions));
+        typedef nlhe_state state_type;
+        std::unique_ptr<state_type> state(new state_type(stack_size, enabled_actions, limited_actions));
 
         typedef holdem_abstraction abstraction_t;
         std::unique_ptr<abstraction_t> abs(new abstraction_t);
@@ -139,9 +138,9 @@ int main(int argc, char* argv[])
             std::unique_ptr<kuhn_state> state(new kuhn_state());
             std::unique_ptr<kuhn_abstraction> abs(new kuhn_abstraction);
 
-            if (variant == "cs")
+            /*if (variant == "cs")
                 solver.reset(new cs_cfr_solver<kuhn_game, kuhn_state>(std::move(state), std::move(abs)));
-            else if (variant == "pure")
+            else if (variant == "pure")*/
                 solver.reset(new pure_cfr_solver<kuhn_game, kuhn_state>(std::move(state), std::move(abs)));
         }
         else if (game == "leduc")
@@ -163,11 +162,10 @@ int main(int argc, char* argv[])
         {
             const std::string actions = match[1].str();
             const int stack_size = boost::lexical_cast<int>(match[2].str());
-            const auto limited_actions = nlhe_state_base::O_MASK | nlhe_state_base::H_MASK | nlhe_state_base::Q_MASK;
 
             if (actions == "fcohqpwdvta")
             {
-                solver = create_nlhe_solver<
+                solver = create_nlhe_solver(variant, stack_size,
                     nlhe_state_base::F_MASK |
                     nlhe_state_base::C_MASK |
                     nlhe_state_base::O_MASK |
@@ -178,7 +176,7 @@ int main(int argc, char* argv[])
                     nlhe_state_base::D_MASK |
                     nlhe_state_base::V_MASK |
                     nlhe_state_base::T_MASK |
-                    nlhe_state_base::A_MASK>(variant, stack_size, limited_actions, abstraction);
+                    nlhe_state_base::A_MASK, 0, abstraction);
             }
         }
 

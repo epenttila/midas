@@ -11,5 +11,5 @@ public:
     virtual int get_id() const = 0;
     virtual bool is_terminal() const = 0;
     virtual const game_state_base* get_child(int index) const = 0;
-    virtual int get_action_count() const = 0;
+    virtual int get_child_count() const = 0;
 };

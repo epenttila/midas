@@ -101,7 +101,7 @@ double cs_cfr_solver<T, U>::update(const game_state& state, const bucket_t& buck
 }
 
 template<class T, class U>
-void cs_cfr_solver<T, U>::get_regret_strategy(const game_state& state, const int bucket, std::array<double, ACTIONS>& out) const
+void cs_cfr_solver<T, U>::get_regret_strategy(const game_state& state, const int bucket, double* out) const
 {
     const auto data = this->get_data(state.get_id(), bucket, 0);
     double bucket_sum = 0;

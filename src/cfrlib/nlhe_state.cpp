@@ -1,3 +1,4 @@
+#include "nlhe_state.h"
 #include <boost/integer/static_log2.hpp>
 #include <random>
 #include "util/game.h"
@@ -8,78 +9,53 @@ namespace detail
     static const std::array<int, 2> INITIAL_RAISE_MASKS = {{0, 0}};
 }
 
-template<int BITMASK>
-nlhe_state<BITMASK>::nlhe_state(const int stack_size, int limited_actions)
+nlhe_state::nlhe_state(int stack_size, int enabled_actions, int limited_actions)
     : id_(0)
     , parent_(nullptr)
-    , action_index_(-1)
+    , action_(INVALID_ACTION)
     , player_(0)
     , pot_(detail::INITIAL_POT)
     , round_(PREFLOP)
-    , child_count_(0) // sb has all actions
     , stack_size_(stack_size)
     , raise_masks_(detail::INITIAL_RAISE_MASKS)
     , limited_actions_(limited_actions)
+    , enabled_actions_(enabled_actions)
 {
-    children_.fill(nullptr);
-
-    int j = 0;
-
-    for (holdem_action i = FOLD; i < MAX_ACTIONS; i = static_cast<holdem_action>(i + 1))
-    {
-        if (is_action_enabled(i))
-        {
-            action_to_index_[i] = j;
-            index_to_action_[j++] = i;
-        }
-        else
-        {
-            action_to_index_[i] = -1;
-        }
-    }
-
     int id = id_ + 1;
 
     for (int i = 0; i < ACTIONS; ++i)
-        create_child(i, &id);
+        create_child(static_cast<holdem_action>(i), &id);
 }
 
-template<int BITMASK>
-nlhe_state<BITMASK>::nlhe_state(const nlhe_state* parent, const int action_index, const int player,
-    const std::array<int, 2>& pot, const int round, const std::array<int, 2> raise_masks, int limited_actions,
-    int* id)
+nlhe_state::nlhe_state(const nlhe_state* parent, const holdem_action action_index, const int player,
+    const std::array<int, 2>& pot, const int round, const std::array<int, 2> raise_masks, int enabled_actions,
+    int limited_actions, int* id)
     : id_(id ? (*id)++ : -1)
     , parent_(parent)
-    , action_index_(action_index)
+    , action_(action_index)
     , player_(player)
     , pot_(pot)
     , round_(round)
-    , child_count_(0)
     , stack_size_(parent->stack_size_)
     , raise_masks_(raise_masks)
     , limited_actions_(limited_actions)
+    , enabled_actions_(enabled_actions)
 {
-    children_.fill(nullptr);
-
     for (int i = 0; i < ACTIONS; ++i)
-        create_child(i, id);
+        create_child(static_cast<holdem_action>(i), id);
 }
 
-template<int BITMASK>
-nlhe_state<BITMASK>::~nlhe_state()
+void nlhe_state::create_child(const holdem_action action_index, int* id)
 {
-    std::for_each(children_.begin(), children_.end(), [](nlhe_state* p) { delete p; });
-}
+    if (!is_action_enabled(action_index))
+        return;
 
-template<int BITMASK>
-void nlhe_state<BITMASK>::create_child(const int action_index, int* id)
-{
     if (is_terminal())
         return;
 
     const bool opponent_allin = pot_[1 - player_] == stack_size_;
-    const holdem_action next_action = index_to_action_[action_index];
-    const holdem_action prev_action = action_index_ == -1 ? INVALID_ACTION : index_to_action_[action_index_];
+    const holdem_action next_action = action_index;
+    const holdem_action prev_action = action_;
 
     if (is_raise(next_action) && opponent_allin)
         return;
@@ -196,26 +172,20 @@ void nlhe_state<BITMASK>::create_child(const int action_index, int* id)
     else
         new_player = 1 - player_;
 
-    assert(children_[action_index] == nullptr);
-
-    children_[action_index] = new nlhe_state(this, action_index, new_player, new_pot, new_round, new_raise_masks,
-        limited_actions_, new_terminal ? nullptr : id);
-
-    ++child_count_;
+    children_.push_back(std::unique_ptr<nlhe_state>(new nlhe_state(this, action_index, new_player, new_pot, new_round,
+        new_raise_masks, enabled_actions_, limited_actions_, new_terminal ? nullptr : id)));
 }
 
-template<int BITMASK>
-int nlhe_state<BITMASK>::get_terminal_ev(const int result) const
+int nlhe_state::get_terminal_ev(const int result) const
 {
-    const int action = index_to_action_[action_index_];
     assert(is_terminal());
-    assert(action != CALL || pot_[0] == pot_[1]);
+    assert(action_ != CALL || pot_[0] == pot_[1]);
 
-    if (action == FOLD)
+    if (action_ == FOLD)
     {
         return parent_->player_ == 1 ? pot_[1] : -pot_[0];
     }
-    else if (action == CALL)
+    else if (action_ == CALL)
     {
         assert(pot_[0] == pot_[1]);
         return result * pot_[0];
@@ -225,118 +195,93 @@ int nlhe_state<BITMASK>::get_terminal_ev(const int result) const
     return 0;
 }
 
-template<int BITMASK>
-int nlhe_state<BITMASK>::get_action_index() const
+nlhe_state::holdem_action nlhe_state::get_action() const
 {
-    return action_index_;
+    return action_;
 }
 
-template<int BITMASK>
-int nlhe_state<BITMASK>::get_round() const
+int nlhe_state::get_round() const
 {
     return round_;
 }
 
-template<int BITMASK>
-const nlhe_state<BITMASK>* nlhe_state<BITMASK>::get_parent() const
+const nlhe_state* nlhe_state::get_parent() const
 {
     return parent_;
 }
 
-template<int BITMASK>
-bool nlhe_state<BITMASK>::is_terminal() const
+bool nlhe_state::is_terminal() const
 {
     return id_ == -1;
 }
 
-template<int BITMASK>
-const nlhe_state<BITMASK>* nlhe_state<BITMASK>::get_child(int index) const
+const nlhe_state* nlhe_state::get_child(int index) const
 {
-    return children_[index];
+    if (index == -1)
+        return nullptr;
+
+    return children_[index].get();
 }
 
-template<int BITMASK>
-int nlhe_state<BITMASK>::get_id() const
+int nlhe_state::get_id() const
 {
     return id_;
 }
 
-template<int BITMASK>
-int nlhe_state<BITMASK>::get_player() const
+int nlhe_state::get_player() const
 {
     return player_;
 }
 
-template<int BITMASK>
-int nlhe_state<BITMASK>::get_child_count() const
+int nlhe_state::get_child_count() const
 {
-    return child_count_;
+    return static_cast<int>(children_.size());
 }
 
-template<int BITMASK>
-const nlhe_state<BITMASK>* nlhe_state<BITMASK>::call() const
+const nlhe_state* nlhe_state::call() const
 {
-    return children_[action_to_index_[CALL]];
+    return get_action_child(CALL);
 }
 
-template<int BITMASK>
-const nlhe_state<BITMASK>* nlhe_state<BITMASK>::raise(double fraction) const
+const nlhe_state* nlhe_state::raise(double fraction) const
 {
-    return static_cast<const nlhe_state<BITMASK>*>(nlhe_state_base::raise(*this, fraction));
+    return static_cast<const nlhe_state*>(nlhe_state_base::raise(*this, fraction));
 }
 
-template<int BITMASK>
-std::array<int, 2> nlhe_state<BITMASK>::get_pot() const
+std::array<int, 2> nlhe_state::get_pot() const
 {
     return pot_;
 }
 
-template<int BITMASK>
-int nlhe_state<BITMASK>::get_action_count() const
+bool nlhe_state::is_raise(holdem_action action) const
 {
-    return ACTIONS;
+    return action > CALL && action < ACTIONS;
 }
 
-template<int BITMASK>
-typename nlhe_state<BITMASK>::holdem_action nlhe_state<BITMASK>::get_action(int index) const
-{
-    return index_to_action_[index];
-}
-
-template<int BITMASK>
-bool nlhe_state<BITMASK>::is_raise(holdem_action action) const
-{
-    return action > CALL && action < MAX_ACTIONS;
-}
-
-template<int BITMASK>
-bool nlhe_state<BITMASK>::is_action_enabled(holdem_action action) const
+bool nlhe_state::is_action_enabled(holdem_action action) const
 {
     const auto mask = get_action_mask(action);
-    return (BITMASK & mask) == mask;
+    return (enabled_actions_ & mask) == mask;
 }
 
-template<int BITMASK>
-int nlhe_state<BITMASK>::get_new_player_pot(const int player_pot, const int to_call, const int in_pot,
+int nlhe_state::get_new_player_pot(const int player_pot, const int to_call, const int in_pot,
     const holdem_action action) const
 {
     return nlhe_state_base::get_new_player_pot(player_pot, to_call, in_pot, action, stack_size_);
 }
 
-template<int BITMASK>
-int nlhe_state<BITMASK>::get_stack_size() const
+int nlhe_state::get_stack_size() const
 {
     return stack_size_;
 }
 
-template<int BITMASK>
-int nlhe_state<BITMASK>::get_action_index(holdem_action action) const
+const nlhe_state* nlhe_state::get_action_child(int action) const
 {
-    return action_to_index_[action];
+    for (int i = 0; i < children_.size(); ++i)
+    {
+        if (get_child(i)->get_action() == action)
+            return get_child(i);
+    }
+
+    return nullptr;
 }
-
-template<int BITMASK>
-std::array<int, nlhe_state<BITMASK>::MAX_ACTIONS> nlhe_state<BITMASK>::action_to_index_;
-
-template<int BITMASK>
-std::array<typename nlhe_state<BITMASK>::holdem_action, nlhe_state<BITMASK>::ACTIONS> nlhe_state<BITMASK>::index_to_action_;

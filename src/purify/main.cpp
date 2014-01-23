@@ -63,8 +63,8 @@ int main(int argc, char* argv[])
 
             for (int bucket = 0; bucket < strategy.get_abstraction().get_bucket_count(state.get_round()); ++bucket)
             {
-                double* begin = strategy.get_strategy().get_data(state_id, 0, bucket);
-                double* end = begin + state.get_action_count();
+                double* begin = strategy.get_strategy().get_data(state, 0, bucket);
+                double* end = begin + state.get_child_count();
                 double max = 0;
                 int max_count = 0;
 

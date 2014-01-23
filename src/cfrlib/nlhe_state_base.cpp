@@ -1,6 +1,8 @@
 #include "nlhe_state_base.h"
 #include <boost/regex.hpp>
+#include <random>
 #include "nlhe_state.h"
+#include "util/game.h"
 
 std::unique_ptr<nlhe_state_base> nlhe_state_base::create(const std::string& config)
 {
@@ -18,7 +20,7 @@ std::unique_ptr<nlhe_state_base> nlhe_state_base::create(const std::string& conf
     {
         if (actions == "fcohqpwdvta")
         {
-            return std::unique_ptr<nlhe_state_base>(new nlhe_state<
+            return std::unique_ptr<nlhe_state_base>(new nlhe_state(stack,
                 nlhe_state_base::F_MASK |
                 nlhe_state_base::C_MASK |
                 nlhe_state_base::O_MASK |
@@ -29,7 +31,7 @@ std::unique_ptr<nlhe_state_base> nlhe_state_base::create(const std::string& conf
                 nlhe_state_base::D_MASK |
                 nlhe_state_base::V_MASK |
                 nlhe_state_base::T_MASK |
-                nlhe_state_base::A_MASK>(stack, nlhe_state_base::O_MASK | nlhe_state_base::H_MASK | nlhe_state_base::Q_MASK));
+                nlhe_state_base::A_MASK, 0));
         }
     }
 
@@ -103,12 +105,12 @@ int nlhe_state_base::soft_translate(const double b1, const double b, const doubl
 
 std::ostream& operator<<(std::ostream& os, const nlhe_state_base& state)
 {
-    static const char actions[nlhe_state_base::MAX_ACTIONS + 1] = "fcohqpwdvta";
+    static const char actions[nlhe_state_base::ACTIONS + 1] = "fcohqpwdvta";
     std::string line;
 
     for (auto s = &state; s->get_parent() != nullptr; s = s->get_parent())
     {
-        const char c = actions[s->get_action(s->get_action_index())];
+        const char c = actions[s->get_action()];
         line = char(s->get_parent()->get_player() == 0 ? c : toupper(c)) + line;
     }
 
@@ -125,12 +127,11 @@ const nlhe_state_base* nlhe_state_base::raise(const nlhe_state_base& state, doub
     if (state.get_stack_size() == pot[1 - player])
         return nullptr;
 
-    std::array<double, MAX_ACTIONS> pot_sizes;
+    std::array<double, ACTIONS> pot_sizes;
 
     for (int i = 0; i < static_cast<int>(pot_sizes.size()); ++i)
     {
-        const auto index = state.get_action_index(static_cast<holdem_action>(i));
-        auto p = index != -1 ? state.get_child(index) : nullptr;
+        const auto p = state.get_action_child(static_cast<holdem_action>(i));
 
         if (p && i > CALL)
         {
@@ -147,17 +148,12 @@ const nlhe_state_base* nlhe_state_base::raise(const nlhe_state_base& state, doub
     holdem_action lower = INVALID_ACTION;
     holdem_action upper = INVALID_ACTION;
 
-    for (holdem_action i = static_cast<holdem_action>(CALL + 1); i < MAX_ACTIONS; i = static_cast<holdem_action>(i + 1))
+    for (int i = 0; i < pot_sizes.size(); ++i)
     {
-        const auto action_index = state.get_action_index(i);
-
-        if (action_index == -1 || state.get_child(action_index) == nullptr)
-            continue;
-
         if (pot_sizes[i] <= fraction && (lower == INVALID_ACTION || pot_sizes[i] > pot_sizes[lower]))
-            lower = i;
+            lower = static_cast<holdem_action>(i);
         else if (pot_sizes[i] >= fraction && (upper == INVALID_ACTION || pot_sizes[i] < pot_sizes[upper]))
-            upper = i;
+            upper = static_cast<holdem_action>(i);
     }
 
     assert(lower != INVALID_ACTION || upper != INVALID_ACTION);
@@ -173,7 +169,7 @@ const nlhe_state_base* nlhe_state_base::raise(const nlhe_state_base& state, doub
     else
         action = soft_translate(pot_sizes[lower], fraction, pot_sizes[upper]) == 0 ? lower : upper;
 
-    return state.get_child(state.get_action_index(action));
+    return state.get_action_child(action);
 }
 
 int nlhe_state_base::get_new_player_pot(const int player_pot, const int to_call, const int in_pot,

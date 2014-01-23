@@ -17,7 +17,7 @@ std::vector<const game_state_base*> game_state_base::get_state_vector(const game
             states.push_back(s);
         }
 
-        for (int i = s->get_action_count() - 1; i >= 0; --i)
+        for (int i = s->get_child_count() - 1; i >= 0; --i)
         {
             if (const game_state_base* child = s->get_child(i))
                 stack.push_back(child);

@@ -15,7 +15,7 @@ set(cfrlib_SOURCES
     leduc_state.cpp
     leduc_state.h
     nlhe_state.h
-    nlhe_state.ipp
+    nlhe_state.cpp
     nlhe_strategy.h
     nlhe_strategy.cpp
     pcs_cfr_solver.h

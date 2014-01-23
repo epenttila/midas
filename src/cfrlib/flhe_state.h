@@ -20,6 +20,7 @@ public:
     const flhe_state* get_parent() const;
     bool is_terminal() const;
     const flhe_state* get_child(int action) const;
+    const flhe_state* get_action_child(int action) const;
     int get_id() const;
     int get_player() const;
     int get_terminal_ev(int result) const;

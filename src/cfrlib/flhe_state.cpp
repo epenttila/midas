@@ -167,3 +167,8 @@ int flhe_state::get_action_count() const
 {
     return ACTIONS;
 }
+
+const flhe_state* flhe_state::get_action_child(int action) const
+{
+    return get_child(action);
+}

@@ -166,3 +166,8 @@ int leduc_state::get_action_count() const
 {
     return ACTIONS;
 }
+
+const leduc_state* leduc_state::get_action_child(int action) const
+{
+    return get_child(action);
+}

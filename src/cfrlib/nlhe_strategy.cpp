@@ -38,7 +38,7 @@ nlhe_strategy::nlhe_strategy(const std::string& filepath, bool read_only)
 
     abstraction_.reset(new holdem_abstraction);
     abstraction_->read(dir.string());
-    strategy_.reset(new strategy(filepath, state_count, root_state_->get_action_count(), read_only));
+    strategy_.reset(new strategy(filepath, state_count, read_only));
 }
 
 const holdem_abstraction_base& nlhe_strategy::get_abstraction() const
