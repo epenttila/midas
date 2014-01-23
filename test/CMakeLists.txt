@@ -1,7 +1,7 @@
 project(test)
 
 set(test_SOURCES
-    nlhe_state_v2_test.cpp
+    nlhe_state_test.cpp
     binary_io_test.cpp
 )
 

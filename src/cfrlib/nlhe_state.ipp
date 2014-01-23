@@ -3,8 +3,13 @@
 #include "util/game.h"
 #include "holdem_game.h"
 
+namespace detail
+{
+    static const std::array<int, 2> INITIAL_RAISE_MASKS = {{0, 0}};
+}
+
 template<int BITMASK>
-nlhe_state<BITMASK>::nlhe_state(const int stack_size)
+nlhe_state<BITMASK>::nlhe_state(const int stack_size, int limited_actions)
     : id_(0)
     , parent_(nullptr)
     , action_index_(-1)
@@ -13,6 +18,8 @@ nlhe_state<BITMASK>::nlhe_state(const int stack_size)
     , round_(PREFLOP)
     , child_count_(0) // sb has all actions
     , stack_size_(stack_size)
+    , raise_masks_(detail::INITIAL_RAISE_MASKS)
+    , limited_actions_(limited_actions)
 {
     children_.fill(nullptr);
 
@@ -39,7 +46,8 @@ nlhe_state<BITMASK>::nlhe_state(const int stack_size)
 
 template<int BITMASK>
 nlhe_state<BITMASK>::nlhe_state(const nlhe_state* parent, const int action_index, const int player,
-    const std::array<int, 2>& pot, const int round, int* id)
+    const std::array<int, 2>& pot, const int round, const std::array<int, 2> raise_masks, int limited_actions,
+    int* id)
     : id_(id ? (*id)++ : -1)
     , parent_(parent)
     , action_index_(action_index)
@@ -48,6 +56,8 @@ nlhe_state<BITMASK>::nlhe_state(const nlhe_state* parent, const int action_index
     , round_(round)
     , child_count_(0)
     , stack_size_(parent->stack_size_)
+    , raise_masks_(raise_masks)
+    , limited_actions_(limited_actions)
 {
     children_.fill(nullptr);
 
@@ -95,6 +105,27 @@ void nlhe_state<BITMASK>::create_child(const int action_index, int* id)
     else if (prev_action == CALL && next_action == CALL && parent_ && round_ == parent_->round_)
         ++new_round; // check-check (or call-check preflop)
 
+    // restrict small raises (< RAISE_P) to 1 per player per round
+    std::array<int, 2> new_raise_masks;
+
+    if (new_round == round_)
+        new_raise_masks = raise_masks_;
+    else
+        new_raise_masks.fill(0);
+
+    if (next_action > CALL && next_action < RAISE_P)
+    {
+        const auto mask = get_action_mask(next_action);
+
+        if (limited_actions_ & mask)
+        {
+            if ((new_raise_masks[player_] & mask) == mask)
+                return;
+            else
+                new_raise_masks[player_] |= mask;
+        }
+    }
+
     std::array<int, 2> new_pot = {{pot_[0], pot_[1]}};
 
     const int to_call = pot_[1 - player_] - pot_[player_];
@@ -104,6 +135,7 @@ void nlhe_state<BITMASK>::create_child(const int action_index, int* id)
         || prev_action == -1
         || prev_action == FOLD
         || prev_action == CALL
+        || (prev_action == RAISE_O && to_call == std::max(to_call == 0 ? 2 : to_call, int(0.25 * in_pot)))
         || (prev_action == RAISE_H && to_call == int(0.5 * in_pot))
         || (prev_action == RAISE_Q && to_call == int(0.75 * in_pot))
         || (prev_action == RAISE_P && to_call == in_pot)
@@ -121,10 +153,31 @@ void nlhe_state<BITMASK>::create_child(const int action_index, int* id)
         break;
     default:
         {
-            const int new_player_pot = get_new_player_pot(pot_[player_], to_call, in_pot, next_action);
-            const int max_player_pot = get_new_player_pot(pot_[player_], to_call, in_pot, get_max_action());
+            int new_player_pot = get_new_player_pot(pot_[player_], to_call, in_pot, next_action);
 
-            if (new_player_pot >= max_player_pot && next_action != get_max_action())
+            // combine similar actions upwards
+            int next_size_action = next_action;
+            
+            if (next_action != RAISE_A)
+            {
+                do
+                {
+                    ++next_size_action;
+                }
+                while (!is_action_enabled(static_cast<holdem_action>(next_size_action)));
+            }
+
+            const int max_player_pot = get_new_player_pot(pot_[player_], to_call, in_pot, static_cast<holdem_action>(next_size_action));
+
+            if (new_player_pot < max_player_pot)
+            {
+                if (prev_action == INVALID_ACTION)
+                    new_player_pot = std::max(pot_[player_] + 3, new_player_pot);
+                else
+                    new_player_pot = std::max(pot_[player_] + (to_call == 0 ? 2 : 2 * to_call), new_player_pot);
+            }
+
+            if (new_player_pot >= max_player_pot && next_action != next_size_action)
                 return; // combine all actions which are essentially RAISE_MAX
 
             // support combining minraises with CALL if this fails
@@ -145,8 +198,8 @@ void nlhe_state<BITMASK>::create_child(const int action_index, int* id)
 
     assert(children_[action_index] == nullptr);
 
-    children_[action_index] = new nlhe_state(this, action_index, new_player, new_pot, new_round,
-        new_terminal ? nullptr : id);
+    children_[action_index] = new nlhe_state(this, action_index, new_player, new_pot, new_round, new_raise_masks,
+        limited_actions_, new_terminal ? nullptr : id);
 
     ++child_count_;
 }
@@ -264,17 +317,10 @@ bool nlhe_state<BITMASK>::is_action_enabled(holdem_action action) const
 }
 
 template<int BITMASK>
-typename nlhe_state<BITMASK>::holdem_action nlhe_state<BITMASK>::get_max_action() const
-{
-    return static_cast<holdem_action>(boost::static_log2<BITMASK>::value);
-}
-
-template<int BITMASK>
 int nlhe_state<BITMASK>::get_new_player_pot(const int player_pot, const int to_call, const int in_pot,
     const holdem_action action) const
 {
-    const auto factor = get_raise_factor(action);
-    return std::min(player_pot + int(to_call + (2 * to_call + in_pot) * factor), stack_size_);
+    return nlhe_state_base::get_new_player_pot(player_pot, to_call, in_pot, action, stack_size_);
 }
 
 template<int BITMASK>

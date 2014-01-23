@@ -1,7 +1,6 @@
 #include "nlhe_state_base.h"
 #include <boost/regex.hpp>
 #include "nlhe_state.h"
-#include "nlhe_state_v2.h"
 
 std::unique_ptr<nlhe_state_base> nlhe_state_base::create(const std::string& config)
 {
@@ -35,10 +34,10 @@ std::unique_ptr<nlhe_state_base> nlhe_state_base::create(const std::string& conf
     {
         if (actions == "fcohqpwdvta")
         {
-            return std::unique_ptr<nlhe_state_base>(new nlhe_state_v2<
-                nlhe_state_base::O_MASK |
+            return std::unique_ptr<nlhe_state_base>(new nlhe_state<
                 nlhe_state_base::F_MASK |
                 nlhe_state_base::C_MASK |
+                nlhe_state_base::O_MASK |
                 nlhe_state_base::H_MASK |
                 nlhe_state_base::Q_MASK |
                 nlhe_state_base::P_MASK |
@@ -46,7 +45,7 @@ std::unique_ptr<nlhe_state_base> nlhe_state_base::create(const std::string& conf
                 nlhe_state_base::D_MASK |
                 nlhe_state_base::V_MASK |
                 nlhe_state_base::T_MASK |
-                nlhe_state_base::A_MASK>(stack));
+                nlhe_state_base::A_MASK>(stack, nlhe_state_base::O_MASK | nlhe_state_base::H_MASK | nlhe_state_base::Q_MASK));
         }
     }
 

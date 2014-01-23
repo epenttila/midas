@@ -27,8 +27,6 @@ set(cfrlib_SOURCES
     cs_cfr_solver.ipp
     pure_cfr_solver.h
     pure_cfr_solver.ipp
-    nlhe_state_v2.h
-    nlhe_state_v2.ipp
     nlhe_state_base.h
     nlhe_state_base.cpp
 )

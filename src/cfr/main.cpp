@@ -30,7 +30,6 @@
 #include "cfrlib/cs_cfr_solver.h"
 #include "cfrlib/pure_cfr_solver.h"
 #include "abslib/holdem_abstraction_v2.h"
-#include "cfrlib/nlhe_state_v2.h"
 
 namespace
 {
@@ -72,10 +71,11 @@ namespace
     }
 
     template<int BITMASK>
-    std::unique_ptr<solver_base> create_nlhe_solver_v2(const std::string& variant, const int stack_size, const std::string& filename)
+    std::unique_ptr<solver_base> create_nlhe_solver_v2(const std::string& variant, const int stack_size,
+        int limited_actions, const std::string& filename)
     {
-        typedef nlhe_state_v2<BITMASK> state_type;
-        std::unique_ptr<state_type> state(new state_type(stack_size));
+        typedef nlhe_state<BITMASK> state_type;
+        std::unique_ptr<state_type> state(new state_type(stack_size, limited_actions));
 
         typedef holdem_abstraction_v2 abstraction_t;
         std::unique_ptr<abstraction_t> abs(new abstraction_t);
@@ -207,6 +207,7 @@ int main(int argc, char* argv[])
         {
             const std::string actions = match[1].str();
             const int stack_size = boost::lexical_cast<int>(match[2].str());
+            const auto limited_actions = nlhe_state_base::O_MASK | nlhe_state_base::H_MASK | nlhe_state_base::Q_MASK;
 
             if (actions == "fcohqpwdvta")
             {
@@ -221,7 +222,7 @@ int main(int argc, char* argv[])
                     nlhe_state_base::D_MASK |
                     nlhe_state_base::V_MASK |
                     nlhe_state_base::T_MASK |
-                    nlhe_state_base::A_MASK>(variant, stack_size, abstraction);
+                    nlhe_state_base::A_MASK>(variant, stack_size, limited_actions, abstraction);
             }
         }
 
