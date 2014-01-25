@@ -1,48 +1,13 @@
 #ifdef _MSC_VER
 #pragma warning(push, 1)
 #endif
-/*#include <iostream>
-#include <fstream>
-#include <boost/regex.hpp>
-#include <numeric>
-#include <cstdint>
-#include <omp.h>
-#include <boost/program_options.hpp>
-#include <boost/format.hpp>
-#include <boost/date_time.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/algorithm/clamp.hpp>
-#include <boost/timer/timer.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/log/utility/setup/file.hpp>
-#include <boost/log/utility/setup/console.hpp>
-#include <boost/log/utility/setup/common_attributes.hpp>*/
 #include <boost/asio.hpp>
 #include <cstdio>
 #include <boost/regex.hpp>
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
-/*#include "cfrlib/kuhn_game.h"
-#include "cfrlib/holdem_game.h"
-#include "abslib/holdem_abstraction.h"
-#include "cfrlib/kuhn_state.h"
-#include "cfrlib/flhe_state.h"
-#include "cfrlib/nlhe_state.h"
-#include "cfrlib/strategy.h"
-#include "cfrlib/leduc_state.h"
-#include "abslib/leduc_abstraction.h"
-#include "cfrlib/leduc_game.h"
-#include "util/holdem_loops.h"
-#include "evallib/leduc_evaluator.h"
-#include "util/partial_shuffle.h"*/
 #include "util/card.h"
-/*#include "actor_base.h"
-#include "always_fold_actor.h"
-#include "always_call_actor.h"
-#include "always_raise_actor.h"
-#include "nlhe_actor.h"
-#include "nlhe_game.h"*/
 #include "cfrlib/nlhe_strategy.h"
 
 struct match_state
@@ -57,7 +22,7 @@ void read_state(const std::string& str, match_state* s)
 {
     auto& i = s->index;
 
-    for (; i < str.size(); ++i)
+    for (; i < static_cast<int>(str.size()); ++i)
     {
         if (s->state == nullptr)
             break;
@@ -90,7 +55,7 @@ void read_state(const std::string& str, match_state* s)
 void read_cards(const std::string& str, std::array<int, 2>& hole, std::array<int, 2>& o_hole,
     std::array<int, 5>& board)
 {
-    const auto len = str.size();
+    const auto len = static_cast<int>(str.size());
     int i = 0;
 
     if (str[i] == '|')
@@ -148,7 +113,7 @@ int main(int argc, char* argv[])
             return 1;
         }
 
-        nlhe_strategy strategy(argv[1], false);
+        nlhe_strategy strategy(argv[1]);
 
         boost::asio::io_service io_service;
         tcp::resolver resolver(io_service);

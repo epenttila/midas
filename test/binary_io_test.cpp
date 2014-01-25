@@ -6,7 +6,7 @@ TEST(binary_io, pod_types)
     const auto filename = ::testing::UnitTest::GetInstance()->current_test_info()->name();
     auto f = binary_open(filename, "wb");
 
-    ASSERT_TRUE(f);
+    ASSERT_TRUE(f.get());
 
     int val = 123;
     double dval = -55.321;
@@ -16,7 +16,7 @@ TEST(binary_io, pod_types)
 
     f = binary_open(filename, "rb");
 
-    ASSERT_TRUE(f);
+    ASSERT_TRUE(f.get());
 
     binary_read(*f, val);
     binary_read(*f, dval);
@@ -30,7 +30,7 @@ TEST(binary_io, vector)
     const auto filename = ::testing::UnitTest::GetInstance()->current_test_info()->name();
     auto f = binary_open(filename, "wb");
 
-    ASSERT_TRUE(f);
+    ASSERT_TRUE(f.get());
 
     std::vector<int> v;
     v.push_back(4);
@@ -44,7 +44,7 @@ TEST(binary_io, vector)
 
     f = binary_open(filename, "rb");
 
-    ASSERT_TRUE(f);
+    ASSERT_TRUE(f.get());
 
     binary_read(*f, v);
 
@@ -59,7 +59,7 @@ TEST(binary_io, array)
     const auto filename = ::testing::UnitTest::GetInstance()->current_test_info()->name();
     auto f = binary_open(filename, "wb");
 
-    ASSERT_TRUE(f);
+    ASSERT_TRUE(f.get());
 
     std::array<int, 5> v = {{7, -54, 9019, -444, 345}};
 
@@ -69,7 +69,7 @@ TEST(binary_io, array)
 
     f = binary_open(filename, "rb");
 
-    ASSERT_TRUE(f);
+    ASSERT_TRUE(f.get());
 
     binary_read(*f, v);
 

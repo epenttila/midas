@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <cassert>
 
 std::unique_ptr<FILE, int (*)(FILE*)> binary_open(const std::string& filename, const std::string& mode);
 

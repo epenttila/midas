@@ -12,7 +12,7 @@ cfr_solver<T, U, Data>::cfr_solver(std::unique_ptr<game_state> state, std::uniqu
     , abstraction_(std::move(abstraction))
     , total_iterations_(0)
 {
-    for (const auto p : game_state_base::get_state_vector(*root_))
+    for (const auto p : game_state::get_state_vector(*root_))
         states_.push_back(dynamic_cast<const game_state*>(p));
 
     assert(states_.size() > 0); // invalid game tree

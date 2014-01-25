@@ -213,7 +213,7 @@ TEST(nlhe_state, state_counts_nlhe_fchqpwdta_50)
     for (const auto p : game_state_base::get_state_vector(root))
         states.push_back(dynamic_cast<const nlhe_state_base*>(p));
 
-    EXPECT_EQ(states.size(), 29104);
+    EXPECT_EQ(states.size(), 29104u);
 
     std::vector<int> counts(RIVER + 1);
     std::for_each(states.begin(), states.end(), [&](const nlhe_state_base* s) { ++counts[s->get_round()]; });
@@ -244,7 +244,7 @@ TEST(nlhe_state, state_counts_nlhe_fcOHQpwdvta_40)
     for (const auto p : game_state_base::get_state_vector(root))
         states.push_back(dynamic_cast<const nlhe_state_base*>(p));
 
-    EXPECT_EQ(states.size(), 88640);
+    EXPECT_EQ(states.size(), 88640u);
 
     std::vector<int> counts(RIVER + 1);
     std::for_each(states.begin(), states.end(), [&](const nlhe_state_base* s) { ++counts[s->get_round()]; });
