@@ -1,7 +1,7 @@
 #ifdef _MSC_VER
 #pragma warning(push, 1)
 #endif
-#include <iostream>
+/*#include <iostream>
 #include <fstream>
 #include <boost/regex.hpp>
 #include <numeric>
@@ -16,11 +16,14 @@
 #include <boost/log/trivial.hpp>
 #include <boost/log/utility/setup/file.hpp>
 #include <boost/log/utility/setup/console.hpp>
-#include <boost/log/utility/setup/common_attributes.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>*/
+#include <boost/asio.hpp>
+#include <cstdio>
+#include <boost/regex.hpp>
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
-#include "cfrlib/kuhn_game.h"
+/*#include "cfrlib/kuhn_game.h"
 #include "cfrlib/holdem_game.h"
 #include "abslib/holdem_abstraction.h"
 #include "cfrlib/kuhn_state.h"
@@ -32,172 +35,252 @@
 #include "cfrlib/leduc_game.h"
 #include "util/holdem_loops.h"
 #include "evallib/leduc_evaluator.h"
-#include "util/partial_shuffle.h"
+#include "util/partial_shuffle.h"*/
 #include "util/card.h"
-#include "actor_base.h"
+/*#include "actor_base.h"
 #include "always_fold_actor.h"
 #include "always_call_actor.h"
 #include "always_raise_actor.h"
 #include "nlhe_actor.h"
-#include "nlhe_game.h"
+#include "nlhe_game.h"*/
+#include "cfrlib/nlhe_strategy.h"
 
-namespace
+struct match_state
 {
-    std::unique_ptr<actor_base> create_actor(const std::string& str)
+    const nlhe_state_base* state;
+    std::array<int, 2> pot;
+    int index;
+    int pos;
+};
+
+void read_state(const std::string& str, match_state* s)
+{
+    auto& i = s->index;
+
+    for (; i < str.size(); ++i)
     {
-        std::unique_ptr<actor_base> actor;
+        if (s->state == nullptr)
+            break;
 
-        if (str == "fold")
-            actor.reset(new always_fold_actor);
-        else if (str == "call")
-            actor.reset(new always_call_actor);
-        else if (str == "raise")
-            actor.reset(new always_raise_actor);
-        else
-            actor.reset(new nlhe_actor(str));
+        const auto player = s->state->get_player();
 
-        return actor;
+        if (str[i] == 'f')
+        {
+            //assert(false);
+            s->state = nullptr;
+            //s->index = -1;
+            break;
+        }
+        else if (str[i] == 'c')
+        {
+            s->state = s->state->call();
+            s->pot[player] = s->pot[1 - player];
+        }
+        else if (str[i] == 'r')
+        {
+            const auto p_pot = std::atoi(&str[i + 1]);
+            const auto o_pot = s->pot[1 - player];
+
+            s->state = s->state->raise(static_cast<double>(p_pot - o_pot) / (2 * o_pot));
+            s->pot[player] = p_pot;
+        }
     }
+}
+
+void read_cards(const std::string& str, std::array<int, 2>& hole, std::array<int, 2>& o_hole,
+    std::array<int, 5>& board)
+{
+    const auto len = str.size();
+    int i = 0;
+
+    if (str[i] == '|')
+        ++i;
+
+    hole[0] = string_to_card(std::string(&str[i], 2));
+    hole[1] = string_to_card(std::string(&str[i+2], 2));
+    i += 4;
+
+    if (str[i] == '|')
+        ++i;
+
+    if (str[i] != '/' && i + 4 <= len)
+    {
+        o_hole[0] = string_to_card(std::string(&str[i], 2));
+        o_hole[1] = string_to_card(std::string(&str[i+2], 2));
+        i += 4;
+    }
+
+    if (str[i] == '/')
+        ++i;
+
+    if (i + 6 <= len)
+    {
+        board[0] = string_to_card(std::string(&str[i], 2));
+        board[1] = string_to_card(std::string(&str[i+2], 2));
+        board[2] = string_to_card(std::string(&str[i+4], 2));
+        i += 6;
+    }
+
+    if (str[i] == '/')
+        ++i;
+
+    if (i + 2 <= len)
+    {
+        board[3] = string_to_card(std::string(&str[i], 2));
+        i += 2;
+    }
+
+    if (str[i] == '/')
+        ++i;
+
+    if (i + 2 <= len)
+        board[4] = string_to_card(std::string(&str[i], 2));
 }
 
 int main(int argc, char* argv[])
 {
     try
     {
-        namespace log = boost::log;
+        using boost::asio::ip::tcp;
 
-        log::add_common_attributes();
-
-        static const char* log_format = "[%TimeStamp%] %Message%";
-
-        log::add_console_log
-        (
-            std::clog,
-            log::keywords::format = log_format
-        );
-
-        namespace po = boost::program_options;
-
-        std::string game;
-        std::array<std::string, 2> strategy_file;
-        std::size_t iterations;
-        int seed;
-        std::string history_file;
-        std::string plot_file;
-        std::string log_file;
-        int threads;
-
-        po::options_description desc("Options");
-        desc.add_options()
-            ("help", "produce help message")
-            ("game", po::value<std::string>(&game)->required(), "game to play")
-            ("strategy1-file", po::value<std::string>(&strategy_file[0])->required(), "strategy for player 1")
-            ("strategy2-file", po::value<std::string>(&strategy_file[1])->required(), "strategy for player 2")
-            ("iterations", po::value<std::size_t>(&iterations)->required(), "number of iterations")
-            ("seed", po::value<int>(&seed)->default_value(std::random_device()()), "rng seed")
-            ("history-file", po::value<std::string>(&history_file), "hand history file name")
-            ("plot-file", po::value<std::string>(&plot_file), "plotting data file name")
-            ("log-file", po::value<std::string>(&log_file), "log file")
-            ("threads", po::value<int>(&threads)->default_value(omp_get_max_threads()), "number of threads")
-            ;
-
-        po::variables_map vm;
-        po::store(po::parse_command_line(argc, argv, desc), vm);
-
-        if (vm.count("help"))
+        if (argc != 4)
         {
-            std::cout << desc << "\n";
             return 1;
         }
 
-        po::notify(vm);
+        nlhe_strategy strategy(argv[1], false);
 
-        if (!log_file.empty())
+        boost::asio::io_service io_service;
+        tcp::resolver resolver(io_service);
+        tcp::resolver::query query(argv[2], argv[3]);
+        tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
+        tcp::resolver::iterator end;
+
+        tcp::socket socket(io_service);
+        boost::system::error_code error = boost::asio::error::host_not_found;
+
+        while (error && endpoint_iterator != end)
         {
-            log::add_file_log
-            (
-                log::keywords::file_name = log_file,
-                log::keywords::auto_flush = true,
-                log::keywords::format = log_format
-            );
+            socket.close();
+            socket.connect(*endpoint_iterator++, error);
         }
 
-        std::ofstream plot_stream;
+        if (error)
+            throw boost::system::system_error(error);
 
-        if (!plot_file.empty())
-            plot_stream.open(plot_file);
+        boost::asio::write(socket, boost::asio::buffer("VERSION:2.0.0\r\n", 15));
 
-        boost::regex nlhe_regex("nlhe-([0-9]+)");
-        boost::smatch match;
+        boost::asio::streambuf b;
 
-        if (!boost::regex_match(game, match, nlhe_regex))
+        match_state ms;
+        ms.pos = -1;
+
+        for (;;)
         {
-            BOOST_LOG_TRIVIAL(error) << "Unknown game";
-            return 1;
-        }
+            std::string buf;
+            boost::system::error_code error;
 
-        const int stack_size = std::stoi(match[1].str());
+            boost::asio::read_until(socket, b, "\r\n", error);
 
-        BOOST_LOG_TRIVIAL(info) << "Playing " << iterations << " games";
+            if (error == boost::asio::error::eof)
+                break; // Connection closed cleanly by peer.
+            else if (error)
+                throw boost::system::system_error(error); // Some other error.
 
-        omp_set_num_threads(threads);
+            std::istream is(&b);
 
-        std::vector<std::vector<int>> plot(threads);
-
-#pragma omp parallel
-        {
-            const auto thread = omp_get_thread_num();
-
-            auto a1 = create_actor(strategy_file[0]);
-            auto a2 = create_actor(strategy_file[1]);
-            nlhe_game g(stack_size, *a1, *a2);
-
-            if (!history_file.empty())
-                g.set_log(history_file + "." + std::to_string(thread));
-
-            g.set_dealer(0);
-            g.set_seed(seed + thread);
-
-#pragma omp for
-            for (std::int64_t i = 0; i < std::int64_t(iterations / 2); ++i)
+            while (std::getline(is, buf, '\n'))
             {
-                g.play(i);
-                plot[thread].push_back(g.get_bankroll());
-            }
+                buf.pop_back();
 
-            BOOST_LOG_TRIVIAL(info) << "Resetting seed and swapping positions";
+                if (buf[0] == '#' || buf[0] == ';')
+                    continue;
 
-            g.set_seed(seed + thread);
-            g.set_dealer(1);
+                static const boost::regex re("^MATCHSTATE:(\\d+):(\\d+):([^:]*):([^\r\n]+)$");
+                boost::smatch match;
 
-#pragma omp for
-            for (std::int64_t i = 0; i < std::int64_t(iterations / 2); ++i)
-            {
-                g.play(i);
-                plot[thread].push_back(g.get_bankroll());
+                if (!boost::regex_match(buf, match, re))
+                    continue;
+
+                const auto my_pos = 1 - std::stoi(match[1]);
+
+                if (my_pos != ms.pos)
+                {
+                    ms.state = &strategy.get_root_state();
+                    const std::array<int, 2> blinds = {{10, 20}};
+                    ms.pot = blinds;
+                    ms.index = 0;
+                    ms.pos = my_pos;
+                }
+
+                read_state(match[3], &ms);
+
+                const auto state = ms.state;
+
+                if (!state || state->get_player() != my_pos)
+                    continue;
+
+                std::array<int, 2> hole = {{-1, -1}};
+                std::array<int, 2> o_hole = {{-1, -1}};
+                std::array<int, 5> board = {{-1, -1, -1, -1, -1}};
+
+                read_cards(match[4], hole, o_hole, board);
+
+                if (o_hole[0] != -1)
+                    continue;
+
+                buf += ':';
+
+                nlhe_state_base::holdem_action action;
+
+                if (state->is_terminal())
+                {
+                    action = nlhe_state_base::RAISE_A;
+                }
+                else
+                {
+                    holdem_abstraction_base::bucket_type buckets;
+                    strategy.get_abstraction().get_buckets(hole[0], hole[1], board[0], board[1], board[2],
+                        board[3], board[4], &buckets);
+                    const int index = strategy.get_strategy().get_action(state->get_id(), buckets[state->get_round()]);
+                    action = static_cast<nlhe_state_base::holdem_action>(state->get_action(index));
+                }
+
+                if (action != nlhe_state_base::FOLD
+                    && (state->get_action_index() != -1 && state->get_action(state->get_action_index()) == nlhe_state_base::RAISE_A))
+                {
+                    action = nlhe_state_base::RAISE_A;
+                }
+
+                switch (action)
+                {
+                case nlhe_state_base::FOLD:
+                    buf += 'f';
+                    break;
+                case nlhe_state_base::CALL:
+                    buf += 'c';
+                    break;
+                default:
+                    {
+                        const auto factor = state->get_raise_factor(action);
+                        const auto o_pot = ms.pot[1 - my_pos];
+                        int val = static_cast<int>(o_pot + factor * (2 * o_pot));
+                        buf += 'r' + std::to_string(val);
+                    }
+                    break;
+                }
+
+                buf += "\r\n";
+
+                boost::asio::write(socket, boost::asio::buffer(buf));
             }
         }
-
-        int bankroll = 0;
-
-        for (int i = 0; i < threads; ++i)
-        {
-            for (auto x : plot[i])
-                plot_stream << (bankroll + x) << "\n";
-
-            bankroll += plot[i].back();
-        }
-
-        const double performance = (bankroll / 2.0 / iterations * 1000.0);
-
-        BOOST_LOG_TRIVIAL(info) << "\"" << strategy_file[0] << "\": " << performance << " mb/h";
-        BOOST_LOG_TRIVIAL(info) << "\"" << strategy_file[1] << "\": " << -performance << " mb/h";
 
         return 0;
     }
     catch (const std::exception& e)
     {
-        BOOST_LOG_TRIVIAL(error) << e.what();
+        std::cerr << e.what() << "\n";
         return 1;
     }
 }
