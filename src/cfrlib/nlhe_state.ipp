@@ -135,11 +135,11 @@ void nlhe_state<BITMASK>::create_child(const int action_index, int* id)
         || prev_action == -1
         || prev_action == FOLD
         || prev_action == CALL
-        || (prev_action == RAISE_O && to_call == std::max(to_call == 0 ? 2 : to_call, int(0.25 * in_pot)))
-        || (prev_action == RAISE_H && to_call == int(0.5 * in_pot))
-        || (prev_action == RAISE_Q && to_call == int(0.75 * in_pot))
+        || (prev_action == RAISE_O && to_call == std::max(to_call == 0 ? 2 : to_call, static_cast<int>(std::ceil(0.25 * in_pot))))
+        || (prev_action == RAISE_H && to_call == std::ceil(0.5 * in_pot))
+        || (prev_action == RAISE_Q && to_call == std::ceil(0.75 * in_pot))
         || (prev_action == RAISE_P && to_call == in_pot)
-        || (prev_action == RAISE_W && to_call == int(1.5 * in_pot))
+        || (prev_action == RAISE_W && to_call == std::ceil(1.5 * in_pot))
         || (prev_action == RAISE_D && to_call == 2 * in_pot)
         || (prev_action == RAISE_V && to_call == 5 * in_pot)
         || (prev_action == RAISE_T && to_call == 10 * in_pot));

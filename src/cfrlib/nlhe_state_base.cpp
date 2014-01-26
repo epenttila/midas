@@ -195,5 +195,6 @@ int nlhe_state_base::get_new_player_pot(const int player_pot, const int to_call,
     const holdem_action action, int stack_size)
 {
     const auto factor = get_raise_factor(action);
-    return std::min(player_pot + int(to_call + (2 * to_call + in_pot) * factor), stack_size);
+    // round up to prune small bets
+    return std::min(static_cast<int>(std::ceil(player_pot + to_call + (2 * to_call + in_pot) * factor)), stack_size);
 }
