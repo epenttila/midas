@@ -4,6 +4,7 @@
 #include <boost/asio.hpp>
 #include <cstdio>
 #include <boost/regex.hpp>
+#include <iostream>
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
