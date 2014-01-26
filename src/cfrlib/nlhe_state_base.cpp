@@ -135,29 +135,30 @@ std::ostream& operator<<(std::ostream& os, const nlhe_state_base& state)
 
 const nlhe_state_base* nlhe_state_base::raise(const nlhe_state_base& state, double fraction)
 {
-    const auto stack_size = state.get_stack_size();
     const auto& pot = state.get_pot();
     const auto player = state.get_player();
 
     if (state.get_stack_size() == pot[1 - player])
         return nullptr;
 
-    const auto to_call = pot[1 - player] - pot[player];
-    const auto in_pot = pot[1 - player] + pot[player];
+    std::array<double, MAX_ACTIONS> pot_sizes;
 
-    std::array<double, MAX_ACTIONS> pot_sizes = {{
-        -1,
-        -1,
-        get_raise_factor(RAISE_O),
-        get_raise_factor(RAISE_H),
-        get_raise_factor(RAISE_Q),
-        get_raise_factor(RAISE_P),
-        get_raise_factor(RAISE_W),
-        get_raise_factor(RAISE_D),
-        get_raise_factor(RAISE_V),
-        get_raise_factor(RAISE_T),
-        static_cast<double>(stack_size - to_call) / (to_call + in_pot), // to_call + x * (to_call + in_pot) = stack_size
-    }};
+    for (int i = 0; i < pot_sizes.size(); ++i)
+    {
+        const auto index = state.get_action_index(static_cast<holdem_action>(i));
+        auto p = index != -1 ? state.get_child(index) : nullptr;
+
+        if (p && i > CALL)
+        {
+            // don't use get_raise_factor here as we want to know the actual fractions wrt state::pot
+            const auto player = state.get_player();
+            const auto to_call = p->get_pot()[player] - p->get_pot()[1 - player];
+            const auto in_pot = 2 * p->get_pot()[1 - player];
+            pot_sizes[i] = static_cast<double>(to_call) / in_pot;
+        }
+        else
+            pot_sizes[i] = -1;
+    }
 
     holdem_action lower = INVALID_ACTION;
     holdem_action upper = INVALID_ACTION;

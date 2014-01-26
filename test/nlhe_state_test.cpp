@@ -433,6 +433,8 @@ TEST(nlhe_state, round_up_bets)
     EXPECT_EQ(state->get_pot()[1], 2);
     EXPECT_EQ(state->get_round(), PREFLOP);
 
+    EXPECT_TRUE(state->raise(5.0) == state->get_child(state->get_action_index(nlhe_state_base::RAISE_V)));
+
     state = state->get_child(state->get_action_index(nlhe_state_base::RAISE_V));
 
     ASSERT_NE(state, nullptr);
@@ -446,6 +448,8 @@ TEST(nlhe_state, round_up_bets)
     EXPECT_EQ(state->get_pot()[0], 22);
     EXPECT_EQ(state->get_pot()[1], 22);
     EXPECT_EQ(state->get_round(), FLOP);
+
+    EXPECT_TRUE(state->raise(0.25) == state->get_child(state->get_action_index(nlhe_state_base::RAISE_O)));
 
     state = state->get_child(state->get_action_index(nlhe_state_base::RAISE_O));
 
