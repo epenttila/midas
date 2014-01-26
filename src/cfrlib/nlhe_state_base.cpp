@@ -16,22 +16,6 @@ std::unique_ptr<nlhe_state_base> nlhe_state_base::create(const std::string& conf
 
     if (game == "nlhe")
     {
-        if (actions == "fchqpwdta")
-        {
-            return std::unique_ptr<nlhe_state_base>(new nlhe_state<
-                nlhe_state_base::F_MASK |
-                nlhe_state_base::C_MASK |
-                nlhe_state_base::H_MASK |
-                nlhe_state_base::Q_MASK |
-                nlhe_state_base::P_MASK |
-                nlhe_state_base::W_MASK |
-                nlhe_state_base::D_MASK |
-                nlhe_state_base::T_MASK |
-                nlhe_state_base::A_MASK>(stack));
-        }
-    }
-    else if (game == "nlhe2")
-    {
         if (actions == "fcohqpwdvta")
         {
             return std::unique_ptr<nlhe_state_base>(new nlhe_state<
