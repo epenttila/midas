@@ -1,11 +1,12 @@
 #pragma once
 
+#include <array>
+
 template<class T>
 void sort(T& a, T& b)
 {
-    const int tmp = std::min(a, b);
-    b = std::max(a, b);
-    a = tmp;
+    if (a > b)
+        std::swap(a, b);
 }
 
 template<class T>

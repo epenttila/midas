@@ -3,6 +3,7 @@ project(test)
 set(test_SOURCES
     nlhe_state_test.cpp
     binary_io_test.cpp
+    sort_test.cpp
 )
 
 add_executable(testrunner ${test_SOURCES})
