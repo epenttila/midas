@@ -9,6 +9,10 @@
 #endif
 #include "util/card.h"
 #include "cfrlib/nlhe_strategy.h"
+#include "util/game.h"
+
+static const int MAX_STACK = 500;
+static const int BIG_BLIND = 20;
 
 struct match_state
 {
@@ -44,9 +48,17 @@ void read_state(const std::string& str, match_state* s)
         else if (str[i] == 'r')
         {
             const auto p_pot = std::atoi(&str[i + 1]);
-            const auto o_pot = s->pot[1 - player];
+            double factor;
 
-            s->state = s->state->raise(static_cast<double>(p_pot - o_pot) / (2 * o_pot));
+            if (p_pot == MAX_STACK)
+                factor = 999.0;
+            else
+            {
+                const auto o_pot = s->pot[1 - player];
+                factor = static_cast<double>(p_pot - o_pot) / (2 * o_pot);
+            }
+
+            s->state = s->state->raise(factor);
             s->pot[player] = p_pot;
         }
     }
@@ -172,7 +184,7 @@ int main(int argc, char* argv[])
                 if (my_pos != ms.pos)
                 {
                     ms.state = &strategy.get_root_state();
-                    const std::array<int, 2> blinds = {{10, 20}};
+                    const std::array<int, 2> blinds = {{BIG_BLIND / 2, BIG_BLIND}};
                     ms.pot = blinds;
                     ms.index = 0;
                     ms.pos = my_pos;
@@ -217,25 +229,51 @@ int main(int argc, char* argv[])
                     action = nlhe_state_base::RAISE_A;
                 }
 
+                std::string action_str;
+
                 switch (action)
                 {
                 case nlhe_state_base::FOLD:
-                    buf += 'f';
+                    action_str = 'f';
                     break;
                 case nlhe_state_base::CALL:
-                    buf += 'c';
+                    action_str = 'c';
+                    ms.pot[my_pos] = ms.pot[1 - my_pos];
                     break;
                 default:
                     {
-                        const auto factor = state->get_raise_factor(action);
-                        const auto o_pot = ms.pot[1 - my_pos];
-                        int val = static_cast<int>(o_pot + factor * (2 * o_pot));
-                        buf += 'r' + std::to_string(val);
+                        int val = 0;
+
+                        if (action == nlhe_state_base::RAISE_A)
+                            val = MAX_STACK;
+                        else
+                        {
+                            const auto factor = state->get_raise_factor(action);
+                            const auto o_pot = ms.pot[1 - my_pos];
+                            const auto p_pot = ms.pot[my_pos];
+
+                            val = static_cast<int>(o_pot + factor * (2 * o_pot));
+
+                            if (state->get_parent() == nullptr)
+                                val = std::max(val, 2 * BIG_BLIND);
+                            else
+                                val = std::max(val, BIG_BLIND);
+
+                            val = std::max(val, o_pot + o_pot - p_pot);
+                        }
+
+                        val = std::min(val, MAX_STACK);
+                        ms.pot[my_pos] = val;
+
+                        action_str = 'r' + std::to_string(val);
                     }
                     break;
                 }
 
-                buf += "\r\n";
+                ms.state = ms.state->get_child(ms.state->get_action_index(action));
+                ms.index += static_cast<int>(action_str.size());
+
+                buf += action_str + "\r\n";
 
                 boost::asio::write(socket, boost::asio::buffer(buf));
             }
