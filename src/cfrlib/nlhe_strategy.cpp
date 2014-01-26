@@ -24,7 +24,7 @@ nlhe_strategy::nlhe_strategy(const std::string& filepath, bool read_only)
     if (!boost::regex_match(filename, m, r))
         throw std::runtime_error("Unable to parse filename");
 
-    root_state_ = nlhe_state_base::create(m[1].str());
+    root_state_ = nlhe_state::create(m[1].str());
     stack_size_ = root_state_->get_stack_size();
 
     BOOST_LOG_TRIVIAL(info) << "Stack size: " << stack_size_;

@@ -58,7 +58,6 @@ public:
         ACTIONS,
     };
 
-    static std::unique_ptr<nlhe_state_base> create(const std::string& config);
     static int get_action_mask(holdem_action action);
     static double get_raise_factor(const holdem_action action);
     static std::string get_action_name(const holdem_action action);

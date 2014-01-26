@@ -46,15 +46,14 @@ namespace
         //return std::unique_ptr<solver_base>();
     }
 
-    std::unique_ptr<solver_base> create_nlhe_solver(const std::string& variant, const int stack_size,
-        int enabled_actions, int limited_actions, const std::string& filename)
+    std::unique_ptr<solver_base> create_nlhe_solver(const std::string& variant, const std::string& config,
+        const std::string& abs_filename)
     {
-        typedef nlhe_state state_type;
-        std::unique_ptr<state_type> state(new state_type(stack_size, enabled_actions, limited_actions));
+        std::unique_ptr<nlhe_state> state(nlhe_state::create(config));
 
         typedef holdem_abstraction abstraction_t;
         std::unique_ptr<abstraction_t> abs(new abstraction_t);
-        abs->read(filename);
+        abs->read(abs_filename);
         return create_solver<holdem_game<abstraction_t>>(variant, std::move(state), std::move(abs));
     }
 }
@@ -130,9 +129,6 @@ int main(int argc, char* argv[])
         BOOST_LOG_TRIVIAL(info) << "Using solver variant: " << variant;
         BOOST_LOG_TRIVIAL(info) << "Using abstraction: " << abstraction;
 
-        boost::regex nlhe_regex("nlhe-([a-z]+)-([0-9]+)");
-        boost::smatch match;
-
         if (game == "kuhn")
         {
             std::unique_ptr<kuhn_state> state(new kuhn_state());
@@ -158,26 +154,9 @@ int main(int argc, char* argv[])
 
             solver = create_solver<holdem_game<holdem_abstraction>>(variant, std::move(state), std::move(abs));
         }
-        else if (boost::regex_match(game, match, nlhe_regex))
+        else if (boost::starts_with(game, "nlhe"))
         {
-            const std::string actions = match[1].str();
-            const int stack_size = boost::lexical_cast<int>(match[2].str());
-
-            if (actions == "fcohqpwdvta")
-            {
-                solver = create_nlhe_solver(variant, stack_size,
-                    nlhe_state_base::F_MASK |
-                    nlhe_state_base::C_MASK |
-                    nlhe_state_base::O_MASK |
-                    nlhe_state_base::H_MASK |
-                    nlhe_state_base::Q_MASK |
-                    nlhe_state_base::P_MASK |
-                    nlhe_state_base::W_MASK |
-                    nlhe_state_base::D_MASK |
-                    nlhe_state_base::V_MASK |
-                    nlhe_state_base::T_MASK |
-                    nlhe_state_base::A_MASK, 0, abstraction);
-            }
+            solver = create_nlhe_solver(variant, game, abstraction);
         }
 
         if (!solver)

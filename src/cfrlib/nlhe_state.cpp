@@ -1,6 +1,7 @@
 #include "nlhe_state.h"
 #include <boost/integer/static_log2.hpp>
 #include <random>
+#include <boost/regex.hpp>
 #include "util/game.h"
 #include "holdem_game.h"
 
@@ -284,4 +285,57 @@ const nlhe_state* nlhe_state::get_action_child(int action) const
     }
 
     return nullptr;
+}
+
+std::unique_ptr<nlhe_state> nlhe_state::create(const std::string& config)
+{
+    static const boost::regex re("([^-]+)-([A-Za-z]+)-([0-9]+)");
+    boost::smatch match;
+
+    if (!boost::regex_match(config, match, re))
+        throw std::runtime_error("unable to parse configuration");
+
+    const auto& game = match[1].str();
+    const auto& actions = match[2].str();
+    const auto& stack = std::stoi(match[3].str());
+
+    if (game == "nlhe")
+    {
+        int enabled_actions = 0;
+        int limited_actions = 0;
+
+        for (const auto c : actions)
+        {
+            switch (c)
+            {
+            case 'f': enabled_actions |= F_MASK; break;
+            case 'c': enabled_actions |= C_MASK; break;
+            case 'o': enabled_actions |= O_MASK; break;
+            case 'h': enabled_actions |= H_MASK; break;
+            case 'q': enabled_actions |= Q_MASK; break;
+            case 'p': enabled_actions |= P_MASK; break;
+            case 'w': enabled_actions |= W_MASK; break;
+            case 'd': enabled_actions |= D_MASK; break;
+            case 'v': enabled_actions |= V_MASK; break;
+            case 't': enabled_actions |= T_MASK; break;
+            case 'a': enabled_actions |= A_MASK; break;
+            case 'F': enabled_actions |= F_MASK; limited_actions |= F_MASK; break;
+            case 'C': enabled_actions |= C_MASK; limited_actions |= C_MASK; break;
+            case 'O': enabled_actions |= O_MASK; limited_actions |= O_MASK; break;
+            case 'H': enabled_actions |= H_MASK; limited_actions |= H_MASK; break;
+            case 'Q': enabled_actions |= Q_MASK; limited_actions |= Q_MASK; break;
+            case 'P': enabled_actions |= P_MASK; limited_actions |= P_MASK; break;
+            case 'W': enabled_actions |= W_MASK; limited_actions |= W_MASK; break;
+            case 'D': enabled_actions |= D_MASK; limited_actions |= D_MASK; break;
+            case 'V': enabled_actions |= V_MASK; limited_actions |= V_MASK; break;
+            case 'T': enabled_actions |= T_MASK; limited_actions |= T_MASK; break;
+            case 'A': enabled_actions |= A_MASK; limited_actions |= A_MASK; break;
+            default: throw std::runtime_error("unknown action");
+            }
+        }
+
+        return std::unique_ptr<nlhe_state>(new nlhe_state(stack, enabled_actions, limited_actions));
+    }
+
+    throw std::runtime_error("unknown game configuration");
 }

@@ -1,42 +1,6 @@
 #include "nlhe_state_base.h"
-#include <boost/regex.hpp>
 #include <random>
-#include "nlhe_state.h"
 #include "util/game.h"
-
-std::unique_ptr<nlhe_state_base> nlhe_state_base::create(const std::string& config)
-{
-    static const boost::regex re("([^-]+)-([a-z]+)-([0-9]+)");
-    boost::smatch match;
-
-    if (!boost::regex_match(config, match, re))
-        throw std::runtime_error("unable to parse configuration");
-
-    const auto& game = match[1].str();
-    const auto& actions = match[2].str();
-    const auto& stack = std::stoi(match[3].str());
-
-    if (game == "nlhe")
-    {
-        if (actions == "fcohqpwdvta")
-        {
-            return std::unique_ptr<nlhe_state_base>(new nlhe_state(stack,
-                nlhe_state_base::F_MASK |
-                nlhe_state_base::C_MASK |
-                nlhe_state_base::O_MASK |
-                nlhe_state_base::H_MASK |
-                nlhe_state_base::Q_MASK |
-                nlhe_state_base::P_MASK |
-                nlhe_state_base::W_MASK |
-                nlhe_state_base::D_MASK |
-                nlhe_state_base::V_MASK |
-                nlhe_state_base::T_MASK |
-                nlhe_state_base::A_MASK, 0));
-        }
-    }
-
-    throw std::runtime_error("unknown game configuration");
-}
 
 int nlhe_state_base::get_action_mask(holdem_action action)
 {

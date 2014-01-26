@@ -7,6 +7,8 @@
 class nlhe_state : public nlhe_state_base
 {
 public:
+    static std::unique_ptr<nlhe_state> create(const std::string& config);
+
     nlhe_state(int stack_size, int enabled_actions, int limited_actions);
     holdem_action get_action() const;
     int get_round() const;
