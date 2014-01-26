@@ -143,7 +143,7 @@ const nlhe_state_base* nlhe_state_base::raise(const nlhe_state_base& state, doub
 
     std::array<double, MAX_ACTIONS> pot_sizes;
 
-    for (int i = 0; i < pot_sizes.size(); ++i)
+    for (int i = 0; i < static_cast<int>(pot_sizes.size()); ++i)
     {
         const auto index = state.get_action_index(static_cast<holdem_action>(i));
         auto p = index != -1 ? state.get_child(index) : nullptr;
