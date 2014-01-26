@@ -10,7 +10,6 @@
 #pragma warning(pop)
 #endif
 #include "abslib/holdem_abstraction.h"
-#include "abslib/holdem_abstraction_v2.h"
 
 int main(int argc, char* argv[])
 {
@@ -87,12 +86,6 @@ int main(int argc, char* argv[])
         if (game == "holdem")
         {
             holdem_abstraction abs;
-            abs.generate(abstraction, kmeans_max_iterations, kmeans_tolerance, kmeans_runs);
-            abs.write(abstraction + ".abs");
-        }
-        else if (game == "holdem-new")
-        {
-            holdem_abstraction_v2 abs;
             abs.write(abstraction + ".abs", kmeans_max_iterations, kmeans_tolerance, kmeans_runs);
         }
         else

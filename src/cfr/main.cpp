@@ -29,7 +29,6 @@
 #include "cfrlib/leduc_game.h"
 #include "cfrlib/cs_cfr_solver.h"
 #include "cfrlib/pure_cfr_solver.h"
-#include "abslib/holdem_abstraction_v2.h"
 
 namespace
 {
@@ -52,22 +51,11 @@ namespace
     {
         typedef nlhe_state<BITMASK> state_type;
         std::unique_ptr<state_type> state(new state_type(stack_size));
-        const auto abs_config = boost::filesystem::path(filename).stem().string();
 
-        if (abs_config.substr(0, 2) == "pr" || abs_config.substr(0, 2) == "ir")
-        {
-            typedef holdem_abstraction_v2 abstraction_t;
-            std::unique_ptr<abstraction_t> abs(new abstraction_t);
-            abs->read(filename);
-            return create_solver<holdem_game<abstraction_t>>(variant, std::move(state), std::move(abs));
-        }
-        else
-        {
-            typedef holdem_abstraction abstraction_t;
-            std::unique_ptr<abstraction_t> abs(new abstraction_t);
-            abs->read(filename);
-            return create_solver<holdem_game<abstraction_t>>(variant, std::move(state), std::move(abs));
-        }
+        typedef holdem_abstraction abstraction_t;
+        std::unique_ptr<abstraction_t> abs(new abstraction_t);
+        abs->read(filename);
+        return create_solver<holdem_game<abstraction_t>>(variant, std::move(state), std::move(abs));
     }
 
     template<int BITMASK>
@@ -77,7 +65,7 @@ namespace
         typedef nlhe_state<BITMASK> state_type;
         std::unique_ptr<state_type> state(new state_type(stack_size, limited_actions));
 
-        typedef holdem_abstraction_v2 abstraction_t;
+        typedef holdem_abstraction abstraction_t;
         std::unique_ptr<abstraction_t> abs(new abstraction_t);
         abs->read(filename);
         return create_solver<holdem_game<abstraction_t>>(variant, std::move(state), std::move(abs));

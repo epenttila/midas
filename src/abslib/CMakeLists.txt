@@ -7,8 +7,6 @@ set(abslib_SOURCES
     kuhn_abstraction.h
     leduc_abstraction.cpp
     leduc_abstraction.h
-    holdem_abstraction_v2.cpp
-    holdem_abstraction_v2.h
     holdem_abstraction_base.h
 )
 

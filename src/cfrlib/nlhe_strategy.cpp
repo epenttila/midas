@@ -10,7 +10,6 @@
 #endif
 #include "nlhe_state.h"
 #include "abslib/holdem_abstraction.h"
-#include "abslib/holdem_abstraction_v2.h"
 #include "strategy.h"
 
 nlhe_strategy::nlhe_strategy(const std::string& filepath, bool read_only)
@@ -37,11 +36,7 @@ nlhe_strategy::nlhe_strategy(const std::string& filepath, bool read_only)
     auto dir = boost::filesystem::path(filepath).parent_path();
     dir /= std::string(abs_name + ".abs");
 
-    if (abs_name.substr(0, 2) == "ir" || abs_name.substr(0, 2) == "pr")
-        abstraction_.reset(new holdem_abstraction_v2);
-    else
-        abstraction_.reset(new holdem_abstraction);
-
+    abstraction_.reset(new holdem_abstraction);
     abstraction_->read(dir.string());
     strategy_.reset(new strategy(filepath, state_count, root_state_->get_action_count(), read_only));
 }

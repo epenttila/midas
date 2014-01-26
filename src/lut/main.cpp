@@ -2,10 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <numeric>
-#include "lutlib/holdem_preflop_lut.h"
-#include "lutlib/holdem_flop_lut.h"
 #include "evallib/holdem_evaluator.h"
-#include "lutlib/holdem_turn_lut.h"
 #include "lutlib/holdem_river_lut.h"
 #include "util/partial_shuffle.h"
 #include "lutlib/holdem_river_ochs_lut.h"
@@ -65,29 +62,11 @@ int main(int argc, char* argv[])
         {
         case 0:
             {
-                holdem_preflop_lut lut;
-                lut.save("holdem_preflop_lut.dat");
-            }
-            break;
-        case 1:
-            {
-                holdem_flop_lut lut;
-                lut.save("holdem_flop_lut.dat");
-            }
-            break;
-        case 2:
-            {
-                holdem_turn_lut lut;
-                lut.save("holdem_turn_lut.dat");
-            }
-            break;
-        case 3:
-            {
                 holdem_river_lut lut;
                 lut.save("holdem_river_lut.dat");
             }
             break;
-        case 4:
+        case 1:
             {
                 holdem_river_ochs_lut lut;
                 lut.save("holdem_river_ochs_lut.dat");
@@ -100,24 +79,6 @@ int main(int argc, char* argv[])
         switch (round)
         {
         case 0:
-            {
-                const holdem_preflop_lut lut("holdem_preflop_lut.dat");
-                //test_flop(lut);
-            }
-            break;
-        case 1:
-            {
-                const holdem_flop_lut lut("holdem_flop_lut.dat");
-                //test_flop(lut);
-            }
-            break;
-        case 2:
-            {
-                const holdem_turn_lut lut("holdem_turn_lut.dat");
-                //test_turn(lut);
-            }
-            break;
-        case 3:
             {
                 const holdem_river_lut lut("holdem_river_lut.dat");
                 test_river(lut);
