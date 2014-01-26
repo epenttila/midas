@@ -128,7 +128,7 @@ TEST(nlhe_state, combine_actions)
     EXPECT_TRUE(state->get_child(state->get_action_index(nlhe_state_base::RAISE_P)) == nullptr);
     EXPECT_TRUE(state->get_child(state->get_action_index(nlhe_state_base::RAISE_A)) != nullptr);
 
-    state = state->raise(1.0);
+    state = state->raise(1.5);
 
     EXPECT_EQ(state->get_round(), FLOP);
     EXPECT_EQ(state->get_pot()[0], 18);
