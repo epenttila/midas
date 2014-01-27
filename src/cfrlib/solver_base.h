@@ -15,6 +15,7 @@ public:
     virtual void init_storage() = 0;
     virtual std::vector<int> get_bucket_counts() const = 0;
     virtual std::vector<int> get_state_counts() const = 0;
+    virtual std::vector<int> get_action_counts() const = 0;
     virtual std::size_t get_required_memory() const = 0;
     virtual void connect_progressed(const std::function<void (std::uint64_t)>& f) = 0;
 

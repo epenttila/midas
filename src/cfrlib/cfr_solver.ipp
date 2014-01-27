@@ -183,6 +183,14 @@ std::vector<int> cfr_solver<T, U, Data>::get_state_counts() const
 }
 
 template<class T, class U, class Data>
+std::vector<int> cfr_solver<T, U, Data>::get_action_counts() const
+{
+    std::vector<int> counts(ROUNDS);
+    std::for_each(states_.begin(), states_.end(), [&](const game_state* s) { counts[s->get_round()] += s->get_child_count(); });
+    return counts;
+}
+
+template<class T, class U, class Data>
 std::size_t cfr_solver<T, U, Data>::get_required_values() const
 {
     std::size_t n = 0;

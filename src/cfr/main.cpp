@@ -178,6 +178,13 @@ int main(int argc, char* argv[])
             s += (s.empty() ? "" : ", " ) + std::to_string(i);
 
         BOOST_LOG_TRIVIAL(info) << "States per round: " << s;
+
+        s.clear();
+
+        for (auto i : solver->get_action_counts())
+            s += (s.empty() ? "" : ", " ) + std::to_string(i);
+
+        BOOST_LOG_TRIVIAL(info) << "Actions per round: " << s;
         
         BOOST_LOG_TRIVIAL(info) << "Initializing storage: " << solver->get_required_memory() << " bytes";
         solver->init_storage();
