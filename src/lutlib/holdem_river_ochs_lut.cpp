@@ -130,14 +130,23 @@ void holdem_river_ochs_lut::save(const std::string& filename) const
     binary_write(*file, data_.data(), data_.size());
 }
 
-const holdem_river_ochs_lut::data_type& holdem_river_ochs_lut::get_data(const std::array<card_t, 7>& cards) const
+const holdem_river_ochs_lut::data_type& holdem_river_ochs_lut::get_data(const std::array<int, 7>& cards) const
 {
     return data_[get_key(cards)];
 }
 
-hand_indexer::hand_index_t holdem_river_ochs_lut::get_key(const std::array<card_t, 7>& cards) const
+holdem_river_ochs_lut::index_t holdem_river_ochs_lut::get_key(const std::array<int, 7>& cards) const
 {
-    return indexer_->hand_index_last(cards.data());
+    const std::array<card_t, 7> c = {{
+        static_cast<card_t>(cards[0]),
+        static_cast<card_t>(cards[1]),
+        static_cast<card_t>(cards[2]),
+        static_cast<card_t>(cards[3]),
+        static_cast<card_t>(cards[4]),
+        static_cast<card_t>(cards[5]),
+        static_cast<card_t>(cards[6])}};
+
+    return indexer_->hand_index_last(c.data());
 }
 
 const std::vector<holdem_river_ochs_lut::data_type>& holdem_river_ochs_lut::get_data() const

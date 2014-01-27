@@ -68,7 +68,8 @@ namespace
                                 if (b4 == c0 || b4 == c1)
                                     continue;
 
-                                const auto hs = river_lut.get(c0, c1, b0, b1, b2, b3, b4);
+                                const std::array<int, 7> cards = {{c0, c1, b0, b1, b2, b3, b4}};
+                                const auto hs = river_lut.get(cards);
                                 const auto bin = std::min(std::size_t(hs * p.size()), p.size() - 1);
                                 ++data_points[i][bin];
                             }
@@ -126,7 +127,8 @@ namespace
                     if (b4 == c0 || b4 == c1 || b4 == b0 || b4 == b1 || b4 == b2)
                         continue;
 
-                    const auto hs = river_lut.get(c0, c1, b0, b1, b2, b3, b4);
+                    const std::array<int, 7> cards = {{c0, c1, b0, b1, b2, b3, b4}};
+                    const auto hs = river_lut.get(cards);
                     const auto bin = std::min(std::size_t(hs * p.size()), p.size() - 1);
                     ++data_points[i][bin];
                 }
@@ -177,7 +179,8 @@ namespace
                 if (b4 == c0 || b4 == c1 || b4 == b0 || b4 == b1 || b4 == b2 || b4 == b3)
                     continue;
 
-                const auto hs = river_lut.get(c0, c1, b0, b1, b2, b3, b4);
+                const std::array<int, 7> cards = {{c0, c1, b0, b1, b2, b3, b4}};
+                const auto hs = river_lut.get(cards);
                 const auto bin = std::min(std::size_t(hs * p.size()), p.size() - 1);
                 ++data_points[i][bin];
             }
@@ -299,7 +302,14 @@ void holdem_abstraction::get_buckets(const int c0, const int c1, const int b0, c
 {
     assert(c0 != -1 && c1 != -1);
 
-    std::array<card_t, 7> cards = {{card_t(c0), card_t(c1), card_t(b0), card_t(b1), card_t(b2), card_t(b3), card_t(b4)}};
+    const std::array<card_t, 7> cards = {{
+        static_cast<card_t>(c0),
+        static_cast<card_t>(c1),
+        static_cast<card_t>(b0),
+        static_cast<card_t>(b1),
+        static_cast<card_t>(b2),
+        static_cast<card_t>(b3),
+        static_cast<card_t>(b4)}};
 
     (*buckets)[PREFLOP] = read(PREFLOP, preflop_indexer_.hand_index_last(cards.data()));
     (*buckets)[FLOP] = (b0 != -1) ? read(FLOP, flop_indexer_.hand_index_last(cards.data())) : -1;

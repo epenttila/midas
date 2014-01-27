@@ -32,7 +32,8 @@ namespace
                 const int c1 = deck[deck.size() - 7];
 
                 const float real = float(e.enumerate_river(c0, c1, b[0], b[1], b[2], b[3], b[4]));
-                const float cached = lut.get(c0, c1, b[0], b[1], b[2], b[3], b[4]);
+                const std::array<int, 7> cards = {{c0, c1, b[0], b[1], b[2], b[3], b[4]}};
+                const float cached = lut.get(cards);
 
                 if (cached != real)
                 {
