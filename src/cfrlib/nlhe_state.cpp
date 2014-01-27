@@ -278,10 +278,10 @@ int nlhe_state::get_stack_size() const
 
 const nlhe_state* nlhe_state::get_action_child(int action) const
 {
-    for (int i = 0; i < children_.size(); ++i)
+    for (const auto& p : children_)
     {
-        if (get_child(i)->get_action() == action)
-            return get_child(i);
+        if (p->get_action() == action)
+            return p.get();
     }
 
     return nullptr;

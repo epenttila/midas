@@ -112,7 +112,7 @@ const nlhe_state_base* nlhe_state_base::raise(const nlhe_state_base& state, doub
     holdem_action lower = INVALID_ACTION;
     holdem_action upper = INVALID_ACTION;
 
-    for (int i = 0; i < pot_sizes.size(); ++i)
+    for (std::size_t i = 0; i < pot_sizes.size(); ++i)
     {
         if (pot_sizes[i] <= fraction && (lower == INVALID_ACTION || pot_sizes[i] > pot_sizes[lower]))
             lower = static_cast<holdem_action>(i);

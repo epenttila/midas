@@ -25,6 +25,8 @@ public:
     typedef typename base_t::data_t data_t;
     typedef typename base_t::bucket_t bucket_t;
 
+    static const int ACTIONS = game_state::ACTIONS;
+
     pure_cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr<abstraction_t> abstraction);
     ~pure_cfr_solver();
 

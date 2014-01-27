@@ -21,7 +21,7 @@ public:
 private:
     std::size_t get_position(const game_state_base& state, int child, int bucket) const;
 
-    std::size_t states_;
+    int states_;
     mutable std::mt19937 engine_;
     std::vector<std::size_t> positions_;
     boost::iostreams::mapped_file file_;
