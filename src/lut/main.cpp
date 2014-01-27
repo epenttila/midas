@@ -11,7 +11,7 @@ namespace
 {
     void test_river(const holdem_river_lut& lut)
     {
-        holdem_evaluator e;
+        std::unique_ptr<holdem_evaluator> e(new holdem_evaluator);
         std::array<int, 52> deck;
 
         std::iota(deck.begin(), deck.end(), 0);
@@ -31,7 +31,7 @@ namespace
                 const int c0 = deck[deck.size() - 6];
                 const int c1 = deck[deck.size() - 7];
 
-                const float real = float(e.enumerate_river(c0, c1, b[0], b[1], b[2], b[3], b[4]));
+                const float real = float(e->enumerate_river(c0, c1, b[0], b[1], b[2], b[3], b[4]));
                 const std::array<int, 7> cards = {{c0, c1, b[0], b[1], b[2], b[3], b[4]}};
                 const float cached = lut.get(cards);
 
@@ -41,9 +41,6 @@ namespace
                         << "real ehs: " << real << " cached ehs: " << cached << " err: "
                         << std::abs(real - cached) << "\n";
                 }
-
-                if (i % 1000 == 0)
-                    std::cout << i << "\n";
             }
         }
     }

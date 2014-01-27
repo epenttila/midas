@@ -67,6 +67,7 @@ holdem_river_lut::holdem_river_lut()
 }
 
 holdem_river_lut::holdem_river_lut(const std::string& filename)
+    : indexer_(create())
 {
     BOOST_LOG_TRIVIAL(info) << "Loading river lut from: " << filename;
 
