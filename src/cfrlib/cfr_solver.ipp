@@ -128,7 +128,13 @@ void cfr_solver<T, U, Data>::save_strategy(const std::string& filename) const
     {
         const auto& state = *i;
         assert(!state->is_terminal() && std::distance(states_.begin(), i) == state->get_id());
-        pointers.push_back(ftello(file.get()));
+
+        auto pos = ftello(file.get());
+
+        if (pos == -1)
+            throw std::runtime_error("invalid file position");
+
+        pointers.push_back(pos);
 
         for (int bucket = 0; bucket < abstraction_->get_bucket_count(state->get_round()); ++bucket)
         {
