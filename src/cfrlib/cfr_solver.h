@@ -14,6 +14,7 @@
 #endif
 
 #include "solver_base.h"
+#include "strategy.h"
 
 class strategy;
 
@@ -29,6 +30,7 @@ public:
     typedef typename T::evaluator_t evaluator_t;
     typedef typename T::abstraction_t abstraction_t;
     typedef Data data_t;
+    typedef strategy::probability_t probability_t;
 
     cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr<abstraction_t> abstraction);
     ~cfr_solver();
@@ -59,7 +61,7 @@ protected:
     const abstraction_t& get_abstraction() const;
 
 private:
-    void get_average_strategy(const game_state& state, const int bucket, double* out) const;
+    void get_average_strategy(const game_state& state, const int bucket, probability_t* out) const;
 
     std::vector<const game_state*> states_;
     std::vector<data_type> data_;

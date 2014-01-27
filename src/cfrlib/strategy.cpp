@@ -20,19 +20,19 @@ strategy::strategy(const std::string& filename, int states, bool read_only)
     positions_.assign(p, p + positions_.size());
 }
 
-double strategy::get_probability(const game_state_base& state, int child, int bucket) const
+strategy::probability_t strategy::get_probability(const game_state_base& state, int child, int bucket) const
 {
     return *get_data(state, child, bucket);
 }
 
-const double* strategy::get_data(const game_state_base& state, int child, int bucket) const
+const strategy::probability_t* strategy::get_data(const game_state_base& state, int child, int bucket) const
 {
-    return reinterpret_cast<const double*>(file_.const_data() + get_position(state, child, bucket));
+    return reinterpret_cast<const strategy::probability_t*>(file_.const_data() + get_position(state, child, bucket));
 }
 
-double* strategy::get_data(const game_state_base& state, int child, int bucket)
+strategy::probability_t* strategy::get_data(const game_state_base& state, int child, int bucket)
 {
-    return reinterpret_cast<double*>(file_.data() + get_position(state, child, bucket));
+    return reinterpret_cast<strategy::probability_t*>(file_.data() + get_position(state, child, bucket));
 }
 
 int strategy::get_random_child(const game_state_base& state, int bucket) const
@@ -75,5 +75,5 @@ std::size_t strategy::get_position(const game_state_base& state, int child, int 
     if (bucket < 0)
         throw std::runtime_error("invalid bucket");
 
-    return positions_[state.get_id()] + (bucket * state.get_child_count() + child) * sizeof(double);
+    return positions_[state.get_id()] + (bucket * state.get_child_count() + child) * sizeof(strategy::probability_t);
 }

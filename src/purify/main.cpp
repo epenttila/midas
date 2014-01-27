@@ -63,8 +63,8 @@ int main(int argc, char* argv[])
 
             for (int bucket = 0; bucket < strategy.get_abstraction().get_bucket_count(state.get_round()); ++bucket)
             {
-                double* begin = strategy.get_strategy().get_data(state, 0, bucket);
-                double* end = begin + state.get_child_count();
+                strategy::probability_t* begin = strategy.get_strategy().get_data(state, 0, bucket);
+                strategy::probability_t* end = begin + state.get_child_count();
                 double max = 0;
                 int max_count = 0;
 
@@ -84,7 +84,7 @@ int main(int argc, char* argv[])
                 for (auto it = begin; it != end; ++it)
                 {
                     if (*it == max)
-                        *it = 1.0 / max_count;
+                        *it = static_cast<strategy::probability_t>(1.0 / max_count);
                     else
                         *it = 0;
                 }

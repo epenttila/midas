@@ -65,7 +65,7 @@ void cfr_solver<T, U, Data>::solve(const std::uint64_t iterations, std::int64_t 
 }
 
 template<class T, class U, class Data>
-void cfr_solver<T, U, Data>::get_average_strategy(const game_state& state, const int bucket, double* out) const
+void cfr_solver<T, U, Data>::get_average_strategy(const game_state& state, const int bucket, probability_t* out) const
 {
     const auto action_count = state.get_child_count();
     const auto data = get_data(state.get_id(), bucket, 0);
@@ -81,12 +81,12 @@ void cfr_solver<T, U, Data>::get_average_strategy(const game_state& state, const
     if (bucket_sum > EPSILON)
     {
         for (int i = 0; i < action_count; ++i)
-            out[i] = data[i].strategy / bucket_sum;
+            out[i] = static_cast<probability_t>(data[i].strategy / bucket_sum);
     }
     else
     {
         for (int i = 0; i < action_count; ++i)
-            out[i] = state.get_child(i) ? 1.0 / state.get_child_count() : 0.0;
+            out[i] = static_cast<probability_t>(state.get_child(i) ? 1.0 / state.get_child_count() : 0.0);
     }
 }
 
@@ -231,7 +231,7 @@ void cfr_solver<T, U, Data>::print(std::ostream& os) const
         {
             os << state << ":" << bucket << ": ";
 
-            std::vector<double> p(state.get_child_count());
+            std::vector<probability_t> p(state.get_child_count());
             get_average_strategy(state, bucket, p.data());
 
             for (std::size_t action = 0; action < p.size(); ++action)

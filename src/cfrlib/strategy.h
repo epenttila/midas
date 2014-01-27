@@ -11,10 +11,12 @@ class game_state_base;
 class strategy
 {
 public:
+    typedef float probability_t;
+
     strategy(const std::string& filename, int states, bool read_only = true);
-    double get_probability(const game_state_base& state, int child, int bucket) const;
-    const double* get_data(const game_state_base& state, int child, int bucket) const;
-    double* get_data(const game_state_base& state, int child, int bucket);
+    probability_t get_probability(const game_state_base& state, int child, int bucket) const;
+    const probability_t* get_data(const game_state_base& state, int child, int bucket) const;
+    probability_t* get_data(const game_state_base& state, int child, int bucket);
     int get_random_child(const game_state_base& state, int bucket) const;
     std::string get_filename() const;
 
