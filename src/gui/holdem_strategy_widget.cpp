@@ -161,7 +161,7 @@ void holdem_strategy_widget::update(const nlhe_strategy& strategy, const nlhe_st
                 else
                     raise_p += p;
 
-                if (action > 0)
+                if (!names.isEmpty())
                     names += "\n";
 
                 names += QString("%1 (%2)").arg(nlhe_state_base::get_action_name(action).c_str()).arg(p);
