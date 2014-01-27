@@ -107,7 +107,11 @@ template<class T, class U>
 int pure_cfr_solver<T, U>::get_regret_strategy(std::mt19937& engine, const game_state& state, const int bucket) const
 {
     const auto size = state.get_child_count();
-    const auto data = this->get_data(state.get_id(), bucket, 0);
+
+    std::array<typename base_t::data_type, ACTIONS> data;
+
+    for (int i = 0; i < size; ++i)
+        data[i] = *this->get_data(state.get_id(), bucket, i);
 
     std::uint64_t bucket_sum = 0;
 
