@@ -121,7 +121,7 @@ void cfr_solver<T, U, Data>::load_state(const std::string& filename)
 template<class T, class U, class Data>
 void cfr_solver<T, U, Data>::save_strategy(const std::string& filename) const
 {
-    std::unique_ptr<FILE, int (*)(FILE*)> file(fopen(filename.c_str(), "wb"), fclose);
+    auto file = binary_open(filename, "wb");
     std::vector<std::size_t> pointers;
 
     for (auto i = states_.begin(); i != states_.end(); ++i)
@@ -138,13 +138,13 @@ void cfr_solver<T, U, Data>::save_strategy(const std::string& filename) const
 
         for (int bucket = 0; bucket < abstraction_->get_bucket_count(state->get_round()); ++bucket)
         {
-            std::vector<double> p(state->get_child_count());
+            std::vector<probability_t> p(state->get_child_count());
             get_average_strategy(*state, bucket, p.data());
-            fwrite(reinterpret_cast<char*>(&p[0]), sizeof(p[0]), p.size(), file.get());
+            binary_write(*file, p.data(), p.size());
         }
     }
 
-    fwrite(reinterpret_cast<char*>(&pointers[0]), sizeof(pointers[0]), pointers.size(), file.get());
+    binary_write(*file, pointers.data(), pointers.size());
 }
 
 template<class T, class U, class Data>
