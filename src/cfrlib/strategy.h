@@ -11,7 +11,7 @@ class game_state_base;
 class strategy
 {
 public:
-    strategy(const std::string& filename, std::size_t states, bool read_only = true);
+    strategy(const std::string& filename, int states, bool read_only = true);
     double get_probability(const game_state_base& state, int child, int bucket) const;
     const double* get_data(const game_state_base& state, int child, int bucket) const;
     double* get_data(const game_state_base& state, int child, int bucket);

@@ -4,7 +4,7 @@
 #include <cassert>
 #include "cfrlib/game_state_base.h"
 
-strategy::strategy(const std::string& filename, std::size_t states, bool read_only)
+strategy::strategy(const std::string& filename, int states, bool read_only)
     : states_(states)
     , engine_(std::random_device()())
     , positions_(states)
