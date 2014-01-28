@@ -12,6 +12,7 @@
 #include "util/card.h"
 #include "cfrlib/nlhe_strategy.h"
 #include "util/game.h"
+#include "util/version.h"
 
 static const int MAX_STACK = 500;
 static const int BIG_BLIND = 20;
@@ -121,6 +122,8 @@ int main(int argc, char* argv[])
     try
     {
         using boost::asio::ip::tcp;
+
+        BOOST_LOG_TRIVIAL(info) << "play " << util::GIT_VERSION;
 
         if (argc != 4)
         {

@@ -10,6 +10,7 @@
 #pragma warning(pop)
 #endif
 #include "abslib/holdem_abstraction.h"
+#include "util/version.h"
 
 int main(int argc, char* argv[])
 {
@@ -82,6 +83,8 @@ int main(int argc, char* argv[])
                 log::keywords::format = log_format
             );
         }
+
+        BOOST_LOG_TRIVIAL(info) << "abs " << util::GIT_VERSION;
 
         if (game == "holdem")
         {

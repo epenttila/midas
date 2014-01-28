@@ -56,6 +56,7 @@
 #include "fake_window.h"
 #include "smtp.h"
 #include "site_settings.h"
+#include "util/version.h"
 
 #define ENSURE(x) ensure(x, #x, __LINE__)
 
@@ -255,7 +256,7 @@ main_window::main_window()
     capture_timer_->start(1000);
     mark_time_.start();
 
-    setWindowTitle("Window");
+    setWindowTitle(QString("gui %1").arg(util::GIT_VERSION));
 }
 
 main_window::~main_window()

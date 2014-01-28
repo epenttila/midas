@@ -29,6 +29,7 @@
 #include "cfrlib/leduc_game.h"
 //#include "cfrlib/cs_cfr_solver.h"
 #include "cfrlib/pure_cfr_solver.h"
+#include "util/version.h"
 
 namespace
 {
@@ -122,6 +123,8 @@ int main(int argc, char* argv[])
                 log::keywords::format = log_format
             );
         }
+
+        BOOST_LOG_TRIVIAL(info) << "cfr " << util::GIT_VERSION;
 
         std::unique_ptr<solver_base> solver;
 

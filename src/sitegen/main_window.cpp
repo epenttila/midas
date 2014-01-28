@@ -16,6 +16,7 @@
 #pragma warning(pop)
 
 #include "image_widget.h"
+#include "util/version.h"
 
 main_window::main_window()
 {
@@ -64,6 +65,8 @@ main_window::main_window()
     layout->addWidget(image_widget_);
     layout->addWidget(text_widget_);
     widget->setLayout(layout);
+
+    setWindowTitle(QString("sitegen %1").arg(util::GIT_VERSION));
 }
 
 void main_window::open_image()

@@ -62,6 +62,8 @@ set(gtest_force_shared_crt ON)
 enable_testing() 
 include_directories(${GTEST_INCLUDE_DIR}) 
 
+find_package(Git)
+
 add_subdirectory(src)
 add_subdirectory(ext)
 add_subdirectory(test)

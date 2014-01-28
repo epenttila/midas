@@ -12,6 +12,7 @@
 #pragma warning(pop)
 #endif
 #include "cfrlib/nlhe_strategy.h"
+#include "util/version.h"
 
 int main(int argc, char* argv[])
 {
@@ -50,6 +51,7 @@ int main(int argc, char* argv[])
 
         po::notify(vm);
 
+        BOOST_LOG_TRIVIAL(info) << "purify " << util::GIT_VERSION;
         BOOST_LOG_TRIVIAL(info) << "Purifying " << strategy_file;
 
         nlhe_strategy strategy(strategy_file, false);

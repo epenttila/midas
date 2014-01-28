@@ -1,0 +1,6 @@
+namespace util
+{
+
+const char* GIT_VERSION = "@GIT_VERSION@";
+
+}

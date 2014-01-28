@@ -6,6 +6,7 @@
 #include "lutlib/holdem_river_lut.h"
 #include "util/partial_shuffle.h"
 #include "lutlib/holdem_river_ochs_lut.h"
+#include "util/version.h"
 
 namespace
 {
@@ -48,6 +49,8 @@ namespace
 
 int main(int argc, char* argv[])
 {
+    std::cout << "lut " << util::GIT_VERSION;
+
     if (argc != 3)
         return 1;
 
