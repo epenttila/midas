@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <boost/regex.hpp>
 #include <iostream>
+#include <boost/log/trivial.hpp>
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
@@ -283,7 +284,7 @@ int main(int argc, char* argv[])
     }
     catch (const std::exception& e)
     {
-        std::cerr << e.what() << "\n";
+        BOOST_LOG_TRIVIAL(error) << e.what();
         return 1;
     }
 }
