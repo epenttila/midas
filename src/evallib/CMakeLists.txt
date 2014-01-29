@@ -7,8 +7,6 @@ set(evallib_SOURCES
     kuhn_evaluator.h
     leduc_evaluator.cpp
     leduc_evaluator.h
-    twoplustwo_evaluator.cpp
-    twoplustwo_evaluator.h
 )
 
 add_library(evallib ${evallib_SOURCES})

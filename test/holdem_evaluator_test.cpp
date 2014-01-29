@@ -1,4 +1,5 @@
 #include <memory>
+#include <array>
 #include "gtest/gtest.h"
 #include "evallib/holdem_evaluator.h"
 #include "util/card.h"
