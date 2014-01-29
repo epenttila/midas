@@ -2,6 +2,7 @@
 
 #include <boost/noncopyable.hpp>
 #include <vector>
+#include <string>
 
 class holdem_evaluator : private boost::noncopyable
 {
