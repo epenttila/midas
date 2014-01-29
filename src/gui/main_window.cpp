@@ -775,6 +775,15 @@ void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy&
         : strategy.get_strategy().get_random_child(*current_state, bucket);
     nlhe_state_base::holdem_action action = current_state->get_child(index)->get_action();
 
+    // ensure the hand really terminates if our abstraction says so and we would just call
+    if (action == nlhe_state_base::CALL
+        && current_state->get_round() < holdem_state::RIVER
+        && current_state->call()->is_terminal())
+    {
+        action = nlhe_state_base::RAISE_A;
+        BOOST_LOG_TRIVIAL(info) << "Translating pre-river call to all-in to ensure hand terminates";
+    }
+
     int next_action;
     double raise_fraction = -1;
 
@@ -784,22 +793,7 @@ void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy&
         next_action = table_manager::FOLD;
         break;
     case nlhe_state_base::CALL:
-        {
-            ENSURE(current_state->call() != nullptr);
-
-            // ensure the hand really terminates if our abstraction says so
-            if (current_state->get_round() < holdem_state::RIVER && current_state->call()->is_terminal())
-            {
-                action = nlhe_state_base::RAISE_A;
-                next_action = table_manager::RAISE;
-                raise_fraction = nlhe_state_base::get_raise_factor(action);
-                BOOST_LOG_TRIVIAL(info) << "Translating pre-river call to all-in to ensure hand terminates";
-            }
-            else
-            {
-                next_action = table_manager::CALL;
-            }
-        }
+        next_action = table_manager::CALL;
         break;
     default:
         next_action = table_manager::RAISE;
