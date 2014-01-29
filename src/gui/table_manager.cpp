@@ -7,7 +7,6 @@
 #pragma warning(pop)
 
 #include "util/card.h"
-#include "util/game.h"
 #include "input_manager.h"
 #include "window_utils.h"
 #include "fake_window.h"

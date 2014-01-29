@@ -11,7 +11,6 @@
 #pragma warning(pop)
 
 #include "util/card.h"
-#include "util/game.h"
 
 namespace
 {
