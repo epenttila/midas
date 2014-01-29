@@ -1,0 +1,6 @@
+namespace test
+{
+
+const char* TEST_DATA_PATH = "@TEST_DATA_PATH@";
+
+}

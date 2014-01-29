@@ -6,12 +6,15 @@ set(test_SOURCES
     sort_test.cpp
     holdem_evaluator_test.cpp
     holdem_river_lut_test.cpp
+    holdem_river_ochs_lut_test.cpp
+    config.h
 )
+
+list(APPEND test_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/config.cpp")
 
 add_executable(testrunner ${test_SOURCES})
 target_link_libraries(testrunner ${Boost_LIBRARIES} gtest gtest_main cfrlib)
 
 add_test(AllTests testrunner --gtest_output=xml)
 
-configure_file("${TEST_DATA_PATH}/ranks.dat" "${CMAKE_CURRENT_BINARY_DIR}" COPYONLY)
-configure_file("${TEST_DATA_PATH}/holdem_river_lut.dat" "${CMAKE_CURRENT_BINARY_DIR}" COPYONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/config.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}/config.cpp" @ONLY)

@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 #include "lutlib/holdem_river_lut.h"
+#include "config.h"
 
 namespace
 {
@@ -21,7 +22,7 @@ namespace
 
 TEST(holdem_river_lut, known_values)
 {
-    holdem_river_lut lut("holdem_river_lut.dat");
+    holdem_river_lut lut(std::string(test::TEST_DATA_PATH) + "/holdem_river_lut.dat");
 
     EXPECT_NEAR(0.84545, lut.get(get_cards("9s8dTd5h9hKd8h")), 0.00001);
     EXPECT_NEAR(0.67677, lut.get(get_cards("Th4d6d5d7sTdQh")), 0.00001);

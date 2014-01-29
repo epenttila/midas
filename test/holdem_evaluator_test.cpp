@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 #include "evallib/holdem_evaluator.h"
 #include "util/card.h"
+#include "config.h"
 
 namespace
 {
@@ -21,7 +22,7 @@ namespace
 
 TEST(holdem_evaluator, relative_values)
 {
-    std::unique_ptr<holdem_evaluator> eval(new holdem_evaluator);
+    std::unique_ptr<holdem_evaluator> eval(new holdem_evaluator(std::string(test::TEST_DATA_PATH) + "/ranks.dat"));
 
     EXPECT_LT(get_hand_value(*eval, "2c4s6s7s6h3cJs"), get_hand_value(*eval, "AcJd6s7s6h3cJs"));
     EXPECT_LT(get_hand_value(*eval, "AcJd6s7s6h3cJs"), get_hand_value(*eval, "Jc7d6s7s6h3cJs"));
@@ -34,7 +35,7 @@ TEST(holdem_evaluator, relative_values)
 
 TEST(holdem_evaluator, test_ranks)
 {
-    std::unique_ptr<holdem_evaluator> eval(new holdem_evaluator);
+    std::unique_ptr<holdem_evaluator> eval(new holdem_evaluator(std::string(test::TEST_DATA_PATH) + "/ranks.dat"));
 
     int count = 0;
     std::array<int, 10> types = {{}};
