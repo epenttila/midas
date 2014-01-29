@@ -29,7 +29,7 @@ nlhe_strategy::nlhe_strategy(const std::string& filepath, bool read_only)
 
     BOOST_LOG_TRIVIAL(info) << "Stack size: " << stack_size_;
 
-    const auto state_count = nlhe_state_base::get_state_vector(*root_state_).size();
+    const auto state_count = nlhe_state::get_state_vector(*root_state_).size();
 
     const auto abs_name = m[2].str();
 
@@ -46,7 +46,7 @@ const holdem_abstraction_base& nlhe_strategy::get_abstraction() const
     return *abstraction_;
 }
 
-const nlhe_state_base& nlhe_strategy::get_root_state() const
+const nlhe_state& nlhe_strategy::get_root_state() const
 {
     return *root_state_;
 }

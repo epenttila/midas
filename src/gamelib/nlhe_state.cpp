@@ -4,9 +4,39 @@
 #include <boost/regex.hpp>
 #include "holdem_game.h"
 
-namespace detail
+namespace
 {
     static const std::array<int, 2> INITIAL_RAISE_MASKS = {{0, 0}};
+    static const std::array<int, 2> INITIAL_POT = {{1, 2}};
+
+    int soft_translate(const double b1, const double b, const double b2)
+    {
+        assert(b1 <= b && b <= b2);
+        static std::random_device rd;
+        static std::mt19937 engine(rd());
+        static std::uniform_real_distribution<double> dist;
+        const auto f = ((b2 - b) * (1 + b1)) / ((b2 - b1) * (1 + b));
+        return dist(engine) < f ? 0 : 1;
+    }
+
+    int get_action_mask(nlhe_state::holdem_action action)
+    {
+        switch (action)
+        {
+        case nlhe_state::FOLD: return nlhe_state::F_MASK;
+        case nlhe_state::CALL: return nlhe_state::C_MASK;
+        case nlhe_state::RAISE_O: return nlhe_state::O_MASK;
+        case nlhe_state::RAISE_H: return nlhe_state::H_MASK;
+        case nlhe_state::RAISE_Q: return nlhe_state::Q_MASK;
+        case nlhe_state::RAISE_P: return nlhe_state::P_MASK;
+        case nlhe_state::RAISE_W: return nlhe_state::W_MASK;
+        case nlhe_state::RAISE_D: return nlhe_state::D_MASK;
+        case nlhe_state::RAISE_V: return nlhe_state::V_MASK;
+        case nlhe_state::RAISE_T: return nlhe_state::T_MASK;
+        case nlhe_state::RAISE_A: return nlhe_state::A_MASK;
+        default: throw std::runtime_error("unknown action mask");
+        }
+    }
 }
 
 nlhe_state::nlhe_state(int stack_size, int enabled_actions, int limited_actions)
@@ -14,10 +44,10 @@ nlhe_state::nlhe_state(int stack_size, int enabled_actions, int limited_actions)
     , parent_(nullptr)
     , action_(INVALID_ACTION)
     , player_(0)
-    , pot_(detail::INITIAL_POT)
+    , pot_(INITIAL_POT)
     , round_(PREFLOP)
     , stack_size_(stack_size)
-    , raise_masks_(detail::INITIAL_RAISE_MASKS)
+    , raise_masks_(INITIAL_RAISE_MASKS)
     , limited_actions_(limited_actions)
     , enabled_actions_(enabled_actions)
 {
@@ -245,7 +275,55 @@ const nlhe_state* nlhe_state::call() const
 
 const nlhe_state* nlhe_state::raise(double fraction) const
 {
-    return static_cast<const nlhe_state*>(nlhe_state_base::raise(*this, fraction));
+    const auto& pot = get_pot();
+    const auto player = get_player();
+
+    if (get_stack_size() == pot[1 - player])
+        return nullptr;
+
+    std::array<double, ACTIONS> pot_sizes;
+
+    for (int i = 0; i < static_cast<int>(pot_sizes.size()); ++i)
+    {
+        const auto p = get_action_child(static_cast<holdem_action>(i));
+
+        if (p && i > CALL)
+        {
+            // don't use get_raise_factor here as we want to know the actual fractions wrt state::pot
+            const auto player = get_player();
+            const auto to_call = p->get_pot()[player] - p->get_pot()[1 - player];
+            const auto in_pot = 2 * p->get_pot()[1 - player];
+            pot_sizes[i] = static_cast<double>(to_call) / in_pot;
+        }
+        else
+            pot_sizes[i] = -1;
+    }
+
+    holdem_action lower = INVALID_ACTION;
+    holdem_action upper = INVALID_ACTION;
+
+    for (std::size_t i = 0; i < pot_sizes.size(); ++i)
+    {
+        if (pot_sizes[i] <= fraction && (lower == INVALID_ACTION || pot_sizes[i] > pot_sizes[lower]))
+            lower = static_cast<holdem_action>(i);
+        else if (pot_sizes[i] >= fraction && (upper == INVALID_ACTION || pot_sizes[i] < pot_sizes[upper]))
+            upper = static_cast<holdem_action>(i);
+    }
+
+    assert(lower != INVALID_ACTION || upper != INVALID_ACTION);
+
+    holdem_action action;
+
+    if (lower == INVALID_ACTION)
+        action = upper;
+    else if (upper == INVALID_ACTION)
+        action = lower;
+    else if (lower == upper)
+        action = lower;
+    else
+        action = soft_translate(pot_sizes[lower], fraction, pot_sizes[upper]) == 0 ? lower : upper;
+
+    return get_action_child(action);
 }
 
 std::array<int, 2> nlhe_state::get_pot() const
@@ -267,7 +345,9 @@ bool nlhe_state::is_action_enabled(holdem_action action) const
 int nlhe_state::get_new_player_pot(const int player_pot, const int to_call, const int in_pot,
     const holdem_action action) const
 {
-    return nlhe_state_base::get_new_player_pot(player_pot, to_call, in_pot, action, stack_size_);
+    const auto factor = get_raise_factor(action);
+    // round up to prune small bets
+    return std::min(static_cast<int>(std::ceil(player_pot + to_call + (2 * to_call + in_pot) * factor)), stack_size_);
 }
 
 int nlhe_state::get_stack_size() const
@@ -337,4 +417,56 @@ std::unique_ptr<nlhe_state> nlhe_state::create(const std::string& config)
     }
 
     throw std::runtime_error("unknown game configuration");
+}
+
+double nlhe_state::get_raise_factor(const holdem_action action)
+{
+    switch (action)
+    {
+    case RAISE_O: return 0.25;
+    case RAISE_H: return 0.5;
+    case RAISE_Q: return 0.75;
+    case RAISE_P: return 1.0;
+    case RAISE_W: return 1.5;
+    case RAISE_D: return 2.0;
+    case RAISE_V: return 5.0;
+    case RAISE_T: return 10.0;
+    case RAISE_A: return 999.0;
+    default: throw std::runtime_error("unknown action raise factor");
+    }
+}
+
+std::string nlhe_state::get_action_name(const holdem_action action)
+{
+    switch (action)
+    {
+    case FOLD: return "FOLD";
+    case CALL: return "CALL";
+    case RAISE_O: return "RAISE_O";
+    case RAISE_H: return "RAISE_H";
+    case RAISE_Q: return "RAISE_Q";
+    case RAISE_P: return "RAISE_P";
+    case RAISE_W: return "RAISE_W";
+    case RAISE_D: return "RAISE_D";
+    case RAISE_V: return "RAISE_V";
+    case RAISE_T: return "RAISE_T";
+    case RAISE_A: return "RAISE_A";
+    default: throw std::runtime_error("unknown action name");
+    }
+}
+
+std::ostream& operator<<(std::ostream& os, const nlhe_state& state)
+{
+    static const char actions[nlhe_state::ACTIONS + 1] = "fcohqpwdvta";
+    std::string line;
+
+    for (auto s = &state; s->get_parent() != nullptr; s = s->get_parent())
+    {
+        const char c = actions[s->get_action()];
+        line = char(s->get_parent()->get_player() == 0 ? c : toupper(c)) + line;
+    }
+
+    os << state.get_id() << ":" << line;
+
+    return os;
 }

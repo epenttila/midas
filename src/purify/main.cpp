@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 
         for (int state_id = 0; state_id < static_cast<int>(states.size()); ++state_id)
         {
-            const auto& state = *dynamic_cast<const nlhe_state_base*>(states[state_id]);
+            const auto& state = *dynamic_cast<const nlhe_state*>(states[state_id]);
 
             for (int bucket = 0; bucket < strategy.get_abstraction().get_bucket_count(state.get_round()); ++bucket)
             {

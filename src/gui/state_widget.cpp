@@ -72,7 +72,7 @@ void state_widget::raise_clicked()
         set_state(next);
 }
 
-void state_widget::set_state(const nlhe_state_base* state)
+void state_widget::set_state(const nlhe_state* state)
 {
     state_ = state;
 
@@ -84,7 +84,7 @@ void state_widget::set_state(const nlhe_state_base* state)
     state_edit_->setText(ss.str().c_str());
 }
 
-const nlhe_state_base* state_widget::get_state() const
+const nlhe_state* state_widget::get_state() const
 {
     return state_;
 }
@@ -105,7 +105,7 @@ void state_widget::state_text_changed()
     emit state_changed();
 }
 
-void state_widget::set_root_state(const nlhe_state_base* state)
+void state_widget::set_root_state(const nlhe_state* state)
 {
     root_state_ = state;
     set_state(root_state_);

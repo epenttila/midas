@@ -92,7 +92,7 @@ void holdem_strategy_widget::paintEvent(QPaintEvent*)
     }
 }
 
-void holdem_strategy_widget::update(const nlhe_strategy& strategy, const nlhe_state_base& state)
+void holdem_strategy_widget::update(const nlhe_strategy& strategy, const nlhe_state& state)
 {
     hilight_bucket_ = -1;
 
@@ -163,7 +163,7 @@ void holdem_strategy_widget::update(const nlhe_strategy& strategy, const nlhe_st
                 if (!names.isEmpty())
                     names += "\n";
 
-                names += QString("%1 (%2)").arg(nlhe_state_base::get_action_name(action).c_str()).arg(p);
+                names += QString("%1 (%2)").arg(nlhe_state::get_action_name(action).c_str()).arg(p);
             }
 
             fold_p = std::min(fold_p, 1.0);

@@ -18,7 +18,7 @@ static const int BIG_BLIND = 20;
 
 struct match_state
 {
-    const nlhe_state_base* state;
+    const nlhe_state* state;
     std::array<int, 2> pot;
     int index;
     int pos;
@@ -212,11 +212,11 @@ int main(int argc, char* argv[])
 
                 buf += ':';
 
-                nlhe_state_base::holdem_action action;
+                nlhe_state::holdem_action action;
 
                 if (state->is_terminal())
                 {
-                    action = nlhe_state_base::RAISE_A;
+                    action = nlhe_state::RAISE_A;
                 }
                 else
                 {
@@ -224,22 +224,22 @@ int main(int argc, char* argv[])
                     strategy.get_abstraction().get_buckets(hole[0], hole[1], board[0], board[1], board[2],
                         board[3], board[4], &buckets);
                     const int index = strategy.get_strategy().get_random_child(*state, buckets[state->get_round()]);
-                    action = static_cast<nlhe_state_base::holdem_action>(state->get_child(index)->get_action());
+                    action = static_cast<nlhe_state::holdem_action>(state->get_child(index)->get_action());
                 }
 
-                if (action != nlhe_state_base::FOLD && state->get_action() == nlhe_state_base::RAISE_A)
+                if (action != nlhe_state::FOLD && state->get_action() == nlhe_state::RAISE_A)
                 {
-                    action = nlhe_state_base::RAISE_A;
+                    action = nlhe_state::RAISE_A;
                 }
 
                 std::string action_str;
 
                 switch (action)
                 {
-                case nlhe_state_base::FOLD:
+                case nlhe_state::FOLD:
                     action_str = 'f';
                     break;
-                case nlhe_state_base::CALL:
+                case nlhe_state::CALL:
                     action_str = 'c';
                     ms.pot[my_pos] = ms.pot[1 - my_pos];
                     break;
@@ -247,7 +247,7 @@ int main(int argc, char* argv[])
                     {
                         int val = 0;
 
-                        if (action == nlhe_state_base::RAISE_A)
+                        if (action == nlhe_state::RAISE_A)
                             val = MAX_STACK;
                         else
                         {

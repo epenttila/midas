@@ -15,7 +15,7 @@
 
 class QPlainTextEdit;
 class holdem_abstraction;
-class nlhe_state_base;
+class nlhe_state;
 class table_manager;
 class nlhe_strategy;
 class QLabel;
@@ -61,8 +61,8 @@ private:
 
         table_manager::snapshot_t snapshot;
 
-        const nlhe_state_base* initial_state;
-        const nlhe_state_base* state;
+        const nlhe_state* initial_state;
+        const nlhe_state* state;
 
         QDateTime next_action_time;
         QDateTime timestamp;

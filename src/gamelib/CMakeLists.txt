@@ -14,8 +14,6 @@ set(SOURCES
     leduc_state.h
     nlhe_state.h
     nlhe_state.cpp
-    nlhe_state_base.h
-    nlhe_state_base.cpp
     game_state_base.h
     game_state_base.cpp
     holdem_state.h

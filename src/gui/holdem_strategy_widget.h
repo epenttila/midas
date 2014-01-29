@@ -7,7 +7,7 @@
 
 class nlhe_strategy;
 class holdem_abstraction_base;
-class nlhe_state_base;
+class nlhe_state;
 
 class holdem_strategy_widget : public QWidget
 {
@@ -22,7 +22,7 @@ public:
     };
 
     holdem_strategy_widget(QWidget* parent = 0, Qt::WindowFlags flags = 0);
-    void update(const nlhe_strategy& strategy, const nlhe_state_base& state);
+    void update(const nlhe_strategy& strategy, const nlhe_state& state);
     void set_hole(const std::array<int, 2>& hole);
     void set_board(const std::array<int, 5>& board);
 

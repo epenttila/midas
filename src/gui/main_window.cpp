@@ -531,7 +531,7 @@ void main_window::process_snapshot(const fake_window& window)
     // opponent stack might be obstructed by all-in or sitout statuses
     ENSURE(snapshot.stack[1] > 0 || snapshot.all_in[1] || snapshot.sit_out[1]);
 
-    const auto allin_bet_size = nlhe_state_base::get_raise_factor(nlhe_state_base::RAISE_A);
+    const auto allin_bet_size = nlhe_state::get_raise_factor(nlhe_state::RAISE_A);
 
     std::array<double, 2> stacks;
 
@@ -770,17 +770,17 @@ void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy&
 
     ENSURE(bucket != -1);
 
-    const int index = (snapshot.sit_out[1] && current_state->get_child(nlhe_state_base::CALL + 1))
-        ? nlhe_state_base::CALL + 1
+    const int index = (snapshot.sit_out[1] && current_state->get_child(nlhe_state::CALL + 1))
+        ? nlhe_state::CALL + 1
         : strategy.get_strategy().get_random_child(*current_state, bucket);
-    nlhe_state_base::holdem_action action = current_state->get_child(index)->get_action();
+    nlhe_state::holdem_action action = current_state->get_child(index)->get_action();
 
     // ensure the hand really terminates if our abstraction says so and we would just call
-    if (action == nlhe_state_base::CALL
+    if (action == nlhe_state::CALL
         && current_state->get_round() < holdem_state::RIVER
         && current_state->call()->is_terminal())
     {
-        action = nlhe_state_base::RAISE_A;
+        action = nlhe_state::RAISE_A;
         BOOST_LOG_TRIVIAL(info) << "Translating pre-river call to all-in to ensure hand terminates";
     }
 
@@ -789,10 +789,10 @@ void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy&
 
     switch (action)
     {
-    case nlhe_state_base::FOLD:
+    case nlhe_state::FOLD:
         next_action = table_manager::FOLD;
         break;
-    case nlhe_state_base::CALL:
+    case nlhe_state::CALL:
         next_action = table_manager::CALL;
         break;
     default:

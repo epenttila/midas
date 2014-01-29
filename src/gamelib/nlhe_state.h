@@ -1,13 +1,49 @@
 #pragma once
 
 #include <array>
+#include <memory>
+#include <iostream>
 
-#include "nlhe_state_base.h"
+#include "holdem_state.h"
 
-class nlhe_state : public nlhe_state_base
+class nlhe_state : public holdem_state
 {
 public:
+    enum
+    {
+        F_MASK = 0x001,
+        C_MASK = 0x002,
+        O_MASK = 0x004,
+        H_MASK = 0x008,
+        Q_MASK = 0x010,
+        P_MASK = 0x020,
+        W_MASK = 0x040,
+        D_MASK = 0x080,
+        V_MASK = 0x100,
+        T_MASK = 0x200,
+        A_MASK = 0x400,
+    };
+
+    enum holdem_action
+    {
+        INVALID_ACTION = -1,
+        FOLD = 0,
+        CALL = 1,
+        RAISE_O = 2,
+        RAISE_H = 3,
+        RAISE_Q = 4,
+        RAISE_P = 5,
+        RAISE_W = 6,
+        RAISE_D = 7,
+        RAISE_V = 8,
+        RAISE_T = 9,
+        RAISE_A = 10,
+        ACTIONS,
+    };
+
+    static double get_raise_factor(const holdem_action action);
     static std::unique_ptr<nlhe_state> create(const std::string& config);
+    static std::string get_action_name(holdem_action action);
 
     nlhe_state(int stack_size, int enabled_actions, int limited_actions);
     holdem_action get_action() const;
@@ -23,7 +59,6 @@ public:
     const nlhe_state* call() const;
     const nlhe_state* raise(double fraction) const;
     std::array<int, 2> get_pot() const;
-    std::string get_action_name(holdem_action action) const;
     int get_stack_size() const;
 
 private:
@@ -47,3 +82,5 @@ private:
     int limited_actions_;
     int enabled_actions_;
 };
+
+std::ostream& operator<<(std::ostream& os, const nlhe_state& state);
