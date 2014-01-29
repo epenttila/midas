@@ -29,27 +29,6 @@
 #include "cfrlib/pure_cfr_solver.h"
 #include "util/version.h"
 
-namespace
-{
-    template<class Game, class State>
-    std::unique_ptr<solver_base> create_solver(const std::string& /*variant*/, std::unique_ptr<State> state,
-        std::unique_ptr<typename Game::abstraction_t> abs)
-    {
-        return std::unique_ptr<pure_cfr_solver<Game, State>>(new pure_cfr_solver<Game, State>(std::move(state), std::move(abs)));
-    }
-
-    std::unique_ptr<solver_base> create_nlhe_solver(const std::string& variant, const std::string& config,
-        const std::string& abs_filename)
-    {
-        std::unique_ptr<nlhe_state> state(nlhe_state::create(config));
-
-        typedef holdem_abstraction abstraction_t;
-        std::unique_ptr<abstraction_t> abs(new abstraction_t);
-        abs->read(abs_filename);
-        return create_solver<holdem_game>(variant, std::move(state), std::move(abs));
-    }
-}
-
 int main(int argc, char* argv[])
 {
     try
@@ -120,37 +99,37 @@ int main(int argc, char* argv[])
         std::unique_ptr<solver_base> solver;
 
         BOOST_LOG_TRIVIAL(info) << "Creating solver for game: " << game;
-        BOOST_LOG_TRIVIAL(info) << "Using solver variant: " << variant;
         BOOST_LOG_TRIVIAL(info) << "Using abstraction: " << abstraction;
 
         if (game == "kuhn")
         {
-            std::unique_ptr<kuhn_state> state(new kuhn_state());
+            std::unique_ptr<kuhn_state> state(new kuhn_state);
             std::unique_ptr<kuhn_abstraction> abs(new kuhn_abstraction);
 
-            /*if (variant == "cs")
-                solver.reset(new cs_cfr_solver<kuhn_game, kuhn_state>(std::move(state), std::move(abs)));
-            else if (variant == "pure")*/
-                solver.reset(new pure_cfr_solver<kuhn_game, kuhn_state>(std::move(state), std::move(abs)));
+            solver.reset(new pure_cfr_solver<kuhn_game, kuhn_state>(std::move(state), std::move(abs)));
         }
         else if (game == "leduc")
         {
-            std::unique_ptr<leduc_state> state(new leduc_state());
+            std::unique_ptr<leduc_state> state(new leduc_state);
             std::unique_ptr<leduc_abstraction> abs(new leduc_abstraction);
 
-            solver = create_solver<leduc_game>(variant, std::move(state), std::move(abs));
+            solver.reset(new pure_cfr_solver<leduc_game, leduc_state>(std::move(state), std::move(abs)));
         }
         else if (game == "holdem")
         {
-            std::unique_ptr<flhe_state> state(new flhe_state());
+            std::unique_ptr<flhe_state> state(new flhe_state);
             std::unique_ptr<holdem_abstraction> abs(new holdem_abstraction);
             abs->read(abstraction);
 
-            solver = create_solver<holdem_game>(variant, std::move(state), std::move(abs));
+            solver.reset(new pure_cfr_solver<holdem_game, flhe_state>(std::move(state), std::move(abs)));
         }
         else if (boost::starts_with(game, "nlhe"))
         {
-            solver = create_nlhe_solver(variant, game, abstraction);
+            std::unique_ptr<nlhe_state> state(nlhe_state::create(game));
+            std::unique_ptr<holdem_abstraction> abs(new holdem_abstraction);
+            abs->read(abstraction);
+
+            solver.reset(new pure_cfr_solver<holdem_game, nlhe_state>(std::move(state), std::move(abs)));
         }
 
         if (!solver)
