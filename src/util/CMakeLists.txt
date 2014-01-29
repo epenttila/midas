@@ -5,7 +5,6 @@ set(util_SOURCES
     binary_io.cpp
     card.h
     choose.h
-    holdem_loops.h
     k_means.h
     partial_shuffle.h
     sort.h

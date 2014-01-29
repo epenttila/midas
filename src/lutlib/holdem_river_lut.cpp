@@ -13,7 +13,6 @@
 #include "evallib/holdem_evaluator.h"
 #include "util/sort.h"
 #include "util/card.h"
-#include "util/holdem_loops.h"
 #include "util/binary_io.h"
 
 namespace
