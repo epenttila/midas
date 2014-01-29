@@ -1,7 +1,6 @@
 #include "flhe_state.h"
 #include <cassert>
 #include <string>
-#include "holdem_game.h"
 
 namespace
 {

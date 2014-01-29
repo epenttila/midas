@@ -1,7 +1,6 @@
 #include "leduc_state.h"
 #include <cassert>
 #include <string>
-#include "leduc_game.h"
 
 namespace
 {

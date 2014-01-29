@@ -1,7 +1,7 @@
-#include "kuhn_game.h"
+#include "kuhn_dealer.h"
 #include "util/partial_shuffle.h"
 
-kuhn_game::kuhn_game(const evaluator_t& evaluator, const abstraction_t& abstraction, std::int64_t seed)
+kuhn_dealer::kuhn_dealer(const evaluator_t& evaluator, const abstraction_t& abstraction, std::int64_t seed)
     : engine_(static_cast<unsigned long>(seed))
     , evaluator_(evaluator)
     , abstraction_(abstraction)
@@ -10,7 +10,7 @@ kuhn_game::kuhn_game(const evaluator_t& evaluator, const abstraction_t& abstract
         deck_[i] = int(i);
 }
 
-int kuhn_game::play(bucket_t* buckets)
+int kuhn_dealer::play(bucket_t* buckets)
 {
     partial_shuffle(deck_, 2, engine_);
 
@@ -23,7 +23,7 @@ int kuhn_game::play(bucket_t* buckets)
     return evaluator_.get_hand_value(c0) > evaluator_.get_hand_value(c1) ? 1 : -1;
 }
 
-std::mt19937& kuhn_game::get_random_engine()
+std::mt19937& kuhn_dealer::get_random_engine()
 {
     return engine_;
 }

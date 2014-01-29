@@ -6,7 +6,7 @@
 #include "evallib/kuhn_evaluator.h"
 #include "abslib/kuhn_abstraction.h"
 
-class kuhn_game : private boost::noncopyable
+class kuhn_dealer : private boost::noncopyable
 {
 public:
     typedef std::array<int, kuhn_state::ROUNDS> bucket_count_t;
@@ -14,7 +14,7 @@ public:
     typedef kuhn_evaluator evaluator_t;
     typedef kuhn_abstraction abstraction_t;
 
-    kuhn_game(const evaluator_t& evaluator, const abstraction_t& abstraction, std::int64_t seed);
+    kuhn_dealer(const evaluator_t& evaluator, const abstraction_t& abstraction, std::int64_t seed);
     int play(bucket_t* buckets);
     std::mt19937& get_random_engine();
 

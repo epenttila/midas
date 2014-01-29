@@ -1,8 +1,8 @@
-#include "holdem_game.h"
+#include "holdem_dealer.h"
 #include <numeric>
 #include "util/partial_shuffle.h"
 
-holdem_game::holdem_game(const evaluator_t& evaluator, const abstraction_t& abstraction, std::int64_t seed)
+holdem_dealer::holdem_dealer(const evaluator_t& evaluator, const abstraction_t& abstraction, std::int64_t seed)
     : engine_(static_cast<unsigned long>(seed))
     , evaluator_(evaluator)
     , abstraction_(abstraction)
@@ -10,7 +10,7 @@ holdem_game::holdem_game(const evaluator_t& evaluator, const abstraction_t& abst
     std::iota(deck_.begin(), deck_.end(), 0);
 }
 
-int holdem_game::play(bucket_t* buckets)
+int holdem_dealer::play(bucket_t* buckets)
 {
     partial_shuffle(deck_, 9, engine_); // 4 hole, 5 board
 
@@ -37,7 +37,7 @@ int holdem_game::play(bucket_t* buckets)
     return value[0] > value[1] ? 1 : (value[0] < value[1] ? -1 : 0);
 }
 
-std::mt19937& holdem_game::get_random_engine()
+std::mt19937& holdem_dealer::get_random_engine()
 {
     return engine_;
 }

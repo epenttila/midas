@@ -1,4 +1,4 @@
-#include "leduc_game.h"
+#include "leduc_dealer.h"
 #include <numeric>
 #include "util/partial_shuffle.h"
 #include "util/choose.h"
@@ -14,7 +14,7 @@ namespace
     }
 }
 
-leduc_game::leduc_game(const evaluator_t& evaluator, const abstraction_t& abstraction, std::int64_t seed)
+leduc_dealer::leduc_dealer(const evaluator_t& evaluator, const abstraction_t& abstraction, std::int64_t seed)
     : engine_(static_cast<unsigned long>(seed))
     , evaluator_(evaluator)
     , abstraction_(abstraction)
@@ -27,7 +27,7 @@ leduc_game::leduc_game(const evaluator_t& evaluator, const abstraction_t& abstra
     deck_[5] = 5;
 }
 
-int leduc_game::play(bucket_t* buckets)
+int leduc_dealer::play(bucket_t* buckets)
 {
     partial_shuffle(deck_, 3, engine_); // 2 hole, 1 board
 
@@ -48,7 +48,7 @@ int leduc_game::play(bucket_t* buckets)
     return value[0] > value[1] ? 1 : (value[0] < value[1] ? -1 : 0);
 }
 
-std::mt19937& leduc_game::get_random_engine()
+std::mt19937& leduc_dealer::get_random_engine()
 {
     return engine_;
 }

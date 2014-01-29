@@ -16,8 +16,8 @@
 #pragma warning(pop)
 #endif
 #include "cfrlib/cfr_solver.h"
-#include "gamelib/kuhn_game.h"
-#include "gamelib/holdem_game.h"
+#include "gamelib/kuhn_dealer.h"
+#include "gamelib/holdem_dealer.h"
 #include "abslib/holdem_abstraction.h"
 #include "gamelib/kuhn_state.h"
 #include "gamelib/flhe_state.h"
@@ -25,7 +25,7 @@
 #include "cfrlib/strategy.h"
 #include "gamelib/leduc_state.h"
 #include "abslib/leduc_abstraction.h"
-#include "gamelib/leduc_game.h"
+#include "gamelib/leduc_dealer.h"
 #include "cfrlib/pure_cfr_solver.h"
 #include "util/version.h"
 
@@ -106,14 +106,14 @@ int main(int argc, char* argv[])
             std::unique_ptr<kuhn_state> state(new kuhn_state);
             std::unique_ptr<kuhn_abstraction> abs(new kuhn_abstraction);
 
-            solver.reset(new pure_cfr_solver<kuhn_game, kuhn_state>(std::move(state), std::move(abs)));
+            solver.reset(new pure_cfr_solver<kuhn_dealer, kuhn_state>(std::move(state), std::move(abs)));
         }
         else if (game == "leduc")
         {
             std::unique_ptr<leduc_state> state(new leduc_state);
             std::unique_ptr<leduc_abstraction> abs(new leduc_abstraction);
 
-            solver.reset(new pure_cfr_solver<leduc_game, leduc_state>(std::move(state), std::move(abs)));
+            solver.reset(new pure_cfr_solver<leduc_dealer, leduc_state>(std::move(state), std::move(abs)));
         }
         else if (game == "holdem")
         {
@@ -121,7 +121,7 @@ int main(int argc, char* argv[])
             std::unique_ptr<holdem_abstraction> abs(new holdem_abstraction);
             abs->read(abstraction);
 
-            solver.reset(new pure_cfr_solver<holdem_game, flhe_state>(std::move(state), std::move(abs)));
+            solver.reset(new pure_cfr_solver<holdem_dealer, flhe_state>(std::move(state), std::move(abs)));
         }
         else if (boost::starts_with(game, "nlhe"))
         {
@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
             std::unique_ptr<holdem_abstraction> abs(new holdem_abstraction);
             abs->read(abstraction);
 
-            solver.reset(new pure_cfr_solver<holdem_game, nlhe_state>(std::move(state), std::move(abs)));
+            solver.reset(new pure_cfr_solver<holdem_dealer, nlhe_state>(std::move(state), std::move(abs)));
         }
 
         if (!solver)

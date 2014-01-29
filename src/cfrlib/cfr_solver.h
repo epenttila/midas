@@ -24,7 +24,6 @@ class cfr_solver : public solver_base, private boost::noncopyable
 public:
     static const int ROUNDS = U::ROUNDS;
 
-    typedef T game_type;
     typedef U game_state;
     typedef typename T::bucket_t bucket_t;
     typedef typename T::evaluator_t evaluator_t;

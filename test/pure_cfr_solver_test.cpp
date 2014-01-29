@@ -2,7 +2,7 @@
 #include "cfrlib/pure_cfr_solver.h"
 #include "gamelib/kuhn_state.h"
 #include "abslib/kuhn_abstraction.h"
-#include "gamelib/kuhn_game.h"
+#include "gamelib/kuhn_dealer.h"
 
 namespace
 {
@@ -15,7 +15,7 @@ TEST(pure_cfr_solver, kuhn)
     std::unique_ptr<kuhn_state> state(new kuhn_state);
     std::unique_ptr<kuhn_abstraction> abs(new kuhn_abstraction);
 
-    pure_cfr_solver<kuhn_game, kuhn_state> solver(std::move(state), std::move(abs));
+    pure_cfr_solver<kuhn_dealer, kuhn_state> solver(std::move(state), std::move(abs));
     solver.init_storage();
     solver.solve(10000000, 0);
     //solver.print(std::cout);

@@ -2,7 +2,6 @@
 #include <boost/integer/static_log2.hpp>
 #include <random>
 #include <boost/regex.hpp>
-#include "holdem_game.h"
 
 namespace
 {

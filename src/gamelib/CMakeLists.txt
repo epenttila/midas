@@ -1,15 +1,15 @@
 project(gamelib)
 
 set(SOURCES
-    holdem_game.h
+    holdem_dealer.h
     flhe_state.cpp
     flhe_state.h
-    kuhn_game.cpp
-    kuhn_game.h
+    kuhn_dealer.cpp
+    kuhn_dealer.h
     kuhn_state.cpp
     kuhn_state.h
-    leduc_game.cpp
-    leduc_game.h
+    leduc_dealer.cpp
+    leduc_dealer.h
     leduc_state.cpp
     leduc_state.h
     nlhe_state.h
@@ -17,7 +17,7 @@ set(SOURCES
     game_state_base.h
     game_state_base.cpp
     holdem_state.h
-    holdem_game.cpp
+    holdem_dealer.cpp
 )
 
 add_library(gamelib ${SOURCES})
