@@ -1,8 +1,8 @@
 #include "gtest/gtest.h"
 #include "cfrlib/pure_cfr_solver.h"
-#include "cfrlib/kuhn_state.h"
+#include "gamelib/kuhn_state.h"
 #include "abslib/kuhn_abstraction.h"
-#include "cfrlib/kuhn_game.h"
+#include "gamelib/kuhn_game.h"
 
 namespace
 {

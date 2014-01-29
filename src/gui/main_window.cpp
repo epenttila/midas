@@ -39,8 +39,8 @@
 #include <QXmlStreamReader>
 #pragma warning(pop)
 
-#include "cfrlib/holdem_game.h"
-#include "cfrlib/nlhe_state.h"
+#include "gamelib/holdem_game.h"
+#include "gamelib/nlhe_state.h"
 #include "cfrlib/strategy.h"
 #include "util/card.h"
 #include "cfrlib/nlhe_strategy.h"

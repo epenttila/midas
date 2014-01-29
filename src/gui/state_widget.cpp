@@ -10,7 +10,7 @@
 #include <QLabel>
 #pragma warning(pop)
 
-#include "cfrlib/nlhe_state.h"
+#include "gamelib/nlhe_state.h"
 
 state_widget::state_widget(QWidget* parent, Qt::WindowFlags flags)
     : QWidget(parent, flags)

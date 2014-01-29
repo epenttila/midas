@@ -8,7 +8,7 @@
 #ifdef MSC_VER_
 #pragma warning(pop)
 #endif
-#include "nlhe_state.h"
+#include "gamelib/nlhe_state.h"
 #include "abslib/holdem_abstraction.h"
 #include "strategy.h"
 

@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "cfrlib/nlhe_state.h"
+#include "gamelib/nlhe_state.h"
 #include "util/game.h"
 
 TEST(nlhe_state, raise_translation)

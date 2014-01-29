@@ -8,6 +8,7 @@ add_subdirectory(abs)
 add_subdirectory(util)
 add_subdirectory(play)
 add_subdirectory(purify)
+add_subdirectory(gamelib)
 
 if(BUILD_GUI)
     add_subdirectory(gui)

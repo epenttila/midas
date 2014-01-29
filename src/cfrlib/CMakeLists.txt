@@ -3,19 +3,6 @@ project(cfrlib)
 set(cfrlib_SOURCES
     cfr_solver.h
     cfr_solver.ipp
-    holdem_game.h
-    flhe_state.cpp
-    flhe_state.h
-    kuhn_game.cpp
-    kuhn_game.h
-    kuhn_state.cpp
-    kuhn_state.h
-    leduc_game.cpp
-    leduc_game.h
-    leduc_state.cpp
-    leduc_state.h
-    nlhe_state.h
-    nlhe_state.cpp
     nlhe_strategy.h
     nlhe_strategy.cpp
     pcs_cfr_solver.h
@@ -27,14 +14,10 @@ set(cfrlib_SOURCES
     cs_cfr_solver.ipp
     pure_cfr_solver.h
     pure_cfr_solver.ipp
-    nlhe_state_base.h
-    nlhe_state_base.cpp
-    game_state_base.h
-    game_state_base.cpp
 )
 
 add_library(cfrlib ${cfrlib_SOURCES})
-target_link_libraries(cfrlib evallib abslib util)
+target_link_libraries(cfrlib evallib abslib util gamelib)
 
 if(MSVC)
     set_target_properties(cfrlib PROPERTIES

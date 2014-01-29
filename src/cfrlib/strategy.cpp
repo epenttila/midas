@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <cassert>
-#include "cfrlib/game_state_base.h"
+#include "gamelib/game_state_base.h"
 
 strategy::strategy(const std::string& filename, int states, bool read_only)
     : states_(states)

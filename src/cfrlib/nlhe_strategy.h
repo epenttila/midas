@@ -3,7 +3,7 @@
 #include <string>
 #include <memory>
 
-#include "nlhe_state_base.h"
+#include "gamelib/nlhe_state_base.h"
 #include "abslib/holdem_abstraction_base.h"
 #include "strategy.h"
 

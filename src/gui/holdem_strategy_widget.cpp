@@ -14,7 +14,7 @@
 #include "util/game.h"
 #include "util/card.h"
 #include "cfrlib/nlhe_strategy.h"
-#include "cfrlib/nlhe_state.h"
+#include "gamelib/nlhe_state.h"
 
 namespace
 {
