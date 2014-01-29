@@ -35,6 +35,8 @@ elseif(MSVC)
 endif()
 
 option(BUILD_GUI "Build gui" ON)
+option(BUILD_TEST "Build test" ON)
+set(TEST_DATA_PATH data CACHE PATH "Test data location")
 
 find_package(OpenMP)
 
@@ -55,15 +57,16 @@ endif()
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
 
-set(GTEST_ROOT "ext/gtest")
-set(GTEST_INCLUDE_DIR "${GTEST_ROOT}/include")
-set(gtest_force_shared_crt ON)
-
-enable_testing() 
-include_directories(${GTEST_INCLUDE_DIR}) 
-
 find_package(Git)
 
 add_subdirectory(src)
-add_subdirectory(ext)
-add_subdirectory(test)
+
+if(BUILD_TEST)
+    enable_testing() 
+    set(GTEST_ROOT "ext/gtest")
+    set(GTEST_INCLUDE_DIR "${GTEST_ROOT}/include")
+    set(gtest_force_shared_crt ON)
+    include_directories(${GTEST_INCLUDE_DIR}) 
+    add_subdirectory(ext)
+    add_subdirectory(test)
+endif()
