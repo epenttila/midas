@@ -48,50 +48,6 @@ int leduc_game::play(bucket_t* buckets)
     return value[0] > value[1] ? 1 : (value[0] < value[1] ? -1 : 0);
 }
 
-void leduc_game::play_public(buckets_type& buckets)
-{
-    partial_shuffle(deck_, 1, engine_);
-    board_[0] = deck_[deck_.size() - 1];
-
-    for (int i = 0; i < PRIVATE_OUTCOMES; ++i)
-    {
-        abstraction_t::bucket_type b;
-        abstraction_.get_buckets(i, board_[0], &b);
-
-        for (int j = 0; j < leduc_state::ROUNDS; ++j)
-            buckets[j][i] = b[j];
-    }
-}
-
-void leduc_game::get_results(const int action, const reaches_type& reaches, results_type& results) const
-{
-    for (int i = 0; i < PRIVATE_OUTCOMES; ++i)
-    {
-        results[i] = 0;
-
-        if (i == board_[0])
-            continue;
-
-        for (int j = 0; j < PRIVATE_OUTCOMES; ++j)
-        {
-            if (j == i || j == board_[0])
-                continue;
-
-            if (action == 0)
-            {
-                results[i] += reaches[j];
-            }
-            else
-            {
-                if (evaluator_.get_hand_value(i, board_[0]) > evaluator_.get_hand_value(j, board_[0]))
-                    results[i] += reaches[j];
-                else if (evaluator_.get_hand_value(i, board_[0]) < evaluator_.get_hand_value(j, board_[0]))
-                    results[i] -= reaches[j];
-            }
-        }
-    }
-}
-
 std::mt19937& leduc_game::get_random_engine()
 {
     return engine_;

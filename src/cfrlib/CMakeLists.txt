@@ -5,13 +5,9 @@ set(cfrlib_SOURCES
     cfr_solver.ipp
     nlhe_strategy.h
     nlhe_strategy.cpp
-    pcs_cfr_solver.h
-    pcs_cfr_solver.ipp
     solver_base.h
     strategy.cpp
     strategy.h
-    cs_cfr_solver.h
-    cs_cfr_solver.ipp
     pure_cfr_solver.h
     pure_cfr_solver.ipp
 )

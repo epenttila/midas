@@ -23,11 +23,9 @@
 #include "gamelib/flhe_state.h"
 #include "gamelib/nlhe_state.h"
 #include "cfrlib/strategy.h"
-//#include "cfrlib/pcs_cfr_solver.h"
 #include "gamelib/leduc_state.h"
 #include "abslib/leduc_abstraction.h"
 #include "gamelib/leduc_game.h"
-//#include "cfrlib/cs_cfr_solver.h"
 #include "cfrlib/pure_cfr_solver.h"
 #include "util/version.h"
 
@@ -37,14 +35,7 @@ namespace
     std::unique_ptr<solver_base> create_solver(const std::string& /*variant*/, std::unique_ptr<State> state,
         std::unique_ptr<typename Game::abstraction_t> abs)
     {
-        /*if (variant == "cs")
-            return std::unique_ptr<cs_cfr_solver<Game, State>>(new cs_cfr_solver<Game, State>(std::move(state), std::move(abs)));
-        else if (variant == "pcs")
-            return std::unique_ptr<pcs_cfr_solver<Game, State>>(new pcs_cfr_solver<Game, State>(std::move(state), std::move(abs)));
-        else if (variant == "pure")*/
-            return std::unique_ptr<pure_cfr_solver<Game, State>>(new pure_cfr_solver<Game, State>(std::move(state), std::move(abs)));
-
-        //return std::unique_ptr<solver_base>();
+        return std::unique_ptr<pure_cfr_solver<Game, State>>(new pure_cfr_solver<Game, State>(std::move(state), std::move(abs)));
     }
 
     std::unique_ptr<solver_base> create_nlhe_solver(const std::string& variant, const std::string& config,
