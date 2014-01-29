@@ -17,7 +17,7 @@ TEST(pure_cfr_solver, kuhn)
 
     pure_cfr_solver<kuhn_game, kuhn_state> solver(std::move(state), std::move(abs));
     solver.init_storage();
-    solver.solve(1000000, 0);
+    solver.solve(10000000, 0);
     //solver.print(std::cout);
 
     const auto& root = solver.get_root_state();
