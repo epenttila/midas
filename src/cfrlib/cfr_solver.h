@@ -46,6 +46,8 @@ public:
     virtual void save_state(const std::string& filename) const;
     virtual void load_state(const std::string& filename);
     virtual void print(std::ostream& os) const;
+    void get_average_strategy(const game_state& state, const int bucket, probability_t* out) const;
+    const game_state& get_root_state() const;
 
 protected:
     struct data_type
@@ -58,12 +60,9 @@ protected:
     virtual void run_iteration(T& game) = 0;
     data_type* get_data(std::size_t state_id, int bucket, int action);
     const data_type* get_data(std::size_t state_id, int bucket, int action) const;
-    const game_state& get_root_state() const;
     const abstraction_t& get_abstraction() const;
 
 private:
-    void get_average_strategy(const game_state& state, const int bucket, probability_t* out) const;
-
     std::vector<const game_state*> states_;
     std::vector<data_type> data_;
     std::vector<std::size_t> positions_;

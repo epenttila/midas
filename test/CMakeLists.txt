@@ -8,6 +8,7 @@ set(test_SOURCES
     holdem_river_lut_test.cpp
     holdem_river_ochs_lut_test.cpp
     config.h
+    pure_cfr_solver_test.cpp
 )
 
 list(APPEND test_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/config.cpp")

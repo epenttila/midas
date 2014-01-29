@@ -13,6 +13,8 @@
 #pragma warning(pop)
 #endif
 
+#include "cfr_solver.h"
+
 class strategy;
 
 template<class T, class U>
