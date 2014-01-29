@@ -17,8 +17,8 @@ int kuhn_game::play(bucket_t* buckets)
     const int c0 = deck_[deck_.size() - 1];
     const int c1 = deck_[deck_.size() - 2];
 
-    (*buckets)[0][FIRST] = abstraction_.get_bucket(c0);
-    (*buckets)[1][FIRST] = abstraction_.get_bucket(c1);
+    (*buckets)[0][kuhn_state::FIRST] = abstraction_.get_bucket(c0);
+    (*buckets)[1][kuhn_state::FIRST] = abstraction_.get_bucket(c1);
 
     return evaluator_.get_hand_value(c0) > evaluator_.get_hand_value(c1) ? 1 : -1;
 }

@@ -7,6 +7,7 @@
 #include "util/partial_shuffle.h"
 #include "lutlib/holdem_river_ochs_lut.h"
 #include "util/version.h"
+#include "gamelib/holdem_state.h"
 
 namespace
 {

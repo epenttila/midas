@@ -6,7 +6,6 @@
 #include <boost/noncopyable.hpp>
 #include "abslib/leduc_abstraction.h"
 #include "evallib/leduc_evaluator.h"
-#include "util/game.h"
 
 class leduc_game : private boost::noncopyable
 {
@@ -14,13 +13,12 @@ public:
     static const int CARDS = 6;
     static const int PRIVATE_OUTCOMES = 6;
     static const int PUBLIC_CARDS = 1;
-    static const int ROUNDS = FLOP + 1;
 
-    typedef std::array<std::array<int, ROUNDS>, 2> bucket_t;
+    typedef std::array<std::array<int, leduc_state::ROUNDS>, 2> bucket_t;
     typedef leduc_evaluator evaluator_t;
     typedef leduc_abstraction abstraction_t;
     typedef std::array<int, PUBLIC_CARDS> public_type;
-    typedef std::array<std::array<int, PRIVATE_OUTCOMES>, ROUNDS> buckets_type;
+    typedef std::array<std::array<int, PRIVATE_OUTCOMES>, leduc_state::ROUNDS> buckets_type;
     typedef std::array<double, PRIVATE_OUTCOMES> results_type;
     typedef std::array<double, PRIVATE_OUTCOMES> reaches_type;
 

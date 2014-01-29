@@ -217,9 +217,9 @@ namespace
         return buckets;
     }
 
-    std::vector<bucket_idx_t> create_buckets(const int round, const hand_indexer& indexer, const holdem_river_lut& river_lut,
-        const holdem_river_ochs_lut& river_ochs_lut, int cluster_count, int kmeans_max_iterations,
-        float tolerance, int runs)
+    std::vector<bucket_idx_t> create_buckets(const holdem_state::game_round round, const hand_indexer& indexer,
+        const holdem_river_lut& river_lut, const holdem_river_ochs_lut& river_ochs_lut, int cluster_count,
+        int kmeans_max_iterations, float tolerance, int runs)
     {
         const auto index_count = static_cast<bucket_idx_t>(indexer.get_size(indexer.get_rounds() - 1));
 
@@ -235,16 +235,16 @@ namespace
         {
             switch (round)
             {
-            case PREFLOP:
+            case holdem_state::PREFLOP:
                 return create_preflop_buckets<50>(indexer, river_lut, cluster_count, kmeans_max_iterations, tolerance,
                     runs);
-            case FLOP:
+            case holdem_state::FLOP:
                 return create_flop_buckets<50>(indexer, river_lut, cluster_count, kmeans_max_iterations, tolerance,
                     runs);
-            case TURN:
+            case holdem_state::TURN:
                 return create_turn_buckets<50>(indexer, river_lut, cluster_count, kmeans_max_iterations, tolerance,
                     runs);
-            case RIVER:
+            case holdem_state::RIVER:
                 return create_river_buckets<8>(river_ochs_lut, cluster_count, kmeans_max_iterations, tolerance,
                     runs);
             }
@@ -265,10 +265,10 @@ namespace
             throw std::runtime_error("Invalid abstraction configuration");
 
         *imperfect_recall = m[1] == "ir" ? true : false;
-        (*counts)[PREFLOP] = std::stoi(m[2]);
-        (*counts)[FLOP] = std::stoi(m[3]);
-        (*counts)[TURN] = std::stoi(m[4]);
-        (*counts)[RIVER] = std::stoi(m[5]);
+        (*counts)[holdem_state::PREFLOP] = std::stoi(m[2]);
+        (*counts)[holdem_state::FLOP] = std::stoi(m[3]);
+        (*counts)[holdem_state::TURN] = std::stoi(m[4]);
+        (*counts)[holdem_state::RIVER] = std::stoi(m[5]);
     }
 
     std::vector<std::uint8_t> make_configuration(std::uint8_t preflop, std::uint8_t postflop)
@@ -292,7 +292,7 @@ holdem_abstraction::holdem_abstraction()
 {
 }
 
-int holdem_abstraction::get_bucket_count(const int round) const
+int holdem_abstraction::get_bucket_count(const holdem_state::game_round round) const
 {
     return bucket_counts_[round];
 }
@@ -311,10 +311,10 @@ void holdem_abstraction::get_buckets(const int c0, const int c1, const int b0, c
         static_cast<card_t>(b3),
         static_cast<card_t>(b4)}};
 
-    (*buckets)[PREFLOP] = read(PREFLOP, preflop_indexer_.hand_index_last(cards.data()));
-    (*buckets)[FLOP] = (b0 != -1) ? read(FLOP, flop_indexer_.hand_index_last(cards.data())) : -1;
-    (*buckets)[TURN] = (b3 != -1) ? read(TURN, turn_indexer_.hand_index_last(cards.data())) : -1;
-    (*buckets)[RIVER] = (b4 != -1) ? read(RIVER, river_indexer_.hand_index_last(cards.data())) : -1;
+    (*buckets)[holdem_state::PREFLOP] = read(holdem_state::PREFLOP, preflop_indexer_.hand_index_last(cards.data()));
+    (*buckets)[holdem_state::FLOP] = (b0 != -1) ? read(holdem_state::FLOP, flop_indexer_.hand_index_last(cards.data())) : -1;
+    (*buckets)[holdem_state::TURN] = (b3 != -1) ? read(holdem_state::TURN, turn_indexer_.hand_index_last(cards.data())) : -1;
+    (*buckets)[holdem_state::RIVER] = (b4 != -1) ? read(holdem_state::RIVER, river_indexer_.hand_index_last(cards.data())) : -1;
 }
 
 void holdem_abstraction::read(const std::string& filename)
@@ -339,14 +339,14 @@ void holdem_abstraction::write(const std::string& filename, const int kmeans_max
     std::unique_ptr<holdem_river_lut> river_lut(new holdem_river_lut("holdem_river_lut.dat"));
     std::shared_ptr<holdem_river_ochs_lut> river_ochs_lut(new holdem_river_ochs_lut("holdem_river_ochs_lut.dat"));
 
-    const auto preflop_buckets = create_buckets(PREFLOP, preflop_indexer_, *river_lut, *river_ochs_lut,
-        bucket_counts_[PREFLOP], kmeans_max_iterations, tolerance, runs);
-    const auto flop_buckets = create_buckets(FLOP, flop_indexer_, *river_lut, *river_ochs_lut, bucket_counts_[FLOP],
-        kmeans_max_iterations, tolerance, runs);
-    const auto turn_buckets = create_buckets(TURN, turn_indexer_, *river_lut, *river_ochs_lut, bucket_counts_[TURN],
-        kmeans_max_iterations, tolerance, runs);
-    const auto river_buckets = create_buckets(RIVER, river_indexer_, *river_lut, *river_ochs_lut,
-        bucket_counts_[RIVER], kmeans_max_iterations, tolerance, runs);
+    const auto preflop_buckets = create_buckets(holdem_state::PREFLOP, preflop_indexer_, *river_lut, *river_ochs_lut,
+        bucket_counts_[holdem_state::PREFLOP], kmeans_max_iterations, tolerance, runs);
+    const auto flop_buckets = create_buckets(holdem_state::FLOP, flop_indexer_, *river_lut, *river_ochs_lut,
+        bucket_counts_[holdem_state::FLOP], kmeans_max_iterations, tolerance, runs);
+    const auto turn_buckets = create_buckets(holdem_state::TURN, turn_indexer_, *river_lut, *river_ochs_lut,
+        bucket_counts_[holdem_state::TURN], kmeans_max_iterations, tolerance, runs);
+    const auto river_buckets = create_buckets(holdem_state::RIVER, river_indexer_, *river_lut, *river_ochs_lut,
+        bucket_counts_[holdem_state::RIVER], kmeans_max_iterations, tolerance, runs);
 
     BOOST_LOG_TRIVIAL(info) << "Saving abstraction: " << filename;
 
@@ -362,9 +362,10 @@ void holdem_abstraction::write(const std::string& filename, const int kmeans_max
     binary_write(*file, river_buckets);
 }
 
-holdem_abstraction::bucket_idx_t holdem_abstraction::read(int round, hand_indexer::hand_index_t index) const
+holdem_abstraction::bucket_idx_t holdem_abstraction::read(holdem_state::game_round round,
+    hand_indexer::hand_index_t index) const
 {
-    if (round < 0 || round > RIVER)
+    if (round < 0 || round > holdem_state::RIVER)
     {
         assert(false);
         return 0;
@@ -374,14 +375,14 @@ holdem_abstraction::bucket_idx_t holdem_abstraction::read(int round, hand_indexe
 
     switch (round)
     {
-    case RIVER:
+    case holdem_state::RIVER:
         pos += sizeof(std::uint64_t) + turn_indexer_.get_size(turn_indexer_.get_rounds() - 1) * sizeof(bucket_idx_t);
-    case TURN:
+    case holdem_state::TURN:
         pos += sizeof(std::uint64_t) + flop_indexer_.get_size(flop_indexer_.get_rounds() - 1) * sizeof(bucket_idx_t);
-    case FLOP:
+    case holdem_state::FLOP:
         pos += sizeof(std::uint64_t) + preflop_indexer_.get_size(preflop_indexer_.get_rounds() - 1)
             * sizeof(bucket_idx_t);
-    case PREFLOP:
+    case holdem_state::PREFLOP:
         pos += sizeof(std::uint64_t);
     }
 

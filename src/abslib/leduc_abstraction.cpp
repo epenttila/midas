@@ -5,9 +5,9 @@ int leduc_abstraction::get_bucket(int card) const
     return card / 2; // ignore suit
 }
 
-int leduc_abstraction::get_bucket_count(int round) const
+int leduc_abstraction::get_bucket_count(leduc_state::game_round round) const
 {
-    if (round == 0)
+    if (round == leduc_state::PREFLOP)
         return 3; // Ja, Qa, Ka, Jb, Qb, Kb
     else
         return 3 * 3;

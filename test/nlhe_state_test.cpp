@@ -1,6 +1,5 @@
 #include "gtest/gtest.h"
 #include "gamelib/nlhe_state.h"
-#include "util/game.h"
 
 TEST(nlhe_state, raise_translation)
 {
@@ -95,31 +94,31 @@ TEST(nlhe_state, combine_actions)
 
     auto state = &root;
 
-    EXPECT_EQ(state->get_round(), PREFLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::PREFLOP);
     EXPECT_EQ(state->get_pot()[0], 1);
     EXPECT_EQ(state->get_pot()[1], 2);
 
     state = state->call();
 
-    EXPECT_EQ(state->get_round(), PREFLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::PREFLOP);
     EXPECT_EQ(state->get_pot()[0], 2);
     EXPECT_EQ(state->get_pot()[1], 2);
 
     state = state->call();
 
-    EXPECT_EQ(state->get_round(), FLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::FLOP);
     EXPECT_EQ(state->get_pot()[0], 2);
     EXPECT_EQ(state->get_pot()[1], 2);
 
     state = state->raise(1.0);
 
-    EXPECT_EQ(state->get_round(), FLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::FLOP);
     EXPECT_EQ(state->get_pot()[0], 2);
     EXPECT_EQ(state->get_pot()[1], 6);
 
     state = state->raise(1.0);
 
-    EXPECT_EQ(state->get_round(), FLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::FLOP);
     EXPECT_EQ(state->get_pot()[0], 18);
     EXPECT_EQ(state->get_pot()[1], 6);
     EXPECT_EQ(state->get_child_count(), 4);
@@ -131,14 +130,14 @@ TEST(nlhe_state, combine_actions)
 
     state = state->raise(1.5);
 
-    EXPECT_EQ(state->get_round(), FLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::FLOP);
     EXPECT_EQ(state->get_pot()[0], 18);
     EXPECT_EQ(state->get_pot()[1], 50);
     EXPECT_EQ(state->get_action(), nlhe_state_base::RAISE_A);
 
     state = state->call();
 
-    EXPECT_EQ(state->get_round(), TURN);
+    EXPECT_EQ(state->get_round(), holdem_state::TURN);
     EXPECT_EQ(state->get_pot()[0], 50);
     EXPECT_EQ(state->get_pot()[1], 50);
     EXPECT_TRUE(state->is_terminal());
@@ -156,42 +155,42 @@ TEST(nlhe_state, many_halfpots)
     auto state = &root;
 
     ASSERT_TRUE(state != nullptr);
-    EXPECT_EQ(state->get_round(), PREFLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::PREFLOP);
     EXPECT_EQ(state->get_pot()[0], 1);
     EXPECT_EQ(state->get_pot()[1], 2);
 
     state = state->raise(0.5);
 
     ASSERT_TRUE(state != nullptr);
-    EXPECT_EQ(state->get_round(), PREFLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::PREFLOP);
     EXPECT_EQ(state->get_pot()[0], 4);
     EXPECT_EQ(state->get_pot()[1], 2);
 
     state = state->raise(0.5);
 
     ASSERT_TRUE(state != nullptr);
-    EXPECT_EQ(state->get_round(), PREFLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::PREFLOP);
     EXPECT_EQ(state->get_pot()[0], 4);
     EXPECT_EQ(state->get_pot()[1], 8);
 
     state = state->raise(0.5);
 
     ASSERT_TRUE(state != nullptr);
-    EXPECT_EQ(state->get_round(), PREFLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::PREFLOP);
     EXPECT_EQ(state->get_pot()[0], 16);
     EXPECT_EQ(state->get_pot()[1], 8);
 
     state = state->raise(0.5);
 
     ASSERT_TRUE(state != nullptr);
-    EXPECT_EQ(state->get_round(), PREFLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::PREFLOP);
     EXPECT_EQ(state->get_pot()[0], 16);
     EXPECT_EQ(state->get_pot()[1], 32);
 
     state = state->raise(0.5);
 
     ASSERT_TRUE(state != nullptr);
-    EXPECT_EQ(state->get_round(), PREFLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::PREFLOP);
     EXPECT_EQ(state->get_pot()[0], 50);
     EXPECT_EQ(state->get_pot()[1], 32);
 }
@@ -216,7 +215,7 @@ TEST(nlhe_state, state_counts_nlhe_fchqpwdta_50)
 
     EXPECT_EQ(28000u, states.size());
 
-    std::vector<int> counts(RIVER + 1);
+    std::vector<int> counts(holdem_state::ROUNDS);
     std::for_each(states.begin(), states.end(), [&](const nlhe_state_base* s) { ++counts[s->get_round()]; });
 
     EXPECT_EQ(336, counts[0]);
@@ -250,7 +249,7 @@ TEST(nlhe_state, state_counts_nlhe_fcOHQpwdvta_40)
 
     EXPECT_EQ(83008u, states.size());
 
-    std::vector<int> counts(RIVER + 1);
+    std::vector<int> counts(holdem_state::ROUNDS);
     std::for_each(states.begin(), states.end(), [&](const nlhe_state_base* s) { ++counts[s->get_round()]; });
 
     EXPECT_EQ(464, counts[0]);
@@ -279,14 +278,14 @@ TEST(nlhe_state, minimum_bet_size_preflop)
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 1);
     EXPECT_EQ(state->get_pot()[1], 2);
-    EXPECT_EQ(state->get_round(), PREFLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::PREFLOP);
 
     state = state->raise(0.25);
 
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 4);
     EXPECT_EQ(state->get_pot()[1], 2);
-    EXPECT_EQ(state->get_round(), PREFLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::PREFLOP);
 
     state = &root;
     state = state->raise(0.5);
@@ -294,35 +293,35 @@ TEST(nlhe_state, minimum_bet_size_preflop)
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 4);
     EXPECT_EQ(state->get_pot()[1], 2);
-    EXPECT_EQ(state->get_round(), PREFLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::PREFLOP);
 
     state = state->call();
 
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 4);
     EXPECT_EQ(state->get_pot()[1], 4);
-    EXPECT_EQ(state->get_round(), FLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::FLOP);
 
     state = state->call();
 
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 4);
     EXPECT_EQ(state->get_pot()[1], 4);
-    EXPECT_EQ(state->get_round(), FLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::FLOP);
 
     state = state->raise(1.0);
 
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 12);
     EXPECT_EQ(state->get_pot()[1], 4);
-    EXPECT_EQ(state->get_round(), FLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::FLOP);
 
     state = state->raise(0.25);
 
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 12);
     EXPECT_EQ(state->get_pot()[1], 20);
-    EXPECT_EQ(state->get_round(), FLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::FLOP);
 
     state = state->get_parent();
     state = state->raise(0.5);
@@ -330,7 +329,7 @@ TEST(nlhe_state, minimum_bet_size_preflop)
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 12);
     EXPECT_EQ(state->get_pot()[1], 24);
-    EXPECT_EQ(state->get_round(), FLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::FLOP);
 }
 
 TEST(nlhe_state, minimum_bet_size_postflop)
@@ -353,28 +352,28 @@ TEST(nlhe_state, minimum_bet_size_postflop)
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 1);
     EXPECT_EQ(state->get_pot()[1], 2);
-    EXPECT_EQ(state->get_round(), PREFLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::PREFLOP);
 
     state = state->call();
 
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 2);
     EXPECT_EQ(state->get_pot()[1], 2);
-    EXPECT_EQ(state->get_round(), PREFLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::PREFLOP);
 
     state = state->call();
 
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 2);
     EXPECT_EQ(state->get_pot()[1], 2);
-    EXPECT_EQ(state->get_round(), FLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::FLOP);
 
     state = state->raise(5.0);
 
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 2);
     EXPECT_EQ(state->get_pot()[1], 22);
-    EXPECT_EQ(state->get_round(), FLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::FLOP);
 
     EXPECT_EQ(state->get_child_count(), 5);
     EXPECT_TRUE(state->get_action_child(nlhe_state_base::FOLD) != nullptr);
@@ -389,7 +388,7 @@ TEST(nlhe_state, minimum_bet_size_postflop)
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 42);
     EXPECT_EQ(state->get_pot()[1], 22);
-    EXPECT_EQ(state->get_round(), FLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::FLOP);
 
     state = state->get_parent();
     state = state->raise(0.5);
@@ -397,7 +396,7 @@ TEST(nlhe_state, minimum_bet_size_postflop)
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 44);
     EXPECT_EQ(state->get_pot()[1], 22);
-    EXPECT_EQ(state->get_round(), FLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::FLOP);
 
     state = state->get_parent();
     state = state->raise(0.75);
@@ -405,7 +404,7 @@ TEST(nlhe_state, minimum_bet_size_postflop)
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 50);
     EXPECT_EQ(state->get_pot()[1], 22);
-    EXPECT_EQ(state->get_round(), FLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::FLOP);
 }
 
 TEST(nlhe_state, round_up_bets)
@@ -428,14 +427,14 @@ TEST(nlhe_state, round_up_bets)
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 1);
     EXPECT_EQ(state->get_pot()[1], 2);
-    EXPECT_EQ(state->get_round(), PREFLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::PREFLOP);
 
     state = state->call();
 
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 2);
     EXPECT_EQ(state->get_pot()[1], 2);
-    EXPECT_EQ(state->get_round(), PREFLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::PREFLOP);
 
     EXPECT_TRUE(state->raise(5.0) == state->get_action_child(nlhe_state_base::RAISE_V));
 
@@ -444,14 +443,14 @@ TEST(nlhe_state, round_up_bets)
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 2);
     EXPECT_EQ(state->get_pot()[1], 22);
-    EXPECT_EQ(state->get_round(), PREFLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::PREFLOP);
 
     state = state->call();
 
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 22);
     EXPECT_EQ(state->get_pot()[1], 22);
-    EXPECT_EQ(state->get_round(), FLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::FLOP);
 
     EXPECT_TRUE(state->raise(0.25) == state->get_action_child(nlhe_state_base::RAISE_O));
 
@@ -460,14 +459,14 @@ TEST(nlhe_state, round_up_bets)
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 22);
     EXPECT_EQ(state->get_pot()[1], 33);
-    EXPECT_EQ(state->get_round(), FLOP);
+    EXPECT_EQ(state->get_round(), holdem_state::FLOP);
 
     state = state->call();
 
     ASSERT_NE(state, nullptr);
     EXPECT_EQ(state->get_pot()[0], 33);
     EXPECT_EQ(state->get_pot()[1], 33);
-    EXPECT_EQ(state->get_round(), TURN);
+    EXPECT_EQ(state->get_round(), holdem_state::TURN);
 
     EXPECT_EQ(state->get_child_count(), 2);
     EXPECT_TRUE(state->get_action_child(nlhe_state_base::FOLD) == nullptr);

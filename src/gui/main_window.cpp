@@ -468,7 +468,7 @@ void main_window::process_snapshot(const fake_window& window)
     visualizer_->set_buttons(tournament_id, snapshot.buttons);
     visualizer_->set_all_in(tournament_id, snapshot.all_in[0], snapshot.all_in[1]);
 
-    int round = -1;
+    holdem_state::game_round round = holdem_state::INVALID_ROUND;
 
     visualizer_->set_hole_cards(tournament_id, snapshot.hole);
     visualizer_->set_board_cards(tournament_id, snapshot.board);
@@ -478,22 +478,22 @@ void main_window::process_snapshot(const fake_window& window)
         if (snapshot.board[3] != -1)
         {
             if (snapshot.board[4] != -1)
-                round = RIVER;
+                round = holdem_state::RIVER;
             else
-                round = TURN;
+                round = holdem_state::TURN;
         }
         else
         {
-            round = FLOP;
+            round = holdem_state::FLOP;
         }
     }
     else if (snapshot.board[0] == -1 && snapshot.board[1] == -1 && snapshot.board[2] == -1)
     {
-        round = PREFLOP;
+        round = holdem_state::PREFLOP;
     }
     else
     {
-        round = -1;
+        round = holdem_state::INVALID_ROUND;
     }
 
     // do not manipulate state when autoplay is off
@@ -531,6 +531,8 @@ void main_window::process_snapshot(const fake_window& window)
     // opponent stack might be obstructed by all-in or sitout statuses
     ENSURE(snapshot.stack[1] > 0 || snapshot.all_in[1] || snapshot.sit_out[1]);
 
+    const auto allin_bet_size = nlhe_state_base::get_raise_factor(nlhe_state_base::RAISE_A);
+
     std::array<double, 2> stacks;
 
     stacks[0] = snapshot.stack[0] + (snapshot.total_pot - snapshot.bet[0] - snapshot.bet[1]) / 2.0
@@ -538,7 +540,7 @@ void main_window::process_snapshot(const fake_window& window)
 
     if (snapshot.sit_out[1])
     {
-        stacks[1] = ALLIN_BET_SIZE; // can't see stack due to sitout, assume worst case
+        stacks[1] = allin_bet_size; // can't see stack due to sitout, assume worst case
     }
     else
     {
@@ -641,7 +643,7 @@ void main_window::process_snapshot(const fake_window& window)
     BOOST_LOG_TRIVIAL(info) << QString("Strategy file: %1")
         .arg(QFileInfo(strategy.get_strategy().get_filename().c_str()).fileName()).toStdString();
 
-    if (round == PREFLOP
+    if (round == holdem_state::PREFLOP
         && ((snapshot.dealer[0] && snapshot.dealer[1]
             && (snapshot.dealer != table_data.snapshot.dealer || snapshot.hole != table_data.snapshot.hole))
         || (snapshot.dealer[0] && snapshot.bet[0] < snapshot.big_blind)
@@ -689,22 +691,22 @@ void main_window::process_snapshot(const fake_window& window)
     if (snapshot.all_in[1])
         BOOST_LOG_TRIVIAL(info) << "Opponent is all-in";
 
-    if ((current_state->get_round() == PREFLOP && (snapshot.bet[1] > snapshot.big_blind))
-        || (current_state->get_round() > PREFLOP && (snapshot.bet[1] > 0)))
+    if ((current_state->get_round() == holdem_state::PREFLOP && (snapshot.bet[1] > snapshot.big_blind))
+        || (current_state->get_round() > holdem_state::PREFLOP && (snapshot.bet[1] > 0)))
     {
         // make sure opponent allin is always terminal on his part and doesnt get translated to something else
-        const double fraction = snapshot.all_in[1] ? ALLIN_BET_SIZE : (snapshot.bet[1] - snapshot.bet[0])
+        const double fraction = snapshot.all_in[1] ? allin_bet_size : (snapshot.bet[1] - snapshot.bet[0])
             / (snapshot.total_pot - (snapshot.bet[1] - snapshot.bet[0]));
         ENSURE(fraction > 0);
         BOOST_LOG_TRIVIAL(info) << QString("Opponent raised %1x pot").arg(fraction).toStdString();
         current_state = current_state->raise(fraction); // there is an outstanding bet/raise
     }
-    else if (current_state->get_round() == PREFLOP && dealer == 1 && snapshot.bet[1] <= snapshot.big_blind)
+    else if (current_state->get_round() == holdem_state::PREFLOP && dealer == 1 && snapshot.bet[1] <= snapshot.big_blind)
     {
         BOOST_LOG_TRIVIAL(info) << "Facing big blind sized bet out of position preflop; opponent called";
         current_state = current_state->call();
     }
-    else if (current_state->get_round() > PREFLOP && dealer == 0 && snapshot.bet[1] == 0)
+    else if (current_state->get_round() > holdem_state::PREFLOP && dealer == 0 && snapshot.bet[1] == 0)
     {
         // we are in position facing 0 sized bet, opponent has checked
         // we are oop facing big blind sized bet preflop, opponent has called
@@ -786,11 +788,11 @@ void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy&
             ENSURE(current_state->call() != nullptr);
 
             // ensure the hand really terminates if our abstraction says so
-            if (current_state->get_round() < RIVER && current_state->call()->is_terminal())
+            if (current_state->get_round() < holdem_state::RIVER && current_state->call()->is_terminal())
             {
                 action = nlhe_state_base::RAISE_A;
                 next_action = table_manager::RAISE;
-                raise_fraction = ALLIN_BET_SIZE;
+                raise_fraction = nlhe_state_base::get_raise_factor(action);
                 BOOST_LOG_TRIVIAL(info) << "Translating pre-river call to all-in to ensure hand terminates";
             }
             else

@@ -11,7 +11,6 @@
 
 #include "cfrlib/strategy.h"
 #include "abslib/holdem_abstraction_base.h"
-#include "util/game.h"
 #include "util/card.h"
 #include "cfrlib/nlhe_strategy.h"
 #include "gamelib/nlhe_state.h"
@@ -111,13 +110,13 @@ void holdem_strategy_widget::update(const nlhe_strategy& strategy, const nlhe_st
 
     switch (state.get_round())
     {
-    case PREFLOP:
+    case holdem_state::PREFLOP:
         board[0] = -1;
         board[1] = -1;
         board[2] = -1;
-    case FLOP:
+    case holdem_state::FLOP:
         board[3] = -1;
-    case TURN:
+    case holdem_state::TURN:
         board[4] = -1;
     }
 

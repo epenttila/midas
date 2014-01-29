@@ -6,6 +6,12 @@
 class kuhn_state : public game_state_base
 {
 public:
+    enum game_round
+    {
+        FIRST = 0,
+        ROUNDS,
+    };
+
     enum kuhn_action
     {
         PASS = 0,
@@ -23,7 +29,7 @@ public:
     const kuhn_state* get_parent() const;
     int get_action() const;
     int get_child_count() const;
-    int get_round() const;
+    game_round get_round() const;
     int get_action_count() const;
 
 private:

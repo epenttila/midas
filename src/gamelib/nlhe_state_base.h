@@ -4,7 +4,7 @@
 #include <string>
 #include <array>
 #include <vector>
-#include "game_state_base.h"
+#include "holdem_state.h"
 
 namespace detail
 {
@@ -23,7 +23,7 @@ namespace detail
     };
 }
 
-class nlhe_state_base : public game_state_base
+class nlhe_state_base : public holdem_state
 {
 public:
     enum
@@ -64,7 +64,7 @@ public:
 
     virtual const nlhe_state_base* call() const = 0;
     virtual const nlhe_state_base* raise(double fraction) const = 0;
-    virtual int get_round() const = 0;
+    virtual game_round get_round() const = 0;
     virtual int get_id() const = 0;
     virtual std::array<int, 2> get_pot() const = 0;
     virtual bool is_terminal() const = 0;

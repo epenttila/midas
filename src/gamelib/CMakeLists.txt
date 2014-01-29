@@ -18,6 +18,7 @@ set(SOURCES
     nlhe_state_base.cpp
     game_state_base.h
     game_state_base.cpp
+    holdem_state.h
 )
 
 add_library(gamelib ${SOURCES})

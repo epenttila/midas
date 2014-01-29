@@ -9,14 +9,8 @@
 class kuhn_game : private boost::noncopyable
 {
 public:
-    enum kuhn_round
-    {
-        FIRST,
-        ROUNDS
-    };
-
-    typedef std::array<int, ROUNDS> bucket_count_t;
-    typedef std::array<std::array<int, ROUNDS>, 2> bucket_t;
+    typedef std::array<int, kuhn_state::ROUNDS> bucket_count_t;
+    typedef std::array<std::array<int, kuhn_state::ROUNDS>, 2> bucket_t;
     typedef kuhn_evaluator evaluator_t;
     typedef kuhn_abstraction abstraction_t;
 

@@ -11,7 +11,7 @@ public:
 
     nlhe_state(int stack_size, int enabled_actions, int limited_actions);
     holdem_action get_action() const;
-    int get_round() const;
+    game_round get_round() const;
     const nlhe_state* get_parent() const;
     bool is_terminal() const;
     const nlhe_state* get_child(int index) const;
@@ -28,7 +28,7 @@ public:
 
 private:
     nlhe_state(const nlhe_state* parent, const holdem_action action_index, const int player,
-        const std::array<int, 2>& pot, const int round, const std::array<int, 2> raise_masks, int enabled_actions,
+        const std::array<int, 2>& pot, const game_round round, const std::array<int, 2> raise_masks, int enabled_actions,
         int limited_actions, int* id);
     void create_child(holdem_action action, int* id);
     bool is_raise(holdem_action action) const;
@@ -41,7 +41,7 @@ private:
     const holdem_action action_;
     const int player_;
     const std::array<int, 2> pot_;
-    const int round_;
+    const game_round round_;
     const int stack_size_;
     const std::array<int, 2> raise_masks_;
     int limited_actions_;

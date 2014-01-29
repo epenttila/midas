@@ -106,9 +106,9 @@ int kuhn_state::get_child_count() const
     return child_count_;
 }
 
-int kuhn_state::get_round() const
+kuhn_state::game_round kuhn_state::get_round() const
 {
-    return 0;
+    return FIRST;
 }
 
 std::ostream& operator<<(std::ostream& os, const kuhn_state& state)

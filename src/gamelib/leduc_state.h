@@ -6,6 +6,13 @@
 class leduc_state : public game_state_base
 {
 public:
+    enum game_round
+    {
+        PREFLOP,
+        FLOP,
+        ROUNDS,
+    };
+
     enum leduc_action
     {
         FOLD,
@@ -16,7 +23,7 @@ public:
 
     leduc_state();
     int get_action() const;
-    int get_round() const;
+    game_round get_round() const;
     const leduc_state* get_parent() const;
     bool is_terminal() const;
     const leduc_state* get_child(int action) const;
@@ -28,7 +35,7 @@ public:
     int get_action_count() const;
 
 private:
-    leduc_state(const leduc_state* parent, int action, int player, const std::array<int, 2>& pot, int round,
+    leduc_state(const leduc_state* parent, int action, int player, const std::array<int, 2>& pot, game_round round,
         int raises, int* id);
     void create_child(int action, int* id);
 
@@ -38,7 +45,7 @@ private:
     const int action_;
     const int player_;
     const std::array<int, 2> pot_;
-    const int round_;
+    const game_round round_;
     const int raises_;
     int child_count_;
 };

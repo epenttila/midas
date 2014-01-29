@@ -2,7 +2,6 @@
 #include <boost/integer/static_log2.hpp>
 #include <random>
 #include <boost/regex.hpp>
-#include "util/game.h"
 #include "holdem_game.h"
 
 namespace detail
@@ -29,7 +28,7 @@ nlhe_state::nlhe_state(int stack_size, int enabled_actions, int limited_actions)
 }
 
 nlhe_state::nlhe_state(const nlhe_state* parent, const holdem_action action_index, const int player,
-    const std::array<int, 2>& pot, const int round, const std::array<int, 2> raise_masks, int enabled_actions,
+    const std::array<int, 2>& pot, const game_round round, const std::array<int, 2> raise_masks, int enabled_actions,
     int limited_actions, int* id)
     : id_(id ? (*id)++ : -1)
     , parent_(parent)
@@ -75,12 +74,12 @@ void nlhe_state::create_child(const holdem_action action_index, int* id)
     else if (next_action == CALL && opponent_allin)
         new_terminal = true; // calling an all-in bet is terminal
 
-    int new_round = round_;
+    game_round new_round = round_;
 
     if (is_raise(prev_action) && next_action == CALL)
-        ++new_round; // raise-call
+        new_round = static_cast<game_round>(new_round + 1); // raise-call
     else if (prev_action == CALL && next_action == CALL && parent_ && round_ == parent_->round_)
-        ++new_round; // check-check (or call-check preflop)
+        new_round = static_cast<game_round>(new_round + 1); // check-check (or call-check preflop)
 
     // restrict small raises (< RAISE_P) to 1 per player per round
     std::array<int, 2> new_raise_masks;
@@ -201,7 +200,7 @@ nlhe_state::holdem_action nlhe_state::get_action() const
     return action_;
 }
 
-int nlhe_state::get_round() const
+nlhe_state::game_round nlhe_state::get_round() const
 {
     return round_;
 }

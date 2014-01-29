@@ -3,20 +3,20 @@
 #include <random>
 #include <cstdint>
 #include "evallib/holdem_evaluator.h"
-#include "util/game.h"
+#include "holdem_state.h"
 
 template<class Abstraction>
 class holdem_game : private boost::noncopyable
 {
 public:
+    static const int ALLIN_BET_SIZE = 999;
     static const int PRIVATE_OUTCOMES = 1326;
-    static const int ROUNDS = RIVER + 1;
 
-    typedef std::array<std::array<int, ROUNDS>, 2> bucket_t;
+    typedef std::array<std::array<int, holdem_state::ROUNDS>, 2> bucket_t;
     typedef holdem_evaluator evaluator_t;
     typedef Abstraction abstraction_t;
     typedef std::array<int, 5> public_type;
-    typedef std::array<std::array<int, PRIVATE_OUTCOMES>, ROUNDS> buckets_type;
+    typedef std::array<std::array<int, PRIVATE_OUTCOMES>, holdem_state::ROUNDS> buckets_type;
     typedef std::array<double, PRIVATE_OUTCOMES> results_type;
     typedef std::array<double, PRIVATE_OUTCOMES> reaches_type;
 

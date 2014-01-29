@@ -27,7 +27,7 @@ leduc_state::leduc_state()
 }
 
 leduc_state::leduc_state(const leduc_state* parent, const int action, const int player,
-    const std::array<int, 2>& pot, const int round, const int raises, int* id)
+    const std::array<int, 2>& pot, const game_round round, const int raises, int* id)
     : id_(id ? (*id)++ : -1)
     , parent_(parent)
     , action_(action)
@@ -63,12 +63,12 @@ void leduc_state::create_child(const int action, int* id)
     else if (action == CALL && round_ == FLOP && parent_->round_ == FLOP)
         new_terminal = true; // river check or call is terminal
 
-    int new_round = round_;
+    game_round new_round = round_;
 
     if (action_ == RAISE && action == CALL)
-        ++new_round; // raise-call
+        new_round = static_cast<game_round>(new_round + 1); // raise-call
     else if (action_ == CALL && action == CALL && parent_ && round_ == parent_->round_)
-        ++new_round; // check-check (or call-check preflop)
+        new_round = static_cast<game_round>(new_round + 1); // check-check (or call-check preflop)
 
     std::array<int, 2> new_pot = {{pot_[0], pot_[1]}};
 
@@ -116,7 +116,7 @@ int leduc_state::get_action() const
     return action_;
 }
 
-int leduc_state::get_round() const
+leduc_state::game_round leduc_state::get_round() const
 {
     return round_;
 }

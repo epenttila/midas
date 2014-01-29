@@ -58,7 +58,7 @@ void leduc_game::play_public(buckets_type& buckets)
         abstraction_t::bucket_type b;
         abstraction_.get_buckets(i, board_[0], &b);
 
-        for (int j = 0; j < ROUNDS; ++j)
+        for (int j = 0; j < leduc_state::ROUNDS; ++j)
             buckets[j][i] = b[j];
     }
 }

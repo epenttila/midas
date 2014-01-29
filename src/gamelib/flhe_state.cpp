@@ -1,7 +1,6 @@
 #include "flhe_state.h"
 #include <cassert>
 #include <string>
-#include "util/game.h"
 #include "holdem_game.h"
 
 namespace
@@ -28,7 +27,7 @@ flhe_state::flhe_state()
 }
 
 flhe_state::flhe_state(const flhe_state* parent, const int action, const int player,
-    const std::array<int, 2>& pot, const int round, const int raises, int* id)
+    const std::array<int, 2>& pot, const game_round round, const int raises, int* id)
     : id_(id ? (*id)++ : -1)
     , parent_(parent)
     , action_(action)
@@ -64,12 +63,12 @@ void flhe_state::create_child(const int action, int* id)
     else if (action == CALL && round_ == RIVER && parent_->round_ == RIVER)
         new_terminal = true; // river check or call is terminal
 
-    int new_round = round_;
+    game_round new_round = round_;
 
     if (action_ == RAISE && action == CALL)
-        ++new_round; // raise-call
+        new_round = static_cast<game_round>(new_round + 1); // raise-call
     else if (action_ == CALL && action == CALL && parent_ && round_ == parent_->round_)
-        ++new_round; // check-check (or call-check preflop)
+        new_round = static_cast<game_round>(new_round + 1); // check-check (or call-check preflop)
 
     std::array<int, 2> new_pot = {{pot_[0], pot_[1]}};
 
@@ -117,7 +116,7 @@ int flhe_state::get_action() const
     return action_;
 }
 
-int flhe_state::get_round() const
+flhe_state::game_round flhe_state::get_round() const
 {
     return round_;
 }

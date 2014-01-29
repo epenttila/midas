@@ -1,6 +1,6 @@
 #include "nlhe_state_base.h"
 #include <random>
-#include "util/game.h"
+#include <cassert>
 
 int nlhe_state_base::get_action_mask(holdem_action action)
 {
@@ -33,7 +33,7 @@ double nlhe_state_base::get_raise_factor(const holdem_action action)
     case RAISE_D: return 2.0;
     case RAISE_V: return 5.0;
     case RAISE_T: return 10.0;
-    case RAISE_A: return ALLIN_BET_SIZE;
+    case RAISE_A: return 999.0;
     default: throw std::runtime_error("unknown action raise factor");
     }
 }

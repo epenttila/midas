@@ -1,9 +1,9 @@
 #pragma once
 
 #include <array>
-#include "game_state_base.h"
+#include "holdem_state.h"
 
-class flhe_state : public game_state_base
+class flhe_state : public holdem_state
 {
 public:
     enum holdem_action
@@ -16,7 +16,7 @@ public:
 
     flhe_state();
     int get_action() const;
-    int get_round() const;
+    game_round get_round() const;
     const flhe_state* get_parent() const;
     bool is_terminal() const;
     const flhe_state* get_child(int action) const;
@@ -28,7 +28,7 @@ public:
     int get_action_count() const;
 
 private:
-    flhe_state(const flhe_state* parent, int action, int player, const std::array<int, 2>& pot, int round,
+    flhe_state(const flhe_state* parent, int action, int player, const std::array<int, 2>& pot, game_round round,
         int raises, int* id);
     void create_child(int action, int* id);
 
@@ -38,7 +38,7 @@ private:
     const int action_;
     const int player_;
     const std::array<int, 2> pot_;
-    const int round_;
+    const game_round round_;
     const int raises_;
     int child_count_;
 };

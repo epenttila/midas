@@ -11,7 +11,6 @@
 #endif
 #include "util/card.h"
 #include "cfrlib/nlhe_strategy.h"
-#include "util/game.h"
 #include "util/version.h"
 
 static const int MAX_STACK = 500;
