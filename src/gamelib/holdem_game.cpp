@@ -1,21 +1,8 @@
 #include "holdem_game.h"
 #include <numeric>
 #include "util/partial_shuffle.h"
-#include "util/choose.h"
-#include "util/sort.h"
 
-namespace
-{
-    int get_hole_index(int c0, int c1)
-    {
-        assert(c0 != c1);
-        sort(c0, c1);
-        return choose(c1, 2) + choose(c0, 1);
-    }
-}
-
-template<class Abstraction>
-holdem_game<Abstraction>::holdem_game(const evaluator_t& evaluator, const abstraction_t& abstraction, std::int64_t seed)
+holdem_game::holdem_game(const evaluator_t& evaluator, const abstraction_t& abstraction, std::int64_t seed)
     : engine_(static_cast<unsigned long>(seed))
     , evaluator_(evaluator)
     , abstraction_(abstraction)
@@ -23,8 +10,7 @@ holdem_game<Abstraction>::holdem_game(const evaluator_t& evaluator, const abstra
     std::iota(deck_.begin(), deck_.end(), 0);
 }
 
-template<class Abstraction>
-int holdem_game<Abstraction>::play(bucket_t* buckets)
+int holdem_game::play(bucket_t* buckets)
 {
     partial_shuffle(deck_, 9, engine_); // 4 hole, 5 board
 
@@ -51,8 +37,7 @@ int holdem_game<Abstraction>::play(bucket_t* buckets)
     return value[0] > value[1] ? 1 : (value[0] < value[1] ? -1 : 0);
 }
 
-template<class Abstraction>
-std::mt19937& holdem_game<Abstraction>::get_random_engine()
+std::mt19937& holdem_game::get_random_engine()
 {
     return engine_;
 }

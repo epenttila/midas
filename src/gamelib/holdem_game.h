@@ -4,8 +4,8 @@
 #include <cstdint>
 #include "evallib/holdem_evaluator.h"
 #include "holdem_state.h"
+#include "abslib/holdem_abstraction.h"
 
-template<class Abstraction>
 class holdem_game : private boost::noncopyable
 {
 public:
@@ -13,7 +13,7 @@ public:
 
     typedef std::array<std::array<int, holdem_state::ROUNDS>, 2> bucket_t;
     typedef holdem_evaluator evaluator_t;
-    typedef Abstraction abstraction_t;
+    typedef holdem_abstraction abstraction_t;
 
     holdem_game(const evaluator_t& eval, const abstraction_t& abs, std::int64_t seed);
     int play(bucket_t* buckets);
@@ -25,5 +25,3 @@ private:
     const evaluator_t& evaluator_;
     const abstraction_t& abstraction_;
 };
-
-#include "holdem_game.ipp"

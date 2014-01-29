@@ -46,7 +46,7 @@ namespace
         typedef holdem_abstraction abstraction_t;
         std::unique_ptr<abstraction_t> abs(new abstraction_t);
         abs->read(abs_filename);
-        return create_solver<holdem_game<abstraction_t>>(variant, std::move(state), std::move(abs));
+        return create_solver<holdem_game>(variant, std::move(state), std::move(abs));
     }
 }
 
@@ -146,7 +146,7 @@ int main(int argc, char* argv[])
             std::unique_ptr<holdem_abstraction> abs(new holdem_abstraction);
             abs->read(abstraction);
 
-            solver = create_solver<holdem_game<holdem_abstraction>>(variant, std::move(state), std::move(abs));
+            solver = create_solver<holdem_game>(variant, std::move(state), std::move(abs));
         }
         else if (boost::starts_with(game, "nlhe"))
         {
