@@ -52,7 +52,6 @@ int main(int argc, char* argv[])
         std::string game;
         std::uint64_t iterations;
         std::string abstraction;
-        std::string variant;
         std::string debug_file;
         int threads;
         std::int64_t seed;
@@ -66,7 +65,6 @@ int main(int argc, char* argv[])
             ("iterations", po::value<std::uint64_t>(&iterations)->required(), "number of iterations")
             ("strategy-file", po::value<std::string>(&strategy_file)->required(), "strategy file")
             ("state-file", po::value<std::string>(&state_file), "state file")
-            ("variant", po::value<std::string>(&variant)->required(), "solver variant")
             ("debug-file", po::value<std::string>(&debug_file), "debug output file")
             ("threads", po::value<int>(&threads)->default_value(omp_get_max_threads()), "number of threads")
             ("seed", po::value<std::int64_t>(&seed)->default_value(std::random_device()()), "initial random seed")
