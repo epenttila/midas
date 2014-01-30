@@ -21,7 +21,7 @@ set(SOURCES
 )
 
 add_library(gamelib ${SOURCES})
-target_link_libraries(gamelib)
+target_link_libraries(gamelib evallib)
 
 if(MSVC)
     set_target_properties(gamelib PROPERTIES

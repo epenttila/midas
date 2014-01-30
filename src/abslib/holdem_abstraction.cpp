@@ -247,6 +247,8 @@ namespace
             case holdem_state::RIVER:
                 return create_river_buckets<8>(river_ochs_lut, cluster_count, kmeans_max_iterations, tolerance,
                     runs);
+            default:
+                throw std::runtime_error("invalid round");
             }
         }
 
@@ -384,6 +386,8 @@ holdem_abstraction::bucket_idx_t holdem_abstraction::read(holdem_state::game_rou
             * sizeof(bucket_idx_t);
     case holdem_state::PREFLOP:
         pos += sizeof(std::uint64_t);
+    default:
+        throw std::runtime_error("invalid round");
     }
 
     pos += index * sizeof(bucket_idx_t);

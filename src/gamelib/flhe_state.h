@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <iostream>
 #include "holdem_state.h"
 
 class flhe_state : public holdem_state

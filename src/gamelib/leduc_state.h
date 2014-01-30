@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <iostream>
 #include "game_state_base.h"
 
 class leduc_state : public game_state_base
