@@ -251,8 +251,6 @@ namespace
                 throw std::runtime_error("invalid round");
             }
         }
-
-        return std::vector<bucket_idx_t>();
     }
 
     void parse_configuration(const std::string& filename, bool* imperfect_recall,
@@ -386,6 +384,7 @@ holdem_abstraction::bucket_idx_t holdem_abstraction::read(holdem_state::game_rou
             * sizeof(bucket_idx_t);
     case holdem_state::PREFLOP:
         pos += sizeof(std::uint64_t);
+        break;
     default:
         throw std::runtime_error("invalid round");
     }
