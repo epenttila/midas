@@ -522,31 +522,20 @@ void main_window::process_snapshot(const fake_window& window)
     ENSURE(snapshot.dealer[0] || snapshot.dealer[1]);
 
     // wait until we see stack sizes
-    if (snapshot.stack[0] == 0 || (snapshot.stack[1] == 0 && !snapshot.all_in[1] && !snapshot.sit_out[1]))
+    if (snapshot.stack[0] == 0)
         return;
 
     // our stack size should always be visible
     ENSURE(snapshot.stack[0] > 0);
-    // opponent stack might be obstructed by all-in or sitout statuses
-    ENSURE(snapshot.stack[1] > 0 || snapshot.all_in[1] || snapshot.sit_out[1]);
 
     const auto allin_bet_size = nlhe_state::get_raise_factor(nlhe_state::RAISE_A);
 
     std::array<double, 2> stacks;
 
-    stacks[0] = snapshot.stack[0] + (snapshot.total_pot - snapshot.bet[0] - snapshot.bet[1]) / 2.0
-        + snapshot.bet[0];
+    stacks[0] = snapshot.stack[0] + (snapshot.total_pot - snapshot.bet[0] - snapshot.bet[1]) / 2.0 + snapshot.bet[0];
+    stacks[1] = *settings_->get_number("total-chips") - stacks[0];
 
-    if (snapshot.sit_out[1])
-    {
-        stacks[1] = allin_bet_size; // can't see stack due to sitout, assume worst case
-    }
-    else
-    {
-        stacks[1] = snapshot.stack[1] + (snapshot.total_pot - snapshot.bet[0] - snapshot.bet[1]) / 2.0
-            + snapshot.bet[1];
-    }
-
+    // both stacks sizes should be known by now
     ENSURE(stacks[0] > 0 && stacks[1] > 0);
 
     const auto stack_size = int(std::ceil(std::min(stacks[0], stacks[1]) / snapshot.big_blind * 2.0));
