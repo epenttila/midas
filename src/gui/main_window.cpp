@@ -512,13 +512,13 @@ void main_window::process_snapshot(const fake_window& window)
         return;
 
     // this will most likely fail if we can't read the cards
-    ENSURE(round != -1);
+    ENSURE(round >= holdem_state::PREFLOP && round <= holdem_state::RIVER);
 
     // make sure we read everything fine
     ENSURE(snapshot.big_blind != -1);
-    ENSURE(snapshot.total_pot != -1);
-    ENSURE(snapshot.bet[0] != -1);
-    ENSURE(snapshot.bet[1] != -1);
+    ENSURE(snapshot.total_pot >= 0);
+    ENSURE(snapshot.bet[0] >= 0);
+    ENSURE(snapshot.bet[1] >= 0);
     ENSURE(snapshot.dealer[0] || snapshot.dealer[1]);
 
     // wait until we see stack sizes
@@ -621,8 +621,7 @@ void main_window::process_snapshot(const fake_window& window)
     if (!board_string.isEmpty())
         BOOST_LOG_TRIVIAL(info) << board_string.toStdString();
 
-    if (strategies_.empty())
-        return;
+    ENSURE(!strategies_.empty());
 
     auto it = find_nearest(strategies_, stack_size);
     auto& strategy = *it->second;
