@@ -55,9 +55,10 @@ public slots:
 private:
     struct table_data_t
     {
-        table_data_t() : dealer(-1), initial_state(nullptr), state(nullptr) {}
+        table_data_t() : dealer(-1), big_blind(-1), initial_state(nullptr), state(nullptr) {}
 
         int dealer;
+        double big_blind;
 
         table_manager::snapshot_t snapshot;
 
@@ -69,7 +70,8 @@ private:
     };
 
     void process_snapshot(const fake_window& window);
-    void perform_action(tid_t tournament_id, const nlhe_strategy& strategy, const table_manager::snapshot_t& snapshot);
+    void perform_action(tid_t tournament_id, const nlhe_strategy& strategy, const table_manager::snapshot_t& snapshot,
+        double big_blind);
     void update_strategy_widget(tid_t tournament_id, const nlhe_strategy& strategy, const std::array<int, 2>& hole,
         const std::array<int, 5>& board);
     void ensure(bool expression, const std::string& s, int line) const;
@@ -79,6 +81,7 @@ private:
     void handle_schedule();
     void remove_old_table_data();
     void load_settings(const std::string& filename);
+    int get_effective_stack(const table_manager::snapshot_t& snapshot, double big_blind) const;
 
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<nlhe_strategy>> strategies_;

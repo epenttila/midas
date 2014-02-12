@@ -459,7 +459,6 @@ void main_window::process_snapshot(const fake_window& window)
     // these should work for observed tables
     visualizer_->clear_row(tournament_id);
     visualizer_->set_dealer(tournament_id, snapshot.dealer[0] ? 0 : (snapshot.dealer[1] ? 1 : -1));
-    visualizer_->set_big_blind(tournament_id, snapshot.big_blind);
     visualizer_->set_real_pot(tournament_id, snapshot.total_pot);
     visualizer_->set_real_bets(tournament_id, snapshot.bet[0], snapshot.bet[1]);
     visualizer_->set_sit_out(tournament_id, snapshot.sit_out[0], snapshot.sit_out[1]);
@@ -515,33 +514,50 @@ void main_window::process_snapshot(const fake_window& window)
     ENSURE(round >= holdem_state::PREFLOP && round <= holdem_state::RIVER);
 
     // make sure we read everything fine
-    ENSURE(snapshot.big_blind != -1);
     ENSURE(snapshot.total_pot >= 0);
     ENSURE(snapshot.bet[0] >= 0);
     ENSURE(snapshot.bet[1] >= 0);
     ENSURE(snapshot.dealer[0] || snapshot.dealer[1]);
 
-    // wait until we see stack sizes
-    if (snapshot.stack[0] == 0)
+    // consider this a new game if dealer or hole cards have changed
+    const auto new_game = (snapshot.dealer != table_data.snapshot.dealer || snapshot.hole != table_data.snapshot.hole);
+
+    // figure out the dealer (sometimes buggy clients display two dealer buttons)
+    const auto dealer = (snapshot.dealer[0] && snapshot.dealer[1])
+        ? (new_game ? 1 - table_data.dealer : table_data.dealer)
+        : (snapshot.dealer[0] ? 0 : (snapshot.dealer[1] ? 1 : -1));
+
+    ENSURE(dealer == 0 || dealer == 1);
+
+    // figure out the big blind (we can't trust the window title due to buggy clients)
+    const auto big_blind = new_game
+        ? (dealer == 0 ? 2.0 : 1.0) * snapshot.bet[0]
+        : table_data.big_blind;
+
+    ENSURE(big_blind > 0);
+
+    // wait until we see stack sizes (some sites hide stack size when player is sitting out)
+    if (snapshot.stack[0] == 0 || (snapshot.stack[1] == 0 && !snapshot.all_in[1] && !snapshot.sit_out[1]))
         return;
 
-    // our stack size should always be visible
-    ENSURE(snapshot.stack[0] > 0);
+    // calculate effective stack size
+    const auto stack_size = get_effective_stack(snapshot, big_blind);
 
-    const auto allin_bet_size = nlhe_state::get_raise_factor(nlhe_state::RAISE_A);
+    // wait until we see bet input
+    const auto to_call = snapshot.bet[1] - snapshot.bet[0];
+    const auto minbet = snapshot.bet[1] + std::max(big_blind, to_call);
 
-    std::array<double, 2> stacks;
+    if (!((snapshot.buttons & table_manager::INPUT_BUTTON) == table_manager::INPUT_BUTTON)
+        && !snapshot.all_in[1]
+        && !snapshot.sit_out[1]
+        && snapshot.stack[0] > minbet)
+    {
+        BOOST_LOG_TRIVIAL(warning) << QString("Missing bet input when stack is greater than minbet (%1 > %2)")
+            .arg(snapshot.stack[0]).arg(minbet).toStdString();
+        return;
+    }
 
-    stacks[0] = snapshot.stack[0] + (snapshot.total_pot - snapshot.bet[0] - snapshot.bet[1]) / 2.0 + snapshot.bet[0];
-    stacks[1] = *settings_->get_number("total-chips") - stacks[0];
-
-    // both stacks sizes should be known by now
-    ENSURE(stacks[0] > 0 && stacks[1] > 0);
-
-    const auto stack_size = int(std::ceil(std::min(stacks[0], stacks[1]) / snapshot.big_blind * 2.0));
-
-    ENSURE(stack_size > 0);
-
+    // process action delay last after every other possible bailout
     const auto now = QDateTime::currentDateTime();
     auto& next_action_time = table_data.next_action_time;
 
@@ -557,24 +573,11 @@ void main_window::process_snapshot(const fake_window& window)
         next_action_time = now.addMSecs(static_cast<qint64>(wait * 1000));
     }
 
+    // wait until action delay is over
     if (now < next_action_time)
-        return;
+        return; // this should be the last "return" in snapshot processing
 
     next_action_time = QDateTime();
-
-    // wait until we see bet input
-    const auto to_call = snapshot.bet[1] - snapshot.bet[0];
-    const auto minbet = std::max(snapshot.big_blind, to_call) + to_call;
-
-    if (!((snapshot.buttons & table_manager::INPUT_BUTTON) == table_manager::INPUT_BUTTON)
-        && !snapshot.all_in[1]
-        && !snapshot.sit_out[1]
-        && snapshot.stack[0] > minbet)
-    {
-        BOOST_LOG_TRIVIAL(warning) << QString("Missing bet input when stack is greater than minbet (%1 > %2)")
-            .arg(snapshot.stack[0]).arg(minbet).toStdString();
-        return;
-    }
 
     if (snapshot.hole == table_data.snapshot.hole
         && snapshot.board == table_data.snapshot.board
@@ -590,6 +593,7 @@ void main_window::process_snapshot(const fake_window& window)
     BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
 
     BOOST_LOG_TRIVIAL(info) << "Window: " << window.get_window_text();
+    BOOST_LOG_TRIVIAL(info) << "BB: " << big_blind;
     BOOST_LOG_TRIVIAL(info) << "Stack: " << stack_size << " SB";
 
     if (snapshot.hole[0] != -1 && snapshot.hole[1] != -1)
@@ -630,27 +634,12 @@ void main_window::process_snapshot(const fake_window& window)
     BOOST_LOG_TRIVIAL(info) << QString("Strategy file: %1")
         .arg(QFileInfo(strategy.get_strategy().get_filename().c_str()).fileName()).toStdString();
 
-    if (round == holdem_state::PREFLOP
-        && ((snapshot.dealer[0] && snapshot.dealer[1]
-            && (snapshot.dealer != table_data.snapshot.dealer || snapshot.hole != table_data.snapshot.hole))
-        || (snapshot.dealer[0] && snapshot.bet[0] < snapshot.big_blind)
-        || (snapshot.dealer[1] && snapshot.bet[0] == snapshot.big_blind)))
+    if (new_game)
     {
         BOOST_LOG_TRIVIAL(info) << "New game";
 
         current_state = &strategy.get_root_state();
-
-        if (snapshot.bet[0] < snapshot.big_blind)
-            table_data.dealer = 0;
-        else if (snapshot.bet[0] == snapshot.big_blind)
-            table_data.dealer = 1;
-        else
-            table_data.dealer = -1;
     }
-
-    const auto dealer = (snapshot.dealer[0] && snapshot.dealer[1])
-        ? table_data.dealer
-        : (snapshot.dealer[0] ? 0 : (snapshot.dealer[1] ? 1 : -1));
 
     if (snapshot.dealer[0] && snapshot.dealer[1])
         BOOST_LOG_TRIVIAL(warning) << "Multiple dealers";
@@ -678,17 +667,19 @@ void main_window::process_snapshot(const fake_window& window)
     if (snapshot.all_in[1])
         BOOST_LOG_TRIVIAL(info) << "Opponent is all-in";
 
-    if ((current_state->get_round() == holdem_state::PREFLOP && (snapshot.bet[1] > snapshot.big_blind))
+    if ((current_state->get_round() == holdem_state::PREFLOP && (snapshot.bet[1] > big_blind))
         || (current_state->get_round() > holdem_state::PREFLOP && (snapshot.bet[1] > 0)))
     {
         // make sure opponent allin is always terminal on his part and doesnt get translated to something else
-        const double fraction = snapshot.all_in[1] ? allin_bet_size : (snapshot.bet[1] - snapshot.bet[0])
-            / (snapshot.total_pot - (snapshot.bet[1] - snapshot.bet[0]));
+        const double fraction = snapshot.all_in[1]
+            ? nlhe_state::get_raise_factor(nlhe_state::RAISE_A)
+            : (snapshot.bet[1] - snapshot.bet[0]) / (snapshot.total_pot - (snapshot.bet[1] - snapshot.bet[0]));
+
         ENSURE(fraction > 0);
         BOOST_LOG_TRIVIAL(info) << QString("Opponent raised %1x pot").arg(fraction).toStdString();
         current_state = current_state->raise(fraction); // there is an outstanding bet/raise
     }
-    else if (current_state->get_round() == holdem_state::PREFLOP && dealer == 1 && snapshot.bet[1] <= snapshot.big_blind)
+    else if (current_state->get_round() == holdem_state::PREFLOP && dealer == 1 && snapshot.bet[1] <= big_blind)
     {
         BOOST_LOG_TRIVIAL(info) << "Facing big blind sized bet out of position preflop; opponent called";
         current_state = current_state->call();
@@ -719,9 +710,11 @@ void main_window::process_snapshot(const fake_window& window)
 
     update_strategy_widget(tournament_id, strategy, snapshot.hole, snapshot.board);
 
-    perform_action(tournament_id, strategy, snapshot);
+    perform_action(tournament_id, strategy, snapshot, big_blind);
 
     table_data.snapshot = snapshot;
+    table_data.dealer = dealer;
+    table_data.big_blind = big_blind;
 
     // update snapshot timestamp again to ignore any input duration in old table calculation
     table_data.timestamp = QDateTime::currentDateTime();
@@ -730,7 +723,7 @@ void main_window::process_snapshot(const fake_window& window)
 #pragma warning(pop)
 
 void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy& strategy,
-    const table_manager::snapshot_t& snapshot)
+    const table_manager::snapshot_t& snapshot, const double big_blind)
 {
     ENSURE(site_ && !strategies_.empty());
 
@@ -815,7 +808,7 @@ void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy&
             const double op_bet = snapshot.bet[1];
             const double to_call = op_bet - my_bet;
             const double amount = raise_fraction * (total_pot + to_call) + to_call + my_bet;
-            const double minbet = std::max(snapshot.big_blind, to_call) + to_call + my_bet;
+            const double minbet = std::max(big_blind, to_call) + to_call + my_bet;
             const auto method = static_cast<table_manager::raise_method>(get_weighted_int(engine_,
                 *settings_->get_number_list("bet-method-probabilities")));
 
@@ -1033,4 +1026,26 @@ void main_window::load_settings(const std::string& filename)
     }
     else
         smtp_ = nullptr;
+}
+
+int main_window::get_effective_stack(const table_manager::snapshot_t& snapshot, const double big_blind) const
+{
+    // figure out the effective stack size
+
+    // our stack size should always be visible
+    ENSURE(snapshot.stack[0] > 0);
+
+    std::array<double, 2> stacks;
+
+    stacks[0] = snapshot.stack[0] + (snapshot.total_pot - snapshot.bet[0] - snapshot.bet[1]) / 2.0 + snapshot.bet[0];
+    stacks[1] = *settings_->get_number("total-chips") - stacks[0];
+
+    // both stacks sizes should be known by now
+    ENSURE(stacks[0] > 0 && stacks[1] > 0);
+
+    const auto stack_size = static_cast<int>(std::ceil(std::min(stacks[0], stacks[1]) / big_blind * 2.0));
+
+    ENSURE(stack_size > 0);
+
+    return stack_size;
 }

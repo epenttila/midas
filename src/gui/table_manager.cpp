@@ -122,7 +122,6 @@ table_manager::snapshot_t table_manager::update(const fake_window& window)
 
     snapshot_t s;
 
-    s.big_blind = get_big_blind();
     s.total_pot = get_total_pot();
     s.buttons = get_buttons();
 
@@ -335,19 +334,6 @@ double table_manager::get_bet(int position) const
     const auto s = read_label(mono_image_.get(), *settings_, *settings_->get_label(ids[position]));
 
     return s.empty() ? 0 : std::stof(s);
-}
-
-double table_manager::get_big_blind() const
-{
-    const auto title = window_->get_window_text();
-    std::smatch match;
-
-    double big_blind = -1;
-
-    if (std::regex_match(title, match, *settings_->get_regex("bb")))
-        big_blind = std::stof(match[1].str());
-
-    return big_blind;
 }
 
 double table_manager::get_total_pot() const

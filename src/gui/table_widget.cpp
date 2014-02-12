@@ -17,7 +17,6 @@ namespace
     enum
     {
         WINDOW_COLUMN,
-        BIGBLIND_COLUMN,
         PSTACK_COLUMN,
         OSTACK_COLUMN,
         PALLIN_COLUMN,
@@ -37,7 +36,6 @@ namespace
     static const char* labels[MAX_COLUMNS] =
     {
         "ID",
-        "BB",
         "PStack",
         "OStack",
         "PAllin",
@@ -149,11 +147,6 @@ void table_widget::set_hole_cards(tid_t window, const std::array<int, 2>& cards)
 void table_widget::set_dealer(tid_t window, int dealer)
 {
     item(get_row(window), DEALER_COLUMN)->setData(Qt::DisplayRole, dealer);
-}
-
-void table_widget::set_big_blind(tid_t window, double big_blind)
-{
-    item(get_row(window), BIGBLIND_COLUMN)->setData(Qt::DisplayRole, big_blind);
 }
 
 void table_widget::set_sit_out(tid_t window, bool sitout1, bool sitout2)

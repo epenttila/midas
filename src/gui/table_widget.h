@@ -23,7 +23,6 @@ public:
     void set_board_cards(tid_t window, const std::array<int, 5>& board);
     void set_hole_cards(tid_t window, const std::array<int, 2>& cards);
     void set_dealer(tid_t window, int dealer);
-    void set_big_blind(tid_t window, double big_blind);
     void set_real_bets(tid_t window, double bet1, double bet2);
     void set_real_pot(tid_t window, double pot);
     void set_sit_out(tid_t window, bool sitout1, bool sitout2);

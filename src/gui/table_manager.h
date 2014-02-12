@@ -23,7 +23,7 @@ public:
 
     struct snapshot_t
     {
-        snapshot_t() : big_blind(-1), total_pot(-1), buttons(0)
+        snapshot_t() : total_pot(-1), buttons(0)
         {
             board.fill(-1);
             hole.fill(-1);
@@ -40,7 +40,6 @@ public:
         std::array<bool, 2> dealer;
         std::array<double, 2> stack;
         std::array<double, 2> bet;
-        double big_blind;
         double total_pot;
         std::array<bool, 2> all_in;
         int buttons;
@@ -61,7 +60,6 @@ private:
     int get_dealer_mask() const;
     double get_stack(int position) const;
     double get_bet(int position) const;
-    double get_big_blind() const;
     double get_total_pot() const;
     bool is_all_in(int position) const;
     int get_buttons() const;
