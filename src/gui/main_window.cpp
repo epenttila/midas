@@ -906,7 +906,7 @@ void main_window::update_strategy_widget(const tid_t tournament_id, const nlhe_s
     strategy_widget_->update(strategy, *state);
 }
 
-void main_window::ensure(bool expression, const std::string& s, int line)
+void main_window::ensure(bool expression, const std::string& s, int line) const
 {
     if (expression)
         return;

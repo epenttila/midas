@@ -72,7 +72,7 @@ private:
     void perform_action(tid_t tournament_id, const nlhe_strategy& strategy, const table_manager::snapshot_t& snapshot);
     void update_strategy_widget(tid_t tournament_id, const nlhe_strategy& strategy, const std::array<int, 2>& hole,
         const std::array<int, 5>& board);
-    void ensure(bool expression, const std::string& s, int line);
+    void ensure(bool expression, const std::string& s, int line) const;
     void update_statusbar();
     void find_capture_window();
     void handle_lobby();
