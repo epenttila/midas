@@ -519,8 +519,7 @@ void main_window::process_snapshot(const fake_window& window)
     ENSURE(snapshot.bet[1] >= 0);
     ENSURE(snapshot.dealer[0] || snapshot.dealer[1]);
 
-    // consider this a new game if dealer or hole cards have changed
-    const auto new_game = (snapshot.dealer != table_data.snapshot.dealer || snapshot.hole != table_data.snapshot.hole);
+    const auto new_game = is_new_game(table_data, snapshot);
 
     // figure out the dealer (sometimes buggy clients display two dealer buttons)
     const auto dealer = (snapshot.dealer[0] && snapshot.dealer[1])
@@ -1048,4 +1047,33 @@ int main_window::get_effective_stack(const table_manager::snapshot_t& snapshot, 
     ENSURE(stack_size > 0);
 
     return stack_size;
+}
+
+bool main_window::is_new_game(const table_data_t& table_data, const table_manager::snapshot_t& snapshot) const
+{
+    // dealer button is not bugged and it has changed between snapshots -> new game
+    // (dealer button status can change mid game on buggy clients)
+    if (snapshot.dealer[0] != snapshot.dealer[1] &&
+        table_data.snapshot.dealer[0] != table_data.snapshot.dealer[1] &&
+        snapshot.dealer != table_data.snapshot.dealer)
+    {
+        return true;
+    }
+
+    // hole cards changed -> new game
+    if (snapshot.hole != table_data.snapshot.hole)
+        return true;
+
+    // stack size can never increase during a game between snapshots, so a new game must have started
+    // only check if stack data is valid (not sitting out or all in)
+    if ((snapshot.stack[0] > 0 && table_data.snapshot.stack[0] > 0 &&
+            snapshot.stack[0] > table_data.snapshot.stack[0]) ||
+        (snapshot.stack[1] > 0 && table_data.snapshot.stack[1] > 0 &&
+            snapshot.stack[1] > table_data.snapshot.stack[1]))
+    {
+        return true;
+    }
+
+    // TODO: a false negatives can be possible in some corner cases
+    return false;
 }
