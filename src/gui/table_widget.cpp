@@ -35,7 +35,7 @@ namespace
 
     static const char* labels[MAX_COLUMNS] =
     {
-        "ID",
+        "Tournament",
         "PStack",
         "OStack",
         "PAllin",
