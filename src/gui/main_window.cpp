@@ -789,17 +789,27 @@ void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy&
         break;
     case table_manager::RAISE:
         {
-            const double total_pot = snapshot.total_pot;
-            const double my_bet = snapshot.bet[0];
-            const double op_bet = snapshot.bet[1];
-            const double to_call = op_bet - my_bet;
-            const double amount = raise_fraction * (total_pot + to_call) + to_call + my_bet;
-            const double minbet = std::max(big_blind, to_call) + to_call + my_bet;
+            // we have to call opponent bet minus our bet
+            const auto to_call = snapshot.bet[1] - snapshot.bet[0];
+
+            // maximum bet is our remaining stack plus our bet (total raise to maxbet)
+            const auto maxbet = snapshot.stack[0] + snapshot.bet[0];
+
+            // minimum bet is opponent bet plus the amount we have to call (or big blind whichever is larger)
+            // restrict minbet to always be less than or equal to maxbet (we can't bet more than stack)
+            const auto minbet = std::min(snapshot.bet[1] + std::max(big_blind, to_call), maxbet);
+
+            assert(minbet <= maxbet);
+
+            // bet amount is opponent bet (our bet + call) plus x times the pot after our call (total_pot + to_call)
+            const auto amount = boost::algorithm::clamp(
+                snapshot.bet[1] + raise_fraction * (snapshot.total_pot + to_call), minbet, maxbet);
+
             const auto method = static_cast<table_manager::raise_method>(get_weighted_int(engine_,
                 *settings_->get_number_list("bet-method-probabilities")));
 
-            BOOST_LOG_TRIVIAL(info) << QString("Raising %1 (%2x pot) (%3 min) (method %4)").arg(amount).arg(raise_fraction)
-                .arg(minbet).arg(method).toStdString();
+            BOOST_LOG_TRIVIAL(info) << QString("Raising to %1 [%3, %5] (%2x pot) (method %4)").arg(amount)
+                .arg(raise_fraction).arg(minbet).arg(method).arg(maxbet).toStdString();
 
             site_->raise(s.toStdString(), amount, minbet, action_delay.second, method);
         }
