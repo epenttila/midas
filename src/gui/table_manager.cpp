@@ -253,10 +253,18 @@ void table_manager::raise(const std::string& action, double amount, double minbe
     // press bet size buttons
     if (!ok)
     {
-        ok = window_->click_any_button(input_, settings_->get_buttons(action));
+        const auto& buttons = settings_->get_buttons(action);
+
+        ok = window_->click_any_button(input_, buttons);
 
         if (ok)
             input_.sleep();
+
+        if (!ok && !buttons.empty())
+        {
+            BOOST_LOG_TRIVIAL(warning) << "Unable to press bet size button; saving snapshot";
+            save_snapshot();
+        }
     }
 
     // type bet size manually
