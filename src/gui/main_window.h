@@ -55,14 +55,13 @@ public slots:
 private:
     struct table_data_t
     {
-        table_data_t() : dealer(-1), big_blind(-1), initial_state(nullptr), state(nullptr) {}
+        table_data_t() : dealer(-1), big_blind(-1), state(nullptr) {}
 
         int dealer;
         double big_blind;
 
         table_manager::snapshot_t snapshot;
 
-        const nlhe_state* initial_state;
         const nlhe_state* state;
 
         QDateTime next_action_time;
@@ -105,6 +104,7 @@ private:
     QLabel* registered_label_;
     QAction* autolobby_action_;
     std::unordered_map<tid_t, table_data_t> table_data_;
+    std::unordered_map<tid_t, table_data_t> old_table_data_;
     QLabel* site_label_;
     QLabel* strategy_label_;
     double time_to_next_activity_;

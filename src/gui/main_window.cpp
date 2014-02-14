@@ -510,6 +510,10 @@ void main_window::process_snapshot(const fake_window& window)
     if (snapshot.hole[0] == -1 || snapshot.hole[1] == -1)
         return;
 
+    // wait until we see stack sizes (some sites hide stack size when player is sitting out)
+    if (snapshot.stack[0] == 0 || (snapshot.stack[1] == 0 && !snapshot.all_in[1] && !snapshot.sit_out[1]))
+        return;
+
     // this will most likely fail if we can't read the cards
     ENSURE(round >= holdem_state::PREFLOP && round <= holdem_state::RIVER);
 
@@ -518,43 +522,6 @@ void main_window::process_snapshot(const fake_window& window)
     ENSURE(snapshot.bet[0] >= 0);
     ENSURE(snapshot.bet[1] >= 0);
     ENSURE(snapshot.dealer[0] || snapshot.dealer[1]);
-
-    const auto new_game = is_new_game(table_data, snapshot);
-
-    // figure out the dealer (sometimes buggy clients display two dealer buttons)
-    const auto dealer = (snapshot.dealer[0] && snapshot.dealer[1])
-        ? (new_game ? 1 - table_data.dealer : table_data.dealer)
-        : (snapshot.dealer[0] ? 0 : (snapshot.dealer[1] ? 1 : -1));
-
-    ENSURE(dealer == 0 || dealer == 1);
-
-    // figure out the big blind (we can't trust the window title due to buggy clients)
-    const auto big_blind = new_game
-        ? (dealer == 0 ? 2.0 : 1.0) * snapshot.bet[0]
-        : table_data.big_blind;
-
-    ENSURE(big_blind > 0);
-
-    // wait until we see stack sizes (some sites hide stack size when player is sitting out)
-    if (snapshot.stack[0] == 0 || (snapshot.stack[1] == 0 && !snapshot.all_in[1] && !snapshot.sit_out[1]))
-        return;
-
-    // calculate effective stack size
-    const auto stack_size = get_effective_stack(snapshot, big_blind);
-
-    // wait until we see bet input
-    const auto to_call = snapshot.bet[1] - snapshot.bet[0];
-    const auto minbet = snapshot.bet[1] + std::max(big_blind, to_call);
-
-    if (!((snapshot.buttons & table_manager::INPUT_BUTTON) == table_manager::INPUT_BUTTON)
-        && !snapshot.all_in[1]
-        && !snapshot.sit_out[1]
-        && snapshot.stack[0] > minbet)
-    {
-        BOOST_LOG_TRIVIAL(warning) << QString("Missing bet input when stack is greater than minbet (%1 > %2)")
-            .arg(snapshot.stack[0]).arg(minbet).toStdString();
-        return;
-    }
 
     // process action delay last after every other possible bailout
     const auto now = QDateTime::currentDateTime();
@@ -578,16 +545,36 @@ void main_window::process_snapshot(const fake_window& window)
 
     next_action_time = QDateTime();
 
+    // check if our previous action failed for some reason (buggy clients leave buttons depressed)
     if (snapshot.hole == table_data.snapshot.hole
         && snapshot.board == table_data.snapshot.board
         && snapshot.stack == table_data.snapshot.stack
         && snapshot.bet == table_data.snapshot.bet)
     {
-        BOOST_LOG_TRIVIAL(error) << "Identical snapshots; previous action not fulfilled; reverting state";
-        table_data.state = table_data.initial_state;
+        BOOST_LOG_TRIVIAL(warning) << "Identical snapshots; previous action not fulfilled; reverting state";
+        table_data = old_table_data_[tournament_id];
     }
 
-    table_data.initial_state = table_data.state;
+    old_table_data_[tournament_id] = table_data;
+
+    const auto new_game = is_new_game(table_data, snapshot);
+
+    // figure out the dealer (sometimes buggy clients display two dealer buttons)
+    const auto dealer = (snapshot.dealer[0] && snapshot.dealer[1])
+        ? (new_game ? 1 - table_data.dealer : table_data.dealer)
+        : (snapshot.dealer[0] ? 0 : (snapshot.dealer[1] ? 1 : -1));
+
+    ENSURE(dealer == 0 || dealer == 1);
+
+    // figure out the big blind (we can't trust the window title due to buggy clients)
+    const auto big_blind = new_game
+        ? (dealer == 0 ? 2.0 : 1.0) * snapshot.bet[0]
+        : table_data.big_blind;
+
+    ENSURE(big_blind > 0);
+
+    // calculate effective stack size
+    const auto stack_size = get_effective_stack(snapshot, big_blind);
 
     BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
 
@@ -990,6 +977,7 @@ void main_window::remove_old_table_data()
             BOOST_LOG_TRIVIAL(info) << "Removing table data for tournament " << i->first;
 
             visualizer_->remove(i->first);
+            old_table_data_.erase(i->first);
             i = table_data_.erase(i);
         }
         else
