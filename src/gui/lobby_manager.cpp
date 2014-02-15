@@ -220,3 +220,8 @@ lobby_manager::tid_t lobby_manager::get_tournament_id(const fake_window& window)
 
     throw std::runtime_error("Unknown tournament id");
 }
+
+bool lobby_manager::is_registering() const
+{
+    return !registration_time_.isNull();
+}

@@ -828,8 +828,12 @@ void main_window::handle_lobby()
 
     lobby_->detect_closed_tables(active_tournaments);
 
-    if (lobby_->get_registered_sngs() < table_count_->value() && (!schedule_action_->isChecked() || schedule_active_))
+    if (lobby_->is_registering()
+        || (lobby_->get_registered_sngs() < table_count_->value()
+            && (!schedule_action_->isChecked() || schedule_active_)))
+    {
         lobby_->register_sng();
+    }
 }
 
 void main_window::handle_schedule()

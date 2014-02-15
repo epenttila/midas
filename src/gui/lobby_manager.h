@@ -27,6 +27,7 @@ public:
     const table_vector_t& get_tables() const;
     void update_windows(WId wid);
     tid_t get_tournament_id(const fake_window& window) const;
+    bool is_registering() const;
 
 private:
     std::unique_ptr<fake_window> lobby_window_;
