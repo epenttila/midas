@@ -175,13 +175,10 @@ void input_manager::move_mouse(int x, int y)
         .arg(x).arg(y).toStdString().c_str());
 }
 
-void input_manager::move_mouse(int x, int y, int width, int height, bool force)
+void input_manager::move_mouse(int x, int y, int width, int height)
 {
     POINT pt;
     GetCursorPos(&pt);
-
-    if (!force && pt.x >= x && pt.x < x + width && pt.y >= y && pt.y < y + height)
-        return;
 
     int target_x = boost::math::iround(get_normal_random(engine_, x, x + width - 1));
     int target_y = boost::math::iround(get_normal_random(engine_, y, y + height - 1));
@@ -198,13 +195,6 @@ void input_manager::move_mouse(int x, int y, int width, int height, bool force)
 
     throw std::runtime_error(QString("Mouse cursor (%1,%2) moved outside target (%3,%4,%5,%6)").arg(pt.x).arg(pt.y)
         .arg(x).arg(y).arg(x + width).arg(y + height).toStdString().c_str());
-}
-
-void input_manager::move_mouse(WId window, int x, int y, int width, int height)
-{
-    POINT point = {x, y};
-    ClientToScreen(reinterpret_cast<HWND>(window), &point);
-    move_mouse(point.x, point.y, width, height);
 }
 
 void input_manager::left_click(int x, int y, int width, int height)
@@ -293,7 +283,7 @@ void input_manager::move_random(idle_move method)
     switch (method)
     {
     case IDLE_MOVE_DESKTOP:
-        move_mouse(0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN), true);
+        move_mouse(0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN));
         break;
     case IDLE_MOVE_OFFSET:
         {

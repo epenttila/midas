@@ -19,8 +19,7 @@ public:
     void sleep();
     void set_cursor_position(int x, int y);
     void move_mouse(int x, int y);
-    void move_mouse(int x, int y, int width, int height, bool force = false);
-    void move_mouse(WId window, int x, int y, int width, int height);
+    void move_mouse(int x, int y, int width, int height);
     void left_click(int x = -1, int y = -1, int width = -1, int height = -1);
     void left_double_click(int x = -1, int y = -1, int width = -1, int height = -1);
     void set_mouse_speed(double min, double max);
