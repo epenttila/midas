@@ -581,12 +581,20 @@ void main_window::process_snapshot(const fake_window& window)
 
     old_table_data_[tournament_id] = table_data;
 
+    BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
+    BOOST_LOG_TRIVIAL(info) << "Window: " << window.get_window_text();
+
     const auto new_game = is_new_game(table_data, snapshot);
 
     // figure out the dealer (sometimes buggy clients display two dealer buttons)
     const auto dealer = (snapshot.dealer[0] && snapshot.dealer[1])
         ? (new_game ? 1 - table_data.dealer : table_data.dealer)
         : (snapshot.dealer[0] ? 0 : (snapshot.dealer[1] ? 1 : -1));
+
+    if (snapshot.dealer[0] && snapshot.dealer[1])
+        BOOST_LOG_TRIVIAL(warning) << "Multiple dealers";
+    
+    BOOST_LOG_TRIVIAL(info) << "Dealer: " << dealer;
 
     ENSURE(dealer == 0 || dealer == 1);
 
@@ -595,15 +603,13 @@ void main_window::process_snapshot(const fake_window& window)
         ? (dealer == 0 ? 2.0 : 1.0) * snapshot.bet[0]
         : table_data.big_blind;
 
+    BOOST_LOG_TRIVIAL(info) << "BB: " << big_blind;
+
     ENSURE(big_blind > 0);
 
     // calculate effective stack size
     const auto stack_size = get_effective_stack(snapshot, big_blind);
 
-    BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
-
-    BOOST_LOG_TRIVIAL(info) << "Window: " << window.get_window_text();
-    BOOST_LOG_TRIVIAL(info) << "BB: " << big_blind;
     BOOST_LOG_TRIVIAL(info) << "Stack: " << stack_size << " SB";
 
     if (snapshot.hole[0] != -1 && snapshot.hole[1] != -1)
@@ -645,16 +651,7 @@ void main_window::process_snapshot(const fake_window& window)
         .arg(QFileInfo(strategy.get_strategy().get_filename().c_str()).fileName()).toStdString();
 
     if (new_game)
-    {
-        BOOST_LOG_TRIVIAL(info) << "New game";
-
         current_state = &strategy.get_root_state();
-    }
-
-    if (snapshot.dealer[0] && snapshot.dealer[1])
-        BOOST_LOG_TRIVIAL(warning) << "Multiple dealers";
-    
-    BOOST_LOG_TRIVIAL(info) << "Dealer is " << dealer;
 
     ENSURE(current_state != nullptr);
     ENSURE(!current_state->is_terminal());
@@ -1089,12 +1086,16 @@ bool main_window::is_new_game(const table_data_t& table_data, const table_manage
         table_data.snapshot.dealer[0] != table_data.snapshot.dealer[1] &&
         snapshot.dealer != table_data.snapshot.dealer)
     {
+        BOOST_LOG_TRIVIAL(info) << "New game (dealer changed)";
         return true;
     }
 
     // hole cards changed -> new game
     if (snapshot.hole != table_data.snapshot.hole)
+    {
+        BOOST_LOG_TRIVIAL(info) << "New game (hole cards changed)";
         return true;
+    }
 
     // stack size can never increase during a game between snapshots, so a new game must have started
     // only check if stack data is valid (not sitting out or all in)
@@ -1103,6 +1104,7 @@ bool main_window::is_new_game(const table_data_t& table_data, const table_manage
         (snapshot.stack[1] > 0 && table_data.snapshot.stack[1] > 0 &&
             snapshot.stack[1] > table_data.snapshot.stack[1]))
     {
+        BOOST_LOG_TRIVIAL(info) << "New game (stack increased)";
         return true;
     }
 
