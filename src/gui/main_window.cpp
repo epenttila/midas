@@ -18,7 +18,6 @@
 #include <boost/log/support/date_time.hpp>
 #include <boost/log/utility/setup/from_settings.hpp>
 #include <boost/log/attributes/scoped_attribute.hpp>
-#include <Windows.h>
 #include <QPlainTextEdit>
 #include <QVBoxLayout>
 #include <QPushButton>
@@ -57,6 +56,7 @@
 #include "site_settings.h"
 #include "util/version.h"
 #include "captcha_manager.h"
+#include "window_manager.h"
 
 #define ENSURE(x) ensure(x, #x, __LINE__)
 
@@ -67,17 +67,6 @@ namespace
     {
         const auto it = map.lower_bound(value);
         return it != map.end() ? it : boost::prior(map.end());
-    }
-
-    QString get_key_text(unsigned int vk)
-    {
-        const auto scancode = MapVirtualKey(vk, MAPVK_VK_TO_VSC);
-        std::array<char, 100> s;
-
-        if (GetKeyNameText(scancode << 16, s.data(), int(s.size())) != 0)
-            return QString(s.data());
-        else
-            return "[Error]";
     }
 
     QString secs_to_hms(double seconds_)
@@ -176,6 +165,7 @@ main_window::main_window()
     , settings_(new site_settings)
     , smtp_(nullptr)
     , captcha_manager_(new captcha_manager)
+    , window_manager_(new window_manager)
 {
     auto widget = new QWidget(this);
     widget->setFocus();
@@ -295,12 +285,13 @@ void main_window::capture_timer_timeout()
             autolobby_action_->setChecked(false);
         }
 
-        find_capture_window();
+        window_manager_->update(title_filter_->text().toStdString());
+
         handle_schedule();
 
         if (lobby_)
         {
-            lobby_->update_windows(capture_window_);
+            lobby_->update_windows();
 
             std::vector<const fake_window*> tables;
             
@@ -336,7 +327,7 @@ void main_window::capture_timer_timeout()
         if (site_)
         {
             BOOST_LOG_TRIVIAL(warning) << "Saving current snapshot";
-            site_->save_snapshot();
+            save_snapshot();
         }
 
         // ensure we can move after exceptions in case of visible tool tips disturbing scraping
@@ -371,7 +362,7 @@ void main_window::open_strategy()
         {
             const auto filename = i->toStdString();
             load_settings(filename);
-            lobby_.reset(new lobby_manager(*settings_, *input_manager_));
+            lobby_.reset(new lobby_manager(*settings_, *input_manager_, *window_manager_));
             site_.reset(new table_manager(*settings_, *input_manager_));
 
             BOOST_LOG_TRIVIAL(info) << QString("Loaded site settings: %1").arg(filename.c_str()).toStdString();
@@ -435,24 +426,23 @@ void main_window::process_snapshot(const fake_window& window)
     const auto& snapshot = site_->update(window);
 
     if (save_images_->isChecked())
-        site_->save_snapshot();
+        save_snapshot();
 
     // consider sitout fatal
     if (snapshot.sit_out[0])
     {
         if (table_count_->value() > 0)
         {
-            BOOST_LOG_TRIVIAL(error) << "We are sitting out; stopping registrations";
+            // this bypasses problem with schedules which could retoggle registrations if disabled
             table_count_->setValue(0);
-
-            BOOST_LOG_TRIVIAL(warning) << "Saving current snapshot";
-            site_->save_snapshot();
 
             if (smtp_)
             {
                 smtp_->send(settings_->get_string("smtp-from")->c_str(), settings_->get_string("smtp-to")->c_str(),
                     "[midas] " + QHostInfo::localHostName() + " needs attention", ".");
             }
+
+            throw std::runtime_error("We are sitting out; stopping registrations");
         }
 
         return;
@@ -986,21 +976,6 @@ void main_window::update_statusbar()
         .arg(table_count_->value()).arg(visualizer_->rowCount()));
 }
 
-void main_window::find_capture_window()
-{
-    const auto filter = title_filter_->text();
-
-    if (filter.isEmpty())
-        return;
-
-    const auto window = FindWindow(nullptr, filter.toUtf8().data());
-
-    if (IsWindow(window) && IsWindowVisible(window))
-        capture_window_ = reinterpret_cast<WId>(window);
-    else
-        capture_window_ = 0;
-}
-
 void main_window::remove_old_table_data()
 {
     for (auto i = table_data_.begin(); i != table_data_.end();)
@@ -1110,4 +1085,10 @@ bool main_window::is_new_game(const table_data_t& table_data, const table_manage
 
     // TODO: a false negatives can be possible in some corner cases
     return false;
+}
+
+void main_window::save_snapshot() const
+{
+    const auto& image = window_manager_->get_image();
+    image.save(QDateTime::currentDateTimeUtc().toString("'snapshot-'yyyy-MM-ddTHHmmss.zzz'.png'"));
 }

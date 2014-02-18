@@ -53,7 +53,6 @@ public:
     void fold(double max_wait) const;
     void call(double max_wait) const;
     void raise(const std::string& action, double amount, double minbet, double max_wait, raise_method method) const;
-    void save_snapshot() const;
     void input_captcha(const std::string& str) const;
 
 private:
@@ -73,7 +72,7 @@ private:
 
     std::string get_stack_text(int position) const;
 
-    std::unique_ptr<fake_window> window_;
+    const fake_window* window_;
     input_manager& input_;
     std::unique_ptr<QImage> image_;
     std::unique_ptr<QImage> mono_image_;

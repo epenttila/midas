@@ -27,72 +27,43 @@ namespace
         return "[" + s + "]";
     }
 
-    bool close_popups(input_manager& input, fake_window& window, const site_settings::popup_range& popups,
-        const double max_wait)
+    bool close_popups(input_manager& input, fake_window& window, const site_settings::popup_range& popups)
     {
-        if (!window.update())
-            return false;
-
         const auto title = window.get_window_text();
-        bool found = false;
 
         for (const auto& i : popups)
         {
             if (std::regex_match(title, i.second->regex))
             {
-                found = true;
-                break;
-            }
-        }
-
-        if (!found)
-            return false;
-
-        // not all windows will be closed when clicking OK, so can't use IsWindow here
-        QTime t;
-        t.start();
-
-        const int wait = static_cast<int>(max_wait * 1000);
-
-        while (window.update())
-        {
-            for (const auto& i : popups)
-            {
-                if (!std::regex_match(title, i.second->regex))
-                    continue;
-
                 if (i.second->button.rect.isValid())
                 {
-                    window.click_button(input, i.second->button);
-                    input.sleep();
+                    if (window.click_button(input, i.second->button))
+                    {
+                        input.sleep();
+                        return true;
+                    }
+                    else
+                        throw std::runtime_error("Unable to click popup button");
                 }
                 else
-                {
-                    throw std::runtime_error("Do not know how to close popup");
-                }
-            }
-
-            if (t.elapsed() > wait)
-            {
-                BOOST_LOG_TRIVIAL(warning) << "Failed to close window after " << t.elapsed() << " ms (" << title << ")";
-                return false;
+                    throw std::runtime_error("Invalid popup button rect");
             }
         }
 
-        return true;
+        return false;
     }
 }
 
-lobby_manager::lobby_manager(const site_settings& settings, input_manager& input_manager)
+lobby_manager::lobby_manager(const site_settings& settings, input_manager& input_manager, const window_manager& wm)
     : input_manager_(input_manager)
     , registered_(0)
     , settings_(&settings)
 {
-    lobby_window_.reset(new fake_window(*settings_->get_window("lobby"), settings));
-    popup_window_.reset(new fake_window(*settings_->get_window("popup"), settings));
+    lobby_window_.reset(new fake_window(*settings_->get_window("lobby"), settings, wm));
+    popup_window_.reset(new fake_window(*settings_->get_window("popup"), settings, wm));
 
     for (const auto& w : settings_->get_windows("table"))
-        table_windows_.push_back(std::unique_ptr<fake_window>(new fake_window(*w.second, settings)));
+        table_windows_.push_back(std::unique_ptr<fake_window>(new fake_window(*w.second, settings, wm)));
 }
 
 void lobby_manager::register_sng()
@@ -113,9 +84,7 @@ void lobby_manager::register_sng()
     }
     else if (registration_time_.elapsed() < registration_wait * 1000)
     {
-        const auto& popup_wait = *settings_->get_number("popup-wait");
-
-        if (close_popups(input_manager_, *popup_window_, settings_->get_popups("reg-ok"), popup_wait))
+        if (close_popups(input_manager_, *popup_window_, settings_->get_popups("reg-ok")))
         {
             registration_time_ = QTime();
             ++registered_;
@@ -198,16 +167,16 @@ const lobby_manager::table_vector_t& lobby_manager::get_tables() const
     return table_windows_;
 }
 
-void lobby_manager::update_windows(WId wid)
+void lobby_manager::update_windows()
 {
     if (!lobby_window_ || !popup_window_)
         return;
 
-    lobby_window_->update(wid);
-    popup_window_->update(wid);
+    lobby_window_->update();
+    popup_window_->update();
 
     for (auto& i : table_windows_)
-        i->update(wid);
+        i->update();
 }
 
 lobby_manager::tid_t lobby_manager::get_tournament_id(const fake_window& window) const

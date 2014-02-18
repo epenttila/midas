@@ -1,13 +1,8 @@
 #include "fake_window.h"
 
-#pragma warning(push, 1)
-#include <Windows.h>
-#pragma warning(pop)
-
 #include "window_utils.h"
 #include "input_manager.h"
-
-Q_GUI_EXPORT QPixmap qt_pixmapFromWinHBITMAP(HBITMAP, int hbitmapFormat = 0);
+#include "window_manager.h"
 
 namespace
 {
@@ -22,29 +17,6 @@ namespace
     static const int TITLE_TEXT_TOP_OFFSET = 2;
     static const int TITLE_TEXT_RIGHT_OFFSET = 0;
     static const int TITLE_TEXT_BOTTOM_OFFSET = -3;
-
-    QPixmap screenshot(WId window, const QRect& rect)
-    {
-        const auto hwnd = reinterpret_cast<HWND>(window);
-        const HDC display_dc = GetDC(0);
-        const HDC bitmap_dc = CreateCompatibleDC(display_dc);
-        const HBITMAP bitmap = CreateCompatibleBitmap(display_dc, rect.width(), rect.height());
-        const HGDIOBJ null_bitmap = SelectObject(bitmap_dc, bitmap);
-
-        const HDC window_dc = GetDC(hwnd);
-        BitBlt(bitmap_dc, 0, 0, rect.width(), rect.height(), window_dc, rect.left(), rect.top(), SRCCOPY);
-        ReleaseDC(hwnd, window_dc);
-
-        SelectObject(bitmap_dc, null_bitmap);
-        DeleteDC(bitmap_dc);
-
-        const QPixmap pixmap = qt_pixmapFromWinHBITMAP(bitmap);
-
-        DeleteObject(bitmap);
-        ReleaseDC(0, display_dc);
-
-        return pixmap;
-    }
 
     bool is_top_left_corner(const QImage& image, const int x, const int y)
     {
@@ -163,28 +135,23 @@ namespace
     }
 }
 
-fake_window::fake_window(const site_settings::window_t& window, const site_settings& settings)
+fake_window::fake_window(const site_settings::window_t& window, const site_settings& settings,
+    const window_manager& wm)
     : rect_(window.rect)
-    , wid_(0)
     , title_font_(settings.get_font(window.font))
     , icon_(window.icon)
+    , window_manager_(wm)
 {
 }
 
-bool fake_window::update(WId wid)
+bool fake_window::update()
 {
-    if (wid != -1)
-        wid_ = wid;
-
     window_rect_ = QRect();
     client_rect_ = QRect();
     window_image_ = QImage();
     client_image_ = QImage();
 
-    if (!IsWindow(reinterpret_cast<HWND>(wid_)))
-        return false;
-
-    const auto image = ::screenshot(wid_, rect_).toImage();
+    const auto image = window_manager_.get_image().copy(rect_);
 
     // top left
     int border = -1;
@@ -220,9 +187,6 @@ bool fake_window::update(WId wid)
 
 bool fake_window::is_valid() const
 {
-    if (!IsWindow(reinterpret_cast<HWND>(wid_)))
-        return false;
-
     if (!window_rect_.isValid() || !client_rect_.isValid() || window_image_.isNull() || client_image_.isNull())
         return false;
 
@@ -254,10 +218,7 @@ bool fake_window::click_any_button(input_manager& input, const site_settings::bu
 
 QPoint fake_window::client_to_screen(const QPoint& point) const
 {
-    auto tmp = client_rect_.topLeft() + point;
-    POINT p = { tmp.x(), tmp.y() };
-    ClientToScreen(reinterpret_cast<HWND>(wid_), &p);
-    return QPoint(p.x, p.y);
+    return window_manager_.client_to_screen(client_rect_.topLeft() + point);
 }
 
 std::string fake_window::get_window_text() const

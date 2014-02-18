@@ -12,6 +12,7 @@
 
 class input_manager;
 class fake_window;
+class window_manager;
 
 class lobby_manager : private boost::noncopyable
 {
@@ -19,13 +20,13 @@ public:
     typedef std::vector<std::unique_ptr<fake_window>> table_vector_t;
     typedef std::int64_t tid_t;
 
-    lobby_manager(const site_settings& settings, input_manager& input_manager);
+    lobby_manager(const site_settings& settings, input_manager& input_manager, const window_manager& wm);
     void register_sng();
     int get_registered_sngs() const;
     void reset();
     void detect_closed_tables(const std::unordered_set<tid_t>& new_active_tables);
     const table_vector_t& get_tables() const;
-    void update_windows(WId wid);
+    void update_windows();
     tid_t get_tournament_id(const fake_window& window) const;
     bool is_registering() const;
 

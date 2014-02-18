@@ -7,7 +7,6 @@
 #include <QPainter>
 #include <QStyledItemDelegate>
 #include <QApplication>
-#include <Windows.h>
 #pragma warning(pop)
 
 #include "util/card.h"

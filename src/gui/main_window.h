@@ -31,6 +31,7 @@ class fake_window;
 class smtp;
 class site_settings;
 class captcha_manager;
+class window_manager;
 
 class main_window : public QMainWindow
 {
@@ -76,13 +77,13 @@ private:
         const std::array<int, 5>& board);
     void ensure(bool expression, const std::string& s, int line) const;
     void update_statusbar();
-    void find_capture_window();
     void handle_lobby();
     void handle_schedule();
     void remove_old_table_data();
     void load_settings(const std::string& filename);
     int get_effective_stack(const table_manager::snapshot_t& snapshot, double big_blind) const;
     bool is_new_game(const table_data_t& table_data, const table_manager::snapshot_t& snapshot) const;
+    void save_snapshot() const;
 
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<nlhe_strategy>> strategies_;
@@ -109,9 +110,9 @@ private:
     QLabel* site_label_;
     QLabel* strategy_label_;
     double time_to_next_activity_;
-    WId capture_window_;
     smtp* smtp_;
     QTime mark_time_;
     std::unique_ptr<site_settings> settings_;
     std::unique_ptr<captcha_manager> captcha_manager_;
+    std::unique_ptr<window_manager> window_manager_;
 };

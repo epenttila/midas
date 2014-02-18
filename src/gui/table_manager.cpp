@@ -93,13 +93,14 @@ namespace
 table_manager::table_manager(const site_settings& settings, input_manager& input_manager)
     : input_(input_manager)
     , settings_(&settings)
+    , window_(nullptr)
 {
 }
 
 table_manager::snapshot_t table_manager::update(const fake_window& window)
 {
     // window contents have been updated previously in main_window
-    window_.reset(new fake_window(window));
+    window_ = &window;
 
     image_.reset();
     mono_image_.reset();
@@ -263,8 +264,8 @@ void table_manager::raise(const std::string& action, double amount, double minbe
 
         if (!ok && !buttons.empty())
         {
-            BOOST_LOG_TRIVIAL(warning) << "Unable to press bet size button; saving snapshot";
-            save_snapshot();
+            // TODO: throw?
+            BOOST_LOG_TRIVIAL(warning) << "Unable to press bet size button";
         }
     }
 
@@ -392,19 +393,6 @@ bool table_manager::is_sit_out(int position) const
     static const std::array<const char*, 2> ids = { "sitout-0", "sitout-1" };
 
     return window_utils::is_pixel(image_.get(), *settings_->get_pixel(ids[position]));
-}
-
-void table_manager::save_snapshot() const
-{
-    if (!image_ || !mono_image_)
-    {
-        BOOST_LOG_TRIVIAL(warning) << "No image to save";
-        return;
-    }
-
-    const auto filename = QDateTime::currentDateTimeUtc().toString("'snapshot-'yyyy-MM-ddTHHmmss.zzz'.png'");
-    image_->save(filename);
-    mono_image_->save("mono-" + filename);
 }
 
 double table_manager::get_pot() const

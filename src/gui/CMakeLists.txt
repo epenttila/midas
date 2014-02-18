@@ -28,6 +28,8 @@ set(gui_SOURCES
     site_settings.h
     captcha_manager.cpp
     captcha_manager.h
+    window_manager.cpp
+    window_manager.h
 )
 
 set(gui_RESOURCES
