@@ -62,3 +62,47 @@ const QImage& window_manager::get_image() const
 {
     return image_;
 }
+
+QRect window_manager::get_tooltip() const
+{
+    // TODO: check for black borders and only black or "color" inside to make absolutely sure
+    const auto color = qRgb(255, 255, 225);
+    const auto& image = image_;
+
+    int width = 0;
+
+    for (int y = 0; y < image.height(); ++y)
+    {
+        for (int x = 0; x < image.width(); ++x)
+        {
+            if (image.pixel(x, y) == color)
+                ++width;
+            else if (width >= 10)
+            {
+                const QPoint top_left(x - width, y);
+                const QPoint top_right(x - 1, y);
+
+                int height_left = 0;
+
+                for (int yy = top_left.y(); image.pixel(top_left.x(), yy) == color; ++yy)
+                    ++height_left;
+
+                int height_right = 0;
+
+                for (int yy = top_right.y(); image.pixel(top_right.x(), yy) == color; ++yy)
+                    ++height_right;
+
+                const auto height = std::max(height_left, height_right);
+
+                if (height >= 10)
+                    return QRect(top_left.x(), top_left.y(), width, height);
+
+                width = 0;
+            }
+            else
+                width = 0;
+        }
+    }
+
+    return QRect();
+}

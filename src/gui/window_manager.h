@@ -12,6 +12,7 @@ public:
     QPoint client_to_screen(const QPoint& p) const;
     void update(const std::string& filter);
     const QImage& get_image() const;
+    QRect get_tooltip() const;
 
 private:
     WId wid_;

@@ -287,6 +287,20 @@ void main_window::capture_timer_timeout()
 
         window_manager_->update(title_filter_->text().toStdString());
 
+        const auto tooltip_rect = window_manager_->get_tooltip();
+
+        if (tooltip_rect.isValid())
+        {
+            if (autoplay_action_->isChecked())
+                input_manager_->move_random(input_manager::IDLE_MOVE_DESKTOP);
+
+            throw std::runtime_error(QString("Tooltip found at (%1,%2,%3,%4)")
+                .arg(tooltip_rect.x())
+                .arg(tooltip_rect.y())
+                .arg(tooltip_rect.width())
+                .arg(tooltip_rect.height()).toStdString().c_str());
+        }
+
         handle_schedule();
 
         if (lobby_)
@@ -329,10 +343,6 @@ void main_window::capture_timer_timeout()
             BOOST_LOG_TRIVIAL(warning) << "Saving current snapshot";
             save_snapshot();
         }
-
-        // ensure we can move after exceptions in case of visible tool tips disturbing scraping
-        if (autolobby_action_->isChecked())
-            input_manager_->move_random(input_manager::IDLE_MOVE_DESKTOP);
     }
 
     update_statusbar();
