@@ -29,28 +29,21 @@ namespace
 
     bool close_popups(input_manager& input, fake_window& window, const site_settings::popup_range& popups)
     {
+        if (!window.is_valid())
+            return false;
+
         const auto title = window.get_window_text();
 
         for (const auto& i : popups)
         {
             if (std::regex_match(title, i.second->regex))
             {
-                if (i.second->button.rect.isValid())
-                {
-                    if (window.click_button(input, i.second->button))
-                    {
-                        input.sleep();
-                        return true;
-                    }
-                    else
-                        throw std::runtime_error("Unable to click popup button");
-                }
-                else
-                    throw std::runtime_error("Invalid popup button rect");
+                if (window.click_button(input, i.second->button))
+                    return true;
             }
         }
 
-        return false;
+        throw std::runtime_error(QString("Unable to close popup: %1").arg(title.c_str()).toStdString().c_str());
     }
 }
 
