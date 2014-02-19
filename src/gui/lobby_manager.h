@@ -31,6 +31,8 @@ public:
     bool is_registering() const;
 
 private:
+    enum { REGISTER, CLOSE_POPUP, WAIT_POPUP } state_;
+
     std::unique_ptr<fake_window> lobby_window_;
     input_manager& input_manager_;
     int registered_;

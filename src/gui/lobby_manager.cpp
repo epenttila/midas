@@ -51,6 +51,7 @@ lobby_manager::lobby_manager(const site_settings& settings, input_manager& input
     : input_manager_(input_manager)
     , registered_(0)
     , settings_(&settings)
+    , state_(REGISTER)
 {
     lobby_window_.reset(new fake_window(*settings_->get_window("lobby"), settings, wm));
     popup_window_.reset(new fake_window(*settings_->get_window("popup"), settings, wm));
@@ -63,34 +64,64 @@ void lobby_manager::register_sng()
 {
     const auto& registration_wait = *settings_->get_number("reg-wait");
 
-    if (registration_time_.isNull())
+    switch (state_)
     {
-        lobby_window_->click_any_button(input_manager_, settings_->get_buttons("game-list"));
-
-        if (!lobby_window_->click_any_button(input_manager_, settings_->get_buttons("register")))
-            return;
-
-        BOOST_LOG_TRIVIAL(info) << QString("Registering (waiting %1 seconds to complete)...").arg(registration_wait)
-            .toStdString();
-
-        registration_time_.start();
-    }
-    else if (registration_time_.elapsed() < registration_wait * 1000)
-    {
-        if (close_popups(input_manager_, *popup_window_, settings_->get_popups("reg-ok")))
+    case REGISTER:
         {
-            registration_time_ = QTime();
-            ++registered_;
+            lobby_window_->click_any_button(input_manager_, settings_->get_buttons("game-list"));
 
-            BOOST_LOG_TRIVIAL(info) << QString("Registration success (regs: %1 -> %2)").arg(registered_ - 1)
-                .arg(registered_).toStdString();
+            if (!lobby_window_->click_any_button(input_manager_, settings_->get_buttons("register")))
+                return;
+
+            BOOST_LOG_TRIVIAL(info) << QString("Registering (waiting %1 seconds to complete)...").arg(registration_wait)
+                .toStdString();
+
+            registration_time_.start();
+
+            state_ = CLOSE_POPUP;
         }
-    }
-    else
-    {
-        registration_time_ = QTime();
+        break;
+    case CLOSE_POPUP:
+        {
+            if (popup_window_->is_valid())
+            {
+                if (close_popups(input_manager_, *popup_window_, settings_->get_popups("reg-ok")))
+                {
+                    state_ = WAIT_POPUP;
 
-        BOOST_LOG_TRIVIAL(warning) << "Unable to verify registration result";
+                    BOOST_LOG_TRIVIAL(info) << "Closing registration popup";
+                }
+                else
+                    throw std::runtime_error("Unable to close popup");
+            }
+            else if (registration_time_.elapsed() > registration_wait * 1000)
+            {
+                state_ = REGISTER;
+                registration_time_ = QTime();
+
+                BOOST_LOG_TRIVIAL(warning) << "Unable to verify registration result";
+            }
+        }
+        break;
+    case WAIT_POPUP:
+        {
+            if (popup_window_->is_valid())
+            {
+                state_ = CLOSE_POPUP;
+
+                BOOST_LOG_TRIVIAL(info) << "Registration popup still open";
+            }
+            else
+            {
+                state_ = REGISTER;
+                registration_time_ = QTime();
+                ++registered_;
+
+                BOOST_LOG_TRIVIAL(info) << QString("Registration success (regs: %1 -> %2)").arg(registered_ - 1)
+                    .arg(registered_).toStdString();
+            }
+        }
+        break;
     }
 }
 
