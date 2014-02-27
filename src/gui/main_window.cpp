@@ -303,7 +303,7 @@ void main_window::capture_timer_timeout()
 
         handle_schedule();
 
-        if (lobby_)
+        if (lobby_ && !window_manager_->get_image().isNull())
         {
             lobby_->update_windows();
 
