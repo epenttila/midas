@@ -249,6 +249,9 @@ const nlhe_state* nlhe_state::get_child(int index) const
     if (index == -1)
         return nullptr;
 
+    if (index >= children_.size())
+        return nullptr;
+
     return children_[index].get();
 }
 
