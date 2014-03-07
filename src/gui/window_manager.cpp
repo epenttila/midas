@@ -65,8 +65,22 @@ const QImage& window_manager::get_image() const
 
 namespace
 {
-    const auto INSIDE_COLOR = qRgb(255, 255, 225);
+    const QRgb INSIDE_COLORS[] = {
+        qRgb(255, 255, 225),
+        qRgb(255, 255, 220)
+    };
     const auto BORDER_COLOR = qRgb(0, 0, 0);
+
+    bool is_inside_tooltip(const QImage& image, const int x, const int y)
+    {
+        for (const auto& color : INSIDE_COLORS)
+        {
+            if (image.pixel(x, y) == color)
+                return true;
+        }
+
+        return false;
+    }
 
     QRect find_tooltip(const QImage& image, const int orig_x, const int orig_y)
     {
@@ -76,7 +90,7 @@ namespace
         // inside width
         int width = 0;
 
-        for (int x = orig_x + 1; x < image.width() && image.pixel(x, orig_y + 1) == INSIDE_COLOR; ++x)
+        for (int x = orig_x + 1; x < image.width() && is_inside_tooltip(image, x, orig_y + 1); ++x)
             ++width;
 
         if (width < 10)
@@ -85,7 +99,7 @@ namespace
         // inside height
         int height = 0;
 
-        for (int y = orig_y + 1; y < image.height() && image.pixel(orig_x + 1, y) == INSIDE_COLOR; ++y)
+        for (int y = orig_y + 1; y < image.height() && is_inside_tooltip(image, orig_x + 1, y); ++y)
             ++height;
 
         if (height < 10)
