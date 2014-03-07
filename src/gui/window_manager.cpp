@@ -70,6 +70,9 @@ namespace
 
     QRect find_tooltip(const QImage& image, const int orig_x, const int orig_y)
     {
+        if (orig_x + 1 >= image.width() || orig_y + 1 >= image.height())
+            return QRect();
+
         // inside width
         int width = 0;
 
