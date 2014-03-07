@@ -305,16 +305,13 @@ void main_window::capture_timer_timeout()
 
                 if (autoplay_action_->isChecked())
                 {
-                    input_manager_->move_random(input_manager::IDLE_MOVE_OFFSET);
+                    input_manager_->move_random(input_manager::IDLE_MOVE_DESKTOP);
                     input_manager_->sleep();
                 }
             }
 
             if (tooltip_rect.isValid())
             {
-                if (autoplay_action_->isChecked())
-                    input_manager_->move_random(input_manager::IDLE_MOVE_DESKTOP);
-
                 throw std::runtime_error(QString("Tooltip found at (%1,%2,%3,%4)")
                     .arg(tooltip_rect.x())
                     .arg(tooltip_rect.y())
