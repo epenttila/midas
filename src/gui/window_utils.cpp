@@ -139,6 +139,9 @@ std::string read_string_impl(const QImage* image, const QRect& rect, const QRgb&
         }
         else
         {
+            if (error && calculate_mask(*image, x, rect.top(), rect.height(), color) != 0)
+                *error += 1;
+
             ++x;
         }
     }
