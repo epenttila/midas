@@ -285,20 +285,42 @@ void main_window::capture_timer_timeout()
             autolobby_action_->setChecked(false);
         }
 
-        window_manager_->update(title_filter_->text().toStdString());
-
-        const auto tooltip_rect = window_manager_->get_tooltip();
-
-        if (tooltip_rect.isValid())
+        if (const auto p = settings_->get_number("tooltip-move-time"))
         {
-            if (autoplay_action_->isChecked())
-                input_manager_->move_random(input_manager::IDLE_MOVE_DESKTOP);
+            QRect tooltip_rect;
 
-            throw std::runtime_error(QString("Tooltip found at (%1,%2,%3,%4)")
-                .arg(tooltip_rect.x())
-                .arg(tooltip_rect.y())
-                .arg(tooltip_rect.width())
-                .arg(tooltip_rect.height()).toStdString().c_str());
+            QTime t;
+            t.start();
+
+            while (t.elapsed() <= *p * 1000.0)
+            {
+                window_manager_->update(title_filter_->text().toStdString());
+
+                tooltip_rect = window_manager_->get_tooltip();
+
+                if (tooltip_rect.isNull())
+                    break;
+
+                BOOST_LOG_TRIVIAL(warning) << "Tooltip found; retrying capture";
+
+                if (autoplay_action_->isChecked())
+                {
+                    input_manager_->move_random(input_manager::IDLE_MOVE_OFFSET);
+                    input_manager_->sleep();
+                }
+            }
+
+            if (tooltip_rect.isValid())
+            {
+                if (autoplay_action_->isChecked())
+                    input_manager_->move_random(input_manager::IDLE_MOVE_DESKTOP);
+
+                throw std::runtime_error(QString("Tooltip found at (%1,%2,%3,%4)")
+                    .arg(tooltip_rect.x())
+                    .arg(tooltip_rect.y())
+                    .arg(tooltip_rect.width())
+                    .arg(tooltip_rect.height()).toStdString().c_str());
+            }
         }
 
         handle_schedule();
