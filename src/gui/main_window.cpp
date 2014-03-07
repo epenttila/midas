@@ -619,6 +619,7 @@ void main_window::process_snapshot(const fake_window& window)
     BOOST_LOG_TRIVIAL(info) << "Dealer: " << dealer;
 
     ENSURE(dealer == 0 || dealer == 1);
+    ENSURE(new_game || table_data.dealer == dealer);
 
     // figure out the big blind (we can't trust the window title due to buggy clients)
     const auto big_blind = new_game
@@ -633,6 +634,8 @@ void main_window::process_snapshot(const fake_window& window)
     const auto stack_size = get_effective_stack(snapshot, big_blind);
 
     BOOST_LOG_TRIVIAL(info) << "Stack: " << stack_size << " SB";
+
+    ENSURE(new_game || table_data.stack_size == stack_size);
 
     if (snapshot.hole[0] != -1 && snapshot.hole[1] != -1)
     {
@@ -744,6 +747,7 @@ void main_window::process_snapshot(const fake_window& window)
     table_data.snapshot = snapshot;
     table_data.dealer = dealer;
     table_data.big_blind = big_blind;
+    table_data.stack_size = stack_size;
 
     // update snapshot timestamp again to ignore any input duration in old table calculation
     table_data.timestamp = QDateTime::currentDateTime();

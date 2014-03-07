@@ -57,10 +57,11 @@ public slots:
 private:
     struct table_data_t
     {
-        table_data_t() : dealer(-1), big_blind(-1), state(nullptr) {}
+        table_data_t() : dealer(-1), big_blind(-1), stack_size(-1), state(nullptr) {}
 
         int dealer;
         double big_blind;
+        int stack_size;
 
         table_manager::snapshot_t snapshot;
 
