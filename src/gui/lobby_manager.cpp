@@ -78,7 +78,26 @@ void lobby_manager::register_sng()
 
             registration_time_.start();
 
-            state_ = CLOSE_POPUP;
+            state_ = CHECK_POPUP;
+        }
+        break;
+    case CHECK_POPUP:
+        {
+            if (popup_window_->is_valid())
+            {
+                state_ = CLOSE_POPUP;
+
+                BOOST_LOG_TRIVIAL(info) << "Popup found; closing";
+            }
+            else if (registration_time_.elapsed() > registration_wait * 1000)
+            {
+                state_ = REGISTER;
+                registration_time_ = QTime();
+
+                BOOST_LOG_TRIVIAL(warning) << "Unable to verify registration result";
+            }
+            else
+                BOOST_LOG_TRIVIAL(info) << "Waiting for registration popup to appear...";
         }
         break;
     case CLOSE_POPUP:
@@ -94,12 +113,11 @@ void lobby_manager::register_sng()
                 else
                     throw std::runtime_error("Unable to close popup");
             }
-            else if (registration_time_.elapsed() > registration_wait * 1000)
+            else
             {
-                state_ = REGISTER;
-                registration_time_ = QTime();
+                state_ = WAIT_POPUP;
 
-                BOOST_LOG_TRIVIAL(warning) << "Unable to verify registration result";
+                BOOST_LOG_TRIVIAL(info) << "Popup is no more";
             }
         }
         break;
@@ -109,7 +127,7 @@ void lobby_manager::register_sng()
             {
                 state_ = CLOSE_POPUP;
 
-                BOOST_LOG_TRIVIAL(info) << "Registration popup still open";
+                BOOST_LOG_TRIVIAL(info) << "Registration popup still open; closing again";
             }
             else
             {
