@@ -145,7 +145,6 @@ void lobby_manager::detect_closed_tables(const std::unordered_set<tid_t>& new_ac
     if (new_active_tables == active_tables_)
         return; // no change
 
-    const auto old_regs = registered_;
     const auto old_tables = active_tables_;
 
     active_tables_ = new_active_tables;
@@ -153,23 +152,12 @@ void lobby_manager::detect_closed_tables(const std::unordered_set<tid_t>& new_ac
     BOOST_LOG_TRIVIAL(info) << QString("Updating active tables (%1 -> %2)")
         .arg(get_table_string(old_tables).c_str()).arg(get_table_string(active_tables_).c_str()).toStdString();
 
-    if (active_tables_.size() > registered_)
-    {
-        // assume we missed a registration confirmation
-        registered_ = static_cast<int>(active_tables_.size());
-        registration_time_ = QTime();
-
-        BOOST_LOG_TRIVIAL(warning) << QString("There are more tables than registrations (%1 -> %2)").arg(old_regs)
-            .arg(registered_).toStdString();
-
-        return;
-    }
-
     // find closed tables
     for (const auto& i : old_tables)
     {
         if (active_tables_.find(i) == active_tables_.end())
         {
+            const auto old_regs = registered_;
             --registered_;
 
             BOOST_LOG_TRIVIAL(info) << QString("Tournament %3 finished (%1 -> %2)").arg(old_regs).arg(registered_)
@@ -179,10 +167,24 @@ void lobby_manager::detect_closed_tables(const std::unordered_set<tid_t>& new_ac
 
     if (registered_ < 0)
     {
+        const auto old_regs = registered_;
         registered_ = 0;
 
         BOOST_LOG_TRIVIAL(warning) << QString("Negative registrations (%1 -> %2)").arg(old_regs).arg(registered_)
             .toStdString();
+    }
+
+    // adjust registrations after closing old tables above so we notice if a single table has been replaced,
+    // e.g., table count remains the same (1 -> 1), but the tournament id of that table has changed
+    if (active_tables_.size() > registered_)
+    {
+        // assume we missed a registration confirmation
+        const auto old_regs = registered_;
+        registered_ = static_cast<int>(active_tables_.size());
+        registration_time_ = QTime();
+
+        BOOST_LOG_TRIVIAL(warning) << QString("There are more tables than registrations (%1 -> %2)").arg(old_regs)
+            .arg(registered_).toStdString();
     }
 }
 
