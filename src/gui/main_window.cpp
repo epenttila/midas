@@ -705,7 +705,8 @@ void main_window::process_snapshot(const fake_window& window)
             : (snapshot.bet[1] - snapshot.bet[0]) / (snapshot.total_pot - (snapshot.bet[1] - snapshot.bet[0]));
 
         ENSURE(fraction > 0);
-        BOOST_LOG_TRIVIAL(info) << QString("Opponent raised %1x pot").arg(fraction).toStdString();
+        BOOST_LOG_TRIVIAL(info) << QString("Opponent raised to %2 (%1x pot)").arg(fraction).arg(snapshot.bet[1])
+            .toStdString();
         current_state = current_state->raise(fraction); // there is an outstanding bet/raise
     }
     else if (current_state->get_round() == holdem_state::PREFLOP && dealer == 1 && snapshot.bet[1] <= big_blind)
