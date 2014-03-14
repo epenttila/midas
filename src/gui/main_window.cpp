@@ -815,10 +815,6 @@ void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy&
     const double probability = strategy.get_strategy().get_probability(*current_state, index, bucket);
     BOOST_LOG_TRIVIAL(info) << QString("Strategy: %1 (%2)").arg(s).arg(probability).toStdString();
 
-    current_state = current_state->get_child(index);
-
-    ENSURE(current_state != nullptr);
-
     const auto& action_delay = *settings_->get_interval("action-delay");
 
     switch (next_action)
@@ -859,6 +855,13 @@ void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy&
         }
         break;
     }
+
+    // update state pointer last after the table_manager input functions
+    // this makes it possible to recover in case the buttons are stuck but become normal again as the state pointer
+    // won't be in an invalid (terminal) state
+    current_state = current_state->get_child(index);
+
+    ENSURE(current_state != nullptr);
 }
 
 void main_window::handle_lobby()
