@@ -4,6 +4,7 @@
 #include <boost/functional/hash.hpp>
 #include <QImage>
 #include <QDateTime>
+#include <boost/log/trivial.hpp>
 #pragma warning(pop)
 
 #include "util/card.h"
@@ -208,6 +209,7 @@ std::string read_string(const QImage* image, const QRect& rect, const QRgb& colo
 {
     std::string best_s;
     double min_error = std::numeric_limits<double>::max();
+    int best_shift = -1;
 
     for (int y = -max_shift; y <= max_shift; ++y)
     {
@@ -219,7 +221,15 @@ std::string read_string(const QImage* image, const QRect& rect, const QRgb& colo
         {
             best_s = s;
             min_error = error;
+            best_shift = y;
         }
+    }
+
+    if (!best_s.empty() && best_shift != 0)
+    {
+        BOOST_LOG_TRIVIAL(warning) << QString("Read shifted string \"%1\" at (%2,%3,%4,%5) with shift %6")
+            .arg(best_s.c_str()).arg(rect.left()).arg(rect.top()).arg(rect.width()).arg(rect.height()).arg(best_shift)
+            .toStdString();
     }
 
     return best_s;
