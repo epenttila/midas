@@ -120,7 +120,8 @@ namespace
                 reader.attributes().value("color-y").toInt(),
                 std::max(1, reader.attributes().value("color-width").toInt()),
                 std::max(1, reader.attributes().value("color-height").toInt())),
-            QColor(reader.attributes().value("color").toString()).rgb()
+            QColor(reader.attributes().value("color").toString()).rgb(),
+            reader.attributes().value("tolerance").toDouble()
         };
 
         const site_settings::button_t button = {
