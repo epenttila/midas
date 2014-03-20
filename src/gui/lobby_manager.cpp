@@ -166,6 +166,7 @@ void lobby_manager::detect_closed_tables(const std::unordered_set<tid_t>& new_ac
     const auto old_tables = active_tables_;
 
     active_tables_ = new_active_tables;
+    table_update_time_.start();
 
     BOOST_LOG_TRIVIAL(info) << QString("Updating active tables (%1 -> %2)")
         .arg(get_table_string(old_tables).c_str()).arg(get_table_string(active_tables_).c_str()).toStdString();
@@ -237,4 +238,25 @@ lobby_manager::tid_t lobby_manager::get_tournament_id(const fake_window& window)
 bool lobby_manager::is_registering() const
 {
     return !registration_time_.isNull();
+}
+
+bool lobby_manager::check_idle(const bool schedule_active)
+{
+    if (table_update_time_.isValid())
+    {
+        if (schedule_active)
+        {
+            const auto max_idle_time = settings_->get_number("max-idle-time");
+
+            if (max_idle_time && table_update_time_.elapsed() > *max_idle_time * 1000.0)
+            {
+                table_update_time_ = QTime();
+                return true;
+            }
+        }
+        else 
+            table_update_time_ = QTime();
+    }
+
+    return false;
 }

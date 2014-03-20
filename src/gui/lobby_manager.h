@@ -29,6 +29,7 @@ public:
     void update_windows();
     tid_t get_tournament_id(const fake_window& window) const;
     bool is_registering() const;
+    bool check_idle(bool schedule_active);
 
 private:
     enum { REGISTER, CHECK_POPUP, CLOSE_POPUP, WAIT_POPUP } state_;
@@ -41,4 +42,5 @@ private:
     std::unordered_set<tid_t> active_tables_;
     const site_settings* settings_;
     QTime registration_time_;
+    QTime table_update_time_;
 };

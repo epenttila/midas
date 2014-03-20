@@ -876,6 +876,15 @@ void main_window::handle_lobby()
 
     lobby_->detect_closed_tables(active_tournaments);
 
+    if (lobby_->check_idle(schedule_active_))
+    {
+        if (smtp_)
+        {
+            smtp_->send(settings_->get_string("smtp-from")->c_str(), settings_->get_string("smtp-to")->c_str(),
+                "[midas] " + QHostInfo::localHostName() + " is idle", ".");
+        }
+    }
+
     if (lobby_->is_registering()
         || (lobby_->get_registered_sngs() < table_count_->value()
             && (!schedule_action_->isChecked() || schedule_active_)))
