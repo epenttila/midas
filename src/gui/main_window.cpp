@@ -588,6 +588,14 @@ void main_window::process_snapshot(const fake_window& window)
 
     next_action_time = QDateTime();
 
+    BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
+    BOOST_LOG_TRIVIAL(info) << "Window: " << window.get_window_text();
+
+    BOOST_LOG_TRIVIAL(info) << "Snapshot:";
+
+    for (const auto& str : QString(table_manager::snapshot_t::to_string(snapshot).c_str()).trimmed().split('\n'))
+        BOOST_LOG_TRIVIAL(info) << "\t" << str.toStdString();
+
     // check if our previous action failed for some reason (buggy clients leave buttons depressed)
     if (snapshot.hole == table_data.snapshot.hole
         && snapshot.board == table_data.snapshot.board
@@ -599,9 +607,6 @@ void main_window::process_snapshot(const fake_window& window)
     }
 
     old_table_data_[tournament_id] = table_data;
-
-    BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
-    BOOST_LOG_TRIVIAL(info) << "Window: " << window.get_window_text();
 
     const auto new_game = is_new_game(table_data, snapshot);
 
@@ -633,35 +638,6 @@ void main_window::process_snapshot(const fake_window& window)
     BOOST_LOG_TRIVIAL(info) << "Stack: " << stack_size << " SB";
 
     ENSURE(new_game || table_data.stack_size == stack_size);
-
-    if (snapshot.hole[0] != -1 && snapshot.hole[1] != -1)
-    {
-        BOOST_LOG_TRIVIAL(info) << QString("Hole: [%1 %2]").arg(get_card_string(snapshot.hole[0]).c_str())
-            .arg(get_card_string(snapshot.hole[1]).c_str()).toStdString();
-    }
-
-    QString board_string;
-
-    if (snapshot.board[4] != -1)
-    {
-        board_string = QString("Board: [%1 %2 %3 %4] [%5]").arg(get_card_string(snapshot.board[0]).c_str())
-            .arg(get_card_string(snapshot.board[1]).c_str()).arg(get_card_string(snapshot.board[2]).c_str())
-            .arg(get_card_string(snapshot.board[3]).c_str()).arg(get_card_string(snapshot.board[4]).c_str());
-    }
-    else if (snapshot.board[3] != -1)
-    {
-        board_string = QString("Board: [%1 %2 %3] [%4]").arg(get_card_string(snapshot.board[0]).c_str())
-            .arg(get_card_string(snapshot.board[1]).c_str()).arg(get_card_string(snapshot.board[2]).c_str())
-            .arg(get_card_string(snapshot.board[3]).c_str());
-    }
-    else if (snapshot.board[0] != -1)
-    {
-        board_string = QString("Board: [%1 %2 %3]").arg(get_card_string(snapshot.board[0]).c_str())
-            .arg(get_card_string(snapshot.board[1]).c_str()).arg(get_card_string(snapshot.board[2]).c_str());
-    }
-
-    if (!board_string.isEmpty())
-        BOOST_LOG_TRIVIAL(info) << board_string.toStdString();
 
     ENSURE(!strategies_.empty());
 

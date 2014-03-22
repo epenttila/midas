@@ -4,6 +4,7 @@
 #include <boost/log/trivial.hpp>
 #include <unordered_set>
 #include <QTime>
+#include <sstream>
 #pragma warning(pop)
 
 #include "util/card.h"
@@ -430,4 +431,32 @@ void table_manager::input_captcha(const std::string& str) const
         input_.send_string(str);
         input_.sleep();
     }
+}
+
+std::string table_manager::snapshot_t::to_string(const snapshot_t& snapshot)
+{
+    std::stringstream ss;
+
+    ss << "board: ["
+       << get_card_string(snapshot.board[0]) << ", "
+       << get_card_string(snapshot.board[1]) << ", "
+       << get_card_string(snapshot.board[2]) << ", "
+       << get_card_string(snapshot.board[3]) << ", "
+       << get_card_string(snapshot.board[4]) << "]\n";
+
+    ss << "hole: [" << get_card_string(snapshot.hole[0]) << ", " << get_card_string(snapshot.hole[1]) << "]\n";
+    ss << "dealer: [" << snapshot.dealer[0] << ", " << snapshot.dealer[1] << "]\n";
+    ss << "stack: [" << snapshot.stack[0] << ", " << snapshot.stack[1] << "]\n";
+    ss << "bet: [" << snapshot.bet[0] << ", " << snapshot.bet[1] << "]\n";
+    ss << "total_pot: " << snapshot.total_pot << "\n";
+    ss << "all_in: [" << static_cast<int>(snapshot.all_in[0]) << ", "
+        << static_cast<int>(snapshot.all_in[1]) << "]\n";
+    ss << "buttons: " << snapshot.buttons << "\n";
+    ss << "sit_out: [" << static_cast<int>(snapshot.sit_out[0]) << ", "
+        << static_cast<int>(snapshot.sit_out[1]) << "]\n";
+    ss << "highlight: [" << static_cast<int>(snapshot.highlight[0]) << ", "
+        << static_cast<int>(snapshot.highlight[1]) << "]\n";
+    ss << "captcha: " << static_cast<int>(snapshot.captcha) << "\n";
+
+    return ss.str();
 }

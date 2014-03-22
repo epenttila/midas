@@ -35,6 +35,8 @@ public:
             highlight.fill(false);
         }
 
+        static std::string to_string(const snapshot_t& snapshot);
+
         std::array<int, 5> board;
         std::array<int, 2> hole;
         std::array<bool, 2> dealer;
