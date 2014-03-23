@@ -168,14 +168,15 @@ int main(int argc, char* argv[])
 
         auto start_time = boost::posix_time::second_clock::universal_time();
 
-        solver->connect_progressed([&](std::uint64_t i) {
+        solver->connect_progressed([&](std::uint64_t i, const solver_base::cfr_t& cfr) {
             using namespace boost::posix_time;
             const auto d = second_clock::universal_time() - start_time;
             const double ips = d.total_milliseconds() > 0 ? i / double(d.total_milliseconds()) * 1000.0 : 0;
             const auto eta = seconds(ips > 0 ? int((iterations - i) / ips) : 0);
             const double pct = double(i) / iterations * 100.0;
-            BOOST_LOG_TRIVIAL(info) << boost::format("%d/%d (%.1f%%) ips: %.1f elapsed: %s eta: %s")
-                % i % iterations % pct % ips % to_simple_string(d) % to_simple_string(eta);
+            const solver_base::cfr_t acfr = {cfr[0] / i, cfr[1] / i};
+            BOOST_LOG_TRIVIAL(info) << boost::format("%d/%d (%.1f%%) ips: %.1f elapsed: %s eta: %s cfr: [%f, %f]")
+                % i % iterations % pct % ips % to_simple_string(d) % to_simple_string(eta) % acfr[0] % acfr[1];
         });
 
         BOOST_LOG_TRIVIAL(info) << "Using random seed: " << seed;

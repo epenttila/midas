@@ -7,6 +7,8 @@ class solver_base
     friend std::ostream& operator<<(std::ostream& os, const solver_base& solver);
 
 public:
+    typedef std::array<double, 2> cfr_t;
+
     virtual ~solver_base() {}
     virtual void solve(const std::uint64_t iterations, std::int64_t seed, int threads = -1) = 0;
     virtual void save_state(const std::string& filename) const = 0;
@@ -17,7 +19,7 @@ public:
     virtual std::vector<int> get_state_counts() const = 0;
     virtual std::vector<int> get_action_counts() const = 0;
     virtual std::size_t get_required_memory() const = 0;
-    virtual void connect_progressed(const std::function<void (std::uint64_t)>& f) = 0;
+    virtual void connect_progressed(const std::function<void (std::uint64_t, const cfr_t& cfr)>& f) = 0;
 
 protected:
     virtual void print(std::ostream& os) const = 0;

@@ -13,18 +13,18 @@ pure_cfr_solver<T, U>::~pure_cfr_solver()
 }
 
 template<class T, class U>
-void pure_cfr_solver<T, U>::run_iteration(T& game)
+void pure_cfr_solver<T, U>::run_iteration(T& game, cfr_t* cfr)
 {
     bucket_t buckets;
     const int result = game.play(&buckets);
 
-    update(0, game.get_random_engine(), this->get_root_state(), buckets, result);
-    update(1, game.get_random_engine(), this->get_root_state(), buckets, result);
+    update(0, game.get_random_engine(), this->get_root_state(), buckets, result, cfr);
+    update(1, game.get_random_engine(), this->get_root_state(), buckets, result, cfr);
 }
 
 template<class T, class U>
 typename pure_cfr_solver<T, U>::data_t pure_cfr_solver<T, U>::update(int position, std::mt19937& engine,
-    const game_state& state, const bucket_t& buckets, const int result)
+    const game_state& state, const bucket_t& buckets, const int result, cfr_t* cfr)
 {
     const int player = state.get_player();
     const int bucket = buckets[player][state.get_round()];
@@ -54,7 +54,7 @@ typename pure_cfr_solver<T, U>::data_t pure_cfr_solver<T, U>::update(int positio
         if (next->is_terminal())
             total_ev = next->get_terminal_ev(result);
         else
-            total_ev = update(position, engine, *next, buckets, result);
+            total_ev = update(position, engine, *next, buckets, result, cfr);
     }
     else
     {
@@ -69,7 +69,7 @@ typename pure_cfr_solver<T, U>::data_t pure_cfr_solver<T, U>::update(int positio
             if (next->is_terminal())
                 action_ev[i] = next->get_terminal_ev(result);
             else
-                action_ev[i] = update(position, engine, *next, buckets, result);
+                action_ev[i] = update(position, engine, *next, buckets, result, cfr);
         }
 
         total_ev = action_ev[choice];
@@ -97,6 +97,9 @@ typename pure_cfr_solver<T, U>::data_t pure_cfr_solver<T, U>::update(int positio
             }
 
             regret += delta_regret;
+
+            if (delta_regret > 0)
+                (*cfr)[player] += delta_regret;
         }
     }
 

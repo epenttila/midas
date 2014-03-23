@@ -6,6 +6,22 @@
 #define ftello _ftelli64
 #endif
 
+namespace detail
+{
+    solver_base::cfr_t sum(const std::vector<solver_base::cfr_t>& v)
+    {
+        solver_base::cfr_t a = {{}};
+
+        for (const auto& i : v)
+        {
+            a[0] += i[0];
+            a[1] += i[1];
+        }
+
+        return a;
+    }
+}
+
 template<class T, class U, class Data>
 cfr_solver<T, U, Data>::cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr<abstraction_t> abstraction)
     : root_(std::move(state))
@@ -34,8 +50,9 @@ void cfr_solver<T, U, Data>::solve(const std::uint64_t iterations, std::int64_t 
     const double start_time = omp_get_wtime();
     double time = start_time;
     std::uint64_t iteration = 0;
+    std::vector<cfr_t> cfr(omp_get_max_threads());
 
-    progressed_(iteration);
+    progressed_(iteration, detail::sum(cfr));
 
 #pragma omp parallel
     {
@@ -45,7 +62,7 @@ void cfr_solver<T, U, Data>::solve(const std::uint64_t iterations, std::int64_t 
         // TODO make unsigned when OpenMP 3.0 is supported
         for (std::int64_t i = 0; i < std::int64_t(iterations); ++i)
         {
-            run_iteration(g);
+            run_iteration(g, &cfr[omp_get_thread_num()]);
 
 #pragma omp atomic
             ++iteration;
@@ -54,13 +71,13 @@ void cfr_solver<T, U, Data>::solve(const std::uint64_t iterations, std::int64_t 
 
             if (omp_get_thread_num() == 0 && t - time >= 1)
             {
-                progressed_(iteration);
+                progressed_(iteration, detail::sum(cfr));
                 time = t;
             }
         }
     }
 
-    progressed_(iteration);
+    progressed_(iteration, detail::sum(cfr));
 
     total_iterations_ += iterations;
 }
@@ -209,7 +226,7 @@ std::size_t cfr_solver<T, U, Data>::get_required_memory() const
 }
 
 template<class T, class U, class Data>
-void cfr_solver<T, U, Data>::connect_progressed(const std::function<void (std::uint64_t)>& f)
+void cfr_solver<T, U, Data>::connect_progressed(const std::function<void (std::uint64_t, const cfr_t& cfr)>& f)
 {
     progressed_.connect(f);
 }

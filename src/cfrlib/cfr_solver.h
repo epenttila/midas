@@ -30,6 +30,7 @@ public:
     typedef typename T::abstraction_t abstraction_t;
     typedef Data data_t;
     typedef strategy::probability_t probability_t;
+    typedef solver_base::cfr_t cfr_t;
 
     cfr_solver(std::unique_ptr<game_state> state, std::unique_ptr<abstraction_t> abstraction);
     ~cfr_solver();
@@ -41,7 +42,7 @@ public:
     virtual std::vector<int> get_action_counts() const;
     virtual std::size_t get_required_values() const;
     virtual std::size_t get_required_memory() const;
-    virtual void connect_progressed(const std::function<void (std::uint64_t)>& f);
+    virtual void connect_progressed(const std::function<void (std::uint64_t, const cfr_t& cfr)>& f);
     virtual void save_state(const std::string& filename) const;
     virtual void load_state(const std::string& filename);
     virtual void print(std::ostream& os) const;
@@ -56,7 +57,7 @@ protected:
         Data strategy;
     };
 
-    virtual void run_iteration(T& game) = 0;
+    virtual void run_iteration(T& game, cfr_t* cfr) = 0;
     data_type* get_data(std::size_t state_id, int bucket, int action);
     const data_type* get_data(std::size_t state_id, int bucket, int action) const;
     const abstraction_t& get_abstraction() const;
@@ -69,7 +70,7 @@ private:
     const evaluator_t evaluator_;
     std::unique_ptr<abstraction_t> abstraction_;
     std::uint64_t total_iterations_;
-    boost::signals2::signal<void (std::uint64_t)> progressed_;
+    boost::signals2::signal<void (std::uint64_t, const cfr_t& cfr)> progressed_;
 };
 
 #include "cfr_solver.ipp"
