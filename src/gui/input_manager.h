@@ -28,6 +28,7 @@ public:
     void move_click(int x, int y, int width, int height, bool double_click);
     void move_random(idle_move method);
     void set_double_click_delay(double min, double max);
+    bool is_mouse_inside(int x, int y, int width, int height) const;
 
 private:
     void wind_mouse_impl(double xs, double ys, double xe, double ye, double gravity, double wind, double min_wait,

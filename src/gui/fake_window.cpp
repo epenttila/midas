@@ -238,3 +238,10 @@ const QImage& fake_window::get_client_image() const
 {
     return client_image_;
 }
+
+bool fake_window::is_mouse_inside(const input_manager& input, const QRect& rect) const
+{
+    const QRect r(client_to_screen(rect.topLeft()), client_to_screen(rect.bottomRight()));
+
+    return input.is_mouse_inside(r.x(), r.y(), r.width(), r.height());
+}

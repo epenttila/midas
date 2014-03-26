@@ -21,6 +21,7 @@ public:
     bool update();
     const QImage& get_window_image() const;
     const QImage& get_client_image() const;
+    bool is_mouse_inside(const input_manager& input, const QRect& rect) const;
 
 private:
     QPoint client_to_screen(const QPoint& p) const;

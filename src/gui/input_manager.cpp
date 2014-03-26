@@ -309,3 +309,11 @@ void input_manager::set_double_click_delay(double min, double max)
     double_click_delay_[0] = min;
     double_click_delay_[1] = max;
 }
+
+bool input_manager::is_mouse_inside(int x, int y, int width, int height) const
+{
+    POINT pt;
+    GetCursorPos(&pt);
+
+    return pt.x >= x && pt.x < x + width && pt.y >= y && pt.y < y + height;
+}

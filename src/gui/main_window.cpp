@@ -285,46 +285,11 @@ void main_window::capture_timer_timeout()
             autolobby_action_->setChecked(false);
         }
 
-        if (const auto p = settings_->get_number("tooltip-move-time"))
-        {
-            QRect tooltip_rect;
-
-            QTime t;
-            t.start();
-
-            while (t.elapsed() <= *p * 1000.0)
-            {
-                window_manager_->update(title_filter_->text().toStdString());
-
-                tooltip_rect = window_manager_->get_tooltip();
-
-                if (tooltip_rect.isNull())
-                    break;
-
-                BOOST_LOG_TRIVIAL(warning) << "Tooltip found; retrying capture";
-
-                if (autoplay_action_->isChecked())
-                {
-                    input_manager_->move_random(input_manager::IDLE_MOVE_DESKTOP);
-                    input_manager_->sleep();
-                }
-            }
-
-            if (tooltip_rect.isValid())
-            {
-                throw std::runtime_error(QString("Tooltip found at (%1,%2,%3,%4)")
-                    .arg(tooltip_rect.x())
-                    .arg(tooltip_rect.y())
-                    .arg(tooltip_rect.width())
-                    .arg(tooltip_rect.height()).toStdString().c_str());
-            }
-        }
-
         handle_schedule();
 
-        if (lobby_ && !window_manager_->get_image().isNull())
+        if (lobby_)
         {
-            lobby_->update_windows();
+            update_capture();
 
             std::vector<const fake_window*> tables;
             
@@ -1113,4 +1078,76 @@ void main_window::save_snapshot() const
 {
     const auto& image = window_manager_->get_image();
     image.save(QDateTime::currentDateTimeUtc().toString("'snapshot-'yyyy-MM-ddTHHmmss.zzz'.png'"));
+}
+
+void main_window::update_capture()
+{
+    const auto tooltip_move_time = settings_->get_number("tooltip-move-time");
+
+    QRect tooltip_rect;
+    QRect bad_rect;
+
+    QTime t;
+    t.start();
+
+    while (t.elapsed() <= (tooltip_move_time ? *tooltip_move_time * 1000.0 : 0.0))
+    {
+        window_manager_->update(title_filter_->text().toStdString());
+
+        if (window_manager_->get_image().isNull())
+            return; // no image
+
+        lobby_->update_windows();
+        bad_rect = QRect();
+
+        for (const auto& table : lobby_->get_tables())
+        {
+            for (const auto& button : settings_->get_buttons("bad"))
+            {
+                const auto& rect = button.second->rect;
+
+                if (table->is_mouse_inside(*input_manager_, rect))
+                {
+                    bad_rect = rect;
+                    break;
+                }
+            }
+
+            if (bad_rect.isValid())
+                break;
+        }
+
+        tooltip_rect = window_manager_->get_tooltip();
+
+        if (bad_rect.isValid())
+            BOOST_LOG_TRIVIAL(warning) << "Mouse in bad position; retrying capture";
+        else if (tooltip_rect.isValid())
+            BOOST_LOG_TRIVIAL(warning) << "Tooltip found; retrying capture";
+        else
+            return; // we have a good capture
+
+        if (autoplay_action_->isChecked())
+        {
+            input_manager_->move_random(input_manager::IDLE_MOVE_DESKTOP);
+            input_manager_->sleep();
+        }
+    }
+
+    if (bad_rect.isValid())
+    {
+        throw std::runtime_error(QString("Mouse inside (%1,%2,%3,%4)")
+            .arg(bad_rect.x())
+            .arg(bad_rect.y())
+            .arg(bad_rect.width())
+            .arg(bad_rect.height()).toStdString().c_str());
+    }
+
+    if (tooltip_rect.isValid())
+    {
+        throw std::runtime_error(QString("Tooltip found at (%1,%2,%3,%4)")
+            .arg(tooltip_rect.x())
+            .arg(tooltip_rect.y())
+            .arg(tooltip_rect.width())
+            .arg(tooltip_rect.height()).toStdString().c_str());
+    }
 }
