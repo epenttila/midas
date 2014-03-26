@@ -2,6 +2,8 @@
 
 #include <array>
 #include <iostream>
+#include <memory>
+#include <vector>
 #include "game_state_base.h"
 
 class leduc_state : public game_state_base
@@ -42,13 +44,12 @@ private:
 
     const int id_;
     const leduc_state* parent_;
-    std::array<leduc_state*, ACTIONS> children_;
+    std::vector<std::unique_ptr<leduc_state>> children_;
     const int action_;
     const int player_;
     const std::array<int, 2> pot_;
     const game_round round_;
     const int raises_;
-    int child_count_;
 };
 
 std::ostream& operator<<(std::ostream& os, const leduc_state& state);

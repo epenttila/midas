@@ -15,10 +15,7 @@ leduc_state::leduc_state()
     , pot_(INITIAL_POT)
     , round_(PREFLOP)
     , raises_(0) // blind counts as raise
-    , child_count_(0) // sb has all actions
 {
-    children_.fill(nullptr);
-
     int id = id_ + 1;
 
     for (int i = 0; i < ACTIONS; ++i)
@@ -34,10 +31,7 @@ leduc_state::leduc_state(const leduc_state* parent, const int action, const int 
     , pot_(pot)
     , round_(round)
     , raises_(raises)
-    , child_count_(0)
 {
-    children_.fill(nullptr);
-
     for (int i = 0; i < ACTIONS; ++i)
         create_child(i, id);
 }
@@ -88,12 +82,8 @@ void leduc_state::create_child(const int action, int* id)
     else if (action == RAISE)
         ++new_raises;
 
-    assert(children_[action] == nullptr);
-
-    children_[action] = new leduc_state(this, action, new_player, new_pot, new_round, new_raises,
-        new_terminal ? nullptr : id);
-
-    ++child_count_;
+    children_.push_back(std::unique_ptr<leduc_state>(new leduc_state(this, action, new_player, new_pot, new_round,
+        new_raises, new_terminal ? nullptr : id)));
 }
 
 int leduc_state::get_terminal_ev(const int result) const
@@ -132,7 +122,7 @@ bool leduc_state::is_terminal() const
 
 const leduc_state* leduc_state::get_child(int action) const
 {
-    return children_[action];
+    return children_[action].get();
 }
 
 int leduc_state::get_id() const
@@ -147,7 +137,7 @@ int leduc_state::get_player() const
 
 int leduc_state::get_child_count() const
 {
-    return child_count_;
+    return static_cast<int>(children_.size());
 }
 
 std::ostream& operator<<(std::ostream& os, const leduc_state& state)
