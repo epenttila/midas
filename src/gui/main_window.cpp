@@ -1093,11 +1093,11 @@ void main_window::update_capture()
     while (t.elapsed() <= (tooltip_move_time ? *tooltip_move_time * 1000.0 : 0.0))
     {
         window_manager_->update(title_filter_->text().toStdString());
+        lobby_->update_windows();
 
         if (window_manager_->get_image().isNull())
             return; // no image
 
-        lobby_->update_windows();
         bad_rect = QRect();
 
         for (const auto& table : lobby_->get_tables())

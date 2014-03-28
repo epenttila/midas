@@ -144,7 +144,7 @@ fake_window::fake_window(const site_settings::window_t& window, const site_setti
 {
 }
 
-bool fake_window::update()
+void fake_window::update()
 {
     window_rect_ = QRect();
     client_rect_ = QRect();
@@ -152,6 +152,9 @@ bool fake_window::update()
     client_image_ = QImage();
 
     const auto image = window_manager_.get_image().copy(rect_);
+
+    if (image.isNull())
+        return;
 
     // top left
     int border = -1;
@@ -164,7 +167,7 @@ bool fake_window::update()
         try_top_right(image, &border, &width, &height);
 
     if (border == -1)
-        return false; // no window
+        return; // no window
 
     if (width == -1 || height == -1)
         throw std::runtime_error("Unable to determine window size");
@@ -181,8 +184,6 @@ bool fake_window::update()
 
     window_image_ = image.copy(window_rect_.translated(-window_rect_.topLeft()));
     client_image_ = image.copy(client_rect_.translated(-window_rect_.topLeft()));
-
-    return is_valid();
 }
 
 bool fake_window::is_valid() const
