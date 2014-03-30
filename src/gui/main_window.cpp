@@ -1068,6 +1068,16 @@ bool main_window::is_new_game(const table_data_t& table_data, const table_manage
         return true;
     }
 
+    // we know the previous hand ended due to our terminal action (fold, call allin or river, raise allin)
+    if (table_data.state && table_data.state->is_terminal())
+    {
+        BOOST_LOG_TRIVIAL(info) << "New game (previous state was terminal)";
+        return true;
+    }
+
+    // opponent was all-in but isn't anymore -> should be handled by check above as all our actions are terminal
+    ENSURE(!(!snapshot.all_in[1] && table_data.snapshot.all_in[1]));
+
     // TODO: a false negatives can be possible in some corner cases
     return false;
 }
