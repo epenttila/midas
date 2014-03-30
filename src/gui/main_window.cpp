@@ -577,7 +577,7 @@ void main_window::process_snapshot(const fake_window& window)
 
     // figure out the dealer (sometimes buggy clients display two dealer buttons)
     const auto dealer = (snapshot.dealer[0] && snapshot.dealer[1])
-        ? (new_game ? 1 - table_data.dealer : table_data.dealer)
+        ? (new_game ? static_cast<int>(*settings_->get_number("default-dealer")) : table_data.dealer)
         : (snapshot.dealer[0] ? 0 : (snapshot.dealer[1] ? 1 : -1));
 
     if (snapshot.dealer[0] && snapshot.dealer[1])
