@@ -559,7 +559,7 @@ void main_window::process_snapshot(const fake_window& window)
     BOOST_LOG_TRIVIAL(info) << "Snapshot:";
 
     for (const auto& str : QString(table_manager::snapshot_t::to_string(snapshot).c_str()).trimmed().split('\n'))
-        BOOST_LOG_TRIVIAL(info) << "\t" << str.toStdString();
+        BOOST_LOG_TRIVIAL(info) << "- " << str.toStdString();
 
     // check if our previous action failed for some reason (buggy clients leave buttons depressed)
     if (snapshot.hole == table_data.snapshot.hole
