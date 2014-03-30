@@ -72,9 +72,9 @@ private:
     };
 
     void process_snapshot(const fake_window& window);
-    void perform_action(tid_t tournament_id, const nlhe_strategy& strategy, const table_manager::snapshot_t& snapshot,
-        double big_blind);
-    void update_strategy_widget(tid_t tournament_id, const nlhe_strategy& strategy, const std::array<int, 2>& hole,
+    const nlhe_state* perform_action(const nlhe_state& state, const nlhe_strategy& strategy,
+        const table_manager::snapshot_t& snapshot, double big_blind);
+    void update_strategy_widget(const nlhe_state& state, const nlhe_strategy& strategy, const std::array<int, 2>& hole,
         const std::array<int, 5>& board);
     void ensure(bool expression, const std::string& s, int line) const;
     void update_statusbar();

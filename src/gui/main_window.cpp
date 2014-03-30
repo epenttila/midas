@@ -606,9 +606,9 @@ void main_window::process_snapshot(const fake_window& window)
 
     ENSURE(!strategies_.empty());
 
-    auto it = find_nearest(strategies_, stack_size);
-    auto& strategy = *it->second;
-    auto& current_state = table_data.state;
+    const auto it = find_nearest(strategies_, stack_size);
+    const auto& strategy = *it->second;
+    auto current_state = table_data.state;
 
     BOOST_LOG_TRIVIAL(info) << QString("Strategy file: %1")
         .arg(QFileInfo(strategy.get_strategy().get_filename().c_str()).fileName()).toStdString();
@@ -679,14 +679,15 @@ void main_window::process_snapshot(const fake_window& window)
     // we should never reach terminal states when we have a pending action
     ENSURE(current_state->get_id() != -1);
 
-    update_strategy_widget(tournament_id, strategy, snapshot.hole, snapshot.board);
+    update_strategy_widget(*current_state, strategy, snapshot.hole, snapshot.board);
 
-    perform_action(tournament_id, strategy, snapshot, big_blind);
+    current_state = perform_action(*current_state, strategy, snapshot, big_blind);
 
     table_data.snapshot = snapshot;
     table_data.dealer = dealer;
     table_data.big_blind = big_blind;
     table_data.stack_size = stack_size;
+    table_data.state = current_state;
 
     // update snapshot timestamp again to ignore any input duration in old table calculation
     table_data.timestamp = QDateTime::currentDateTime();
@@ -694,7 +695,7 @@ void main_window::process_snapshot(const fake_window& window)
 
 #pragma warning(pop)
 
-void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy& strategy,
+const nlhe_state* main_window::perform_action(const nlhe_state& state, const nlhe_strategy& strategy,
     const table_manager::snapshot_t& snapshot, const double big_blind)
 {
     ENSURE(site_ && !strategies_.empty());
@@ -708,7 +709,7 @@ void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy&
     const int b4 = snapshot.board[4];
     int bucket = -1;
     const auto& abstraction = strategy.get_abstraction();
-    auto& current_state = table_data_[tournament_id].state;
+    auto current_state = &state;
 
     ENSURE(current_state != nullptr);
     ENSURE(!current_state->is_terminal());
@@ -804,6 +805,8 @@ void main_window::perform_action(const tid_t tournament_id, const nlhe_strategy&
     current_state = current_state->get_child(index);
 
     ENSURE(current_state != nullptr);
+
+    return current_state;
 }
 
 void main_window::handle_lobby()
@@ -884,17 +887,12 @@ void main_window::state_widget_board_changed(const QString& board)
     strategy_widget_->set_board(b);
 }
 
-void main_window::update_strategy_widget(const tid_t tournament_id, const nlhe_strategy& strategy,
-                                         const std::array<int, 2>& hole, const std::array<int, 5>& board)
+void main_window::update_strategy_widget(const nlhe_state& state, const nlhe_strategy& strategy,
+    const std::array<int, 2>& hole, const std::array<int, 5>& board)
 {
-    const auto state = table_data_[tournament_id].state;
-
-    if (!state)
-        return;
-
     strategy_widget_->set_hole(hole);
     strategy_widget_->set_board(board);
-    strategy_widget_->update(strategy, *state);
+    strategy_widget_->update(strategy, state);
 }
 
 void main_window::ensure(bool expression, const std::string& s, int line) const
