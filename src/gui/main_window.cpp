@@ -285,6 +285,19 @@ void main_window::capture_timer_timeout()
             autolobby_action_->setChecked(false);
         }
 
+        QFile table_file("tables.txt");
+
+        if (table_file.open(QIODevice::ReadOnly | QIODevice::Text))
+        {
+            const auto value = QString(table_file.readLine()).toInt();
+
+            if (value != table_count_->value())
+            {
+                BOOST_LOG_TRIVIAL(info) << "tables.txt found; setting table count to " << value;
+                table_count_->setValue(value);
+            }
+        }
+
         handle_schedule();
 
         if (lobby_)
