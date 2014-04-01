@@ -1147,9 +1147,21 @@ void main_window::update_capture()
         tooltip_rect = window_manager_->get_tooltip();
 
         if (bad_rect.isValid())
-            BOOST_LOG_TRIVIAL(warning) << "Mouse in bad position; retrying capture";
+        {
+            BOOST_LOG_TRIVIAL(warning) << QString("Mouse in bad position (%1,%2,%3,%4); retrying capture")
+                .arg(bad_rect.x())
+                .arg(bad_rect.y())
+                .arg(bad_rect.width())
+                .arg(bad_rect.height()).toStdString();
+        }
         else if (tooltip_rect.isValid())
-            BOOST_LOG_TRIVIAL(warning) << "Tooltip found; retrying capture";
+        {
+            BOOST_LOG_TRIVIAL(warning) << QString("Tooltip found (%1,%2,%3,%4); retrying capture")
+                .arg(tooltip_rect.x())
+                .arg(tooltip_rect.y())
+                .arg(tooltip_rect.width())
+                .arg(tooltip_rect.height()).toStdString();
+        }
         else
             return; // we have a good capture
 
@@ -1161,20 +1173,8 @@ void main_window::update_capture()
     }
 
     if (bad_rect.isValid())
-    {
-        throw std::runtime_error(QString("Mouse inside (%1,%2,%3,%4)")
-            .arg(bad_rect.x())
-            .arg(bad_rect.y())
-            .arg(bad_rect.width())
-            .arg(bad_rect.height()).toStdString().c_str());
-    }
+        throw std::runtime_error("Mouse in bad position");
 
     if (tooltip_rect.isValid())
-    {
-        throw std::runtime_error(QString("Tooltip found at (%1,%2,%3,%4)")
-            .arg(tooltip_rect.x())
-            .arg(tooltip_rect.y())
-            .arg(tooltip_rect.width())
-            .arg(tooltip_rect.height()).toStdString().c_str());
-    }
+        throw std::runtime_error("Tooltip found");
 }
