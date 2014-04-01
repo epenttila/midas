@@ -395,7 +395,10 @@ void main_window::open_strategy()
     }
 
     if (!new_strategies.empty())
+    {
         std::swap(strategies_, new_strategies);
+        BOOST_LOG_TRIVIAL(info) << strategies_.size() << " strategies loaded";
+    }
 
     update_statusbar();
     
