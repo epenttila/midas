@@ -111,7 +111,7 @@ private:
     std::unordered_map<tid_t, table_data_t> old_table_data_;
     QLabel* site_label_;
     QLabel* strategy_label_;
-    double time_to_next_activity_;
+    QDateTime next_activity_date_;
     smtp* smtp_;
     QTime mark_time_;
     std::unique_ptr<site_settings> settings_;

@@ -62,6 +62,8 @@
 
 namespace
 {
+    typedef std::map<QDate, std::vector<std::pair<QDateTime, QDateTime>>> spans_t;
+
     template<class T>
     typename T::const_iterator find_nearest(const T& map, const typename T::key_type& value)
     {
@@ -69,7 +71,7 @@ namespace
         return it != map.end() ? it : boost::prior(map.end());
     }
 
-    QString secs_to_hms(double seconds_)
+    QString secs_to_hms(std::int64_t seconds_)
     {
         auto seconds = static_cast<int>(seconds_);
 
@@ -82,59 +84,90 @@ namespace
         return QString("%1:%2:%3").arg(hours).arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 10, QChar('0'));
     }
 
-    bool is_schedule_active(const double var, const double day_variance, const site_settings::spans_t& daily_spans,
-        double* time)
+    bool is_schedule_active(const spans_t& daily_spans, QDateTime* time)
     {
-        assert(daily_spans.size() == 7);
+        const auto now = QDateTime::currentDateTime();
+        const auto spans = daily_spans.lower_bound(now.date());
 
-        const auto t = QDateTime::currentDateTime();
-        const auto day = t.date().dayOfWeek() - 1;
-        const auto& spans = daily_spans[day];
-        const auto now = window_utils::datetime_to_secs(t);
-
-        std::mt19937_64 engine(t.date().toJulianDay());
-
-        const auto offset = get_uniform_random(engine, -day_variance, day_variance);
-
-        for (const auto span : spans)
+        if (spans != daily_spans.end())
         {
-            const auto first = get_uniform_random(engine, span.first - var + offset, span.first + var + offset);
-            const auto second = get_uniform_random(engine, span.second - var + offset, span.second + var + offset);
+            for (const auto span : spans->second)
+            {
+                const auto first = span.first;
+                const auto second = span.second;
 
-            if (now < first)
-            {
-                *time = first - now;
-                return false;
-            }
-            else if (now >= first && now < second)
-            {
-                *time = second - now;
-                return true;
+                if (now < first)
+                {
+                    *time = first;
+                    return false;
+                }
+                else if (now >= first && now < second)
+                {
+                    *time = second;
+                    return true;
+                }
             }
         }
 
-        int days = 1;
-
-        for (;;)
-        {
-            const auto i = (day + days) % daily_spans.size();
-
-            if (!daily_spans[i].empty())
-            {
-                // TODO use get_uniform_random
-                *time = days * 86400.0 + daily_spans[i][0].first - now;
-                return false;
-            }
-
-            if (i == day)
-                break; // we wrapped around
-
-            ++days;
-        }
-
-        *time = -1;
+        *time = QDateTime();
 
         return false;
+    }
+
+    QString make_schedule_string(const bool active, const QDateTime& next_activity)
+    {
+        return QString("Next %1 at %3 (%2)").arg(active ? "break" : "play")
+            .arg(secs_to_hms(QDateTime::currentDateTime().secsTo(next_activity)))
+            .arg(next_activity.toString(Qt::ISODate));
+    }
+
+    spans_t read_schedule_file(const std::string& filename)
+    {
+        QFile file(filename.c_str());
+
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
+            return spans_t();
+
+        spans_t activity_spans;
+        QXmlStreamReader reader(&file);
+
+        while (reader.readNextStartElement())
+        {
+            if (reader.name() == "schedule")
+            {
+                // do nothing
+            }
+            else if (reader.name() == "span")
+            {
+                const auto day = QDate::fromString(reader.attributes().value("id").toString(), "yyyy-MM-dd");
+
+                for (const auto& i : reader.attributes().value("value").toString().split(","))
+                {
+                    if (i == "0")
+                        continue;
+
+                    const auto j = i.split(QChar('-'));
+
+                    if (j.size() != 2)
+                    {
+                        BOOST_LOG_TRIVIAL(error) << "Invalid activity span setting";
+                        continue;
+                    }
+
+                    activity_spans[day].push_back(std::make_pair(
+                        QDateTime(day, QTime::fromString(j.at(0), "HH:mm:ss")),
+                        QDateTime(day, QTime::fromString(j.at(1), "HH:mm:ss"))));
+                }
+
+                reader.skipCurrentElement();
+            }
+            else
+            {
+                reader.skipCurrentElement();
+            }
+        }
+
+        return activity_spans;
     }
 
     struct qt_sink_factory : public boost::log::sink_factory<char>
@@ -161,7 +194,6 @@ main_window::main_window()
     : engine_(std::random_device()())
     , input_manager_(new input_manager)
     , schedule_active_(false)
-    , time_to_next_activity_(0)
     , settings_(new site_settings)
     , smtp_(nullptr)
     , captcha_manager_(new captcha_manager)
@@ -861,8 +893,7 @@ void main_window::handle_schedule()
     if (!schedule_action_->isChecked())
         return;
 
-    const auto active = is_schedule_active(*settings_->get_number("activity-span-variance"),
-        *settings_->get_number("activity-day-variance"), settings_->get_activity_spans(), &time_to_next_activity_);
+    const auto active = is_schedule_active(read_schedule_file("schedule.xml"), &next_activity_date_);
 
     if (active != schedule_active_)
     {
@@ -878,8 +909,7 @@ void main_window::handle_schedule()
             BOOST_LOG_TRIVIAL(info) << "Disabling scheduled registration";
         }
 
-        BOOST_LOG_TRIVIAL(info) << QString("Next scheduled %1 in %2").arg(schedule_active_ ? "break" : "activity")
-            .arg(secs_to_hms(time_to_next_activity_)).toStdString();
+        BOOST_LOG_TRIVIAL(info) << make_schedule_string(schedule_active_, next_activity_date_).toStdString();
     }
 }
 
@@ -964,12 +994,7 @@ void main_window::update_statusbar()
     QString s;
 
     if (schedule_action_->isChecked())
-    {
-        if (schedule_active_)
-            s = QString("Active for %1").arg(secs_to_hms(time_to_next_activity_));
-        else
-            s = QString("Inactive for %1").arg(secs_to_hms(time_to_next_activity_));
-    }
+        s = make_schedule_string(schedule_active_, next_activity_date_);
     else
         s = "No schedule";
 

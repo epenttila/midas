@@ -235,10 +235,4 @@ std::string read_string(const QImage* image, const QRect& rect, const QRgb& colo
     return best_s;
 }
 
-double datetime_to_secs(const QDateTime& dt)
-{
-    return dt.toString("H").toInt() * 3600 + dt.toString("m").toInt() * 60 + dt.toString("s").toInt()
-        + dt.toString("z").toInt() / 1000.0;
-}
-
 }

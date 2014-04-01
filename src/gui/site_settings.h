@@ -13,12 +13,9 @@
 #include <memory>
 #pragma warning(pop)
 
-class QDateTime;
-
 class site_settings
 {
 public:
-    typedef std::array<std::vector<std::pair<double, double>>, 7> spans_t;
     typedef std::pair<double, double> interval_t;
     typedef std::vector<double> number_list_t;
 
@@ -102,11 +99,9 @@ public:
     const double* get_number(const std::string& id) const;
     const std::string* get_string(const std::string& id) const;
     const number_list_t* get_number_list(const std::string& id) const;
-    const spans_t& get_activity_spans() const;
 
 private:
     std::string filename_;
-    spans_t activity_spans_;
     window_map windows_;
     regex_map regexes_;
     pixel_map pixels_;

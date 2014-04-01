@@ -12,15 +12,8 @@
 #include <boost/functional/hash.hpp>
 #pragma warning(pop)
 
-#include "window_utils.h"
-
 namespace
 {
-    double hms_to_secs(const QString& str)
-    {
-        return window_utils::datetime_to_secs(QDateTime::fromString(str, "HH:mm:ss"));
-    }
-
     site_settings::pixel_t read_xml_pixel(QXmlStreamReader& reader)
     {
         const site_settings::pixel_t p = {
@@ -226,36 +219,6 @@ void site_settings::load(const std::string& filename)
             number_lists_.insert(std::make_pair(id, std::move(list)));
             reader.skipCurrentElement();
         }
-        else if (reader.name() == "activity-spans")
-        {
-            activity_spans_.fill(spans_t::value_type());
-
-            while (reader.readNextStartElement())
-            {
-                if (reader.name() == "span")
-                {
-                    const auto day = reader.attributes().value("day").toInt();
-
-                    for (const auto& i : reader.attributes().value("value").toString().split(","))
-                    {
-                        if (i == "0")
-                            continue;
-
-                        const auto j = i.split(QChar('-'));
-
-                        if (j.size() != 2)
-                        {
-                            BOOST_LOG_TRIVIAL(error) << "Invalid activity span setting";
-                            continue;
-                        }
-
-                        activity_spans_[day].push_back(std::make_pair(hms_to_secs(j.at(0)), hms_to_secs(j.at(1))));
-                    }
-
-                    reader.skipCurrentElement();
-                }
-            }
-        }
         else if (reader.name() == "button")
         {
             const auto id = reader.attributes().value("id").toString().toStdString();
@@ -392,9 +355,4 @@ const site_settings::number_list_t* site_settings::get_number_list(const std::st
 {
     const auto& i = number_lists_.equal_range(id);
     return i.first != i.second ? i.first->second.get() : nullptr;
-}
-
-const site_settings::spans_t& site_settings::get_activity_spans() const
-{
-    return activity_spans_;
 }
