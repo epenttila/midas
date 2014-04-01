@@ -252,6 +252,7 @@ main_window::main_window()
 
 main_window::~main_window()
 {
+    BOOST_LOG_TRIVIAL(info) << "Closing...";
 }
 
 void main_window::capture_timer_timeout()
