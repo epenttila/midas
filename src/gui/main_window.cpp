@@ -1127,12 +1127,12 @@ void main_window::update_capture()
 
         bad_rect = QRect();
 
-        for (const auto& table : lobby_->get_tables())
+        for (const auto& button : settings_->get_buttons("bad"))
         {
-            for (const auto& button : settings_->get_buttons("bad"))
-            {
-                const auto& rect = button.second->rect;
+            const auto& rect = button.second->rect;
 
+            for (const auto& table : lobby_->get_tables())
+            {
                 if (table->is_mouse_inside(*input_manager_, rect))
                 {
                     bad_rect = rect;
