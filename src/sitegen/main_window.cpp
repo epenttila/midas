@@ -97,7 +97,7 @@ void main_window::generate_output()
                 max_width = list.size();
 
             const auto ch = chars_widget_->text()[count++];
-            text += QString("<entry mask=\"%1\" value=\"%2\"/>\n").arg(list.join(',')).arg(QString(ch).toHtmlEscaped());
+            text += QString("<glyph mask=\"%1\" value=\"%2\"/>\n").arg(list.join(',')).arg(QString(ch).toHtmlEscaped());
             list.clear();
             continue;
         }
