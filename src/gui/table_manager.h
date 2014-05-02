@@ -73,6 +73,8 @@ private:
     bool is_captcha() const;
 
     std::string get_stack_text(int position) const;
+    std::array<int, 3> get_button_map() const;
+    std::string get_action_button(int action) const;
 
     const fake_window* window_;
     input_manager& input_;

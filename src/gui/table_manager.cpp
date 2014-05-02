@@ -214,7 +214,7 @@ void table_manager::fold(double max_wait) const
     QTime t;
     t.start();
 
-    while (!window_->click_any_button(input_, settings_->get_buttons("fold")))
+    while (!window_->click_any_button(input_, settings_->get_buttons(get_action_button(FOLD_BUTTON))))
     {
         if (t.elapsed() > max_wait * 1000.0)
         {
@@ -229,7 +229,7 @@ void table_manager::call(double max_wait) const
     QTime t;
     t.start();
 
-    while (!window_->click_any_button(input_, settings_->get_buttons("call")))
+    while (!window_->click_any_button(input_, settings_->get_buttons(get_action_button(CALL_BUTTON))))
     {
         if (t.elapsed() > max_wait * 1000.0)
         {
@@ -300,7 +300,7 @@ void table_manager::raise(const std::string& action, double amount, double minbe
     QTime t;
     t.start();
 
-    while (!window_->click_any_button(input_, settings_->get_buttons("raise")))
+    while (!window_->click_any_button(input_, settings_->get_buttons(get_action_button(RAISE_BUTTON))))
     {
         if (t.elapsed() > max_wait * 1000.0)
         {
@@ -376,14 +376,8 @@ int table_manager::get_buttons() const
 {
     int buttons = 0;
 
-    if (is_any_button(*window_, settings_->get_buttons("fold")))
-        buttons |= FOLD_BUTTON;
-
-    if (is_any_button(*window_, settings_->get_buttons("call")))
-        buttons |= CALL_BUTTON;
-
-    if (is_any_button(*window_, settings_->get_buttons("raise")))
-        buttons |= RAISE_BUTTON;
+    for (const auto i : get_button_map())
+        buttons |= i;
 
     if (is_any_button(*window_, settings_->get_buttons("input")))
         buttons |= INPUT_BUTTON;
@@ -466,4 +460,55 @@ std::string table_manager::snapshot_t::to_string(const snapshot_t& snapshot)
     ss << "captcha: " << static_cast<int>(snapshot.captcha) << "\n";
 
     return ss.str();
+}
+
+std::array<int, 3> table_manager::get_button_map() const
+{
+    int layout = 0;
+
+    if (is_any_button(*window_, settings_->get_buttons("button-0")))
+        layout |= 0x1;
+
+    if (is_any_button(*window_, settings_->get_buttons("button-1")))
+        layout |= 0x2;
+
+    if (is_any_button(*window_, settings_->get_buttons("button-2")))
+        layout |= 0x4;
+
+    std::array<int, 3> m = {{}};
+
+    if (layout == 0)
+        return m;
+
+    if (const auto p = settings_->get_string(QString("button-layout-%1").arg(layout).toStdString()))
+    {
+        int i = 0;
+
+        for (const auto& s : QString(p->c_str()).split(","))
+        {
+            if (s.startsWith("f"))
+                m[i] = FOLD_BUTTON;
+            else if (s.startsWith("c"))
+                m[i] = CALL_BUTTON;
+            else if (s.startsWith("r"))
+                m[i] = RAISE_BUTTON;
+
+            ++i;
+        }
+    }
+    else
+        throw std::runtime_error(QString("Unknown button layout (%1)").arg(layout).toStdString());
+
+    return m;
+}
+
+std::string table_manager::get_action_button(const int action) const
+{
+    const auto& m = get_button_map();
+    const auto i = std::find(m.begin(), m.end(), action);
+
+    if (i == m.end())
+        throw std::runtime_error(QString("Unknown button in layout (%1)").arg(action).toStdString());
+
+    return QString("button-%1").arg(std::distance(m.begin(), i)).toStdString();
 }
