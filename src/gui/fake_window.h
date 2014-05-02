@@ -28,11 +28,11 @@ private:
 
     QRect window_rect_;
     QRect client_rect_;
-    QRect rect_;
+    const QRect rect_;
     const site_settings::font_t* title_font_;
     QRect title_rect_;
     QImage window_image_;
     QImage client_image_;
-    bool icon_;
+    const bool icon_;
     const window_manager& window_manager_;
 };
