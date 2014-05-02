@@ -11,6 +11,7 @@
 #include <regex>
 #include <boost/range.hpp>
 #include <memory>
+#include <QMargins>
 #pragma warning(pop)
 
 class site_settings
@@ -21,14 +22,14 @@ public:
 
     struct pixel_t
     {
-        QRect rect;
+        QRect unscaled_rect;
         QRgb color;
         double tolerance;
     };
 
     struct button_t
     {
-        QRect rect;
+        QRect unscaled_rect;
         pixel_t pixel;
     };
 
@@ -48,7 +49,7 @@ public:
     struct label_t
     {
         std::string font;
-        QRect rect;
+        QRect unscaled_rect;
         QRgb color;
         double tolerance;
         std::regex regex;
@@ -60,6 +61,8 @@ public:
         bool icon;
         std::string font;
         QRect rect;
+        QMargins margins;
+        bool resizable;
     };
 
     struct popup_t

@@ -194,16 +194,6 @@ QRgb get_average_color(const QImage& image, const QRect& rect, const QRgb& backg
     return qRgb(red / count, green / count, blue / count);
 }
 
-bool is_pixel(const QImage* image, const site_settings::pixel_t& pixel)
-{
-    return image && get_color_distance(get_average_color(*image, pixel.rect, 0, 0), pixel.color) <= pixel.tolerance;
-}
-
-bool is_button(const QImage* image, const site_settings::button_t& button)
-{
-    return is_pixel(image, button.pixel);
-}
-
 std::string read_string(const QImage* image, const QRect& rect, const QRgb& color, const site_settings::font_t& font,
     double tolerance, const int max_shift)
 {

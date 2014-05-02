@@ -1,5 +1,10 @@
 #include "fake_window.h"
 
+#pragma warning(push, 1)
+#include <boost/math/special_functions/round.hpp>
+#include <boost/log/trivial.hpp>
+#pragma warning(pop)
+
 #include "window_utils.h"
 #include "input_manager.h"
 #include "window_manager.h"
@@ -141,6 +146,8 @@ fake_window::fake_window(const site_settings::window_t& window, const site_setti
     , title_font_(settings.get_font(window.font))
     , icon_(window.icon)
     , window_manager_(wm)
+    , margins_(window.margins)
+    , resizable_(window.resizable)
 {
 }
 
@@ -151,7 +158,7 @@ void fake_window::update()
     window_image_ = QImage();
     client_image_ = QImage();
 
-    const auto image = window_manager_.get_image().copy(rect_);
+    const auto image = window_manager_.get_image().copy(rect_ + margins_);
 
     if (image.isNull())
         return;
@@ -173,6 +180,19 @@ void fake_window::update()
         throw std::runtime_error("Unable to determine window size");
 
     window_rect_ = QRect(rect_.left(), rect_.top(), width, height);
+
+    if (resizable_ && window_rect_ != rect_)
+    {
+        BOOST_LOG_TRIVIAL(warning) << QString("Window has been resized (%1,%2,%3,%4) != (%5,%6,%7,%8)")
+            .arg(window_rect_.x())
+            .arg(window_rect_.y())
+            .arg(window_rect_.width())
+            .arg(window_rect_.height())
+            .arg(rect_.x())
+            .arg(rect_.y())
+            .arg(rect_.width())
+            .arg(rect_.height()).toStdString();
+    }
 
     title_rect_ = QRect(window_rect_.left() + border, window_rect_.top() + border,
         window_rect_.width() - 2 * border - WINDOW_BUTTONS_WIDTH, TITLE_HEIGHT);
@@ -197,11 +217,12 @@ bool fake_window::is_valid() const
 bool fake_window::click_button(input_manager& input, const site_settings::button_t& button, bool double_click) const
 {
     // check if button is there
-    if (!window_utils::is_button(&client_image_, button))
+    if (!is_pixel(button.pixel))
         return false;
 
-    const auto p = client_to_screen(QPoint(button.rect.x(), button.rect.y()));
-    input.move_click(p.x(), p.y(), button.rect.width(), button.rect.height(), double_click);
+    const auto& rect = get_scaled_rect(button.unscaled_rect);
+    const auto p = client_to_screen(QPoint(rect.x(), rect.y()));
+    input.move_click(p.x(), p.y(), rect.width(), rect.height(), double_click);
 
     return true;
 }
@@ -245,7 +266,30 @@ bool fake_window::is_mouse_inside(const input_manager& input, const QRect& rect)
     if (!is_valid())
         return false;
 
-    const QRect r(client_to_screen(rect.topLeft()), client_to_screen(rect.bottomRight()));
+    const QRect r = get_scaled_rect(QRect(client_to_screen(rect.topLeft()), client_to_screen(rect.bottomRight())));
 
     return input.is_mouse_inside(r.x(), r.y(), r.width(), r.height());
+}
+
+QRect fake_window::get_scaled_rect(const QRect& r) const
+{
+    if (rect_.isNull() || !resizable_)
+        return r;
+
+    const auto x_scale = static_cast<double>(window_rect_.width()) / rect_.width();
+    const auto y_scale = static_cast<double>(window_rect_.height()) / rect_.height();
+
+    return QRect(
+        boost::math::iround(r.x() * x_scale),
+        boost::math::iround(r.y() * y_scale),
+        boost::math::iround(r.width() * x_scale),
+        boost::math::iround(r.height() * y_scale));
+}
+
+bool fake_window::is_pixel(const site_settings::pixel_t& pixel) const
+{
+    const auto& rect = get_scaled_rect(pixel.unscaled_rect);
+    const auto avg = window_utils::get_average_color(client_image_, rect, 0, 0);
+
+    return !client_image_.isNull() && window_utils::get_color_distance(avg, pixel.color) <= pixel.tolerance;
 }

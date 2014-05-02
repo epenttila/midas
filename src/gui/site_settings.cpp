@@ -141,9 +141,14 @@ namespace
             reader.attributes().value("icon").toInt() ? true : false,
             reader.attributes().value("font").toString().toStdString(),
             QRect(reader.attributes().value("x").toInt(),
-                    reader.attributes().value("y").toInt(),
-                    reader.attributes().value("width").toInt(),
-                    reader.attributes().value("height").toInt())
+                reader.attributes().value("y").toInt(),
+                reader.attributes().value("width").toInt(),
+                reader.attributes().value("height").toInt()),
+            QMargins(reader.attributes().value("margin-left").toInt(),
+                reader.attributes().value("margin-top").toInt(),
+                reader.attributes().value("margin-right").toInt(),
+                reader.attributes().value("margin-bottom").toInt()),
+            reader.attributes().value("resizable").toInt() ? true : false,
         };
 
         reader.skipCurrentElement();

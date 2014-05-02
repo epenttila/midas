@@ -22,6 +22,8 @@ public:
     const QImage& get_window_image() const;
     const QImage& get_client_image() const;
     bool is_mouse_inside(const input_manager& input, const QRect& rect) const;
+    QRect get_scaled_rect(const QRect& r) const;
+    bool is_pixel(const site_settings::pixel_t& pixel) const;
 
 private:
     QPoint client_to_screen(const QPoint& p) const;
@@ -35,4 +37,6 @@ private:
     QImage client_image_;
     const bool icon_;
     const window_manager& window_manager_;
+    const QMargins margins_;
+    const bool resizable_;
 };

@@ -1154,13 +1154,13 @@ void main_window::update_capture()
 
         for (const auto& button : settings_->get_buttons("bad"))
         {
-            const auto& rect = button.second->rect;
-
             for (const auto& table : lobby_->get_tables())
             {
+                const auto& rect = button.second->unscaled_rect;
+
                 if (table->is_mouse_inside(*input_manager_, rect))
                 {
-                    bad_rect = rect;
+                    bad_rect = table->get_scaled_rect(rect);
                     break;
                 }
             }
