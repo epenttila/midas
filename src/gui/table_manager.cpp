@@ -69,15 +69,12 @@ namespace
         const auto s = window_utils::read_string(image, window.get_scaled_rect(label.unscaled_rect), label.color,
             *settings.get_font(label.font), label.tolerance, label.shift);
 
-        if (label.regex.mark_count() == 0)
-            return s;
-
         std::smatch match;
 
-        if (std::regex_match(s, match, label.regex))
+        if (label.regex.mark_count() > 0 && std::regex_match(s, match, label.regex))
             return match[1].str();
   
-        return "";
+        return s;
     }
 
     bool is_any_button(const fake_window& window, const site_settings::button_range& buttons)
@@ -329,12 +326,16 @@ std::string table_manager::get_stack_text(int position) const
 
 double table_manager::get_stack(int position) const
 {
-    const auto stack_allin = settings_->get_string("stack-allin");
-
+    const auto stack_allin = settings_->get_regex("stack-allin");
+    const auto stack_sitout = settings_->get_regex("stack-sitout");
     const auto s = get_stack_text(position);
 
-    if (s.empty() || (stack_allin && s == *stack_allin))
+    if (s.empty()
+        || (stack_allin && std::regex_match(s, *stack_allin))
+        || (stack_sitout && std::regex_match(s, *stack_sitout)))
+    {
         return 0;
+    }
 
     return std::stof(s);
 }
@@ -363,10 +364,10 @@ bool table_manager::is_all_in(int position) const
 {
     static const std::array<const char*, 2> ids = { "allin-0", "allin-1" };
 
-    if (const auto p = settings_->get_string("stack-allin"))
-        return get_stack_text(position) == *p;
-    else if (const auto p = settings_->get_pixel(ids[position]))
+    if (const auto p = settings_->get_pixel(ids[position]))
         return window_->is_pixel(*p);
+    else if (const auto p = settings_->get_regex("stack-allin"))
+        return std::regex_match(get_stack_text(position), *p);
     else
         return false;
 }
@@ -394,7 +395,12 @@ bool table_manager::is_sit_out(int position) const
 {
     static const std::array<const char*, 2> ids = { "sitout-0", "sitout-1" };
 
-    return window_->is_pixel(*settings_->get_pixel(ids[position]));
+    if (const auto p = settings_->get_pixel(ids[position]))
+        return window_->is_pixel(*p);
+    else if (const auto p = settings_->get_regex("stack-sitout"))
+        return std::regex_match(get_stack_text(position), *p);
+    else
+        return false;
 }
 
 double table_manager::get_pot() const
