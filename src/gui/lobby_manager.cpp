@@ -250,6 +250,7 @@ bool lobby_manager::check_idle(const bool schedule_active)
 
             if (max_idle_time && table_update_time_.elapsed() > *max_idle_time * 1000.0)
             {
+                BOOST_LOG_TRIVIAL(warning) << "We are idle";
                 table_update_time_ = QTime();
                 return true;
             }
