@@ -242,22 +242,22 @@ bool lobby_manager::is_registering() const
 
 bool lobby_manager::check_idle(const bool schedule_active)
 {
-    if (table_update_time_.isValid())
+    if (schedule_active)
     {
-        if (schedule_active)
-        {
-            const auto max_idle_time = settings_->get_number("max-idle-time");
+        if (table_update_time_.isNull())
+            table_update_time_.start();
 
-            if (max_idle_time && table_update_time_.elapsed() > *max_idle_time * 1000.0)
-            {
-                BOOST_LOG_TRIVIAL(warning) << "We are idle";
-                table_update_time_ = QTime();
-                return true;
-            }
-        }
-        else 
+        const auto max_idle_time = settings_->get_number("max-idle-time");
+
+        if (max_idle_time && table_update_time_.elapsed() > *max_idle_time * 1000.0)
+        {
+            BOOST_LOG_TRIVIAL(warning) << "We are idle";
             table_update_time_ = QTime();
+            return true;
+        }
     }
+    else 
+        table_update_time_ = QTime();
 
     return false;
 }
