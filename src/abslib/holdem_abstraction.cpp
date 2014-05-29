@@ -78,7 +78,7 @@ namespace
                 }
             }
 
-            const auto sum = std::accumulate(p.begin(), p.end(), 0);
+            const auto sum = std::accumulate(p.begin(), p.end(), typename point_t::value_type());
 
             for (auto it = p.begin(); it != p.end(); ++it)
                 *it /= sum;
@@ -134,7 +134,7 @@ namespace
                 }
             }
 
-            const auto sum = std::accumulate(p.begin(), p.end(), 0);
+            const auto sum = std::accumulate(p.begin(), p.end(), typename point_t::value_type());
 
             for (auto it = p.begin(); it != p.end(); ++it)
                 *it /= sum;
@@ -185,7 +185,7 @@ namespace
                 ++data_points[i][bin];
             }
 
-            const auto sum = std::accumulate(p.begin(), p.end(), 0);
+            const auto sum = std::accumulate(p.begin(), p.end(), typename point_t::value_type());
 
             for (auto it = p.begin(); it != p.end(); ++it)
                 *it /= sum;

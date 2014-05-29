@@ -51,6 +51,8 @@ find_package(Boost 1.54.0 COMPONENTS program_options timer system chrono filesys
 include_directories(${Boost_INCLUDE_DIRS})
 
 if(BUILD_GUI)
+    set (CMAKE_PREFIX_PATH "C:\\Program Files (x86)\\Windows Kits\\8.0\\Lib\\win8\\um\\x64")
+
     find_package(Qt5Widgets)
     find_package(Qt5Network)
 endif()

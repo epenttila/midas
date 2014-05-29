@@ -5,6 +5,7 @@
 #include <boost/algorithm/clamp.hpp>
 #include <QTime>
 #include <Windows.h>
+#include <cctype>
 #pragma warning(pop)
 
 #include "util/random.h"
