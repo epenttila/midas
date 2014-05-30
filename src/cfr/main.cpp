@@ -184,9 +184,6 @@ int main(int argc, char* argv[])
         BOOST_LOG_TRIVIAL(info) << "Solving for " << iterations;
         solver->solve(iterations, seed, threads);
 
-        BOOST_LOG_TRIVIAL(info) << "Saving strategy to: " << strategy_file;
-        solver->save_strategy(strategy_file);
-
         if (!state_file.empty())
         {
             BOOST_LOG_TRIVIAL(info) << "Saving state to: " << state_file;
@@ -199,6 +196,9 @@ int main(int argc, char* argv[])
             std::ofstream f(debug_file);
             f << *solver;
         }
+
+        BOOST_LOG_TRIVIAL(info) << "Saving strategy to: " << strategy_file;
+        solver->save_strategy(strategy_file);
 
         return 0;
     }
