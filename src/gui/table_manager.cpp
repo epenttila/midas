@@ -356,8 +356,13 @@ double table_manager::get_bet(int position) const
 
 double table_manager::get_total_pot() const
 {
-    const auto s = read_label(*window_, mono_image_.get(), *settings_, *settings_->get_label("total-pot"));
-    const auto total = s.empty() ? 0 : std::stof(s);
+    double total = 0;
+
+    if (const auto p = settings_->get_label("total-pot"))
+    {
+        const auto s = read_label(*window_, mono_image_.get(), *settings_, *p);
+        total = s.empty() ? 0 : std::stof(s);
+    }
 
     if (total > 0)
         return total;
