@@ -71,8 +71,13 @@ namespace
 
         std::smatch match;
 
-        if (label.regex.mark_count() > 0 && std::regex_match(s, match, label.regex))
-            return match[1].str();
+        if (label.regex.mark_count() > 0)
+        {
+            if (std::regex_match(s, match, label.regex))
+                return match[1].str();
+            else
+                return "";
+        }
   
         return s;
     }
