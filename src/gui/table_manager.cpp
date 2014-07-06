@@ -335,8 +335,10 @@ double table_manager::get_stack(int position) const
     const auto stack_sitout = settings_->get_regex("stack-sitout");
     const auto s = get_stack_text(position);
 
-    if (s.empty()
-        || (stack_allin && std::regex_match(s, *stack_allin))
+    if (s.empty())
+        return -1;
+
+    if ((stack_allin && std::regex_match(s, *stack_allin))
         || (stack_sitout && std::regex_match(s, *stack_sitout)))
     {
         return 0;

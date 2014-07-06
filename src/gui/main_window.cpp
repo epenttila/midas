@@ -568,7 +568,7 @@ void main_window::process_snapshot(const fake_window& window)
         return;
 
     // wait until we see stack sizes (some sites hide stack size when player is sitting out)
-    if (snapshot.stack[0] == 0 || (snapshot.stack[1] == 0 && !snapshot.all_in[1] && !snapshot.sit_out[1]))
+    if (snapshot.stack[0] == -1 || snapshot.stack[1] == -1)
         return;
 
     // this will most likely fail if we can't read the cards
