@@ -215,7 +215,7 @@ std::string read_string(const QImage* image, const QRect& rect, const QRgb& colo
         }
     }
 
-    if (!best_s.empty() && best_shift != 0)
+    if (!best_s.empty() && best_shift != 0 && tolerance == 0)
     {
         BOOST_LOG_TRIVIAL(warning) << QString("Read shifted string \"%1\" at (%2,%3,%4,%5) with shift %6")
             .arg(best_s.c_str()).arg(rect.left()).arg(rect.top()).arg(rect.width()).arg(rect.height()).arg(best_shift)
