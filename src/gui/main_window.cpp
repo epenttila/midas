@@ -777,19 +777,16 @@ const nlhe_state* main_window::perform_action(const nlhe_state& state, const nlh
     const int index = (snapshot.sit_out[1] && current_state->get_child(nlhe_state::CALL + 1))
         ? nlhe_state::CALL + 1
         : strategy.get_strategy().get_random_child(*current_state, bucket);
-    nlhe_state::holdem_action action = current_state->get_child(index)->get_action();
+    const auto action = current_state->get_child(index)->get_action();
+    const QString action_name = current_state->get_action_name(action).c_str();
+    const double probability = strategy.get_strategy().get_probability(*current_state, index, bucket);
 
-    // ensure the hand really terminates if our abstraction says so and we would just call
-    if (action == nlhe_state::CALL
-        && current_state->get_round() < holdem_state::RIVER
-        && current_state->call()->is_terminal())
-    {
-        action = nlhe_state::RAISE_A;
-        BOOST_LOG_TRIVIAL(info) << "Translating pre-river call to all-in to ensure hand terminates";
-    }
+    // display non-translated strategy
+    BOOST_LOG_TRIVIAL(info) << QString("Strategy: %1 (%2)").arg(action_name).arg(probability).toStdString();
 
     int next_action;
     double raise_fraction = -1;
+    std::string new_action_name = action_name.toStdString();
 
     switch (action)
     {
@@ -797,17 +794,24 @@ const nlhe_state* main_window::perform_action(const nlhe_state& state, const nlh
         next_action = table_manager::FOLD;
         break;
     case nlhe_state::CALL:
-        next_action = table_manager::CALL;
+        {
+            // ensure the hand really terminates if our abstraction says so and we would just call
+            if (current_state->get_round() < holdem_state::RIVER && current_state->call()->is_terminal())
+            {
+                BOOST_LOG_TRIVIAL(info) << "Translating pre-river call to all-in to ensure hand terminates";
+                next_action = table_manager::RAISE;
+                raise_fraction = current_state->get_raise_factor(nlhe_state::RAISE_A);
+                new_action_name = current_state->get_action_name(nlhe_state::RAISE_A);
+            }
+            else
+                next_action = table_manager::CALL;
+        }
         break;
     default:
         next_action = table_manager::RAISE;
         raise_fraction = current_state->get_raise_factor(action);
         break;
     }
-
-    const QString s = current_state->get_action_name(action).c_str();
-    const double probability = strategy.get_strategy().get_probability(*current_state, index, bucket);
-    BOOST_LOG_TRIVIAL(info) << QString("Strategy: %1 (%2)").arg(s).arg(probability).toStdString();
 
     const auto& action_delay = *settings_->get_interval("action-delay");
 
@@ -845,7 +849,7 @@ const nlhe_state* main_window::perform_action(const nlhe_state& state, const nlh
             BOOST_LOG_TRIVIAL(info) << QString("Raising to %1 [%3, %5] (%2x pot) (method %4)").arg(amount)
                 .arg(raise_fraction).arg(minbet).arg(method).arg(maxbet).toStdString();
 
-            site_->raise(s.toStdString(), amount, minbet, action_delay.second, method);
+            site_->raise(new_action_name, amount, minbet, action_delay.second, method);
         }
         break;
     }
