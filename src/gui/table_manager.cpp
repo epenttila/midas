@@ -413,11 +413,14 @@ double table_manager::get_pot() const
         return 0;
 }
 
-bool table_manager::is_highlight(int position) const
+int table_manager::is_highlight(int position) const
 {
     static const std::array<const char*, 2> ids = { "active-0", "active-1" };
 
-    return window_->is_pixel(*settings_->get_pixel(ids[position]));
+    if (const auto p = settings_->get_pixel(ids[position]))
+        return window_->is_pixel(*p);
+    else
+        return -1;
 }
 
 bool table_manager::is_captcha() const

@@ -556,7 +556,7 @@ void main_window::process_snapshot(const fake_window& window)
     }
 
     // wait until our box is highlighted
-    if (!snapshot.highlight[0])
+    if (snapshot.highlight[0] == false)
         return;
 
     // wait until we see buttons

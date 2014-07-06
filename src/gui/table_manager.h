@@ -46,7 +46,7 @@ public:
         std::array<bool, 2> all_in;
         int buttons;
         std::array<bool, 2> sit_out;
-        std::array<bool, 2> highlight;
+        std::array<int, 2> highlight;
         bool captcha;
     };
 
@@ -69,7 +69,7 @@ private:
     bool is_sit_out(int position) const;
     double get_pot() const;
     bool is_dealer(int position) const;
-    bool is_highlight(int position) const;
+    int is_highlight(int position) const;
     bool is_captcha() const;
 
     std::string get_stack_text(int position) const;
