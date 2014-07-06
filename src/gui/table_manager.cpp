@@ -374,7 +374,9 @@ bool table_manager::is_all_in(int position) const
 {
     static const std::array<const char*, 2> ids = { "allin-0", "allin-1" };
 
-    if (const auto p = settings_->get_pixel(ids[position]))
+    if (get_stack(position) == 0 && get_bet(position) > 0)
+        return true;
+    else if (const auto p = settings_->get_pixel(ids[position]))
         return window_->is_pixel(*p);
     else if (const auto p = settings_->get_regex("stack-allin"))
         return std::regex_match(get_stack_text(position), *p);
