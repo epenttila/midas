@@ -63,6 +63,7 @@ lobby_manager::lobby_manager(const site_settings& settings, input_manager& input
 void lobby_manager::register_sng()
 {
     const auto& registration_wait = *settings_->get_number("reg-wait");
+    const auto reg_ok = settings_->get_popups("reg-ok");
 
     switch (state_)
     {
@@ -76,9 +77,19 @@ void lobby_manager::register_sng()
             BOOST_LOG_TRIVIAL(info) << QString("Registering (waiting %1 seconds to complete)...").arg(registration_wait)
                 .toStdString();
 
-            registration_time_.start();
+            if (reg_ok.empty())
+            {
+                // no registration confirmation popup configured -> assume registration always succeeds
+                ++registered_;
 
-            state_ = CHECK_POPUP;
+                BOOST_LOG_TRIVIAL(info) << QString("Registration success (regs: %1 -> %2)").arg(registered_ - 1)
+                    .arg(registered_).toStdString();
+            }
+            else
+            {
+                registration_time_.start();
+                state_ = CHECK_POPUP;
+            }
         }
         break;
     case CHECK_POPUP:
@@ -104,7 +115,7 @@ void lobby_manager::register_sng()
         {
             if (popup_window_->is_valid())
             {
-                if (close_popups(input_manager_, *popup_window_, settings_->get_popups("reg-ok")))
+                if (close_popups(input_manager_, *popup_window_, reg_ok))
                 {
                     state_ = WAIT_POPUP;
 
