@@ -39,4 +39,7 @@ private:
     const window_manager& window_manager_;
     const QMargins margins_;
     const bool resizable_;
+    const site_settings::button_t* title_button_;
+    const site_settings::button_t* title_text_button_;
+    QRect title_text_rect_;
 };

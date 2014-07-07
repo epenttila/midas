@@ -12,16 +12,15 @@
 namespace
 {
     static const int WINDOW_BUTTONS_WIDTH = 50; // worst case: min, max, close
-    static const int TITLE_HEIGHT = 18;
+    static const int TITLE_HEIGHT = 19;
     static const int ICON_BORDER_X = 2;
     static const int ICON_BORDER_Y = 1;
     static const int ICON_WIDTH = 16;
     static const int ICON_HEIGHT = 16;
-    static const int TITLE_OFFSET = 1;
     static const int TITLE_TEXT_LEFT_OFFSET = 0;
     static const int TITLE_TEXT_TOP_OFFSET = 2;
     static const int TITLE_TEXT_RIGHT_OFFSET = 0;
-    static const int TITLE_TEXT_BOTTOM_OFFSET = -3;
+    static const int TITLE_TEXT_BOTTOM_OFFSET = -4;
 
     bool is_top_left_corner(const QImage& image, const int x, const int y)
     {
@@ -148,6 +147,8 @@ fake_window::fake_window(const site_settings::window_t& window, const site_setti
     , window_manager_(wm)
     , margins_(window.margins)
     , resizable_(window.resizable)
+    , title_button_(settings.get_button(window.title))
+    , title_text_button_(settings.get_button(window.title_text))
 {
 }
 
@@ -194,13 +195,24 @@ void fake_window::update()
             .arg(rect_.height()).toStdString();
     }
 
-    title_rect_ = QRect(window_rect_.left() + border, window_rect_.top() + border,
-        window_rect_.width() - 2 * border - WINDOW_BUTTONS_WIDTH, TITLE_HEIGHT);
+    if (title_button_ && title_text_button_)
+    {
+        title_rect_ = get_scaled_rect(title_button_->unscaled_rect);
+        title_text_rect_ = get_scaled_rect(title_text_button_->unscaled_rect);
+    }
+    else
+    {
+        title_rect_ = QRect(window_rect_.left() + border, window_rect_.top() + border,
+            window_rect_.width() - 2 * border - WINDOW_BUTTONS_WIDTH, TITLE_HEIGHT);
 
-    if (icon_)
-        title_rect_.adjust(ICON_WIDTH + 2 * ICON_BORDER_X, 0, 0, 0);
+        if (icon_)
+            title_rect_.adjust(ICON_WIDTH + 2 * ICON_BORDER_X, 0, 0, 0);
 
-    client_rect_ = window_rect_.adjusted(border, border + title_rect_.height() + TITLE_OFFSET, -border, -border);
+        title_text_rect_ = title_rect_.translated(-window_rect_.topLeft()).adjusted(TITLE_TEXT_LEFT_OFFSET,
+            TITLE_TEXT_TOP_OFFSET, TITLE_TEXT_BOTTOM_OFFSET, TITLE_TEXT_RIGHT_OFFSET);
+    }
+
+    client_rect_ = window_rect_.adjusted(border, border + title_rect_.height(), -border, -border);
 
     window_image_ = image.copy(window_rect_.translated(-window_rect_.topLeft()));
     client_image_ = image.copy(client_rect_.translated(-window_rect_.topLeft()));
@@ -245,10 +257,7 @@ QPoint fake_window::client_to_screen(const QPoint& point) const
 
 std::string fake_window::get_window_text() const
 {
-    const auto rect = title_rect_.translated(-window_rect_.topLeft()).adjusted(TITLE_TEXT_LEFT_OFFSET,
-        TITLE_TEXT_TOP_OFFSET, TITLE_TEXT_BOTTOM_OFFSET, TITLE_TEXT_RIGHT_OFFSET);
-
-    return window_utils::read_string(&window_image_, rect, qRgb(255, 255, 255), *title_font_);
+    return window_utils::read_string(&window_image_, title_text_rect_, qRgb(255, 255, 255), *title_font_);
 }
 
 const QImage& fake_window::get_window_image() const

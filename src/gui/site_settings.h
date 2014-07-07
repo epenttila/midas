@@ -63,6 +63,8 @@ public:
         QRect rect;
         QMargins margins;
         bool resizable;
+        std::string title;
+        std::string title_text;
     };
 
     struct popup_t
