@@ -346,8 +346,18 @@ void main_window::capture_timer_timeout()
 
             for (const auto& window : tables)
             {
-                if (window->is_valid())
+                if (!window->is_valid())
+                    continue;
+
+                try
+                {
                     process_snapshot(*window);
+                }
+                catch (const std::exception& e)
+                {
+                    BOOST_LOG_TRIVIAL(fatal) << e.what();
+                    save_snapshot();
+                }
             }
 
             remove_old_table_data();
@@ -367,12 +377,7 @@ void main_window::capture_timer_timeout()
     catch (const std::exception& e)
     {
         BOOST_LOG_TRIVIAL(fatal) << e.what();
-
-        if (site_)
-        {
-            BOOST_LOG_TRIVIAL(warning) << "Saving current snapshot";
-            save_snapshot();
-        }
+        save_snapshot();
     }
 
     update_statusbar();
@@ -1132,6 +1137,8 @@ bool main_window::is_new_game(const table_data_t& table_data, const table_manage
 
 void main_window::save_snapshot() const
 {
+    BOOST_LOG_TRIVIAL(info) << "Saving current snapshot";
+
     const auto& image = window_manager_->get_image();
     image.save(QDateTime::currentDateTimeUtc().toString("'snapshot-'yyyy-MM-ddTHHmmss.zzz'.png'"));
 }
