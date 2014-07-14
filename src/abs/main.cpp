@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
         if (vm.count("help"))
         {
             std::cout << desc << "\n";
-            return 1;
+            return 0;
         }
 
         if (vm.count("version"))
@@ -100,8 +100,7 @@ int main(int argc, char* argv[])
         }
         else
         {
-            BOOST_LOG_TRIVIAL(error) << "Invalid game";
-            return 1;
+            throw std::runtime_error("Invalid game");
         }
 
         return 0;

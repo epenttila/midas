@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
         if (vm.count("help"))
         {
             std::cout << desc << "\n";
-            return 1;
+            return 0;
         }
 
         if (vm.count("version"))
@@ -138,10 +138,7 @@ int main(int argc, char* argv[])
         }
 
         if (!solver)
-        {
-            BOOST_LOG_TRIVIAL(error) << "Unknown game";
-            return 1;
-        }
+            throw std::runtime_error("Unknown game");
 
         std::string s;
 

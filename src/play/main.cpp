@@ -125,9 +125,7 @@ int main(int argc, char* argv[])
         BOOST_LOG_TRIVIAL(info) << "play " << util::GIT_VERSION;
 
         if (argc != 4)
-        {
-            return 1;
-        }
+            throw std::runtime_error("Invalid number of arguments");
 
         nlhe_strategy strategy(argv[1]);
 
