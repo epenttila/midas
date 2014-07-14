@@ -48,6 +48,7 @@ int main(int argc, char* argv[])
             ("game", po::value<std::string>(&game)->required(), "game")
             ("abstraction", po::value<std::string>(&abstraction)->required(), "abstraction")
             ("log-file", po::value<std::string>(&log_file), "log file")
+            ("version", "show version")
             ;
 
         po::options_description holdem_options("holdem options");
@@ -70,6 +71,12 @@ int main(int argc, char* argv[])
         {
             std::cout << desc << "\n";
             return 1;
+        }
+
+        if (vm.count("version"))
+        {
+            std::cout << util::GIT_VERSION;
+            return 0;
         }
 
         po::notify(vm);

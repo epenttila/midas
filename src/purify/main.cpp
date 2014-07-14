@@ -38,6 +38,7 @@ int main(int argc, char* argv[])
         desc.add_options()
             ("help", "produce help message")
             ("strategy-file", po::value<std::string>(&strategy_file)->required(), "strategy file")
+            ("version", "show version")
             ;
 
         po::variables_map vm;
@@ -47,6 +48,12 @@ int main(int argc, char* argv[])
         {
             std::cout << desc << "\n";
             return 1;
+        }
+
+        if (vm.count("version"))
+        {
+            std::cout << util::GIT_VERSION;
+            return 0;
         }
 
         po::notify(vm);

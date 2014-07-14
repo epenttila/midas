@@ -69,6 +69,7 @@ int main(int argc, char* argv[])
             ("threads", po::value<int>(&threads)->default_value(omp_get_max_threads()), "number of threads")
             ("seed", po::value<std::int64_t>(&seed)->default_value(std::random_device()()), "initial random seed")
             ("log-file", po::value<std::string>(&log_file), "log file")
+            ("version", "show version")
             ;
 
         po::variables_map vm;
@@ -78,6 +79,12 @@ int main(int argc, char* argv[])
         {
             std::cout << desc << "\n";
             return 1;
+        }
+
+        if (vm.count("version"))
+        {
+            std::cout << util::GIT_VERSION;
+            return 0;
         }
 
         po::notify(vm);
