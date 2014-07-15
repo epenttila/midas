@@ -838,6 +838,8 @@ const nlhe_state* main_window::perform_action(const nlhe_state& state, const nlh
             // maximum bet is our remaining stack plus our bet (total raise to maxbet)
             const auto maxbet = snapshot.stack[0] + snapshot.bet[0];
 
+            assert(maxbet > 0);
+
             // minimum bet is opponent bet plus the amount we have to call (or big blind whichever is larger)
             // restrict minbet to always be less than or equal to maxbet (we can't bet more than stack)
             const auto minbet = std::min(snapshot.bet[1] + std::max(big_blind, to_call), maxbet);
@@ -845,8 +847,19 @@ const nlhe_state* main_window::perform_action(const nlhe_state& state, const nlh
             assert(minbet <= maxbet);
 
             // bet amount is opponent bet (our bet + call) plus x times the pot after our call (total_pot + to_call)
-            const auto amount = boost::algorithm::clamp(
+            auto amount = boost::algorithm::clamp(
                 snapshot.bet[1] + raise_fraction * (snapshot.total_pot + to_call), minbet, maxbet);
+
+            const auto allin_fraction = amount / maxbet;
+            const auto allin_threshold = settings_->get_number("allin-threshold");
+
+            if (allin_threshold && allin_fraction >= *allin_threshold)
+            {
+                BOOST_LOG_TRIVIAL(info) << QString("Bet (%1) almost all-in (%2); translating to all-in (%3 >= %4)").
+                    arg(amount).arg(maxbet).arg(allin_fraction).arg(*allin_threshold).toStdString();
+                amount = maxbet;
+                new_action_name = current_state->get_action_name(nlhe_state::RAISE_A);
+            }
 
             const auto method = static_cast<table_manager::raise_method>(get_weighted_int(engine_,
                 *settings_->get_number_list("bet-method-probabilities")));
