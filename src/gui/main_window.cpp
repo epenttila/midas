@@ -853,7 +853,7 @@ const nlhe_state* main_window::perform_action(const nlhe_state& state, const nlh
             const auto allin_fraction = amount / maxbet;
             const auto allin_threshold = settings_->get_number("allin-threshold");
 
-            if (allin_threshold && allin_fraction >= *allin_threshold)
+            if (allin_threshold && allin_fraction >= *allin_threshold && allin_fraction < 1.0)
             {
                 BOOST_LOG_TRIVIAL(info) << QString("Bet (%1) almost all-in (%2); translating to all-in (%3 >= %4)").
                     arg(amount).arg(maxbet).arg(allin_fraction).arg(*allin_threshold).toStdString();
