@@ -838,13 +838,13 @@ const nlhe_state* main_window::perform_action(const nlhe_state& state, const nlh
             // maximum bet is our remaining stack plus our bet (total raise to maxbet)
             const auto maxbet = snapshot.stack[0] + snapshot.bet[0];
 
-            assert(maxbet > 0);
+            ENSURE(maxbet > 0);
 
             // minimum bet is opponent bet plus the amount we have to call (or big blind whichever is larger)
             // restrict minbet to always be less than or equal to maxbet (we can't bet more than stack)
             const auto minbet = std::min(snapshot.bet[1] + std::max(big_blind, to_call), maxbet);
 
-            assert(minbet <= maxbet);
+            ENSURE(minbet <= maxbet);
 
             // bet amount is opponent bet (our bet + call) plus x times the pot after our call (total_pot + to_call)
             auto amount = boost::algorithm::clamp(
@@ -884,7 +884,7 @@ const nlhe_state* main_window::perform_action(const nlhe_state& state, const nlh
 
 void main_window::handle_lobby()
 {
-    assert(lobby_);
+    ENSURE(lobby_ != nullptr);
 
     std::unordered_set<tid_t> active_tournaments;
 
