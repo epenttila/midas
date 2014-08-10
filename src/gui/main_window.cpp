@@ -334,12 +334,10 @@ void main_window::capture_timer_timeout()
             }
 
             remove_old_table_data();
-
-            if (autoplay_action_->isChecked())
-                handle_lobby();
+            handle_lobby();
         }
 
-        if (autoplay_action_->isChecked() && (!schedule_action_->isChecked() || schedule_active_))
+        if (autoplay_action_->isChecked() && schedule_action_->isChecked() && schedule_active_)
         {
             const auto method = static_cast<input_manager::idle_move>(get_weighted_int(engine_,
                 *settings_->get_number_list("idle-move-probabilities")));
@@ -888,6 +886,9 @@ const nlhe_state* main_window::perform_action(const nlhe_state& state, const nlh
 
 void main_window::handle_lobby()
 {
+    if (!schedule_action_->isChecked())
+        return;
+
     ENSURE(lobby_ != nullptr);
 
     std::unordered_set<tid_t> active_tournaments;
