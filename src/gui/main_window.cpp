@@ -230,11 +230,6 @@ main_window::main_window()
     title_filter_->setPlaceholderText("Window title");
     toolbar->addWidget(title_filter_);
     toolbar->addSeparator();
-    table_count_ = new QSpinBox(this);
-    table_count_->setValue(0);
-    table_count_->setRange(0, 100);
-    toolbar->addWidget(table_count_);
-    toolbar->addSeparator();
 
     schedule_action_ = toolbar->addAction(QIcon(":/icons/time.png"), "Schedule");
     schedule_action_->setCheckable(true);
@@ -243,10 +238,6 @@ main_window::main_window()
     autoplay_action_ = toolbar->addAction(QIcon(":/icons/control_play.png"), "Autoplay");
     autoplay_action_->setCheckable(true);
     connect(autoplay_action_, &QAction::toggled, this, &main_window::autoplay_changed);
-
-    autolobby_action_ = toolbar->addAction(QIcon(":/icons/layout.png"), "Autolobby");
-    autolobby_action_->setCheckable(true);
-    connect(autolobby_action_, &QAction::toggled, this, &main_window::autolobby_changed);
 
     log_ = new QPlainTextEdit(this);
     log_->setReadOnly(true);
@@ -266,8 +257,6 @@ main_window::main_window()
     statusBar()->addWidget(strategy_label_, 1);
     schedule_label_ = new QLabel(this);
     statusBar()->addWidget(schedule_label_, 1);
-    registered_label_ = new QLabel(this);
-    statusBar()->addWidget(registered_label_, 1);
     update_statusbar();
 
     boost::log::add_common_attributes();
@@ -306,31 +295,6 @@ void main_window::capture_timer_timeout()
             }
         }
 
-        if (!autolobby_action_->isChecked() && QFileInfo("enable.txt").exists())
-        {
-            BOOST_LOG_TRIVIAL(info) << "enable.txt found, enabling autolobby";
-            autolobby_action_->setChecked(true);
-        }
-
-        if (autolobby_action_->isChecked() && QFileInfo("disable.txt").exists())
-        {
-            BOOST_LOG_TRIVIAL(info) << "disable.txt found, disabling autolobby";
-            autolobby_action_->setChecked(false);
-        }
-
-        QFile table_file("tables.txt");
-
-        if (table_file.open(QIODevice::ReadOnly | QIODevice::Text))
-        {
-            const auto value = QString(table_file.readLine()).toInt();
-
-            if (value != table_count_->value())
-            {
-                BOOST_LOG_TRIVIAL(info) << "tables.txt found; setting table count to " << value;
-                table_count_->setValue(value);
-            }
-        }
-
         handle_schedule();
 
         if (lobby_)
@@ -362,11 +326,11 @@ void main_window::capture_timer_timeout()
 
             remove_old_table_data();
 
-            if (autolobby_action_->isChecked())
+            if (autoplay_action_->isChecked())
                 handle_lobby();
         }
 
-        if (autolobby_action_->isChecked() && (!schedule_action_->isChecked() || schedule_active_))
+        if (autoplay_action_->isChecked() && (!schedule_action_->isChecked() || schedule_active_))
         {
             const auto method = static_cast<input_manager::idle_move>(get_weighted_int(engine_,
                 *settings_->get_number_list("idle-move-probabilities")));
@@ -479,10 +443,9 @@ void main_window::process_snapshot(const fake_window& window)
     // consider sitout fatal
     if (snapshot.sit_out[0])
     {
-        if (table_count_->value() > 0)
+        if (schedule_action_->isChecked())
         {
-            // this bypasses problem with schedules which could retoggle registrations if disabled
-            table_count_->setValue(0);
+            schedule_action_->setChecked(false);
 
             if (smtp_)
             {
@@ -920,13 +883,6 @@ void main_window::handle_lobby()
                 "[midas] " + QHostInfo::localHostName() + " is idle", ".");
         }
     }
-
-    if (lobby_->is_registering()
-        || (lobby_->get_registered_sngs() < table_count_->value()
-            && (!schedule_action_->isChecked() || schedule_active_)))
-    {
-        lobby_->register_sng();
-    }
 }
 
 void main_window::handle_schedule()
@@ -941,16 +897,17 @@ void main_window::handle_schedule()
         schedule_active_ = active;
 
         if (schedule_active_)
-        {
             BOOST_LOG_TRIVIAL(info) << "Enabling scheduled registration";
-            lobby_->reset();
-        }
         else
-        {
             BOOST_LOG_TRIVIAL(info) << "Disabling scheduled registration";
-        }
 
         BOOST_LOG_TRIVIAL(info) << make_schedule_string(schedule_active_, next_activity_date_).toStdString();
+    }
+
+    if (schedule_active_)
+    {
+        if (const auto p = settings_->get_number("refresh-regs-key"))
+            input_manager_->send_keypress(static_cast<short>(*p));
     }
 }
 
@@ -1004,21 +961,6 @@ void main_window::schedule_changed(const bool checked)
         BOOST_LOG_TRIVIAL(info) << "Disabling scheduler";
 }
 
-void main_window::autolobby_changed(bool checked)
-{
-    if (checked)
-    {
-        BOOST_LOG_TRIVIAL(info) << "Enabling autolobby";
-    }
-    else
-    {
-        BOOST_LOG_TRIVIAL(info) << "Disabling autolobby";
-
-        if (lobby_)
-            lobby_->reset();
-    }
-}
-
 void main_window::state_widget_state_changed()
 {
     if (strategies_.empty() || !state_widget_->get_state())
@@ -1040,10 +982,6 @@ void main_window::update_statusbar()
         s = "No schedule";
 
     schedule_label_->setText(s);
-
-    registered_label_->setText(QString("Registrations: %1/%2 - Tables: %3/%2")
-        .arg(lobby_ ? lobby_->get_registered_sngs() : 0)
-        .arg(table_count_->value()).arg(visualizer_->rowCount()));
 }
 
 void main_window::remove_old_table_data()
@@ -1078,7 +1016,6 @@ void main_window::load_settings(const std::string& filename)
     input_manager_->set_mouse_speed(mouse_speed.first, mouse_speed.second);
 
     title_filter_->setText(settings_->get_string("title-filter")->c_str());
-    table_count_->setValue(static_cast<int>(*settings_->get_number("table-count")));
 
     capture_timer_->setInterval(static_cast<int>(settings_->get_interval("capture")->first * 1000.0));
 

@@ -58,6 +58,5 @@
     <file>icons/chart_organisation.png</file>
     <file>icons/picture_save.png</file>
     <file>icons/time.png</file>
-    <file>icons/layout.png</file>
 </qresource>
 </RCC>

@@ -49,9 +49,7 @@ namespace
 
 lobby_manager::lobby_manager(const site_settings& settings, input_manager& input_manager, const window_manager& wm)
     : input_manager_(input_manager)
-    , registered_(0)
     , settings_(&settings)
-    , state_(REGISTER)
 {
     lobby_window_.reset(new fake_window(*settings_->get_window("lobby"), settings, wm));
     popup_window_.reset(new fake_window(*settings_->get_window("popup"), settings, wm));
@@ -60,117 +58,8 @@ lobby_manager::lobby_manager(const site_settings& settings, input_manager& input
         table_windows_.push_back(std::unique_ptr<fake_window>(new fake_window(*w.second, settings, wm)));
 }
 
-void lobby_manager::register_sng()
-{
-    const auto& registration_wait = *settings_->get_number("reg-wait");
-    const auto reg_ok = settings_->get_popups("reg-ok");
-
-    switch (state_)
-    {
-    case REGISTER:
-        {
-            lobby_window_->click_any_button(input_manager_, settings_->get_buttons("game-list"));
-
-            if (!lobby_window_->click_any_button(input_manager_, settings_->get_buttons("register")))
-                return;
-
-            BOOST_LOG_TRIVIAL(info) << QString("Registering (waiting %1 seconds to complete)...").arg(registration_wait)
-                .toStdString();
-
-            if (reg_ok.empty())
-            {
-                // no registration confirmation popup configured -> assume registration always succeeds
-                ++registered_;
-
-                BOOST_LOG_TRIVIAL(info) << QString("Registration success (regs: %1 -> %2)").arg(registered_ - 1)
-                    .arg(registered_).toStdString();
-            }
-            else
-            {
-                registration_time_.start();
-                state_ = CHECK_POPUP;
-            }
-        }
-        break;
-    case CHECK_POPUP:
-        {
-            if (popup_window_->is_valid())
-            {
-                state_ = CLOSE_POPUP;
-
-                BOOST_LOG_TRIVIAL(info) << "Popup found; closing";
-            }
-            else if (registration_time_.elapsed() > registration_wait * 1000)
-            {
-                state_ = REGISTER;
-                registration_time_ = QTime();
-
-                BOOST_LOG_TRIVIAL(warning) << "Unable to verify registration result";
-            }
-            else
-                BOOST_LOG_TRIVIAL(info) << "Waiting for registration popup to appear...";
-        }
-        break;
-    case CLOSE_POPUP:
-        {
-            if (popup_window_->is_valid())
-            {
-                if (close_popups(input_manager_, *popup_window_, reg_ok))
-                {
-                    state_ = WAIT_POPUP;
-
-                    BOOST_LOG_TRIVIAL(info) << "Closing registration popup";
-                }
-                else
-                    throw std::runtime_error("Unable to close popup");
-            }
-            else
-            {
-                state_ = WAIT_POPUP;
-
-                BOOST_LOG_TRIVIAL(info) << "Popup is no more";
-            }
-        }
-        break;
-    case WAIT_POPUP:
-        {
-            if (popup_window_->is_valid())
-            {
-                state_ = CLOSE_POPUP;
-
-                BOOST_LOG_TRIVIAL(info) << "Registration popup still open; closing again";
-            }
-            else
-            {
-                state_ = REGISTER;
-                registration_time_ = QTime();
-                ++registered_;
-
-                BOOST_LOG_TRIVIAL(info) << QString("Registration success (regs: %1 -> %2)").arg(registered_ - 1)
-                    .arg(registered_).toStdString();
-            }
-        }
-        break;
-    }
-}
-
-int lobby_manager::get_registered_sngs() const
-{
-    return registered_;
-}
-
-void lobby_manager::reset()
-{
-    registered_ = 0;
-
-    BOOST_LOG_TRIVIAL(info) << "Resetting registrations (" << registered_ << " active)";
-}
-
 void lobby_manager::detect_closed_tables(const std::unordered_set<tid_t>& new_active_tables)
 {
-    if (registration_time_.isValid())
-        return;
-
     if (new_active_tables == active_tables_)
         return; // no change
 
@@ -181,41 +70,6 @@ void lobby_manager::detect_closed_tables(const std::unordered_set<tid_t>& new_ac
 
     BOOST_LOG_TRIVIAL(info) << QString("Updating active tables (%1 -> %2)")
         .arg(get_table_string(old_tables).c_str()).arg(get_table_string(active_tables_).c_str()).toStdString();
-
-    // find closed tables
-    for (const auto& i : old_tables)
-    {
-        if (active_tables_.find(i) == active_tables_.end())
-        {
-            const auto old_regs = registered_;
-            --registered_;
-
-            BOOST_LOG_TRIVIAL(info) << QString("Tournament %3 finished (%1 -> %2)").arg(old_regs).arg(registered_)
-                .arg(i).toStdString();
-        }
-    }
-
-    if (registered_ < 0)
-    {
-        const auto old_regs = registered_;
-        registered_ = 0;
-
-        BOOST_LOG_TRIVIAL(warning) << QString("Negative registrations (%1 -> %2)").arg(old_regs).arg(registered_)
-            .toStdString();
-    }
-
-    // adjust registrations after closing old tables above so we notice if a single table has been replaced,
-    // e.g., table count remains the same (1 -> 1), but the tournament id of that table has changed
-    if (active_tables_.size() > registered_)
-    {
-        // assume we missed a registration confirmation
-        const auto old_regs = registered_;
-        registered_ = static_cast<int>(active_tables_.size());
-        registration_time_ = QTime();
-
-        BOOST_LOG_TRIVIAL(warning) << QString("There are more tables than registrations (%1 -> %2)").arg(old_regs)
-            .arg(registered_).toStdString();
-    }
 }
 
 const lobby_manager::table_vector_t& lobby_manager::get_tables() const
@@ -244,11 +98,6 @@ lobby_manager::tid_t lobby_manager::get_tournament_id(const fake_window& window)
         return std::stoll(match[1].str());
 
     throw std::runtime_error("Unknown tournament id");
-}
-
-bool lobby_manager::is_registering() const
-{
-    return !registration_time_.isNull();
 }
 
 bool lobby_manager::check_idle(const bool schedule_active)

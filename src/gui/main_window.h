@@ -51,7 +51,6 @@ public slots:
     void modify_state_changed();
     void state_widget_board_changed(const QString& board);
     void schedule_changed(bool checked);
-    void autolobby_changed(bool checked);
     void state_widget_state_changed();
 
 private:
@@ -97,7 +96,6 @@ private:
     std::mt19937 engine_;
     std::unique_ptr<input_manager> input_manager_;
     std::unique_ptr<lobby_manager> lobby_;
-    QSpinBox* table_count_;
     QAction* autoplay_action_;
     state_widget* state_widget_;
     QAction* open_action_;
@@ -105,8 +103,6 @@ private:
     QAction* schedule_action_;
     bool schedule_active_;
     QLabel* schedule_label_;
-    QLabel* registered_label_;
-    QAction* autolobby_action_;
     std::unordered_map<tid_t, table_data_t> table_data_;
     std::unordered_map<tid_t, table_data_t> old_table_data_;
     QLabel* site_label_;
