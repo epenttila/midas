@@ -107,6 +107,14 @@ namespace
                     return true;
                 }
             }
+
+            const auto next = boost::next(spans);
+
+            if (next != daily_spans.end() && !next->second.empty())
+            {
+                *time = next->second.front().first;
+                return false;
+            }
         }
 
         *time = QDateTime();
