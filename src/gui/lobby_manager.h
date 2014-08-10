@@ -31,7 +31,6 @@ private:
     std::unique_ptr<fake_window> lobby_window_;
     input_manager& input_manager_;
     table_vector_t table_windows_;
-    std::unique_ptr<fake_window> popup_window_;
     std::unordered_set<tid_t> active_tables_;
     const site_settings* settings_;
     QTime table_update_time_;

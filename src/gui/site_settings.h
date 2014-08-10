@@ -67,18 +67,11 @@ public:
         std::string title_text;
     };
 
-    struct popup_t
-    {
-        std::regex regex;
-        button_t button;
-    };
-
     typedef std::unordered_multimap<std::string, std::unique_ptr<window_t>> window_map;
     typedef std::unordered_multimap<std::string, std::unique_ptr<std::regex>> regex_map;
     typedef std::unordered_multimap<std::string, std::unique_ptr<pixel_t>> pixel_map;
     typedef std::unordered_multimap<std::string, std::unique_ptr<button_t>> button_map;
     typedef std::unordered_multimap<std::string, std::unique_ptr<font_t>> font_map;
-    typedef std::unordered_multimap<std::string, std::unique_ptr<popup_t>> popup_map;
     typedef std::unordered_multimap<std::string, std::unique_ptr<label_t>> label_map;
     typedef std::unordered_multimap<std::string, std::unique_ptr<interval_t>> interval_map;
     typedef std::unordered_multimap<std::string, std::unique_ptr<double>> number_map;
@@ -86,14 +79,12 @@ public:
     typedef std::unordered_multimap<std::string, std::unique_ptr<number_list_t>> number_list_map;
     typedef boost::iterator_range<window_map::const_iterator> window_range;
     typedef boost::iterator_range<button_map::const_iterator> button_range;
-    typedef boost::iterator_range<popup_map::const_iterator> popup_range;
 
     site_settings();
     void load(const std::string& filename);
     std::string get_filename() const;
     window_range get_windows(const std::string& id) const;
     button_range get_buttons(const std::string& id) const;
-    popup_range get_popups(const std::string& id) const;
     const font_t* get_font(const std::string& id) const;
     const label_t* get_label(const std::string& id) const;
     const std::regex* get_regex(const std::string& id) const;
@@ -112,7 +103,6 @@ private:
     pixel_map pixels_;
     button_map buttons_;
     font_map fonts_;
-    popup_map popups_;
     label_map labels_;
     interval_map intervals_;
     number_map numbers_;

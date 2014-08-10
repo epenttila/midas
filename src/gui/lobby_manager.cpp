@@ -26,25 +26,6 @@ namespace
 
         return "[" + s + "]";
     }
-
-    bool close_popups(input_manager& input, fake_window& window, const site_settings::popup_range& popups)
-    {
-        if (!window.is_valid())
-            return false;
-
-        const auto title = window.get_window_text();
-
-        for (const auto& i : popups)
-        {
-            if (std::regex_match(title, i.second->regex))
-            {
-                if (window.click_button(input, i.second->button))
-                    return true;
-            }
-        }
-
-        throw std::runtime_error(QString("Unable to close popup: %1").arg(title.c_str()).toStdString().c_str());
-    }
 }
 
 lobby_manager::lobby_manager(const site_settings& settings, input_manager& input_manager, const window_manager& wm)
@@ -52,7 +33,6 @@ lobby_manager::lobby_manager(const site_settings& settings, input_manager& input
     , settings_(&settings)
 {
     lobby_window_.reset(new fake_window(*settings_->get_window("lobby"), settings, wm));
-    popup_window_.reset(new fake_window(*settings_->get_window("popup"), settings, wm));
 
     for (const auto& w : settings_->get_windows("table"))
         table_windows_.push_back(std::unique_ptr<fake_window>(new fake_window(*w.second, settings, wm)));
@@ -79,11 +59,10 @@ const lobby_manager::table_vector_t& lobby_manager::get_tables() const
 
 void lobby_manager::update_windows()
 {
-    if (!lobby_window_ || !popup_window_)
+    if (!lobby_window_)
         return;
 
     lobby_window_->update();
-    popup_window_->update();
 
     for (auto& i : table_windows_)
         i->update();

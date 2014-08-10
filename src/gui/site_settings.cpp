@@ -106,35 +106,6 @@ namespace
         return button;
     }
 
-    site_settings::popup_t read_xml_popup(QXmlStreamReader& reader)
-    {
-        const site_settings::pixel_t pixel = {
-            QRect(reader.attributes().value("color-x").toInt(),
-                reader.attributes().value("color-y").toInt(),
-                std::max(1, reader.attributes().value("color-width").toInt()),
-                std::max(1, reader.attributes().value("color-height").toInt())),
-            QColor(reader.attributes().value("color").toString()).rgb(),
-            reader.attributes().value("tolerance").toDouble()
-        };
-
-        const site_settings::button_t button = {
-            QRect(reader.attributes().value("x").toInt(),
-                reader.attributes().value("y").toInt(),
-                reader.attributes().value("width").toInt(),
-                reader.attributes().value("height").toInt()),
-            pixel
-        };
-
-        const site_settings::popup_t popup = {
-            std::regex(reader.attributes().value("pattern").toUtf8()),
-            button
-        };
-
-        reader.skipCurrentElement();
-
-        return popup;
-    }
-
     site_settings::window_t read_xml_window(QXmlStreamReader& reader)
     {
         const site_settings::window_t window = {
@@ -173,7 +144,6 @@ void site_settings::load(const std::string& filename)
     pixels_.clear();
     buttons_.clear();
     fonts_.clear();
-    popups_.clear();
     labels_.clear();
     intervals_.clear();
     numbers_.clear();
@@ -258,11 +228,6 @@ void site_settings::load(const std::string& filename)
             const auto id = reader.attributes().value("id").toString().toStdString();
             labels_.insert(std::make_pair(id, std::unique_ptr<label_t>(new label_t(read_xml_label(reader)))));
         }
-        else if (reader.name() == "popup")
-        {
-            const auto id = reader.attributes().value("id").toString().toStdString();
-            popups_.insert(std::make_pair(id, std::unique_ptr<popup_t>(new popup_t(read_xml_popup(reader)))));
-        }
         else
         {
             reader.skipCurrentElement();
@@ -297,11 +262,6 @@ site_settings::window_range site_settings::get_windows(const std::string& id)
 site_settings::button_range site_settings::get_buttons(const std::string& id) const
 {
     return buttons_.equal_range(id);
-}
-
-site_settings::popup_range site_settings::get_popups(const std::string& id) const
-{
-    return popups_.equal_range(id);
 }
 
 const site_settings::font_t* site_settings::get_font(const std::string& id) const
