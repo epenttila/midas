@@ -850,15 +850,34 @@ const nlhe_state* main_window::perform_action(const nlhe_state& state, const nlh
             auto amount = boost::algorithm::clamp(
                 snapshot.bet[1] + raise_fraction * (snapshot.total_pot + to_call), minbet, maxbet);
 
-            const auto allin_fraction = amount / maxbet;
-            const auto allin_threshold = settings_->get_number("allin-threshold");
-
-            if (allin_threshold && allin_fraction >= *allin_threshold && allin_fraction < 1.0)
+            // translate bets close to our or opponents remaining stack sizes to all-in
+            if (new_action_name != current_state->get_action_name(nlhe_state::RAISE_A))
             {
-                BOOST_LOG_TRIVIAL(info) << QString("Bet (%1) almost all-in (%2); translating to all-in (%3 >= %4)").
-                    arg(amount).arg(maxbet).arg(allin_fraction).arg(*allin_threshold).toStdString();
-                amount = maxbet;
-                new_action_name = current_state->get_action_name(nlhe_state::RAISE_A);
+                const auto opp_maxbet =
+                    *settings_->get_number("total-chips") - (snapshot.stack[0] + snapshot.total_pot - snapshot.bet[1]);
+
+                ENSURE(opp_maxbet > 0);
+
+                const auto allin_fraction = amount / maxbet;
+                const auto opp_allin_fraction = amount / opp_maxbet;
+                const auto allin_threshold = settings_->get_number("allin-threshold");
+
+                if (allin_threshold && allin_fraction >= *allin_threshold)
+                {
+                    BOOST_LOG_TRIVIAL(info) << QString(
+                        "Bet (%1) close to our remaining stack (%2); translating to all-in (%3 >= %4)").
+                        arg(amount).arg(maxbet).arg(allin_fraction).arg(*allin_threshold).toStdString();
+                    amount = maxbet;
+                    new_action_name = current_state->get_action_name(nlhe_state::RAISE_A);
+                }
+                else if (allin_threshold && opp_allin_fraction >= *allin_threshold)
+                {
+                    BOOST_LOG_TRIVIAL(info) << QString(
+                        "Bet (%1) close to opponent remaining stack (%2); translating to all-in (%3 >= %4)").
+                        arg(amount).arg(opp_maxbet).arg(opp_allin_fraction).arg(*allin_threshold).toStdString();
+                    amount = maxbet;
+                    new_action_name = current_state->get_action_name(nlhe_state::RAISE_A);
+                }
             }
 
             const auto method = static_cast<table_manager::raise_method>(get_weighted_int(engine_,
