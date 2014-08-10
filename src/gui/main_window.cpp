@@ -188,6 +188,15 @@ namespace
 
         QPlainTextEdit& log_;
     };
+
+    template<class T>
+    T round_multiple(const T val, const T mul)
+    {
+        if (mul == 0)
+            return val;
+
+        return static_cast<T>(std::round(static_cast<double>(val) / mul) * mul);
+    }
 }
 
 main_window::main_window()
@@ -810,8 +819,21 @@ const nlhe_state* main_window::perform_action(const nlhe_state& state, const nlh
             ENSURE(minbet <= maxbet);
 
             // bet amount is opponent bet (our bet + call) plus x times the pot after our call (total_pot + to_call)
-            auto amount = boost::algorithm::clamp(
-                snapshot.bet[1] + raise_fraction * (snapshot.total_pot + to_call), minbet, maxbet);
+            auto amount = snapshot.bet[1] + raise_fraction * (snapshot.total_pot + to_call);
+
+            if (const auto p = settings_->get_number("bet-rounding"))
+            {
+                const auto rounded = round_multiple(amount, *p);
+
+                if (rounded != amount)
+                {
+                    BOOST_LOG_TRIVIAL(info) << QString("Bet rounded (%1 -> %2, multiple %3)")
+                        .arg(amount).arg(rounded).arg(*p).toStdString();
+                    amount = rounded;
+                }
+            }
+
+            amount = boost::algorithm::clamp(amount, minbet, maxbet);
 
             // translate bets close to our or opponents remaining stack sizes to all-in
             if (new_action_name != current_state->get_action_name(nlhe_state::RAISE_A))
