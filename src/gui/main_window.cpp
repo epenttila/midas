@@ -1134,6 +1134,11 @@ bool main_window::is_new_game(const table_data_t& table_data, const table_manage
 
 void main_window::save_snapshot() const
 {
+    const auto p = settings_->get_number("save-snapshots");
+
+    if (!(p && *p))
+        return;
+
     BOOST_LOG_TRIVIAL(info) << "Saving current snapshot";
 
     const auto& image = window_manager_->get_image();
