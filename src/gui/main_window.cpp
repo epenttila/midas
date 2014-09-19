@@ -207,7 +207,7 @@ namespace
     }
 }
 
-main_window::main_window()
+main_window::main_window(const std::string& settings_path)
     : engine_(std::random_device()())
     , input_manager_(new input_manager)
     , schedule_active_(false)
@@ -279,6 +279,8 @@ main_window::main_window()
     boost::log::add_common_attributes();
     boost::log::register_sink_factory("Window", boost::make_shared<qt_sink_factory>(*log_));
     boost::log::register_simple_formatter_factory<boost::log::trivial::severity_level, char>("Severity");
+
+    load_settings(settings_path);
 
     BOOST_LOG_TRIVIAL(info) << "Starting capture";
 
@@ -395,12 +397,7 @@ void main_window::open_strategy()
 
         if (info.suffix() == "xml")
         {
-            const auto filename = i->toStdString();
-            load_settings(filename);
-            lobby_.reset(new lobby_manager(*settings_, *input_manager_, *window_manager_));
-            site_.reset(new table_manager(*settings_, *input_manager_));
-
-            BOOST_LOG_TRIVIAL(info) << QString("Loaded site settings: %1").arg(filename.c_str()).toStdString();
+            load_settings(i->toStdString());
         }
         else if (info.suffix() == "str")
         {
@@ -1049,6 +1046,9 @@ void main_window::remove_old_table_data()
 
 void main_window::load_settings(const std::string& filename)
 {
+    if (filename.empty())
+        return;
+
     settings_->load(filename);
 
     const auto& input_delay = *settings_->get_interval("input-delay");
@@ -1080,6 +1080,11 @@ void main_window::load_settings(const std::string& filename)
 
     if (const auto p = settings_->get_string("captcha-upload-url"))
         captcha_manager_->set_upload_url(*p);
+
+    lobby_.reset(new lobby_manager(*settings_, *input_manager_, *window_manager_));
+    site_.reset(new table_manager(*settings_, *input_manager_));
+
+    BOOST_LOG_TRIVIAL(info) << QString("Loaded site settings: %1").arg(filename.c_str()).toStdString();
 }
 
 int main_window::get_effective_stack(const table_manager::snapshot_t& snapshot, const double big_blind) const

@@ -40,7 +40,7 @@ class main_window : public QMainWindow
 public:
     typedef lobby_manager::tid_t tid_t;
 
-    main_window();
+    main_window(const std::string& settings_path);
     ~main_window();
 
 public slots:
