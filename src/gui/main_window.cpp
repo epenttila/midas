@@ -932,7 +932,9 @@ void main_window::handle_schedule()
     if (!schedule_action_->isChecked())
         return;
 
-    const auto active = is_schedule_active(read_schedule_file("schedule.xml"), &next_activity_date_);
+    const auto schedule_path = settings_->get_string("schedule");
+    const auto spans = schedule_path ? read_schedule_file(*schedule_path) : spans_t();
+    const auto active = is_schedule_active(spans, &next_activity_date_);
 
     if (active != schedule_active_)
     {
