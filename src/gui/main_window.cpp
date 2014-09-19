@@ -312,6 +312,17 @@ void main_window::capture_timer_timeout()
             }
         }
 
+        if (!schedule_action_->isChecked() && QFileInfo("enable.txt").exists())
+        {
+            BOOST_LOG_TRIVIAL(info) << "enable.txt found, enabling schedule";
+            schedule_action_->setChecked(true);
+        }
+        else if (schedule_action_->isChecked() && QFileInfo("disable.txt").exists())
+        {
+            BOOST_LOG_TRIVIAL(info) << "disable.txt found, disabling schedule";
+            schedule_action_->setChecked(false);
+        }
+
         handle_schedule();
 
         if (lobby_)
