@@ -323,3 +323,8 @@ const site_settings::number_list_t* site_settings::get_number_list(const std::st
     const auto& i = number_lists_.equal_range(id);
     return i.first != i.second ? i.first->second.get() : nullptr;
 }
+
+site_settings::string_range site_settings::get_strings(const std::string& id) const
+{
+    return strings_.equal_range(id);
+}

@@ -377,52 +377,14 @@ void main_window::capture_timer_timeout()
 
 void main_window::open_strategy()
 {
-    const auto filenames = QFileDialog::getOpenFileNames(this, "Open", QString(), "All files (*.*);;Site setting files (*.xml);;Strategy files (*.str)");
+    const auto filename = QFileDialog::getOpenFileName(this, "Open", QString(), "All files (*.*);;Site setting files (*.xml)");
 
-    if (filenames.empty())
+    if (filename.isEmpty())
         return;
 
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
-    std::map<int, std::unique_ptr<nlhe_strategy>> new_strategies;
-
-    std::regex r("([^-]+)-([^-]+)-[0-9]+\\.str");
-    std::regex r_nlhe("nlhe\\.([a-z]+)\\.([0-9]+)");
-    std::smatch m;
-    std::smatch m_nlhe;
-
-    for (auto i = filenames.begin(); i != filenames.end(); ++i)
-    {
-        const auto info = QFileInfo(*i);
-
-        if (info.suffix() == "xml")
-        {
-            load_settings(i->toStdString());
-        }
-        else if (info.suffix() == "str")
-        {
-            const std::string filename = QFileInfo(*i).fileName().toStdString();
-
-            try
-            {
-                std::unique_ptr<nlhe_strategy> p(new nlhe_strategy(i->toStdString()));
-                new_strategies[p->get_stack_size()] = std::move(p);
-            }
-            catch (const std::exception& e)
-            {
-                BOOST_LOG_TRIVIAL(fatal) << e.what();
-                continue;
-            }
-
-            BOOST_LOG_TRIVIAL(info) << QString("Loaded strategy: %1").arg(*i).toStdString();
-        }
-    }
-
-    if (!new_strategies.empty())
-    {
-        std::swap(strategies_, new_strategies);
-        BOOST_LOG_TRIVIAL(info) << strategies_.size() << " strategies loaded";
-    }
+    load_settings(filename.toStdString());
 
     update_statusbar();
     
@@ -1083,6 +1045,28 @@ void main_window::load_settings(const std::string& filename)
 
     lobby_.reset(new lobby_manager(*settings_, *input_manager_, *window_manager_));
     site_.reset(new table_manager(*settings_, *input_manager_));
+
+    strategies_.clear();
+
+    for (const auto& p : settings_->get_strings("strategy"))
+    {
+        const auto& filename = *p.second;
+
+        try
+        {
+            std::unique_ptr<nlhe_strategy> p(new nlhe_strategy(filename));
+            strategies_[p->get_stack_size()] = std::move(p);
+        }
+        catch (const std::exception& e)
+        {
+            BOOST_LOG_TRIVIAL(fatal) << e.what();
+            continue;
+        }
+
+        BOOST_LOG_TRIVIAL(info) << QString("Loaded strategy: %1").arg(filename.c_str()).toStdString();
+    }
+
+    BOOST_LOG_TRIVIAL(info) << strategies_.size() << " strategies loaded";
 
     BOOST_LOG_TRIVIAL(info) << QString("Loaded site settings: %1").arg(filename.c_str()).toStdString();
 }

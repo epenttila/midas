@@ -79,6 +79,7 @@ public:
     typedef std::unordered_multimap<std::string, std::unique_ptr<number_list_t>> number_list_map;
     typedef boost::iterator_range<window_map::const_iterator> window_range;
     typedef boost::iterator_range<button_map::const_iterator> button_range;
+    typedef boost::iterator_range<string_map::const_iterator> string_range;
 
     site_settings();
     void load(const std::string& filename);
@@ -95,6 +96,7 @@ public:
     const double* get_number(const std::string& id) const;
     const std::string* get_string(const std::string& id) const;
     const number_list_t* get_number_list(const std::string& id) const;
+    string_range get_strings(const std::string& id) const;
 
 private:
     std::string filename_;
