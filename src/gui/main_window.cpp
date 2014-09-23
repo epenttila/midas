@@ -623,6 +623,14 @@ void main_window::process_snapshot(const fake_window& window)
     ENSURE(current_state != nullptr);
     ENSURE(!current_state->is_terminal());
 
+    // if our previous all-in bet didn't succeed due to client bugs, assume we bet the minimum instead
+    if (current_state->get_parent() && current_state->get_action() == nlhe_state::RAISE_A)
+    {
+        BOOST_LOG_TRIVIAL(warning) << "Readjusting state after unsuccessful all-in bet";
+        current_state = current_state->get_parent()->get_child(nlhe_state::CALL + 1);
+        ENSURE(current_state != nullptr);
+    }
+
     ENSURE(round >= current_state->get_round());
 
     // a new round has started but we did not end the previous one, opponent has called
