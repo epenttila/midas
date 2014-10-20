@@ -28,7 +28,6 @@ public:
     bool check_idle(bool schedule_active);
 
 private:
-    std::unique_ptr<fake_window> lobby_window_;
     input_manager& input_manager_;
     table_vector_t table_windows_;
     std::unordered_set<tid_t> active_tables_;

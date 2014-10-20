@@ -32,8 +32,6 @@ lobby_manager::lobby_manager(const site_settings& settings, input_manager& input
     : input_manager_(input_manager)
     , settings_(&settings)
 {
-    lobby_window_.reset(new fake_window(*settings_->get_window("lobby"), settings, wm));
-
     for (const auto& w : settings_->get_windows("table"))
         table_windows_.push_back(std::unique_ptr<fake_window>(new fake_window(*w.second, settings, wm)));
 }
@@ -59,11 +57,6 @@ const lobby_manager::table_vector_t& lobby_manager::get_tables() const
 
 void lobby_manager::update_windows()
 {
-    if (!lobby_window_)
-        return;
-
-    lobby_window_->update();
-
     for (auto& i : table_windows_)
         i->update();
 }
