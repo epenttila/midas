@@ -312,10 +312,27 @@ const site_settings::interval_t* site_settings::get_interval(const std::string& 
     return i.first != i.second ? i.first->second.get() : nullptr;
 }
 
+site_settings::interval_t site_settings::get_interval(const std::string& id,
+    const site_settings::interval_t& default) const
+{
+    if (const auto p = get_interval(id))
+        return *p;
+    else
+        return default;
+}
+
 const std::string* site_settings::get_string(const std::string& id) const
 {
     const auto& i = strings_.equal_range(id);
     return i.first != i.second ? i.first->second.get() : nullptr;
+}
+
+std::string site_settings::get_string(const std::string& id, const std::string& default) const
+{
+    if (const auto p = get_string(id))
+        return *p;
+    else
+        return default;
 }
 
 const site_settings::number_list_t* site_settings::get_number_list(const std::string& id) const

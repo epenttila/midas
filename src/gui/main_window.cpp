@@ -1021,17 +1021,18 @@ void main_window::load_settings(const std::string& filename)
 
     settings_->load(filename);
 
-    const auto& input_delay = *settings_->get_interval("input-delay");
-    const auto& double_click_delay = *settings_->get_interval("double-click-delay");
-    const auto& mouse_speed = *settings_->get_interval("mouse-speed");
+    const auto input_delay = settings_->get_interval("input-delay", site_settings::interval_t(0, 1000));
+    const auto double_click_delay = settings_->get_interval("double-click-delay", site_settings::interval_t(0, 1000));
+    const auto mouse_speed = settings_->get_interval("mouse-speed", site_settings::interval_t(0, 1000));
 
     input_manager_->set_delay(input_delay.first, input_delay.second);
     input_manager_->set_double_click_delay(double_click_delay.first, double_click_delay.second);
     input_manager_->set_mouse_speed(mouse_speed.first, mouse_speed.second);
 
-    title_filter_->setText(settings_->get_string("title-filter")->c_str());
+    title_filter_->setText(QString::fromStdString(settings_->get_string("title-filter", "")));
 
-    capture_timer_->setInterval(static_cast<int>(settings_->get_interval("capture")->first * 1000.0));
+    capture_timer_->setInterval(static_cast<int>(settings_->get_interval("capture",
+        site_settings::interval_t(1000, 1000)).first * 1000.0));
 
     if (const auto smtp_host = settings_->get_string("smtp-host"))
     {
