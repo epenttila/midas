@@ -627,7 +627,27 @@ void main_window::process_snapshot(const fake_window& window)
     if (current_state->get_parent() && current_state->get_action() == nlhe_state::RAISE_A)
     {
         BOOST_LOG_TRIVIAL(warning) << "Readjusting state after unsuccessful all-in bet";
-        current_state = current_state->get_parent()->get_child(nlhe_state::CALL + 1);
+
+        const nlhe_state* child = nullptr;
+
+        for (int i = 0; i < current_state->get_parent()->get_child_count(); ++i)
+        {
+            const auto p = current_state->get_parent()->get_child(i);
+
+            if (p && p->get_action() == nlhe_state::CALL)
+            {
+                child = current_state->get_parent()->get_child(i + 1); // minimum bet
+
+                if (!child || child->get_action() == nlhe_state::RAISE_A)
+                {
+                    BOOST_LOG_TRIVIAL(warning) << "Falling back to treating our failed all-in bet as a call";
+                    child = p;
+                }
+                break;
+            }
+        }
+
+        current_state = child;
         ENSURE(current_state != nullptr);
     }
 
