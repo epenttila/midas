@@ -21,6 +21,7 @@ namespace
     static const int TITLE_TEXT_TOP_OFFSET = 2;
     static const int TITLE_TEXT_RIGHT_OFFSET = 0;
     static const int TITLE_TEXT_BOTTOM_OFFSET = -4;
+    static const int CORNER_SIZE = 3;
 
     bool is_top_left_corner(const QImage& image, const int x, const int y)
     {
@@ -33,6 +34,19 @@ namespace
             && image.pixel(x,     y + 2) == qRgb(212, 208, 200)
             && image.pixel(x + 1, y + 2) == qRgb(255, 255, 255)
             && image.pixel(x + 2, y + 2) == qRgb(212, 208, 200);
+    }
+
+    bool is_top_right_corner(const QImage& image, const int x, const int y)
+    {
+        return image.pixel(x, y) == qRgb(212, 208, 200)
+            && image.pixel(x + 1, y) == qRgb(212, 208, 200)
+            && image.pixel(x + 2, y) == qRgb(64, 64, 64)
+            && image.pixel(x, y + 1) == qRgb(255, 255, 255)
+            && image.pixel(x + 1, y + 1) == qRgb(128, 128, 128)
+            && image.pixel(x + 2, y + 1) == qRgb(64, 64, 64)
+            && image.pixel(x, y + 2) == qRgb(212, 208, 200)
+            && image.pixel(x + 1, y + 2) == qRgb(128, 128, 128)
+            && image.pixel(x + 2, y + 2) == qRgb(64, 64, 64);
     }
 
     bool is_bottom_right_corner(const QImage& image, const int x, const int y)
@@ -48,94 +62,133 @@ namespace
             && image.pixel(x + 2, y + 2) == qRgb(64, 64, 64);
     }
 
+    bool is_bottom_left_corner(const QImage& image, const int x, const int y)
+    {
+        return image.pixel(x, y) == qRgb(212, 208, 200)
+            && image.pixel(x + 1, y) == qRgb(255, 255, 255)
+            && image.pixel(x + 2, y) == qRgb(212, 208, 200)
+            && image.pixel(x, y + 1) == qRgb(212, 208, 200)
+            && image.pixel(x + 1, y + 1) == qRgb(128, 128, 128)
+            && image.pixel(x + 2, y + 1) == qRgb(128, 128, 128)
+            && image.pixel(x, y + 2) == qRgb(64, 64, 64)
+            && image.pixel(x + 1, y + 2) == qRgb(64, 64, 64)
+            && image.pixel(x + 2, y + 2) == qRgb(64, 64, 64);
+    }
+        
     void try_top_left(const QImage& image, int* border, int* width, int* height)
     {
+        // detect extra border
         if (is_top_left_corner(image, 0, 0))
         {
-            if (image.pixel(3, 3) == qRgb(212, 208, 200))
-                *border = 4;
+            if (image.pixel(CORNER_SIZE, CORNER_SIZE) == qRgb(212, 208, 200))
+                *border = CORNER_SIZE + 1;
             else
-                *border = 3;
+                *border = CORNER_SIZE;
         }
         else
+            return;
+
+        // left edge
+        for (int y = CORNER_SIZE; y < image.height(); ++y)
+        {
+            if (is_bottom_left_corner(image, 0, y))
+            {
+                *height = y + CORNER_SIZE;
+                break;
+            }
+
+            if (image.pixel(0, y) == qRgb(212, 208, 200)
+                && image.pixel(1, y) == qRgb(255, 255, 255)
+                && image.pixel(2, y) == qRgb(212, 208, 200))
+            {
+                continue;
+            }
+            else
+            {
+                *height = -1;
+                break;
+            }
+        }
+
+        if (*height == -1)
             return;
 
         // top edge
-        for (int x = *border; x < image.width(); ++x)
+        for (int x = CORNER_SIZE; x < image.width(); ++x)
         {
-            if (image.pixel(x, 0) == qRgb(64, 64, 64)
-                && image.pixel(x - 1, 1) == qRgb(128, 128, 128)
-                && image.pixel(x - 2, 2) == qRgb(212, 208, 200))
+            if (is_top_right_corner(image, x, 0))
             {
-                *width = x + 1;
+                *width = x + CORNER_SIZE;
                 break;
             }
-        }
 
-        // left edge
-        for (int y = *border; y < image.height(); ++y)
-        {
-            if (image.pixel(0, y) == qRgb(64, 64, 64)
-                && image.pixel(1, y - 1) == qRgb(128, 128, 128)
-                && image.pixel(2, y - 2) == qRgb(212, 208, 200))
+            if (image.pixel(x, 0) == qRgb(212, 208, 200)
+                && image.pixel(x, 1) == qRgb(255, 255, 255)
+                && image.pixel(x, 2) == qRgb(212, 208, 200))
             {
-                *height = y + 1;
-                break;
+                continue;
             }
-        }
-
-        if (*width == -1 && *height != -1)
-        {
-            // bottom edge
-            for (int x = *border; x < image.width(); ++x)
-            {
-                if (is_bottom_right_corner(image, x - 2, *height - 3))
-                {
-                    *width = x + 1;
-                    break;
-                }
-            }
-        }
-        else if (*width != -1 && *height == -1)
-        {
-            // right edge
-            for (int y = *border; y < image.height(); ++y)
-            {
-                if (is_bottom_right_corner(image, *width - 3, y - 2))
-                {
-                    *height = y + 1;
-                    break;
-                }
-            }
-        }
-    }
-
-    void try_top_right(const QImage& image, int* border, int* width, int* height)
-    {
-        if (image.pixel(image.width() - 1, 0) == qRgb(64, 64, 64)
-            && image.pixel(image.width() - 2, 1) == qRgb(128, 128, 128)
-            && image.pixel(image.width() - 3, 2) == qRgb(212, 208, 200))
-        {
-            if (image.pixel(image.width() - 4, 3) == qRgb(212, 208, 200))
-                *border = 4;
             else
-                *border = 3;
+            {
+                *width = -1;
+                break;
+            }
         }
-        else
+
+        if (*width == -1)
             return;
 
-        // assume window is aligned at (0,0) so don't search for top left corner
-        *width = image.width();
-
         // right edge
-        for (int y = *border; y < image.height(); ++y)
+        for (int y = CORNER_SIZE; y < image.height(); ++y)
         {
-            if (is_bottom_right_corner(image, *width - 3, y - 2))
+            if (is_bottom_right_corner(image, *width - CORNER_SIZE, y))
             {
-                *height = y + 1;
+                if (*height != y + CORNER_SIZE)
+                    *height = -1;
+                break;
+            }
+
+            if (image.pixel(*width - 3, y) == qRgb(212, 208, 200)
+                && image.pixel(*width - 2, y) == qRgb(128, 128, 128)
+                && image.pixel(*width - 1, y) == qRgb(64, 64, 64))
+            {
+                continue;
+            }
+            else
+            {
+                *height = -1;
                 break;
             }
         }
+
+        if (*height == -1)
+            return;
+
+        // bottom edge
+        for (int x = CORNER_SIZE; x < image.width(); ++x)
+        {
+            if (is_bottom_right_corner(image, x, *height - CORNER_SIZE))
+            {
+                if (*width != x + CORNER_SIZE)
+                    *width = -1;
+                break;
+            }
+
+            if (image.pixel(x, *height - 3) == qRgb(212, 208, 200)
+                && image.pixel(x, *height - 2) == qRgb(128, 128, 128)
+                && image.pixel(x, *height - 1) == qRgb(64, 64, 64))
+            {
+                continue;
+            }
+            else
+            {
+                *width = -1;
+                break;
+            }
+        }
+
+        if (*width == -1)
+            return;
     }
 }
 
@@ -171,14 +224,14 @@ void fake_window::update()
 
     try_top_left(image, &border, &width, &height);
 
-    if (border == -1 || width == -1 || height == -1)
-        try_top_right(image, &border, &width, &height);
-
     if (border == -1)
         return; // no window
 
     if (width == -1 || height == -1)
-        throw std::runtime_error("Unable to determine window size");
+    {
+        BOOST_LOG_TRIVIAL(warning) << "Unable to determine window size";
+        return;
+    }
 
     window_rect_ = QRect(rect_.left(), rect_.top(), width, height);
 
