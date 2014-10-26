@@ -55,10 +55,15 @@ const lobby_manager::table_vector_t& lobby_manager::get_tables() const
     return table_windows_;
 }
 
-void lobby_manager::update_windows()
+bool lobby_manager::update_windows()
 {
     for (auto& i : table_windows_)
-        i->update();
+    {
+        if (!i->update())
+            return false;
+    }
+
+    return true;
 }
 
 lobby_manager::tid_t lobby_manager::get_tournament_id(const fake_window& window) const

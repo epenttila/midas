@@ -23,7 +23,7 @@ public:
     lobby_manager(const site_settings& settings, input_manager& input_manager, const window_manager& wm);
     void detect_closed_tables(const std::unordered_set<tid_t>& new_active_tables);
     const table_vector_t& get_tables() const;
-    void update_windows();
+    bool update_windows();
     tid_t get_tournament_id(const fake_window& window) const;
     bool check_idle(bool schedule_active);
 

@@ -18,7 +18,7 @@ public:
     bool click_button(input_manager& input, const site_settings::button_t& button, bool double_click = false) const;
     bool click_any_button(input_manager& input, const site_settings::button_range& buttons, bool double_click = false) const;
     std::string get_window_text() const;
-    void update();
+    bool update();
     const QImage& get_window_image() const;
     const QImage& get_client_image() const;
     bool is_mouse_inside(const input_manager& input, const QRect& rect) const;

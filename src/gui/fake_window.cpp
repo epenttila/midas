@@ -205,7 +205,7 @@ fake_window::fake_window(const site_settings::window_t& window, const site_setti
 {
 }
 
-void fake_window::update()
+bool fake_window::update()
 {
     window_rect_ = QRect();
     client_rect_ = QRect();
@@ -215,7 +215,7 @@ void fake_window::update()
     const auto image = window_manager_.get_image().copy(rect_ + margins_);
 
     if (image.isNull())
-        return;
+        return true; // no capture
 
     // top left
     int border = -1;
@@ -225,12 +225,12 @@ void fake_window::update()
     try_top_left(image, &border, &width, &height);
 
     if (border == -1)
-        return; // no window
+        return true; // no window
 
     if (width == -1 || height == -1)
     {
         BOOST_LOG_TRIVIAL(warning) << "Unable to determine window size";
-        return;
+        return false;
     }
 
     window_rect_ = QRect(rect_.left(), rect_.top(), width, height);
@@ -269,6 +269,8 @@ void fake_window::update()
 
     window_image_ = image.copy(window_rect_.translated(-window_rect_.topLeft()));
     client_image_ = image.copy(client_rect_.translated(-window_rect_.topLeft()));
+
+    return true;
 }
 
 bool fake_window::is_valid() const

@@ -1207,7 +1207,11 @@ bool main_window::try_capture()
     if (window_manager_->get_image().isNull())
         return true; // no image, don't retry
 
-    lobby_->update_windows();
+    if (!lobby_->update_windows())
+    {
+        BOOST_LOG_TRIVIAL(warning) << "Table window update failed";
+        return false;
+    }
 
     for (const auto& button : settings_->get_buttons("bad"))
     {
