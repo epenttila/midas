@@ -95,6 +95,7 @@ public:
     const interval_t* get_interval(const std::string& id) const;
     interval_t get_interval(const std::string& id, const interval_t& default) const;
     const double* get_number(const std::string& id) const;
+    double get_number(const std::string& id, const double default) const;
     const std::string* get_string(const std::string& id) const;
     std::string get_string(const std::string& id, const std::string& default) const;
     const number_list_t* get_number_list(const std::string& id) const;

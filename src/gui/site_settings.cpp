@@ -306,6 +306,14 @@ const double* site_settings::get_number(const std::string& id) const
     return i.first != i.second ? i.first->second.get() : nullptr;
 }
 
+double site_settings::get_number(const std::string& id, const double default) const
+{
+    if (const auto p = get_number(id))
+        return *p;
+    else
+        return default;
+}
+
 const site_settings::interval_t* site_settings::get_interval(const std::string& id) const
 {
     const auto& i = intervals_.equal_range(id);
