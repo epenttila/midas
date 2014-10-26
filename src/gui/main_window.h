@@ -85,6 +85,7 @@ private:
     bool is_new_game(const table_data_t& table_data, const table_manager::snapshot_t& snapshot) const;
     void save_snapshot() const;
     void update_capture();
+    bool try_capture();
 
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<nlhe_strategy>> strategies_;

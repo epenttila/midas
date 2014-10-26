@@ -1178,72 +1178,70 @@ void main_window::save_snapshot() const
 
 void main_window::update_capture()
 {
-    const auto tooltip_move_time = settings_->get_number("tooltip-move-time");
-
-    QRect tooltip_rect;
-    QRect bad_rect;
-
     QTime t;
     t.start();
 
-    while (t.elapsed() <= (tooltip_move_time ? *tooltip_move_time * 1000.0 : 0.0))
+    while (t.elapsed() <= static_cast<int>(settings_->get_number("tooltip-move-time", 0.0) * 1000))
     {
-        window_manager_->update(title_filter_->text().toStdString());
-        lobby_->update_windows();
-
-        if (window_manager_->get_image().isNull())
-            return; // no image
-
-        bad_rect = QRect();
-
-        for (const auto& button : settings_->get_buttons("bad"))
-        {
-            for (const auto& table : lobby_->get_tables())
-            {
-                const auto& rect = button.second->unscaled_rect;
-
-                if (table->is_mouse_inside(*input_manager_, rect))
-                {
-                    bad_rect = table->get_scaled_rect(rect);
-                    break;
-                }
-            }
-
-            if (bad_rect.isValid())
-                break;
-        }
-
-        tooltip_rect = window_manager_->get_tooltip();
-
-        if (bad_rect.isValid())
-        {
-            BOOST_LOG_TRIVIAL(warning) << QString("Mouse in bad position (%1,%2,%3,%4); retrying capture")
-                .arg(bad_rect.x())
-                .arg(bad_rect.y())
-                .arg(bad_rect.width())
-                .arg(bad_rect.height()).toStdString();
-        }
-        else if (tooltip_rect.isValid())
-        {
-            BOOST_LOG_TRIVIAL(warning) << QString("Tooltip found (%1,%2,%3,%4); retrying capture")
-                .arg(tooltip_rect.x())
-                .arg(tooltip_rect.y())
-                .arg(tooltip_rect.width())
-                .arg(tooltip_rect.height()).toStdString();
-        }
+        if (try_capture())
+            return;
         else
-            return; // we have a good capture
-
-        if (autoplay_action_->isChecked())
         {
-            input_manager_->move_random(input_manager::IDLE_MOVE_DESKTOP);
-            input_manager_->sleep();
+            BOOST_LOG_TRIVIAL(warning) << "Retrying capture";
+
+            if (autoplay_action_->isChecked())
+            {
+                input_manager_->move_random(input_manager::IDLE_MOVE_DESKTOP);
+                input_manager_->sleep();
+            }
         }
     }
 
-    if (bad_rect.isValid())
-        throw std::runtime_error("Mouse in bad position");
+    throw std::runtime_error("Unable to get valid capture");
+}
+
+bool main_window::try_capture()
+{
+    window_manager_->update(title_filter_->text().toStdString());
+
+    if (window_manager_->get_image().isNull())
+        return true; // no image, don't retry
+
+    lobby_->update_windows();
+
+    for (const auto& button : settings_->get_buttons("bad"))
+    {
+        for (const auto& table : lobby_->get_tables())
+        {
+            const auto& rect = button.second->unscaled_rect;
+
+            if (table->is_mouse_inside(*input_manager_, rect))
+            {
+                const auto bad_rect = table->get_scaled_rect(rect);
+
+                BOOST_LOG_TRIVIAL(warning) << QString("Mouse in bad position (%1,%2,%3,%4)")
+                    .arg(bad_rect.x())
+                    .arg(bad_rect.y())
+                    .arg(bad_rect.width())
+                    .arg(bad_rect.height()).toStdString();
+
+                return false;
+            }
+        }
+    }
+
+    const auto tooltip_rect = window_manager_->get_tooltip();
 
     if (tooltip_rect.isValid())
-        throw std::runtime_error("Tooltip found");
+    {
+        BOOST_LOG_TRIVIAL(warning) << QString("Tooltip found (%1,%2,%3,%4)")
+            .arg(tooltip_rect.x())
+            .arg(tooltip_rect.y())
+            .arg(tooltip_rect.width())
+            .arg(tooltip_rect.height()).toStdString();
+
+        return false;
+    }
+
+    return true;
 }
