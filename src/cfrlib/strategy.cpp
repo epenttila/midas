@@ -56,7 +56,8 @@ int strategy::get_random_child(const game_state_base& state, int bucket) const
         x -= p;
     }
 
-    return -1;
+    // floating point errors might lead us here
+    return state.get_child_count() - 1;
 }
 
 std::string strategy::get_filename() const
