@@ -14,6 +14,118 @@
 #include "cfrlib/nlhe_strategy.h"
 #include "util/version.h"
 
+void apply_purification(strategy::probability_t* begin, strategy::probability_t* end)
+{
+    double max = 0;
+    int max_count = 0;
+
+    for (auto it = begin; it != end; ++it)
+    {
+        if (*it > max)
+        {
+            max = *it;
+            max_count = 1;
+        }
+        else if (*it == max)
+        {
+            ++max_count;
+        }
+    }
+
+    for (auto it = begin; it != end; ++it)
+    {
+        if (*it == max)
+            *it = static_cast<strategy::probability_t>(1.0 / max_count);
+        else
+            *it = 0;
+    }
+
+#ifndef NDEBUG
+    double val = 0;
+
+    for (auto it = begin; it != end; ++it)
+    {
+        if (val == 0 && *it != val)
+            val = *it;
+
+        assert(*it == val || *it == 0);
+    }
+#endif
+}
+
+void apply_thresholding(strategy::probability_t* begin, strategy::probability_t* end, const double threshold)
+{
+    strategy::probability_t sum = 0;
+
+    for (auto it = begin; it != end; ++it)
+    {
+        if (*it < threshold)
+            *it = 0;
+        else
+            sum += *it;
+    }
+
+    for (auto it = begin; it != end; ++it)
+        *it /= sum;
+}
+
+void apply_new(const nlhe_state& state, strategy::probability_t* begin, strategy::probability_t* end,
+    const double threshold)
+{
+    if (state.get_child(0) && state.get_child(0)->get_action() == nlhe_state::FOLD && *begin > threshold)
+    {
+        *begin = 1;
+        std::fill(begin + 1, end, strategy::probability_t());
+        return;
+    }
+
+    int fold_index = -1;
+    int call_index = -1;
+    strategy::probability_t fold = 0;
+    strategy::probability_t call = 0;
+    strategy::probability_t bet = 0;
+
+    for (int i = 0; i < state.get_child_count(); ++i)
+    {
+        switch (state.get_child(i)->get_action())
+        {
+        case nlhe_state::FOLD:
+            fold = *(begin + i);
+            fold_index = i;
+            break;
+        case nlhe_state::CALL:
+            call = *(begin + i);
+            call_index = i;
+            break;
+        default:
+            bet += *(begin + i);
+            break;
+        }
+    }
+
+    if (fold >= call && fold >= bet)
+    {
+        std::fill(begin, end, strategy::probability_t());
+        *(begin + fold_index) = 1;
+        return;
+    }
+
+    if (call >= bet)
+    {
+        std::fill(begin, end, strategy::probability_t());
+        *(begin + call_index) = 1;
+        return;
+    }
+
+    if (fold_index != -1)
+        *(begin + fold_index) = 0;
+
+    if (call_index != -1)
+        *(begin + call_index) = 0;
+
+    apply_purification(begin, end);
+}
+
 int main(int argc, char* argv[])
 {
     try
@@ -33,12 +145,16 @@ int main(int argc, char* argv[])
         namespace po = boost::program_options;
 
         std::string strategy_file;
+        double threshold;
+        int method;
 
         po::options_description desc("Options");
         desc.add_options()
             ("help", "produce help message")
             ("strategy-file", po::value<std::string>(&strategy_file)->required(), "strategy file")
             ("version", "show version")
+            ("threshold", po::value<double>(&threshold)->default_value(0.0), "threshold parameter")
+            ("method", po::value<int>(&method)->default_value(0), "post-processing method")
             ;
 
         po::variables_map vm;
@@ -74,43 +190,15 @@ int main(int argc, char* argv[])
             {
                 strategy::probability_t* begin = strategy.get_strategy().get_data(state, 0, bucket);
                 strategy::probability_t* end = begin + state.get_child_count();
-                double max = 0;
-                int max_count = 0;
 
-                for (auto it = begin; it != end; ++it)
-                {
-                    if (*it > max)
-                    {
-                        max = *it;
-                        max_count = 1;
-                    }
-                    else if (*it == max)
-                    {
-                        ++max_count;
-                    }
-                }
+                if (method == 0)
+                    apply_purification(begin, end);
+                else if (method == 1)
+                    apply_thresholding(begin, end, threshold);
+                else if (method == 2)
+                    apply_new(state, begin, end, threshold);
 
-                for (auto it = begin; it != end; ++it)
-                {
-                    if (*it == max)
-                        *it = static_cast<strategy::probability_t>(1.0 / max_count);
-                    else
-                        *it = 0;
-                }
-
-#ifndef NDEBUG
                 assert(std::abs(std::accumulate(begin, end, 0.0) - 1.0) <= 1e-5);
-
-                double val = 0;
-
-                for (auto it = begin; it != end; ++it)
-                {
-                    if (val == 0 && *it != val)
-                        val = *it;
-
-                    assert(*it == val || *it == 0);
-                }
-#endif
 
                 ++count;
             }
