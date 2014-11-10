@@ -27,11 +27,17 @@ strategy::probability_t strategy::get_probability(const game_state_base& state, 
 
 const strategy::probability_t* strategy::get_data(const game_state_base& state, int child, int bucket) const
 {
+    if (!file_.const_data())
+        throw std::runtime_error("mapped file is null");
+
     return reinterpret_cast<const strategy::probability_t*>(file_.const_data() + get_position(state, child, bucket));
 }
 
 strategy::probability_t* strategy::get_data(const game_state_base& state, int child, int bucket)
 {
+    if (!file_.data())
+        throw std::runtime_error("mapped file is null");
+
     return reinterpret_cast<strategy::probability_t*>(file_.data() + get_position(state, child, bucket));
 }
 
