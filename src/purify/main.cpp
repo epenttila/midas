@@ -98,6 +98,9 @@ void apply_new(const nlhe_state& state, strategy::probability_t* begin, strategy
 
     if (fold >= threshold || (fold >= call && fold >= bet))
     {
+        if (fold_index == -1)
+            throw std::runtime_error("fold_index == -1");
+
         std::fill(begin, end, strategy::probability_t());
         *(begin + fold_index) = 1;
         return;
@@ -105,6 +108,9 @@ void apply_new(const nlhe_state& state, strategy::probability_t* begin, strategy
 
     if (call >= bet)
     {
+        if (call_index == -1)
+            throw std::runtime_error("call_index == -1");
+
         std::fill(begin, end, strategy::probability_t());
         *(begin + call_index) = 1;
         return;
