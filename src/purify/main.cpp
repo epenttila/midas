@@ -72,13 +72,6 @@ void apply_thresholding(strategy::probability_t* begin, strategy::probability_t*
 void apply_new(const nlhe_state& state, strategy::probability_t* begin, strategy::probability_t* end,
     const double threshold)
 {
-    if (state.get_child(0) && state.get_child(0)->get_action() == nlhe_state::FOLD && *begin > threshold)
-    {
-        *begin = 1;
-        std::fill(begin + 1, end, strategy::probability_t());
-        return;
-    }
-
     int fold_index = -1;
     int call_index = -1;
     strategy::probability_t fold = 0;
@@ -103,7 +96,7 @@ void apply_new(const nlhe_state& state, strategy::probability_t* begin, strategy
         }
     }
 
-    if (fold >= call && fold >= bet)
+    if (fold >= threshold || (fold >= call && fold >= bet))
     {
         std::fill(begin, end, strategy::probability_t());
         *(begin + fold_index) = 1;
