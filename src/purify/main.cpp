@@ -146,6 +146,7 @@ int main(int argc, char* argv[])
         std::string strategy_file;
         double threshold;
         int method;
+        int round;
 
         po::options_description desc("Options");
         desc.add_options()
@@ -154,6 +155,7 @@ int main(int argc, char* argv[])
             ("version", "show version")
             ("threshold", po::value<double>(&threshold)->default_value(0.0), "threshold parameter")
             ("method", po::value<int>(&method)->default_value(0), "post-processing method")
+            ("round", po::value<int>(&round)->default_value(0), "first round to process")
             ;
 
         po::variables_map vm;
@@ -184,6 +186,9 @@ int main(int argc, char* argv[])
         for (int state_id = 0; state_id < static_cast<int>(states.size()); ++state_id)
         {
             const auto& state = *dynamic_cast<const nlhe_state*>(states[state_id]);
+
+            if (state.get_round() < round)
+                continue;
 
             for (int bucket = 0; bucket < strategy.get_abstraction().get_bucket_count(state.get_round()); ++bucket)
             {
