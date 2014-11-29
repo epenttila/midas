@@ -7,6 +7,7 @@
 class QLineEdit;
 class QDoubleSpinBox;
 class nlhe_state;
+class nlhe_strategy;
 
 class state_widget : public QWidget
 {
@@ -14,19 +15,19 @@ class state_widget : public QWidget
 
 public:
     state_widget(QWidget* parent = 0, Qt::WindowFlags flags = 0);
-    void set_root_state(const nlhe_state* state);
+    void set_strategy(const nlhe_strategy* strategy);
     const nlhe_state* get_state() const;
+    const nlhe_strategy* get_strategy() const;
 
 public slots:
-    void set_board_clicked();
     void raise_clicked();
     void call_clicked();
     void reset_clicked();
-    void state_text_changed();
 
 signals:
     void board_changed(const QString& board);
     void state_changed();
+    void stack_changed(const double val);
 
 private:
     void set_state(const nlhe_state* state);
@@ -35,5 +36,7 @@ private:
     QLineEdit* state_edit_;
     QDoubleSpinBox* raise_amount_;
     const nlhe_state* state_;
-    const nlhe_state* root_state_;
+    const nlhe_strategy* strategy_;
+    QDoubleSpinBox* stack_;
+    QLineEdit* file_edit_;
 };

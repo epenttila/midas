@@ -231,6 +231,12 @@ main_window::main_window(const std::string& settings_path)
     state_widget_->setVisible(false);
     connect(state_widget_, &state_widget::board_changed, this, &main_window::state_widget_board_changed);
     connect(state_widget_, &state_widget::state_changed, this, &main_window::state_widget_state_changed);
+    connect(state_widget_, &state_widget::stack_changed, [this](const double val)
+    {
+        state_widget_->set_strategy(!strategies_.empty()
+            ? find_nearest(strategies_, static_cast<int>(val))->second.get()
+            : nullptr);
+    });
 
     auto toolbar = addToolBar("File");
     toolbar->setMovable(false);
@@ -391,7 +397,7 @@ void main_window::open_strategy()
 
     update_statusbar();
     
-    state_widget_->set_root_state(strategies_.empty() ? nullptr : &strategies_.begin()->second->get_root_state());
+    state_widget_->set_strategy(nullptr);
 
     QApplication::restoreOverrideCursor();
 }
@@ -966,6 +972,9 @@ void main_window::state_widget_board_changed(const QString& board)
     }
 
     strategy_widget_->set_board(b);
+
+    if (state_widget_->get_strategy() && state_widget_->get_state())
+        strategy_widget_->update(*state_widget_->get_strategy(), *state_widget_->get_state());
 }
 
 void main_window::update_strategy_widget(const nlhe_state& state, const nlhe_strategy& strategy,
@@ -997,10 +1006,10 @@ void main_window::schedule_changed(const bool checked)
 
 void main_window::state_widget_state_changed()
 {
-    if (strategies_.empty() || !state_widget_->get_state())
+    if (!state_widget_->get_strategy() || !state_widget_->get_state())
         return;
 
-    strategy_widget_->update(*strategies_.begin()->second, *state_widget_->get_state());
+    strategy_widget_->update(*state_widget_->get_strategy(), *state_widget_->get_state());
 }
 
 void main_window::update_statusbar()
