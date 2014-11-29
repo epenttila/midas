@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
 
         if (vm.count("version"))
         {
-            std::cout << util::GIT_VERSION;
+            std::cout << util::GIT_VERSION << "\n";
             return 0;
         }
 

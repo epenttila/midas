@@ -1041,6 +1041,8 @@ void main_window::load_settings(const std::string& filename)
 
     settings_->load(filename);
 
+    BOOST_LOG_TRIVIAL(info) << "gui " << util::GIT_VERSION;
+
     const auto input_delay = settings_->get_interval("input-delay", site_settings::interval_t(0, 1000));
     const auto double_click_delay = settings_->get_interval("double-click-delay", site_settings::interval_t(0, 1000));
     const auto mouse_speed = settings_->get_interval("mouse-speed", site_settings::interval_t(0, 1000));

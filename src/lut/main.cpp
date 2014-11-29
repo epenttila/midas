@@ -50,7 +50,7 @@ namespace
 
 int main(int argc, char* argv[])
 {
-    std::cout << "lut " << util::GIT_VERSION;
+    std::cout << "lut " << util::GIT_VERSION << "\n";
 
     if (argc != 3)
         return 1;
