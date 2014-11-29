@@ -106,6 +106,22 @@ void holdem_strategy_widget::update(const nlhe_strategy& strategy, const nlhe_st
         }
     }
 
+    switch (state.get_round())
+    {
+    case holdem_state::FLOP:
+        if (board_[0] == -1 || board_[1] == -1 || board_[2] == -1)
+            return;
+        break;
+    case holdem_state::TURN:
+        if (board_[0] == -1 || board_[1] == -1 || board_[2] == -1 || board_[3] == -1)
+            return;
+        break;
+    case holdem_state::RIVER:
+        if (board_[0] == -1 || board_[1] == -1 || board_[2] == -1 || board_[3] == -1 || board_[4] == -1)
+            return;
+        break;
+    }
+
     std::array<int, 5> board = board_;
 
     switch (state.get_round())
