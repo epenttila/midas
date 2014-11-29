@@ -67,6 +67,9 @@ namespace
     template<class T>
     typename T::const_iterator find_nearest(const T& map, const typename T::key_type& value)
     {
+        if (map.empty())
+            return map.end();
+
         const auto it = map.lower_bound(value);
         return it != map.end() ? it : boost::prior(map.end());
     }
