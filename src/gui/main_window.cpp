@@ -377,7 +377,7 @@ void main_window::capture_timer_timeout()
 
 void main_window::open_strategy()
 {
-    const auto filename = QFileDialog::getOpenFileName(this, "Open", QString(), "All files (*.*);;Site setting files (*.xml)");
+    const auto filename = QFileDialog::getOpenFileName(this, "Open", QString(), "Site setting files (*.xml)");
 
     if (filename.isEmpty())
         return;
