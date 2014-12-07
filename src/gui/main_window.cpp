@@ -669,6 +669,13 @@ void main_window::process_snapshot(const fake_window& window)
         current_state = current_state->call();
     }
 
+    while (current_state && current_state->get_round() < round)
+    {
+        BOOST_LOG_TRIVIAL(warning) << QString("Round mismatch (%1 < %2); assuming missing action was call")
+            .arg(current_state->get_round()).arg(round).toStdString();
+        current_state = current_state->call();
+    }
+
     ENSURE(current_state != nullptr);
 
     // note: we modify the current state normally as this will be interpreted as a check
