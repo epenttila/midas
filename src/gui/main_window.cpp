@@ -1225,9 +1225,6 @@ bool main_window::try_capture()
 {
     window_manager_->update(title_filter_->text().toStdString());
 
-    if (window_manager_->get_image().isNull())
-        return true; // no image, don't retry
-
     if (!lobby_->update_windows())
     {
         BOOST_LOG_TRIVIAL(warning) << "Table window update failed";
