@@ -439,15 +439,22 @@ void main_window::process_snapshot(const fake_window& window)
     {
         if (schedule_action_->isChecked())
         {
-            schedule_action_->setChecked(false);
-
             if (smtp_)
             {
                 smtp_->send(settings_->get_string("smtp-from")->c_str(), settings_->get_string("smtp-to")->c_str(),
                     "[midas] " + QHostInfo::localHostName() + " needs attention", ".");
             }
 
-            throw std::runtime_error("We are sitting out; stopping registrations");
+            if (settings_->get_number("auto-sit-in", 0))
+            {
+                if (const auto p = settings_->get_interval("action-delay"))
+                    site_->sit_in(p->second);
+            }
+            else
+            {
+                schedule_action_->setChecked(false);
+                throw std::runtime_error("We are sitting out; stopping registrations");
+            }
         }
 
         return;

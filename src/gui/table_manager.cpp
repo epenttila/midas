@@ -528,3 +528,18 @@ std::string table_manager::get_action_button(const int action) const
 
     return QString("button-%1").arg(std::distance(m.begin(), i)).toStdString();
 }
+
+void table_manager::sit_in(const double max_wait) const
+{
+    QTime t;
+    t.start();
+
+    while (!window_->click_any_button(input_, settings_->get_buttons("sit-in")))
+    {
+        if (t.elapsed() > max_wait * 1000.0)
+        {
+            throw std::runtime_error(QString("Unable to press sit-in button after %1 seconds")
+                .arg(t.elapsed()).toStdString());
+        }
+    }
+}

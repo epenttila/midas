@@ -55,6 +55,7 @@ public:
     void call(double max_wait) const;
     void raise(const std::string& action, double amount, double minbet, double max_wait, raise_method method) const;
     void input_captcha(const std::string& str) const;
+    void sit_in(const double max_wait) const;
 
 private:
     void get_hole_cards(std::array<int, 2>& hole) const;
