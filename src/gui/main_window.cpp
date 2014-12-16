@@ -437,6 +437,8 @@ void main_window::process_snapshot(const fake_window& window)
     // consider sitout fatal
     if (snapshot.sit_out[0])
     {
+        BOOST_LOG_TRIVIAL(warning) << "We are sitting out";
+
         if (schedule_action_->isChecked())
         {
             if (smtp_)
@@ -447,8 +449,8 @@ void main_window::process_snapshot(const fake_window& window)
 
             if (settings_->get_number("auto-sit-in", 0))
             {
-                if (const auto p = settings_->get_interval("action-delay"))
-                    site_->sit_in(p->second);
+                BOOST_LOG_TRIVIAL(info) << "Sitting in";
+                site_->sit_in(settings_->get_interval("action-delay", site_settings::interval_t()).second);
             }
             else
             {
