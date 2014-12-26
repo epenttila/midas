@@ -86,6 +86,7 @@ private:
     void save_snapshot() const;
     void update_capture();
     bool try_capture();
+    void send_email(const std::string& subject, const std::string& message = ".");
 
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<nlhe_strategy>> strategies_;

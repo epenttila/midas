@@ -441,11 +441,7 @@ void main_window::process_snapshot(const fake_window& window)
 
         if (schedule_action_->isChecked())
         {
-            if (smtp_)
-            {
-                smtp_->send(settings_->get_string("smtp-from")->c_str(), settings_->get_string("smtp-to")->c_str(),
-                    "[midas] " + QHostInfo::localHostName() + " needs attention", ".");
-            }
+            send_email("sitting out");
 
             if (settings_->get_number("auto-sit-in", 0))
             {
@@ -507,13 +503,7 @@ void main_window::process_snapshot(const fake_window& window)
     if (snapshot.captcha)
     {
         if (captcha_manager_->upload_image(window.get_window_image()))
-        {
-            if (smtp_)
-            {
-                smtp_->send(settings_->get_string("smtp-from")->c_str(), settings_->get_string("smtp-to")->c_str(),
-                    "[midas] " + QHostInfo::localHostName() + " requests solution", ".");
-            }
-        }
+            send_email("solution required");
 
         captcha_manager_->query_solution();
 
@@ -930,13 +920,7 @@ void main_window::handle_lobby()
     lobby_->detect_closed_tables(active_tournaments);
 
     if (lobby_->check_idle(schedule_active_))
-    {
-        if (smtp_)
-        {
-            smtp_->send(settings_->get_string("smtp-from")->c_str(), settings_->get_string("smtp-to")->c_str(),
-                "[midas] " + QHostInfo::localHostName() + " is idle", ".");
-        }
-    }
+        send_email("idle");
 }
 
 void main_window::handle_schedule()
@@ -1275,4 +1259,13 @@ bool main_window::try_capture()
     }
 
     return true;
+}
+
+void main_window::send_email(const std::string& subject, const std::string& message)
+{
+    if (!smtp_ || !settings_)
+        return;
+
+    smtp_->send(settings_->get_string("smtp-from")->c_str(), settings_->get_string("smtp-to")->c_str(),
+        QString("[midas] [%1] %2").arg(QHostInfo::localHostName()).arg(subject.c_str()), message.c_str());
 }
