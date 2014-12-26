@@ -1,8 +1,12 @@
 #include "smtp.h"
+#pragma warning(push, 1)
+#include <boost/log/trivial.hpp>
+#pragma warning(pop)
 
 smtp::smtp(const QString& host, std::uint16_t port)
     : host_(host)
     , port_(port)
+    , state_(INIT)
 {    
     socket_ = new QTcpSocket(this);
     connect(socket_, &QTcpSocket::readyRead, this, &smtp::ready_read);
@@ -10,7 +14,12 @@ smtp::smtp(const QString& host, std::uint16_t port)
 
 void smtp::send(const QString &from, const QString &to, const QString &subject, const QString &body)
 {
-    state_ = INIT;
+    if (state_ != INIT)
+    {
+        BOOST_LOG_TRIVIAL(warning) << "Already sending message";
+        return;
+    }
+
     from_ = from;
     rcpt_ = to;
 
@@ -68,9 +77,11 @@ void smtp::ready_read()
     else if (state_ == CLOSE && response == "221")
     {
         emit status("Message sent");
+        state_ = INIT;
     }
     else
     {
         emit status(QString("Failed to send message (%1)").arg(full_response));
+        state_ = INIT;
     }
 }
