@@ -115,4 +115,5 @@ private:
     std::unique_ptr<site_settings> settings_;
     std::unique_ptr<captcha_manager> captcha_manager_;
     std::unique_ptr<window_manager> window_manager_;
+    int sit_outs_;
 };

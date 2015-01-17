@@ -218,6 +218,7 @@ main_window::main_window(const std::string& settings_path)
     , smtp_(nullptr)
     , captcha_manager_(new captcha_manager)
     , window_manager_(new window_manager)
+    , sit_outs_(0)
 {
     auto widget = new QWidget(this);
     widget->setFocus();
@@ -441,6 +442,19 @@ void main_window::process_snapshot(const fake_window& window)
 
         if (schedule_action_->isChecked())
         {
+            const auto max_sit_outs = static_cast<int>(settings_->get_number("max-sit-outs", 5));
+
+            ++sit_outs_;
+
+            BOOST_LOG_TRIVIAL(warning) << QString("Sit-outs during session: %1/%2").arg(sit_outs_).arg(max_sit_outs)
+                .toStdString();
+
+            if (sit_outs_ >= max_sit_outs)
+            {
+                BOOST_LOG_TRIVIAL(error) << "Maximum sit-outs reached; stopping registrations";
+                schedule_action_->setChecked(false);
+            }
+
             send_email("sitting out");
 
             if (settings_->get_number("auto-sit-in", 0))
@@ -942,6 +956,12 @@ void main_window::handle_schedule()
             BOOST_LOG_TRIVIAL(info) << "Disabling scheduled registration";
 
         BOOST_LOG_TRIVIAL(info) << make_schedule_string(schedule_active_, next_activity_date_).toStdString();
+
+        if (sit_outs_ != 0)
+        {
+            BOOST_LOG_TRIVIAL(info) << "Resetting session sit-out counter (" << sit_outs_ << ")";
+            sit_outs_ = 0;
+        }
     }
 
     if (schedule_active_)
