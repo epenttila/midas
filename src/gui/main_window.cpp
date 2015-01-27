@@ -557,25 +557,39 @@ void main_window::process_snapshot(const fake_window& window)
 
     // process action delay last after every other possible bailout
     const auto now = QDateTime::currentDateTime();
-    auto& next_action_time = table_data.next_action_time;
-
-    if (!next_action_time.isValid())
-    {
-        const auto& action_delay = *settings_->get_interval("action-delay");
-
-        const double wait = std::max(0.0, (snapshot.sit_out[1] ? action_delay.first
-            : get_normal_random(engine_, action_delay.first, action_delay.second)));
-
-        BOOST_LOG_TRIVIAL(info) << QString("Waiting for %1 seconds before acting").arg(wait).toStdString();
-
-        next_action_time = now.addMSecs(static_cast<qint64>(wait * 1000));
-    }
 
     // wait until action delay is over
-    if (now < next_action_time)
-        return; // this should be the last "return" in snapshot processing
+    if (table_data.next_action_time.isValid())
+    {
+        if (now >= table_data.next_action_time)
+        {
+            table_data.next_action_time = QDateTime(); // reset before perform_action to retry snapshot on exception
 
-    next_action_time = QDateTime();
+            if (table_data.next_action != nlhe_state::INVALID_ACTION)
+            {
+                table_data.next_action = nlhe_state::INVALID_ACTION; // reset before perform_action to be safe
+
+                table_data.state = perform_action(table_data.next_action, *table_data.state, snapshot,
+                    table_data.big_blind);
+
+                const auto post_action_wait = settings_->get_number("post-action-wait", 5.0);
+
+                BOOST_LOG_TRIVIAL(info) << QString("Waiting for %1 seconds before handling snapshot")
+                    .arg(post_action_wait).toStdString();
+
+                table_data.next_action_time = QDateTime::currentDateTime().addMSecs(static_cast<int>(post_action_wait
+                    * 1000.0));
+
+                // update snapshot timestamp again to ignore any input duration in old table calculation
+                table_data.timestamp = QDateTime::currentDateTime();
+
+                return;
+            }
+            // don't return, pass directly to snapshot handling
+        }
+        else
+            return; // this should be the last "return" in snapshot processing
+    }
 
     BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
     BOOST_LOG_TRIVIAL(info) << "Window: " << window.get_window_text();
@@ -742,25 +756,37 @@ void main_window::process_snapshot(const fake_window& window)
 
     update_strategy_widget(*current_state, strategy, snapshot.hole, snapshot.board);
 
-    current_state = perform_action(*current_state, strategy, snapshot, big_blind);
+    ENSURE(!table_data.next_action_time.isValid());
+
+    table_data.next_action = get_next_action(*current_state, strategy, snapshot);
+
+    const auto to_call = snapshot.bet[1] - snapshot.bet[0];
+    const auto invested = (snapshot.total_pot + to_call) / 2.0;
+    const auto delay_factor = boost::algorithm::clamp((invested / big_blind * 2.0) / stack_size, 0.0, 1.0);
+
+    const auto delay = settings_->get_interval("action-delay", site_settings::interval_t(0, 1));
+    const auto delay_window = settings_->get_number("action-delay-window", 0.5);
+    const auto min_delay = delay.first + delay_factor * (delay.second - delay.first) * delay_window;
+    const auto max_delay = delay.second - (1 - delay_factor) * (delay.second - delay.first) * delay_window;
+    const auto wait = get_normal_random(engine_, min_delay, max_delay);
+
+    BOOST_LOG_TRIVIAL(info) << QString("Waiting for %1 [%2, %3] seconds before acting").arg(wait).arg(min_delay)
+        .arg(max_delay).toStdString();
+
+    table_data.next_action_time = QDateTime::currentDateTime().addMSecs(static_cast<qint64>(wait * 1000));
 
     table_data.snapshot = snapshot;
     table_data.dealer = dealer;
     table_data.big_blind = big_blind;
     table_data.stack_size = stack_size;
     table_data.state = current_state;
-
-    // update snapshot timestamp again to ignore any input duration in old table calculation
-    table_data.timestamp = QDateTime::currentDateTime();
 }
 
 #pragma warning(pop)
 
-const nlhe_state* main_window::perform_action(const nlhe_state& state, const nlhe_strategy& strategy,
-    const table_manager::snapshot_t& snapshot, const double big_blind)
+nlhe_state::holdem_action main_window::get_next_action(const nlhe_state& state, const nlhe_strategy& strategy,
+    const table_manager::snapshot_t& snapshot)
 {
-    ENSURE(site_ && !strategies_.empty());
-
     const int c0 = snapshot.hole[0];
     const int c1 = snapshot.hole[1];
     const int b0 = snapshot.board[0];
@@ -794,9 +820,16 @@ const nlhe_state* main_window::perform_action(const nlhe_state& state, const nlh
     // display non-translated strategy
     BOOST_LOG_TRIVIAL(info) << QString("Strategy: %1 (%2)").arg(action_name).arg(probability).toStdString();
 
+    return action;
+}
+
+const nlhe_state* main_window::perform_action(const nlhe_state::holdem_action action, const nlhe_state& state,
+    const table_manager::snapshot_t& snapshot, const double big_blind)
+{
     int next_action;
     double raise_fraction = -1;
-    std::string new_action_name = action_name.toStdString();
+    std::string new_action_name = nlhe_state::get_action_name(action);
+    auto current_state = &state;
 
     switch (action)
     {
@@ -804,36 +837,36 @@ const nlhe_state* main_window::perform_action(const nlhe_state& state, const nlh
         next_action = table_manager::FOLD;
         break;
     case nlhe_state::CALL:
+    {
+        // ensure the hand really terminates if our abstraction says so and we would just call
+        if (current_state->get_round() < holdem_state::RIVER && current_state->call()->is_terminal())
         {
-            // ensure the hand really terminates if our abstraction says so and we would just call
-            if (current_state->get_round() < holdem_state::RIVER && current_state->call()->is_terminal())
-            {
-                BOOST_LOG_TRIVIAL(info) << "Translating pre-river call to all-in to ensure hand terminates";
-                next_action = table_manager::RAISE;
-                raise_fraction = current_state->get_raise_factor(nlhe_state::RAISE_A);
-                new_action_name = current_state->get_action_name(nlhe_state::RAISE_A);
-            }
-            else
-                next_action = table_manager::CALL;
+            BOOST_LOG_TRIVIAL(info) << "Translating pre-river call to all-in to ensure hand terminates";
+            next_action = table_manager::RAISE;
+            raise_fraction = current_state->get_raise_factor(nlhe_state::RAISE_A);
+            new_action_name = current_state->get_action_name(nlhe_state::RAISE_A);
         }
-        break;
+        else
+            next_action = table_manager::CALL;
+    }
+    break;
     default:
         next_action = table_manager::RAISE;
         raise_fraction = current_state->get_raise_factor(action);
         break;
     }
 
-    const auto& action_delay = *settings_->get_interval("action-delay");
+    const auto max_action_wait = settings_->get_number("max-action-wait", 10.0);
 
     switch (next_action)
     {
     case table_manager::FOLD:
         BOOST_LOG_TRIVIAL(info) << "Folding";
-        site_->fold(action_delay.second);
+        site_->fold(max_action_wait);
         break;
     case table_manager::CALL:
         BOOST_LOG_TRIVIAL(info) << "Calling";
-        site_->call(action_delay.second);
+        site_->call(max_action_wait);
         break;
     case table_manager::RAISE:
         {
@@ -904,7 +937,7 @@ const nlhe_state* main_window::perform_action(const nlhe_state& state, const nlh
             BOOST_LOG_TRIVIAL(info) << QString("Raising to %1 [%3, %5] (%2x pot) (method %4)").arg(amount)
                 .arg(raise_fraction).arg(minbet).arg(method).arg(maxbet).toStdString();
 
-            site_->raise(new_action_name, amount, minbet, action_delay.second, method);
+            site_->raise(new_action_name, amount, minbet, max_action_wait, method);
         }
         break;
     }
@@ -912,7 +945,7 @@ const nlhe_state* main_window::perform_action(const nlhe_state& state, const nlh
     // update state pointer last after the table_manager input functions
     // this makes it possible to recover in case the buttons are stuck but become normal again as the state pointer
     // won't be in an invalid (terminal) state
-    current_state = current_state->get_child(index);
+    current_state = current_state->get_action_child(action);
 
     ENSURE(current_state != nullptr);
 

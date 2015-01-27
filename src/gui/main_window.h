@@ -12,10 +12,10 @@
 
 #include "table_manager.h"
 #include "lobby_manager.h"
+#include "gamelib/nlhe_state.h"
 
 class QPlainTextEdit;
 class holdem_abstraction;
-class nlhe_state;
 class table_manager;
 class nlhe_strategy;
 class QLabel;
@@ -56,7 +56,8 @@ public slots:
 private:
     struct table_data_t
     {
-        table_data_t() : dealer(-1), big_blind(-1), stack_size(-1), state(nullptr) {}
+        table_data_t() : dealer(-1), big_blind(-1), stack_size(-1), state(nullptr),
+            next_action(nlhe_state::INVALID_ACTION) {}
 
         int dealer;
         double big_blind;
@@ -68,10 +69,14 @@ private:
 
         QDateTime next_action_time;
         QDateTime timestamp;
+
+        nlhe_state::holdem_action next_action;
     };
 
     void process_snapshot(const fake_window& window);
-    const nlhe_state* perform_action(const nlhe_state& state, const nlhe_strategy& strategy,
+    nlhe_state::holdem_action get_next_action(const nlhe_state& state, const nlhe_strategy& strategy,
+        const table_manager::snapshot_t& snapshot);
+    const nlhe_state* perform_action(nlhe_state::holdem_action action, const nlhe_state& state,
         const table_manager::snapshot_t& snapshot, double big_blind);
     void update_strategy_widget(const nlhe_state& state, const nlhe_strategy& strategy, const std::array<int, 2>& hole,
         const std::array<int, 5>& board);
