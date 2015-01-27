@@ -357,7 +357,7 @@ int nlhe_state::get_stack_size() const
     return stack_size_;
 }
 
-const nlhe_state* nlhe_state::get_action_child(int action) const
+const nlhe_state* nlhe_state::get_action_child(const holdem_action action) const
 {
     for (const auto& p : children_)
     {

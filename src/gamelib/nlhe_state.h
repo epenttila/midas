@@ -51,7 +51,7 @@ public:
     const nlhe_state* get_parent() const;
     bool is_terminal() const;
     const nlhe_state* get_child(int index) const;
-    const nlhe_state* get_action_child(int action) const;
+    const nlhe_state* get_action_child(holdem_action action) const;
     int get_id() const;
     int get_player() const;
     int get_terminal_ev(int result) const;
