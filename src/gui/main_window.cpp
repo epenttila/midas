@@ -567,10 +567,10 @@ void main_window::process_snapshot(const fake_window& window)
 
             if (table_data.next_action != nlhe_state::INVALID_ACTION)
             {
+                const auto action = table_data.next_action;
                 table_data.next_action = nlhe_state::INVALID_ACTION; // reset before perform_action to be safe
 
-                table_data.state = perform_action(table_data.next_action, *table_data.state, snapshot,
-                    table_data.big_blind);
+                table_data.state = perform_action(action, *table_data.state, snapshot, table_data.big_blind);
 
                 const auto post_action_wait = settings_->get_number("post-action-wait", 5.0);
 
