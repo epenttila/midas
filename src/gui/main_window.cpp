@@ -634,8 +634,12 @@ void main_window::process_snapshot(const fake_window& window)
     BOOST_LOG_TRIVIAL(info) << "BB: " << big_blind;
 
     ENSURE(big_blind > 0);
-    // make sure the blinds never get smaller in size
-    ENSURE(big_blind >= table_data.big_blind);
+
+    if (!settings_->get_number("decreasing-blinds", false))
+    {
+        // make sure the blinds never get smaller in size
+        ENSURE(big_blind >= table_data.big_blind);
+    }
 
     // calculate effective stack size
     const auto stack_size = get_effective_stack(snapshot, big_blind);
