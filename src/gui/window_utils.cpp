@@ -191,6 +191,9 @@ QRgb get_average_color(const QImage& image, const QRect& rect, const QRgb& backg
         }
     }
 
+    if (count == 0)
+        return 0;
+
     return qRgb(red / count, green / count, blue / count);
 }
 
