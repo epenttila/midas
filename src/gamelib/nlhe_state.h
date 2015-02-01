@@ -60,6 +60,7 @@ public:
     const nlhe_state* raise(double fraction) const;
     std::array<int, 2> get_pot() const;
     int get_stack_size() const;
+    std::string to_string() const;
 
 private:
     nlhe_state(const nlhe_state* parent, const holdem_action action_index, const int player,

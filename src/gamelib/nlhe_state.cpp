@@ -457,18 +457,21 @@ std::string nlhe_state::get_action_name(const holdem_action action)
     }
 }
 
-std::ostream& operator<<(std::ostream& os, const nlhe_state& state)
+std::string nlhe_state::to_string() const
 {
     static const char actions[nlhe_state::ACTIONS + 1] = "fcohqpwdvta";
     std::string line;
 
-    for (auto s = &state; s->get_parent() != nullptr; s = s->get_parent())
+    for (auto s = this; s->get_parent() != nullptr; s = s->get_parent())
     {
         const char c = actions[s->get_action()];
         line = char(s->get_parent()->get_player() == 0 ? c : toupper(c)) + line;
     }
 
-    os << state.get_id() << ":" << line;
+    return std::to_string(get_id()) + ":" + line;
+}
 
-    return os;
+std::ostream& operator<<(std::ostream& os, const nlhe_state& state)
+{
+    return os << state.to_string();
 }
