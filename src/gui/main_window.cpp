@@ -48,7 +48,6 @@
 #include "holdem_strategy_widget.h"
 #include "table_manager.h"
 #include "input_manager.h"
-#include "lobby_manager.h"
 #include "state_widget.h"
 #include "qt_log_sink.h"
 #include "fake_window.h"
@@ -336,38 +335,33 @@ void main_window::capture_timer_timeout()
         }
 
         handle_schedule();
+        update_capture();
 
-        if (lobby_)
+        for (int i = 0; i < table_windows_.size(); ++i)
         {
-            update_capture();
+            const auto& window = table_windows_[i];
 
-            for (int i = 0; i < lobby_->get_tables().size(); ++i)
+            if (!window->is_valid())
+                continue;
+
+            try
             {
-                const auto& window = lobby_->get_tables()[i];
+                process_snapshot(i, *window);
+            }
+            catch (const std::exception& e)
+            {
+                BOOST_LOG_TRIVIAL(fatal) << e.what();
+                save_snapshot();
 
-                if (!window->is_valid())
-                    continue;
-
-                try
+                if (schedule_action_->isChecked())
                 {
-                    process_snapshot(i, *window);
-                }
-                catch (const std::exception& e)
-                {
-                    BOOST_LOG_TRIVIAL(fatal) << e.what();
-                    save_snapshot();
-
-                    if (schedule_action_->isChecked())
-                    {
-                        schedule_action_->setChecked(false);
-                        send_email("fatal error");
-                    }
+                    schedule_action_->setChecked(false);
+                    send_email("fatal error");
                 }
             }
-
-            remove_old_table_data();
-            handle_lobby();
         }
+
+        check_idle(schedule_active_);
 
         if (autoplay_action_->isChecked() && schedule_action_->isChecked() && schedule_active_)
         {
@@ -469,7 +463,6 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
     ENSURE(tournament_id != -1);
 
     auto& table_data = table_data_[tournament_id];
-    table_data.timestamp = QDateTime::currentDateTime();
 
     const auto now = QDateTime::currentDateTime();
 
@@ -495,9 +488,6 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
                 table_data.next_action_time = QDateTime::currentDateTime().addMSecs(static_cast<int>(post_action_wait
                     * 1000.0));
 
-                // update snapshot timestamp again to ignore any input duration in old table calculation
-                table_data.timestamp = QDateTime::currentDateTime();
-
                 return;
             }
             // don't return, pass directly to snapshot handling
@@ -511,6 +501,8 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
         return;
 
     const auto& snapshot = site_->get_snapshot();
+
+    table_update_time_.start();
 
     // these should work for observed tables
     visualizer_->clear_row(tournament_id);
@@ -638,12 +630,6 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
     BOOST_LOG_TRIVIAL(info) << "BB: " << big_blind;
 
     ENSURE(big_blind > 0);
-
-    if (!settings_->get_number("decreasing-blinds", false))
-    {
-        // make sure the blinds never get smaller in size
-        ENSURE(big_blind >= table_data.big_blind);
-    }
 
     // calculate effective stack size
     const auto stack_size = get_effective_stack(snapshot, big_blind);
@@ -960,24 +946,6 @@ const nlhe_state* main_window::perform_action(const nlhe_state::holdem_action ac
     return current_state;
 }
 
-void main_window::handle_lobby()
-{
-    if (!schedule_action_->isChecked())
-        return;
-
-    ENSURE(lobby_ != nullptr);
-
-    std::unordered_set<tid_t> active_tournaments;
-
-    for (const auto& i : table_data_)
-        active_tournaments.insert(i.first);
-
-    lobby_->detect_closed_tables(active_tournaments);
-
-    if (lobby_->check_idle(schedule_active_))
-        send_email("idle");
-}
-
 void main_window::handle_schedule()
 {
     if (!schedule_action_->isChecked())
@@ -1082,25 +1050,6 @@ void main_window::update_statusbar()
     schedule_label_->setText(s);
 }
 
-void main_window::remove_old_table_data()
-{
-    for (auto i = table_data_.begin(); i != table_data_.end();)
-    {
-        // it is possible to erroneously remove tables if many tables are performing actions during the same capture
-        if (QDateTime::currentDateTime() >= i->second.timestamp.addMSecs(
-            static_cast<int>(*settings_->get_number("tournament-prune-time") * 1000)))
-        {
-            BOOST_LOG_TRIVIAL(info) << "Removing table data for tournament " << i->first;
-
-            visualizer_->remove(i->first);
-            old_table_data_.erase(i->first);
-            i = table_data_.erase(i);
-        }
-        else
-            ++i;
-    }
-}
-
 void main_window::load_settings(const std::string& filename)
 {
     if (filename.empty())
@@ -1141,7 +1090,11 @@ void main_window::load_settings(const std::string& filename)
     if (const auto p = settings_->get_string("captcha-upload-url"))
         captcha_manager_->set_upload_url(*p);
 
-    lobby_.reset(new lobby_manager(*settings_, *input_manager_, *window_manager_));
+    table_windows_.clear();
+
+    for (const auto& w : settings_->get_windows("table"))
+        table_windows_.push_back(std::unique_ptr<fake_window>(new fake_window(*w.second, *settings_, *window_manager_)));
+
     site_.reset(new table_manager(*settings_, *input_manager_));
 
     strategies_.clear();
@@ -1273,15 +1226,18 @@ bool main_window::try_capture()
 {
     window_manager_->update(title_filter_->text().toStdString());
 
-    if (!lobby_->update_windows())
+    for (auto& i : table_windows_)
     {
-        BOOST_LOG_TRIVIAL(warning) << "Table window update failed";
-        return false;
+        if (!i->update())
+        {
+            BOOST_LOG_TRIVIAL(warning) << "Table window update failed";
+            return false;
+        }
     }
 
     for (const auto& button : settings_->get_buttons("bad"))
     {
-        for (const auto& table : lobby_->get_tables())
+        for (const auto& table : table_windows_)
         {
             const auto& rect = button.second->unscaled_rect;
 
@@ -1323,4 +1279,23 @@ void main_window::send_email(const std::string& subject, const std::string& mess
 
     smtp_->send(settings_->get_string("smtp-from")->c_str(), settings_->get_string("smtp-to")->c_str(),
         QString("[midas] [%1] %2").arg(QHostInfo::localHostName()).arg(subject.c_str()), message.c_str());
+}
+
+void main_window::check_idle(const bool schedule_active)
+{
+    if (schedule_active)
+    {
+        if (table_update_time_.isNull())
+            table_update_time_.start();
+
+        const auto max_idle_time = settings_->get_number("max-idle-time");
+
+        if (max_idle_time && table_update_time_.elapsed() > *max_idle_time * 1000.0)
+        {
+            BOOST_LOG_TRIVIAL(warning) << "We are idle";
+            table_update_time_ = QTime();
+        }
+    }
+    else
+        table_update_time_ = QTime();
 }

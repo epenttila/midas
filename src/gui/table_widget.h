@@ -8,8 +8,6 @@
 #include <QTableWidget>
 #pragma warning(pop)
 
-#include "lobby_manager.h"
-
 class QPixmap;
 
 class table_widget : public QTableWidget
@@ -17,7 +15,7 @@ class table_widget : public QTableWidget
     Q_OBJECT
 
 public:
-    typedef lobby_manager::tid_t tid_t;
+    typedef int tid_t;
 
     table_widget(QWidget* parent);
     void set_board_cards(tid_t window, const std::array<int, 5>& board);

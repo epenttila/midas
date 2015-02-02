@@ -11,7 +11,6 @@
 #pragma warning(pop)
 
 #include "table_manager.h"
-#include "lobby_manager.h"
 #include "gamelib/nlhe_state.h"
 
 class QPlainTextEdit;
@@ -24,7 +23,6 @@ class QLineEdit;
 class holdem_strategy_widget;
 class QComboBox;
 class input_manager;
-class lobby_manager;
 class QSpinBox;
 class state_widget;
 class fake_window;
@@ -38,7 +36,8 @@ class main_window : public QMainWindow
     Q_OBJECT
 
 public:
-    typedef lobby_manager::tid_t tid_t;
+    typedef int tid_t;
+    typedef std::vector<std::unique_ptr<fake_window>> table_vector_t;
 
     main_window(const std::string& settings_path);
     ~main_window();
@@ -62,14 +61,9 @@ private:
         int dealer;
         double big_blind;
         int stack_size;
-
         table_manager::snapshot_t snapshot;
-
         const nlhe_state* state;
-
         QDateTime next_action_time;
-        QDateTime timestamp;
-
         nlhe_state::holdem_action next_action;
     };
 
@@ -82,9 +76,7 @@ private:
         const std::array<int, 5>& board);
     void ensure(bool expression, const std::string& s, int line) const;
     void update_statusbar();
-    void handle_lobby();
     void handle_schedule();
-    void remove_old_table_data();
     void load_settings(const std::string& filename);
     int get_effective_stack(const table_manager::snapshot_t& snapshot, double big_blind) const;
     bool is_new_game(const table_data_t& table_data, const table_manager::snapshot_t& snapshot) const;
@@ -92,6 +84,7 @@ private:
     void update_capture();
     bool try_capture();
     void send_email(const std::string& subject, const std::string& message = ".");
+    void check_idle(const bool schedule_active);
 
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<nlhe_strategy>> strategies_;
@@ -102,7 +95,6 @@ private:
     holdem_strategy_widget* strategy_widget_;
     std::mt19937 engine_;
     std::unique_ptr<input_manager> input_manager_;
-    std::unique_ptr<lobby_manager> lobby_;
     QAction* autoplay_action_;
     state_widget* state_widget_;
     QAction* open_action_;
@@ -121,4 +113,6 @@ private:
     std::unique_ptr<captcha_manager> captcha_manager_;
     std::unique_ptr<window_manager> window_manager_;
     int sit_outs_;
+    QTime table_update_time_;
+    table_vector_t table_windows_;
 };

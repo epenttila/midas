@@ -5,8 +5,6 @@ set(gui_SOURCES
     holdem_strategy_widget.h
     input_manager.cpp
     input_manager.h
-    lobby_manager.cpp
-    lobby_manager.h
     main.cpp
     main_window.cpp
     main_window.h
