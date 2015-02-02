@@ -636,13 +636,37 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
 
     BOOST_LOG_TRIVIAL(info) << "Stack: " << stack_size << " SB";
 
-    ENSURE(new_game || table_data.stack_size == stack_size);
-
     ENSURE(!strategies_.empty());
 
     const auto it = find_nearest(strategies_, stack_size);
     const auto& strategy = *it->second;
     auto current_state = table_data.state;
+
+    if (!new_game && table_data.stack_size != stack_size)
+    {
+        ENSURE(table_data.state != nullptr);
+
+        BOOST_LOG_TRIVIAL(warning) << QString("Stack size changed during game (%1 -> %2)").arg(table_data.stack_size)
+            .arg(stack_size).toStdString();
+
+        std::vector<nlhe_state::holdem_action> actions;
+
+        for (auto state = table_data.state; state; state = state->get_parent())
+            actions.push_back(state->get_action());
+
+        std::reverse(actions.begin(), actions.end());
+
+        current_state = &strategy.get_root_state();
+
+        for (const auto action : actions)
+        {
+            if (const auto child = current_state->get_action_child(action)) // fast-forward call below handles null
+                current_state = current_state->get_action_child(action);
+        }
+
+        BOOST_LOG_TRIVIAL(info) << QString("State adjusted: %1 -> %2").arg(table_data.state->to_string().c_str())
+            .arg(current_state->to_string().c_str()).toStdString();
+    }
 
     BOOST_LOG_TRIVIAL(info) << QString("Strategy file: %1")
         .arg(QFileInfo(strategy.get_strategy().get_filename().c_str()).fileName()).toStdString();
