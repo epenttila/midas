@@ -66,17 +66,6 @@ bool lobby_manager::update_windows()
     return true;
 }
 
-lobby_manager::tid_t lobby_manager::get_tournament_id(const fake_window& window) const
-{
-    const auto title = window.get_window_text();
-    std::smatch match;
-
-    if (std::regex_match(title, match, *settings_->get_regex("tournament")))
-        return std::stoll(match[1].str());
-
-    throw std::runtime_error("Unknown tournament id");
-}
-
 bool lobby_manager::check_idle(const bool schedule_active)
 {
     if (schedule_active)

@@ -341,26 +341,27 @@ void main_window::capture_timer_timeout()
         {
             update_capture();
 
-            std::vector<const fake_window*> tables;
-            
-            for (const auto& window : lobby_->get_tables())
-                tables.push_back(window.get());
-
-            std::shuffle(tables.begin(), tables.end(), engine_);
-
-            for (const auto& window : tables)
+            for (int i = 0; i < lobby_->get_tables().size(); ++i)
             {
+                const auto& window = lobby_->get_tables()[i];
+
                 if (!window->is_valid())
                     continue;
 
                 try
                 {
-                    process_snapshot(*window);
+                    process_snapshot(i, *window);
                 }
                 catch (const std::exception& e)
                 {
                     BOOST_LOG_TRIVIAL(fatal) << e.what();
                     save_snapshot();
+
+                    if (schedule_action_->isChecked())
+                    {
+                        schedule_action_->setChecked(false);
+                        send_email("fatal error");
+                    }
                 }
             }
 
@@ -374,6 +375,10 @@ void main_window::capture_timer_timeout()
                 *settings_->get_number_list("idle-move-probabilities")));
 
             input_manager_->move_random(method);
+
+            // do this last to make sure everything else before this succeeded
+            if (const auto p = settings_->get_number("refresh-regs-key"))
+                input_manager_->send_keypress(static_cast<short>(*p));
         }
     }
     catch (const std::exception& e)
@@ -419,24 +424,12 @@ void main_window::autoplay_changed(const bool checked)
 #pragma warning(push)
 #pragma warning(disable: 4512)
 
-void main_window::process_snapshot(const fake_window& window)
+void main_window::process_snapshot(const int slot, const fake_window& window)
 {
-    const auto tournament_id = lobby_->get_tournament_id(window);
+    site_->update(window);
 
-    BOOST_LOG_SCOPED_THREAD_TAG("TournamentID", tournament_id);
-
-    ENSURE(tournament_id != -1);
-
-    auto& table_data = table_data_[tournament_id];
-    table_data.timestamp = QDateTime::currentDateTime();
-
-    const auto& snapshot = site_->update(window);
-
-    if (save_images_->isChecked())
-        save_snapshot();
-
-    // consider sitout fatal
-    if (snapshot.sit_out[0])
+    // handle sit-out as the absolute first step and react accordingly
+    if (autoplay_action_->isChecked() && site_->is_sitting_out())
     {
         BOOST_LOG_TRIVIAL(warning) << "We are sitting out";
 
@@ -450,12 +443,7 @@ void main_window::process_snapshot(const fake_window& window)
                 .toStdString();
 
             if (sit_outs_ >= max_sit_outs)
-            {
-                BOOST_LOG_TRIVIAL(error) << "Maximum sit-outs reached; stopping registrations";
-                schedule_action_->setChecked(false);
-            }
-
-            send_email("sitting out");
+                throw std::runtime_error("Maximum sit-outs reached; stopping registrations");
 
             if (settings_->get_number("auto-sit-in", 0))
             {
@@ -464,13 +452,65 @@ void main_window::process_snapshot(const fake_window& window)
             }
             else
             {
-                schedule_action_->setChecked(false);
                 throw std::runtime_error("We are sitting out; stopping registrations");
             }
         }
 
         return;
     }
+
+    const auto tournament_id = slot;
+
+    BOOST_LOG_SCOPED_THREAD_TAG("TournamentID", tournament_id);
+
+    ENSURE(tournament_id != -1);
+
+    auto& table_data = table_data_[tournament_id];
+    table_data.timestamp = QDateTime::currentDateTime();
+
+    const auto now = QDateTime::currentDateTime();
+
+    // wait until action delay is over
+    if (table_data.next_action_time.isValid())
+    {
+        if (now >= table_data.next_action_time)
+        {
+            table_data.next_action_time = QDateTime(); // reset before perform_action to retry snapshot on exception
+
+            if (table_data.next_action != nlhe_state::INVALID_ACTION)
+            {
+                const auto action = table_data.next_action;
+                table_data.next_action = nlhe_state::INVALID_ACTION; // reset before perform_action to be safe
+
+                table_data.state = perform_action(action, *table_data.state, table_data.snapshot, table_data.big_blind);
+
+                const auto post_action_wait = settings_->get_number("post-action-wait", 5.0);
+
+                BOOST_LOG_TRIVIAL(info) << QString("Waiting for %1 seconds before handling snapshot")
+                    .arg(post_action_wait).toStdString();
+
+                table_data.next_action_time = QDateTime::currentDateTime().addMSecs(static_cast<int>(post_action_wait
+                    * 1000.0));
+
+                // update snapshot timestamp again to ignore any input duration in old table calculation
+                table_data.timestamp = QDateTime::currentDateTime();
+
+                return;
+            }
+            // don't return, pass directly to snapshot handling
+        }
+        else
+            return; // this should be the last "return" in snapshot processing
+    }
+
+    // ignore out-of-turn snapshots
+    if (autoplay_action_->isChecked() && !site_->is_waiting())
+        return;
+
+    const auto& snapshot = site_->get_snapshot();
+
+    if (save_images_->isChecked())
+        save_snapshot();
 
     // these should work for observed tables
     visualizer_->clear_row(tournament_id);
@@ -554,42 +594,6 @@ void main_window::process_snapshot(const fake_window& window)
     ENSURE(snapshot.bet[0] >= 0);
     ENSURE(snapshot.bet[1] >= 0);
     ENSURE(snapshot.dealer[0] || snapshot.dealer[1]);
-
-    // process action delay last after every other possible bailout
-    const auto now = QDateTime::currentDateTime();
-
-    // wait until action delay is over
-    if (table_data.next_action_time.isValid())
-    {
-        if (now >= table_data.next_action_time)
-        {
-            table_data.next_action_time = QDateTime(); // reset before perform_action to retry snapshot on exception
-
-            if (table_data.next_action != nlhe_state::INVALID_ACTION)
-            {
-                const auto action = table_data.next_action;
-                table_data.next_action = nlhe_state::INVALID_ACTION; // reset before perform_action to be safe
-
-                table_data.state = perform_action(action, *table_data.state, snapshot, table_data.big_blind);
-
-                const auto post_action_wait = settings_->get_number("post-action-wait", 5.0);
-
-                BOOST_LOG_TRIVIAL(info) << QString("Waiting for %1 seconds before handling snapshot")
-                    .arg(post_action_wait).toStdString();
-
-                table_data.next_action_time = QDateTime::currentDateTime().addMSecs(static_cast<int>(post_action_wait
-                    * 1000.0));
-
-                // update snapshot timestamp again to ignore any input duration in old table calculation
-                table_data.timestamp = QDateTime::currentDateTime();
-
-                return;
-            }
-            // don't return, pass directly to snapshot handling
-        }
-        else
-            return; // this should be the last "return" in snapshot processing
-    }
 
     BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
     BOOST_LOG_TRIVIAL(info) << "Window: " << window.get_window_text();
@@ -999,12 +1003,6 @@ void main_window::handle_schedule()
             BOOST_LOG_TRIVIAL(info) << "Resetting session sit-out counter (" << sit_outs_ << ")";
             sit_outs_ = 0;
         }
-    }
-
-    if (schedule_active_)
-    {
-        if (const auto p = settings_->get_number("refresh-regs-key"))
-            input_manager_->send_keypress(static_cast<short>(*p));
     }
 }
 

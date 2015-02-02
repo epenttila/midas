@@ -24,7 +24,6 @@ public:
     void detect_closed_tables(const std::unordered_set<tid_t>& new_active_tables);
     const table_vector_t& get_tables() const;
     bool update_windows();
-    tid_t get_tournament_id(const fake_window& window) const;
     bool check_idle(bool schedule_active);
 
 private:

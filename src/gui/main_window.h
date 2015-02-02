@@ -73,7 +73,7 @@ private:
         nlhe_state::holdem_action next_action;
     };
 
-    void process_snapshot(const fake_window& window);
+    void process_snapshot(int slot, const fake_window& window);
     nlhe_state::holdem_action get_next_action(const nlhe_state& state, const nlhe_strategy& strategy,
         const table_manager::snapshot_t& snapshot);
     const nlhe_state* perform_action(nlhe_state::holdem_action action, const nlhe_state& state,

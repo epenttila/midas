@@ -50,12 +50,15 @@ public:
     };
 
     table_manager(const site_settings& settings, input_manager& input_manager);
-    snapshot_t update(const fake_window& window);
+    void update(const fake_window& window);
+    snapshot_t get_snapshot() const;
     void fold(double max_wait) const;
     void call(double max_wait) const;
     void raise(const std::string& action, double amount, double minbet, double max_wait, raise_method method) const;
     void input_captcha(const std::string& str) const;
     void sit_in(const double max_wait) const;
+    bool is_waiting() const;
+    bool is_sitting_out() const;
 
 private:
     void get_hole_cards(std::array<int, 2>& hole) const;

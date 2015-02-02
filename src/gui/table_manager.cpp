@@ -101,7 +101,7 @@ table_manager::table_manager(const site_settings& settings, input_manager& input
 {
 }
 
-table_manager::snapshot_t table_manager::update(const fake_window& window)
+void table_manager::update(const fake_window& window)
 {
     // window contents have been updated previously in main_window
     window_ = &window;
@@ -124,7 +124,10 @@ table_manager::snapshot_t table_manager::update(const fake_window& window)
         mono_image_.reset(new QImage);
 
     *mono_image_ = image_->convertToFormat(QImage::Format_Mono, Qt::ThresholdDither);
+}
 
+table_manager::snapshot_t table_manager::get_snapshot() const
+{
     snapshot_t s;
 
     s.total_pot = get_total_pot();
@@ -542,4 +545,14 @@ void table_manager::sit_in(const double max_wait) const
                 .arg(t.elapsed()).toStdString());
         }
     }
+}
+
+bool table_manager::is_waiting() const
+{
+    return (get_buttons() ? true : false) && is_highlight(0) != false;
+}
+
+bool table_manager::is_sitting_out() const
+{
+    return is_sit_out(0);
 }
