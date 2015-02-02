@@ -426,6 +426,9 @@ void main_window::autoplay_changed(const bool checked)
 
 void main_window::process_snapshot(const int slot, const fake_window& window)
 {
+    if (save_images_->isChecked())
+        save_snapshot();
+
     site_->update(window);
 
     // handle sit-out as the absolute first step and react accordingly
@@ -508,9 +511,6 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
         return;
 
     const auto& snapshot = site_->get_snapshot();
-
-    if (save_images_->isChecked())
-        save_snapshot();
 
     // these should work for observed tables
     visualizer_->clear_row(tournament_id);
