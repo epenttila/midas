@@ -38,11 +38,13 @@ public:
         std::vector<std::uint32_t> columns;
         std::string ch;
         int popcnt;
+        int width;
     };
 
     struct font_t
     {
-        std::uint32_t max_width;
+        int max_width;
+        int height;
         std::unordered_map<std::size_t, glyph_t> masks;
     };
 

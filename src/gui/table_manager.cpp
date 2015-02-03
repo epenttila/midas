@@ -30,8 +30,13 @@ namespace
         if (!image)
             return -1;
 
-        const auto s = window_utils::read_string(mono, window.get_scaled_rect(label.unscaled_rect), label.color, font,
-            label.tolerance, label.shift);
+        if (window_utils::get_color_distance(image->pixel(window.get_scaled_rect(label.unscaled_rect).topLeft()),
+            card_pixel.color) > card_pixel.tolerance)
+        {
+            return -1;
+        }
+
+        const auto s = window_utils::read_shape(mono, window.get_scaled_rect(label.unscaled_rect), label.color, font);
 
         if (s.empty())
             return -1;

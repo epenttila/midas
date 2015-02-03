@@ -14,6 +14,16 @@
 
 namespace
 {
+    std::uint64_t lzcnt(std::uint64_t x)
+    {
+        if (x == 0)
+            return 0;
+
+        unsigned long idx;
+        _BitScanReverse64(&idx, x);
+        return idx;
+    }
+
     site_settings::pixel_t read_xml_pixel(QXmlStreamReader& reader)
     {
         const site_settings::pixel_t p = {
@@ -34,7 +44,7 @@ namespace
     {
         site_settings::font_t font;
 
-        font.max_width = reader.attributes().value("max-width").toUInt();
+        font.height = 0;
 
         while (reader.readNextStartElement())
         {
@@ -47,7 +57,10 @@ namespace
                     const auto val = column.toUInt(nullptr, 16);
                     glyph.columns.push_back(val);
                     glyph.popcnt += __popcnt(val);
+                    font.height = std::max(font.height, static_cast<int>(lzcnt(val)) + 1);
                 }
+
+                glyph.width = static_cast<int>(glyph.columns.size());
 
                 const auto hash = boost::hash_range(glyph.columns.begin(), glyph.columns.end());
                 glyph.ch = reader.attributes().value("value").toString().toStdString();
@@ -55,6 +68,7 @@ namespace
                 assert(font.masks.find(hash) == font.masks.end());
 
                 font.masks[hash] = glyph;
+                font.max_width = std::max(font.max_width, glyph.width);
 
                 reader.skipCurrentElement();
             }

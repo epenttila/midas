@@ -125,7 +125,7 @@ std::string read_string_impl(const QImage* image, const QRect& rect, const QRgb&
 
     for (int x = rect.left(); x < rect.left() + rect.width();)
     {
-        const auto max_width = std::min(static_cast<int>(font.max_width), rect.left() + rect.width() - x);
+        const auto max_width = std::min(font.max_width, rect.left() + rect.width() - x);
         const QRect glyph_rect(x, rect.top(), max_width, rect.height());
         double glyph_error = std::numeric_limits<double>::max();
         const auto val = read_glyph(*image, glyph_rect, color, font, tolerance, &glyph_error);
@@ -226,6 +226,72 @@ std::string read_string(const QImage* image, const QRect& rect, const QRgb& colo
     }
 
     return best_s;
+}
+
+std::string read_shape(const QImage* image, const QRect& rect, const QRgb& color, const site_settings::font_t& font)
+{
+    if (!image)
+        return "";
+
+    std::string s;
+    int min_dist = std::numeric_limits<int>::max();
+
+    for (const auto& glyph : font.masks)
+    {
+        for (int y = rect.top(); y <= rect.top() + rect.height() - font.height; ++y)
+        {
+            int extra_dist = 0;
+
+            // top and bottom
+            for (int x = rect.left(); x < rect.left() + rect.width(); ++x)
+            {
+                extra_dist += get_hamming_distance(calculate_mask(*image, x, rect.top(), y - rect.top(), color), 0);
+                extra_dist += get_hamming_distance(calculate_mask(*image, x, y + font.height, rect.top() + rect.height() - (y + font.height), color), 0);
+            }
+
+            std::vector<std::uint32_t> columns;
+
+            for (int x = rect.left(); x < rect.left() + rect.width(); ++x)
+            {
+                const auto mask = calculate_mask(*image, x, y, rect.height(), color);
+                columns.push_back(mask);
+            }
+
+            for (int x = rect.left(); x <= rect.left() + rect.width() - glyph.second.width; ++x)
+            {
+                int mid_dist = 0;
+                int xx = rect.left();
+
+                // left
+                for (; xx < x; ++xx)
+                    mid_dist += get_hamming_distance(calculate_mask(*image, xx, y, font.height, color), 0);
+
+                // figure
+                for (int i = 0; i < glyph.second.columns.size(); ++i)
+                {
+                    const auto j = xx - rect.left();
+                    const auto mask = j < columns.size() ? columns[j] : 0;
+                    mid_dist += get_hamming_distance(mask, glyph.second.columns[i]);
+                    ++xx;
+                }
+
+                // right
+                for (; xx < rect.left() + rect.width(); ++xx)
+                    mid_dist += get_hamming_distance(calculate_mask(*image, xx, y, font.height, color), 0);
+
+                const auto total_dist = extra_dist + mid_dist;
+
+                // minimize error and maximize popcnt
+                if (total_dist < min_dist)
+                {
+                    s = glyph.second.ch;
+                    min_dist = total_dist;
+                }
+            }
+        }
+    }
+
+    return s;
 }
 
 }
