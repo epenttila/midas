@@ -182,7 +182,12 @@ void table_manager::get_hole_cards(std::array<int, 2>& hole) const
     static const std::array<const char*, 2> ids = { "hole-0", "hole-1" };
 
     for (int i = 0; i < hole.size(); ++i)
+    {
         hole[i] = read_card(*window_, image_.get(), mono_image_.get(), *settings_, ids[i]);
+
+        if (hole[i] == -1)
+            break;
+    }
 }
 
 void table_manager::get_board_cards(std::array<int, 5>& board) const
@@ -190,7 +195,12 @@ void table_manager::get_board_cards(std::array<int, 5>& board) const
     static const std::array<const char*, 5> ids = { "board-0", "board-1", "board-2", "board-3", "board-4" };
 
     for (int i = 0; i < board.size(); ++i)
+    {
         board[i] = read_card(*window_, image_.get(), mono_image_.get(), *settings_, ids[i]);
+
+        if (board[i] == -1)
+            break;
+    }
 }
 
 int table_manager::get_dealer_mask() const
