@@ -85,6 +85,7 @@ private:
     bool try_capture();
     void send_email(const std::string& subject, const std::string& message = ".");
     void check_idle(const bool schedule_active);
+    void handle_error(const std::exception& e);
 
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<nlhe_strategy>> strategies_;
@@ -112,7 +113,9 @@ private:
     std::unique_ptr<site_settings> settings_;
     std::unique_ptr<captcha_manager> captcha_manager_;
     std::unique_ptr<window_manager> window_manager_;
-    int sit_outs_;
+    double error_allowance_;
     QTime table_update_time_;
     table_vector_t table_windows_;
+    QDateTime error_time_;
+    double max_error_count_;
 };

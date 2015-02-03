@@ -217,7 +217,9 @@ main_window::main_window(const std::string& settings_path)
     , smtp_(nullptr)
     , captcha_manager_(new captcha_manager)
     , window_manager_(new window_manager)
-    , sit_outs_(0)
+    , error_allowance_(0)
+    , error_time_(QDateTime::currentDateTime())
+    , max_error_count_(0)
 {
     auto widget = new QWidget(this);
     widget->setFocus();
@@ -350,14 +352,7 @@ void main_window::capture_timer_timeout()
             }
             catch (const std::exception& e)
             {
-                BOOST_LOG_TRIVIAL(fatal) << e.what();
-
-                if (schedule_action_->isChecked())
-                {
-                    schedule_action_->setChecked(false);
-                    send_email("fatal error");
-                    save_snapshot();
-                }
+                handle_error(e);
             }
         }
 
@@ -377,8 +372,7 @@ void main_window::capture_timer_timeout()
     }
     catch (const std::exception& e)
     {
-        BOOST_LOG_TRIVIAL(fatal) << e.what();
-        save_snapshot();
+        handle_error(e);
     }
 
     update_statusbar();
@@ -428,32 +422,13 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
     // handle sit-out as the absolute first step and react accordingly
     if (autoplay_action_->isChecked() && site_->is_sitting_out())
     {
-        BOOST_LOG_TRIVIAL(warning) << "We are sitting out";
-
-        if (schedule_action_->isChecked())
+        if (settings_->get_number("auto-sit-in", 0))
         {
-            const auto max_sit_outs = static_cast<int>(settings_->get_number("max-sit-outs", 5));
-
-            ++sit_outs_;
-
-            BOOST_LOG_TRIVIAL(warning) << QString("Sit-outs during session: %1/%2").arg(sit_outs_).arg(max_sit_outs)
-                .toStdString();
-
-            if (sit_outs_ >= max_sit_outs)
-                throw std::runtime_error("Maximum sit-outs reached; stopping registrations");
-
-            if (settings_->get_number("auto-sit-in", 0))
-            {
-                BOOST_LOG_TRIVIAL(info) << "Sitting in";
-                site_->sit_in(settings_->get_interval("action-delay", site_settings::interval_t()).second);
-            }
-            else
-            {
-                throw std::runtime_error("We are sitting out; stopping registrations");
-            }
+            BOOST_LOG_TRIVIAL(info) << "Sitting in";
+            site_->sit_in(settings_->get_interval("action-delay", site_settings::interval_t()).second);
         }
 
-        return;
+        throw std::runtime_error("We are sitting out");
     }
 
     const auto tournament_id = slot;
@@ -989,12 +964,6 @@ void main_window::handle_schedule()
             BOOST_LOG_TRIVIAL(info) << "Disabling scheduled registration";
 
         BOOST_LOG_TRIVIAL(info) << make_schedule_string(schedule_active_, next_activity_date_).toStdString();
-
-        if (sit_outs_ != 0)
-        {
-            BOOST_LOG_TRIVIAL(info) << "Resetting session sit-out counter (" << sit_outs_ << ")";
-            sit_outs_ = 0;
-        }
     }
 }
 
@@ -1142,6 +1111,9 @@ void main_window::load_settings(const std::string& filename)
     }
 
     BOOST_LOG_TRIVIAL(info) << strategies_.size() << " strategies loaded";
+
+    max_error_count_ = settings_->get_number("max-error-count", 5.0);
+    error_allowance_ = max_error_count_;
 
     BOOST_LOG_TRIVIAL(info) << QString("Loaded site settings: %1").arg(filename.c_str()).toStdString();
 }
@@ -1322,4 +1294,39 @@ void main_window::check_idle(const bool schedule_active)
     }
     else
         table_update_time_ = QTime();
+}
+
+void main_window::handle_error(const std::exception& e)
+{
+    BOOST_LOG_TRIVIAL(fatal) << e.what();
+
+    if (!schedule_action_->isChecked())
+        return;
+
+    send_email("fatal error");
+    save_snapshot();
+
+    const auto max_error_interval = settings_->get_number("max-error-interval", 60.0);
+
+    const auto now = QDateTime::currentDateTime();
+    const auto elapsed = error_time_.msecsTo(now) / 1000.0;
+    error_time_ = now;
+
+    error_allowance_ += elapsed * (max_error_count_ / max_error_interval);
+
+    if (error_allowance_ > max_error_count_)
+        error_allowance_ = max_error_count_;
+
+    if (error_allowance_ < 1.0)
+    {
+        schedule_action_->setChecked(false);
+        throw std::runtime_error("Maximum errors reached; stopping registrations");
+    }
+    else
+    {
+        BOOST_LOG_TRIVIAL(warning) << QString("Error allowance: %1/%2").arg(error_allowance_)
+            .arg(max_error_count_).toStdString();
+
+        error_allowance_ -= 1.0;
+    }
 }
