@@ -351,12 +351,12 @@ void main_window::capture_timer_timeout()
             catch (const std::exception& e)
             {
                 BOOST_LOG_TRIVIAL(fatal) << e.what();
-                save_snapshot();
 
                 if (schedule_action_->isChecked())
                 {
                     schedule_action_->setChecked(false);
                     send_email("fatal error");
+                    save_snapshot();
                 }
             }
         }
