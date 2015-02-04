@@ -1324,9 +1324,9 @@ void main_window::handle_error(const std::exception& e)
     }
     else
     {
+        error_allowance_ -= 1.0;
+
         BOOST_LOG_TRIVIAL(warning) << QString("Error allowance: %1/%2").arg(error_allowance_)
             .arg(max_error_count_).toStdString();
-
-        error_allowance_ -= 1.0;
     }
 }
