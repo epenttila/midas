@@ -1303,7 +1303,6 @@ void main_window::handle_error(const std::exception& e)
     if (!schedule_action_->isChecked())
         return;
 
-    send_email("fatal error");
     save_snapshot();
 
     const auto max_error_interval = settings_->get_number("max-error-interval", 60.0);
@@ -1320,6 +1319,7 @@ void main_window::handle_error(const std::exception& e)
     if (error_allowance_ < 1.0)
     {
         schedule_action_->setChecked(false);
+        send_email("fatal error");
         throw std::runtime_error("Maximum errors reached; stopping registrations");
     }
     else
