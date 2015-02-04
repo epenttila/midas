@@ -1300,10 +1300,10 @@ void main_window::handle_error(const std::exception& e)
 {
     BOOST_LOG_TRIVIAL(fatal) << e.what();
 
+    save_snapshot();
+
     if (!schedule_action_->isChecked())
         return;
-
-    save_snapshot();
 
     const auto max_error_interval = settings_->get_number("max-error-interval", 60.0);
 
