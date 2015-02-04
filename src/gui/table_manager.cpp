@@ -530,8 +530,6 @@ std::array<int, 3> table_manager::get_button_map() const
             ++i;
         }
     }
-    else
-        throw std::runtime_error(QString("Unknown button layout (%1)").arg(layout).toStdString());
 
     return m;
 }
