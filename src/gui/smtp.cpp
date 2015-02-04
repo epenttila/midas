@@ -14,6 +14,9 @@ smtp::smtp(const QString& host, std::uint16_t port)
 
 void smtp::send(const QString &from, const QString &to, const QString &subject, const QString &body)
 {
+    BOOST_LOG_TRIVIAL(info) << QString("Sending message: %1 -> %2 (\"%3\")").arg(from).arg(to).arg(subject)
+        .toStdString();
+
     if (state_ != INIT)
     {
         BOOST_LOG_TRIVIAL(warning) << "Already sending message";
