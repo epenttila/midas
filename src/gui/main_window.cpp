@@ -1299,7 +1299,7 @@ void main_window::check_idle(const bool schedule_active)
 
 void main_window::handle_error(const std::exception& e)
 {
-    BOOST_LOG_TRIVIAL(fatal) << e.what();
+    BOOST_LOG_TRIVIAL(error) << e.what();
 
     save_snapshot();
 
@@ -1321,7 +1321,7 @@ void main_window::handle_error(const std::exception& e)
     {
         schedule_action_->setChecked(false);
         send_email("fatal error");
-        throw std::runtime_error("Maximum errors reached; stopping registrations");
+        BOOST_LOG_TRIVIAL(fatal) << "Maximum errors reached; stopping registrations";
     }
     else
     {
