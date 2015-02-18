@@ -195,13 +195,11 @@ namespace
 fake_window::fake_window(const site_settings::window_t& window, const site_settings& settings,
     const window_manager& wm)
     : rect_(window.rect)
-    , title_font_(settings.get_font(window.font))
     , icon_(window.icon)
     , window_manager_(wm)
     , margins_(window.margins)
     , resizable_(window.resizable)
     , title_button_(settings.get_button(window.title))
-    , title_text_button_(settings.get_button(window.title_text))
 {
 }
 
@@ -248,10 +246,9 @@ bool fake_window::update()
             .arg(rect_.height()).toStdString();
     }
 
-    if (title_button_ && title_text_button_)
+    if (title_button_)
     {
         title_rect_ = get_scaled_rect(title_button_->unscaled_rect);
-        title_text_rect_ = get_scaled_rect(title_text_button_->unscaled_rect);
     }
     else
     {
@@ -260,9 +257,6 @@ bool fake_window::update()
 
         if (icon_)
             title_rect_.adjust(ICON_WIDTH + 2 * ICON_BORDER_X, 0, 0, 0);
-
-        title_text_rect_ = title_rect_.translated(-window_rect_.topLeft()).adjusted(TITLE_TEXT_LEFT_OFFSET,
-            TITLE_TEXT_TOP_OFFSET, TITLE_TEXT_BOTTOM_OFFSET, TITLE_TEXT_RIGHT_OFFSET);
     }
 
     client_rect_ = window_rect_.adjusted(border, border + title_rect_.height(), -border, -border);
@@ -308,11 +302,6 @@ bool fake_window::click_any_button(input_manager& input, const site_settings::bu
 QPoint fake_window::client_to_screen(const QPoint& point) const
 {
     return window_manager_.client_to_screen(client_rect_.topLeft() + point);
-}
-
-std::string fake_window::get_window_text() const
-{
-    return window_utils::read_string(&window_image_, title_text_rect_, qRgb(255, 255, 255), *title_font_);
 }
 
 const QImage& fake_window::get_window_image() const

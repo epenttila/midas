@@ -563,8 +563,6 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
     ENSURE(snapshot.dealer[0] || snapshot.dealer[1]);
 
     BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
-    BOOST_LOG_TRIVIAL(info) << "Window: " << window.get_window_text();
-
     BOOST_LOG_TRIVIAL(info) << "Snapshot:";
 
     for (const auto& str : QString(table_manager::snapshot_t::to_string(snapshot).c_str()).trimmed().split('\n'))

@@ -17,7 +17,6 @@ public:
     bool is_valid() const;
     bool click_button(input_manager& input, const site_settings::button_t& button, bool double_click = false) const;
     bool click_any_button(input_manager& input, const site_settings::button_range& buttons, bool double_click = false) const;
-    std::string get_window_text() const;
     bool update();
     const QImage& get_window_image() const;
     const QImage& get_client_image() const;
@@ -31,7 +30,6 @@ private:
     QRect window_rect_;
     QRect client_rect_;
     const QRect rect_;
-    const site_settings::font_t* title_font_;
     QRect title_rect_;
     QImage window_image_;
     QImage client_image_;
@@ -40,6 +38,4 @@ private:
     const QMargins margins_;
     const bool resizable_;
     const site_settings::button_t* title_button_;
-    const site_settings::button_t* title_text_button_;
-    QRect title_text_rect_;
 };
