@@ -596,9 +596,7 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
     ENSURE(new_game || table_data.dealer == dealer);
 
     // figure out the big blind (we can't trust the window title due to buggy clients)
-    const auto big_blind = new_game
-        ? (dealer == 0 ? 2.0 : 1.0) * snapshot.bet[0]
-        : table_data.big_blind;
+    const auto big_blind = get_big_blind(table_data, snapshot, new_game, dealer);
 
     BOOST_LOG_TRIVIAL(info) << "BB: " << big_blind;
 
@@ -1328,4 +1326,23 @@ void main_window::handle_error(const std::exception& e)
         BOOST_LOG_TRIVIAL(warning) << QString("Error allowance: %1/%2").arg(error_allowance_)
             .arg(max_error_count_).toStdString();
     }
+}
+
+double main_window::get_big_blind(const table_data_t& table_data, const table_manager::snapshot_t& snapshot,
+    const bool new_game, const int dealer) const
+{
+    const auto big_blind = new_game
+        ? (dealer == 0 ? 2.0 : 1.0) * snapshot.bet[0]
+        : table_data.big_blind;
+
+    if (big_blind <= 0)
+    {
+        const auto default_blind = settings_->get_number("default-big-blind", 20);
+
+        BOOST_LOG_TRIVIAL(warning) << QString("Invalid blind; using default (%1)").arg(default_blind).toStdString();
+
+        return default_blind;
+    }
+    else
+        return big_blind;
 }

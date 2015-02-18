@@ -86,6 +86,8 @@ private:
     void send_email(const std::string& subject, const std::string& message = ".");
     void check_idle(const bool schedule_active);
     void handle_error(const std::exception& e);
+    double get_big_blind(const table_data_t& table_data, const table_manager::snapshot_t& snapshot, bool new_game,
+        int dealer) const;
 
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<nlhe_strategy>> strategies_;
