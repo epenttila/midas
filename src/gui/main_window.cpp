@@ -1201,7 +1201,7 @@ void main_window::update_capture()
             return;
         else
         {
-            BOOST_LOG_TRIVIAL(warning) << "Retrying capture";
+            BOOST_LOG_TRIVIAL(info) << "Retrying capture";
 
             if (autoplay_action_->isChecked())
             {
@@ -1221,10 +1221,7 @@ bool main_window::try_capture()
     for (auto& i : table_windows_)
     {
         if (!i->update())
-        {
-            BOOST_LOG_TRIVIAL(warning) << "Table window update failed";
             return false;
-        }
     }
 
     for (const auto& button : settings_->get_buttons("bad"))
