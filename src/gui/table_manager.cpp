@@ -14,6 +14,23 @@
 
 namespace
 {
+    bool is_card(const fake_window& window, const QImage& image, const site_settings::label_t& label,
+        const site_settings::pixel_t& card_pixel)
+    {
+        const auto& rect = window.get_scaled_rect(label.unscaled_rect);
+
+        for (int y = rect.top(); y < rect.top() + rect.height(); ++y)
+        {
+            for (int x = rect.left(); x < rect.left() + rect.width(); ++x)
+            {
+                if (window_utils::get_color_distance(image.pixel(x, y), card_pixel.color) <= card_pixel.tolerance)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
     int read_card(const fake_window& window, const QImage* image, const QImage* mono, const site_settings& settings, const std::string& id)
     {
         const auto& label = *settings.get_label(id);
@@ -30,11 +47,8 @@ namespace
         if (!image)
             return -1;
 
-        if (window_utils::get_color_distance(image->pixel(window.get_scaled_rect(label.unscaled_rect).topLeft()),
-            card_pixel.color) > card_pixel.tolerance)
-        {
+        if (!is_card(window, *image, label, card_pixel))
             return -1;
-        }
 
         const auto s = window_utils::read_shape(mono, window.get_scaled_rect(label.unscaled_rect), label.color, font);
 
