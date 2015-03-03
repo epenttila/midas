@@ -631,8 +631,14 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
 
         for (const auto action : actions)
         {
-            if (const auto child = current_state->get_action_child(action)) // fast-forward call below handles null
-                current_state = current_state->get_action_child(action);
+            for (int i = action; i >= 0 && i != nlhe_state::FOLD; --i) // assume action sizes are ascending
+            {
+                if (const auto child = current_state->get_action_child(nlhe_state::holdem_action(i))) // fast-forward call below handles null
+                {
+                    current_state = current_state->get_action_child(action);
+                    break;
+                }
+            }
         }
 
         BOOST_LOG_TRIVIAL(info) << QString("State adjusted: %1 -> %2").arg(table_data.state->to_string().c_str())
