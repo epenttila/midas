@@ -582,6 +582,9 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
 
     const auto new_game = is_new_game(table_data, snapshot);
 
+    // new games should always start with sb and bb bets
+    ENSURE(!new_game || (snapshot.bet[0] > 0 && snapshot.bet[1] > 0));
+
     // figure out the dealer (sometimes buggy clients display two dealer buttons)
     const auto dealer = (snapshot.dealer[0] && snapshot.dealer[1])
         ? (new_game ? static_cast<int>(*settings_->get_number("default-dealer")) : table_data.dealer)
