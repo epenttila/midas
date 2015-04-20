@@ -49,8 +49,7 @@ public:
         bool captcha;
     };
 
-    table_manager(const site_settings& settings, input_manager& input_manager);
-    void update(const fake_window& window);
+    table_manager(const site_settings& settings, input_manager& input_manager, const fake_window& window);
     snapshot_t get_snapshot() const;
     void fold(double max_wait) const;
     void call(double max_wait) const;
@@ -61,6 +60,7 @@ public:
     bool is_sitting_out() const;
 
 private:
+    void update(const fake_window& window);
     void get_hole_cards(std::array<int, 2>& hole) const;
     void get_board_cards(std::array<int, 5>& board) const;
     int get_dealer_mask() const;

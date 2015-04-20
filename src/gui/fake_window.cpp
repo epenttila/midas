@@ -192,11 +192,19 @@ namespace
     }
 }
 
+fake_window::fake_window()
+    : icon_(false)
+    , window_manager_(nullptr)
+    , resizable_(false)
+    , title_button_(nullptr)
+{
+}
+
 fake_window::fake_window(const site_settings::window_t& window, const site_settings& settings,
     const window_manager& wm)
     : rect_(window.rect)
     , icon_(window.icon)
-    , window_manager_(wm)
+    , window_manager_(&wm)
     , margins_(window.margins)
     , resizable_(window.resizable)
     , title_button_(settings.get_button(window.title))
@@ -210,7 +218,7 @@ bool fake_window::update()
     window_image_ = QImage();
     client_image_ = QImage();
 
-    const auto image = window_manager_.get_image().copy(rect_ + margins_);
+    const auto image = window_manager_ ? window_manager_->get_image().copy(rect_ + margins_) : QImage();
 
     if (image.isNull())
         return true; // no capture
@@ -301,7 +309,7 @@ bool fake_window::click_any_button(input_manager& input, const site_settings::bu
 
 QPoint fake_window::client_to_screen(const QPoint& point) const
 {
-    return window_manager_.client_to_screen(client_rect_.topLeft() + point);
+    return window_manager_ ? window_manager_->client_to_screen(client_rect_.topLeft() + point) : QPoint();
 }
 
 const QImage& fake_window::get_window_image() const

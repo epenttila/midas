@@ -417,15 +417,15 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
     if (save_images_->isChecked())
         save_snapshot();
 
-    site_->update(window);
+    table_manager table(*settings_, *input_manager_, window);
 
     // handle sit-out as the absolute first step and react accordingly
-    if (autoplay_action_->isChecked() && site_->is_sitting_out())
+    if (autoplay_action_->isChecked() && table.is_sitting_out())
     {
         if (settings_->get_number("auto-sit-in", 0))
         {
             BOOST_LOG_TRIVIAL(info) << "Sitting in";
-            site_->sit_in(settings_->get_interval("action-delay", site_settings::interval_t()).second);
+            table.sit_in(settings_->get_interval("action-delay", site_settings::interval_t()).second);
         }
 
         throw std::runtime_error("We are sitting out");
@@ -453,7 +453,9 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
                 const auto action = table_data.next_action;
                 table_data.next_action = nlhe_state::INVALID_ACTION; // reset before perform_action to be safe
 
-                table_data.state = perform_action(action, *table_data.state, table_data.snapshot, table_data.big_blind);
+                ENSURE(table_data.state != nullptr);
+
+                table_data.state = perform_action(action, *table_data.state, table_data.window, table_data.big_blind);
 
                 const auto post_action_wait = settings_->get_number("post-action-wait", 5.0);
 
@@ -472,10 +474,11 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
     }
 
     // ignore out-of-turn snapshots
-    if (autoplay_action_->isChecked() && !site_->is_waiting())
+    if (autoplay_action_->isChecked() && !table.is_waiting())
         return;
 
-    const auto& snapshot = site_->get_snapshot();
+    const auto& snapshot = table.get_snapshot();
+    const auto& prev_snapshot = get_snapshot(table_data.window);
 
     table_update_time_.start();
 
@@ -532,7 +535,7 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
 
         if (!solution.empty())
         {
-            site_->input_captcha(solution + '\x0d');
+            table.input_captcha(solution + '\x0d');
             captcha_manager_->reset();
         }
     }
@@ -569,10 +572,10 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
         BOOST_LOG_TRIVIAL(info) << "- " << str.toStdString();
 
     // check if our previous action failed for some reason (buggy clients leave buttons depressed)
-    if (snapshot.hole == table_data.snapshot.hole
-        && snapshot.board == table_data.snapshot.board
-        && snapshot.stack == table_data.snapshot.stack
-        && snapshot.bet == table_data.snapshot.bet)
+    if (snapshot.hole == prev_snapshot.hole
+        && snapshot.board == prev_snapshot.board
+        && snapshot.stack == prev_snapshot.stack
+        && snapshot.bet == prev_snapshot.bet)
     {
         BOOST_LOG_TRIVIAL(warning) << "Identical snapshots; previous action not fulfilled; reverting state";
         table_data = old_table_data_[tournament_id];
@@ -773,7 +776,7 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
 
     table_data.next_action_time = QDateTime::currentDateTime().addMSecs(static_cast<qint64>(wait * 1000));
 
-    table_data.snapshot = snapshot;
+    table_data.window = window;
     table_data.dealer = dealer;
     table_data.big_blind = big_blind;
     table_data.stack_size = stack_size;
@@ -822,8 +825,11 @@ nlhe_state::holdem_action main_window::get_next_action(const nlhe_state& state, 
 }
 
 const nlhe_state* main_window::perform_action(const nlhe_state::holdem_action action, const nlhe_state& state,
-    const table_manager::snapshot_t& snapshot, const double big_blind)
+    const fake_window& window, const double big_blind)
 {
+    table_manager table(*settings_, *input_manager_, window);
+    const auto& snapshot = table.get_snapshot();
+
     int next_action;
     double raise_fraction = -1;
     std::string new_action_name = nlhe_state::get_action_name(action);
@@ -860,11 +866,11 @@ const nlhe_state* main_window::perform_action(const nlhe_state::holdem_action ac
     {
     case table_manager::FOLD:
         BOOST_LOG_TRIVIAL(info) << "Folding";
-        site_->fold(max_action_wait);
+        table.fold(max_action_wait);
         break;
     case table_manager::CALL:
         BOOST_LOG_TRIVIAL(info) << "Calling";
-        site_->call(max_action_wait);
+        table.call(max_action_wait);
         break;
     case table_manager::RAISE:
         {
@@ -935,7 +941,7 @@ const nlhe_state* main_window::perform_action(const nlhe_state::holdem_action ac
             BOOST_LOG_TRIVIAL(info) << QString("Raising to %1 [%3, %5] (%2x pot) (method %4)").arg(amount)
                 .arg(raise_fraction).arg(minbet).arg(method).arg(maxbet).toStdString();
 
-            site_->raise(new_action_name, amount, minbet, max_action_wait, method);
+            table.raise(new_action_name, amount, minbet, max_action_wait, method);
         }
         break;
     }
@@ -1093,8 +1099,6 @@ void main_window::load_settings(const std::string& filename)
     for (const auto& w : settings_->get_windows("table"))
         table_windows_.push_back(std::unique_ptr<fake_window>(new fake_window(*w.second, *settings_, *window_manager_)));
 
-    site_.reset(new table_manager(*settings_, *input_manager_));
-
     strategies_.clear();
 
     for (const auto& p : settings_->get_strings("strategy"))
@@ -1147,18 +1151,20 @@ int main_window::get_effective_stack(const table_manager::snapshot_t& snapshot, 
 
 bool main_window::is_new_game(const table_data_t& table_data, const table_manager::snapshot_t& snapshot) const
 {
+    const auto& prev_snapshot = get_snapshot(table_data.window);
+
     // dealer button is not bugged and it has changed between snapshots -> new game
     // (dealer button status can change mid game on buggy clients)
     if (snapshot.dealer[0] != snapshot.dealer[1] &&
-        table_data.snapshot.dealer[0] != table_data.snapshot.dealer[1] &&
-        snapshot.dealer != table_data.snapshot.dealer)
+        prev_snapshot.dealer[0] != prev_snapshot.dealer[1] &&
+        snapshot.dealer != prev_snapshot.dealer)
     {
         BOOST_LOG_TRIVIAL(info) << "New game (dealer changed)";
         return true;
     }
 
     // hole cards changed -> new game
-    if (snapshot.hole != table_data.snapshot.hole)
+    if (snapshot.hole != prev_snapshot.hole)
     {
         BOOST_LOG_TRIVIAL(info) << "New game (hole cards changed)";
         return true;
@@ -1166,7 +1172,7 @@ bool main_window::is_new_game(const table_data_t& table_data, const table_manage
 
     // stack size can never increase during a game between snapshots, so a new game must have started
     // only check if stack data is valid (not sitting out or all in)
-    if (snapshot.stack > 0 && table_data.snapshot.stack > 0 && snapshot.stack > table_data.snapshot.stack)
+    if (snapshot.stack > 0 && prev_snapshot.stack > 0 && snapshot.stack > prev_snapshot.stack)
     {
         BOOST_LOG_TRIVIAL(info) << "New game (stack increased)";
         return true;
@@ -1180,7 +1186,7 @@ bool main_window::is_new_game(const table_data_t& table_data, const table_manage
     }
 
     // opponent was all-in but isn't anymore -> should be handled by check above as all our actions are terminal
-    ENSURE(!(!snapshot.all_in[1] && table_data.snapshot.all_in[1]));
+    ENSURE(!(!snapshot.all_in[1] && prev_snapshot.all_in[1]));
 
     // TODO: a false negatives can be possible in some corner cases
     return false;
@@ -1351,4 +1357,11 @@ double main_window::get_big_blind(const table_data_t& table_data, const table_ma
     }
     else
         return big_blind;
+}
+
+table_manager::snapshot_t main_window::get_snapshot(const fake_window& window) const
+{
+    return window.is_valid()
+        ? table_manager(*settings_, *input_manager_, window).get_snapshot()
+        : table_manager::snapshot_t();
 }

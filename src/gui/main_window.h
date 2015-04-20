@@ -12,6 +12,7 @@
 
 #include "table_manager.h"
 #include "gamelib/nlhe_state.h"
+#include "fake_window.h"
 
 class QPlainTextEdit;
 class holdem_abstraction;
@@ -61,7 +62,7 @@ private:
         int dealer;
         double big_blind;
         int stack_size;
-        table_manager::snapshot_t snapshot;
+        fake_window window;
         const nlhe_state* state;
         QDateTime next_action_time;
         nlhe_state::holdem_action next_action;
@@ -71,7 +72,7 @@ private:
     nlhe_state::holdem_action get_next_action(const nlhe_state& state, const nlhe_strategy& strategy,
         const table_manager::snapshot_t& snapshot);
     const nlhe_state* perform_action(nlhe_state::holdem_action action, const nlhe_state& state,
-        const table_manager::snapshot_t& snapshot, double big_blind);
+        const fake_window& window, double big_blind);
     void update_strategy_widget(const nlhe_state& state, const nlhe_strategy& strategy, const std::array<int, 2>& hole,
         const std::array<int, 5>& board);
     void ensure(bool expression, const std::string& s, int line) const;
@@ -88,11 +89,11 @@ private:
     void handle_error(const std::exception& e);
     double get_big_blind(const table_data_t& table_data, const table_manager::snapshot_t& snapshot, bool new_game,
         int dealer) const;
+    table_manager::snapshot_t get_snapshot(const fake_window& window) const;
 
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<nlhe_strategy>> strategies_;
     QTimer* capture_timer_;
-    std::unique_ptr<table_manager> site_;
     QPlainTextEdit* log_;
     QLineEdit* title_filter_;
     holdem_strategy_widget* strategy_widget_;

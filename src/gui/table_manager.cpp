@@ -113,11 +113,12 @@ namespace
     }
 }
 
-table_manager::table_manager(const site_settings& settings, input_manager& input_manager)
+table_manager::table_manager(const site_settings& settings, input_manager& input_manager, const fake_window& window)
     : input_(input_manager)
     , settings_(&settings)
     , window_(nullptr)
 {
+    update(window);
 }
 
 void table_manager::update(const fake_window& window)
