@@ -342,7 +342,7 @@ void main_window::capture_timer_timeout()
 
         check_idle(schedule_active_);
 
-        if (autoplay_action_->isChecked() && schedule_action_->isChecked() && schedule_active_)
+        if (autoplay_action_->isChecked() && schedule_active_)
         {
             const auto method = static_cast<input_manager::idle_move>(get_weighted_int(engine_,
                 *settings_->get_number_list("idle-move-probabilities")));
@@ -988,7 +988,10 @@ void main_window::schedule_changed(const bool checked)
     if (checked)
         BOOST_LOG_TRIVIAL(info) << "Enabling scheduler";
     else
+    {
         BOOST_LOG_TRIVIAL(info) << "Disabling scheduler";
+        schedule_active_ = false;
+    }
 }
 
 void main_window::state_widget_state_changed()
