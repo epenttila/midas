@@ -13,6 +13,7 @@
 #include <QPainter>
 #include <QLineEdit>
 #include <QCheckBox>
+#include <QColorDialog>
 #pragma warning(pop)
 
 #include "image_widget.h"
@@ -46,6 +47,22 @@ main_window::main_window()
             font_ = font;
     });
 
+    auto text_color_button = new QPushButton("Text", this);
+    toolbar->addWidget(text_color_button);
+
+    connect(text_color_button, &QPushButton::clicked, [this, text_color_button]() {
+        text_color_ = QColorDialog::getColor();
+        text_color_button->setStyleSheet(QString("background-color: %1").arg(text_color_.name()));
+    });
+
+    auto bg_color_button = new QPushButton("Background", this);
+    toolbar->addWidget(bg_color_button);
+
+    connect(bg_color_button, &QPushButton::clicked, [this, bg_color_button]() {
+        bg_color_ = QColorDialog::getColor();
+        bg_color_button->setStyleSheet(QString("background-color: %1").arg(bg_color_.name()));
+    });
+
     chars_widget_ = new QLineEdit(this);
     toolbar->addWidget(chars_widget_);
 
@@ -55,8 +72,8 @@ main_window::main_window()
 
     smooth_button_ = new QCheckBox("Anti-aliasing");
     connect(smooth_button_, &QCheckBox::toggled, [this](bool checked) {
-        font_.setStyleStrategy(static_cast<QFont::StyleStrategy>(font_.styleStrategy()
-            | (checked ? QFont::PreferAntialias : QFont::NoAntialias)));
+        font_.setStyleStrategy(static_cast<QFont::StyleStrategy>(checked ? QFont::PreferAntialias : QFont::NoAntialias));
+        create_font();
     });
 
     toolbar->addWidget(smooth_button_);
@@ -127,24 +144,24 @@ void main_window::create_font()
     QFontMetrics fm(font_);
 
     QImage image(800, fm.height(), QImage::Format_ARGB32);
-    image.fill(qRgb(0, 0, 0));
+    image.fill(bg_color_);
 
     QPainter painter(&image);
     painter.setFont(font_);
 
     int x = 0;
 
-    QImage img(100, fm.height(), QImage::Format_Mono);
+    QImage img(100, fm.height(), QImage::Format_ARGB32);
     QPainter p(&img);
     p.setFont(font_);
-    p.setPen(qRgb(255, 255, 255));
+    p.setPen(text_color_);
 
     int trim_top = img.height();
     int trim_bottom = 0;
 
     for (const auto& ch : chars_widget_->text())
     {
-        img.fill(qRgb(0, 0, 0));
+        img.fill(bg_color_);
         p.drawText(0, fm.ascent(), ch);
 
         int trim_left = img.width();
@@ -154,7 +171,7 @@ void main_window::create_font()
         {
             for (int char_x = 0; char_x < img.width(); ++char_x)
             {
-                if (img.pixel(char_x, char_y) != qRgb(0, 0, 0))
+                if (img.pixel(char_x, char_y) != bg_color_.rgb())
                 {
                     trim_left = std::min(trim_left, char_x);
                     trim_right = std::max(trim_right, char_x);
@@ -166,7 +183,7 @@ void main_window::create_font()
 
         const auto r = QRect(trim_left, 0, trim_right - trim_left + 1, fm.height());
 
-        painter.drawImage(QPoint(x, 0), img, r);
+        painter.drawImage(QPoint(x, 0), img.convertToFormat(QImage::Format_Mono), r);
         x += r.width();
 
         painter.setPen(qRgb(255, 0, 0));

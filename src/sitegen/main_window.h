@@ -31,4 +31,6 @@ private:
     QLineEdit* chars_widget_;
     QFont font_;
     QCheckBox* smooth_button_;
+    QColor text_color_;
+    QColor bg_color_;
 };
