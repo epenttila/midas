@@ -66,7 +66,7 @@ namespace
             {
                 if (suit != -1)
                 {
-                    throw std::runtime_error(QString("Unambiguous suit color (0x%1); was %2, could be %3")
+                    throw std::runtime_error(QString("Ambiguous suit color (0x%1); was %2, could be %3")
                         .arg(avg, 0, 16).arg(suit).arg(s).toUtf8());
                 }
 
