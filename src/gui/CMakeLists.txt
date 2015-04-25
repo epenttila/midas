@@ -12,8 +12,6 @@ set(gui_SOURCES
     table_manager.h
     state_widget.cpp
     state_widget.h
-    table_widget.cpp
-    table_widget.h
     window_utils.cpp
     window_utils.h
     qt_log_sink.cpp

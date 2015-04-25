@@ -19,7 +19,6 @@ class holdem_abstraction;
 class table_manager;
 class nlhe_strategy;
 class QLabel;
-class table_widget;
 class QLineEdit;
 class holdem_strategy_widget;
 class QComboBox;
@@ -96,7 +95,6 @@ private:
     void do_action(table_data_t& table_data, nlhe_state::holdem_action action);
     void transition_state(table_data_t& table_data, const table_data_t::state_t old, const table_data_t::state_t neu);
 
-    table_widget* visualizer_;
     std::map<int, std::unique_ptr<nlhe_strategy>> strategies_;
     QTimer* capture_timer_;
     QPlainTextEdit* log_;

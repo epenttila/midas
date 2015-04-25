@@ -44,7 +44,6 @@
 #include "cfrlib/nlhe_strategy.h"
 #include "abslib/holdem_abstraction.h"
 #include "util/random.h"
-#include "table_widget.h"
 #include "holdem_strategy_widget.h"
 #include "table_manager.h"
 #include "input_manager.h"
@@ -221,12 +220,6 @@ main_window::main_window(const std::string& settings_path)
     , error_time_(QDateTime::currentDateTime())
     , max_error_count_(0)
 {
-    auto widget = new QWidget(this);
-    widget->setFocus();
-
-    setCentralWidget(widget);
-
-    visualizer_ = new table_widget(this);
     strategy_widget_ = new holdem_strategy_widget(this, Qt::Tool);
     strategy_widget_->setVisible(false);
     state_widget_ = new state_widget(this, Qt::Tool);
@@ -271,10 +264,7 @@ main_window::main_window(const std::string& settings_path)
     log_->setReadOnly(true);
     log_->setMaximumBlockCount(1000);
 
-    QVBoxLayout* layout = new QVBoxLayout(widget);
-    layout->addWidget(visualizer_);
-    layout->addWidget(log_);
-    widget->setLayout(layout);
+    setCentralWidget(log_);
 
     capture_timer_ = new QTimer(this);
     connect(capture_timer_, &QTimer::timeout, this, &main_window::capture_timer_timeout);
@@ -449,18 +439,6 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
 
     table_update_time_.start();
 
-    // these should work for observed tables
-    visualizer_->clear_row(tournament_id);
-    visualizer_->set_dealer(tournament_id, snapshot.dealer[0] ? 0 : (snapshot.dealer[1] ? 1 : -1));
-    visualizer_->set_real_pot(tournament_id, snapshot.total_pot);
-    visualizer_->set_real_bets(tournament_id, snapshot.bet[0], snapshot.bet[1]);
-    visualizer_->set_sit_out(tournament_id, snapshot.sit_out[0], snapshot.sit_out[1]);
-    visualizer_->set_stacks(tournament_id, snapshot.stack, -1);
-    visualizer_->set_buttons(tournament_id, snapshot.buttons);
-    visualizer_->set_all_in(tournament_id, snapshot.all_in[0], snapshot.all_in[1]);
-    visualizer_->set_hole_cards(tournament_id, snapshot.hole);
-    visualizer_->set_board_cards(tournament_id, snapshot.board);
-        
     holdem_state::game_round round = holdem_state::INVALID_ROUND;
 
     if (snapshot.board[0] != -1 && snapshot.board[1] != -1 && snapshot.board[2] != -1)
