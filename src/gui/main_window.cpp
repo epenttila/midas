@@ -310,12 +310,6 @@ void main_window::capture_timer_timeout()
 {
     try
     {
-        if (const auto p = settings_->get_interval("capture"))
-        {
-            const auto interval = get_uniform_random(engine_, p->first, p->second);
-            capture_timer_->setInterval(static_cast<int>(interval * 1000.0));
-        }
-
         if (const auto p = settings_->get_number("mark"))
         {
             if (mark_time_.elapsed() >= static_cast<int>(*p * 1000.0))
@@ -438,40 +432,13 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
     ENSURE(tournament_id != -1);
 
     auto& table_data = table_data_[tournament_id];
+    table_data.slot = tournament_id;
 
     const auto now = QDateTime::currentDateTime();
 
     // wait until action delay is over
-    if (table_data.next_action_time.isValid())
-    {
-        if (now >= table_data.next_action_time)
-        {
-            table_data.next_action_time = QDateTime(); // reset before perform_action to retry snapshot on exception
-
-            if (table_data.next_action != nlhe_state::INVALID_ACTION)
-            {
-                const auto action = table_data.next_action;
-                table_data.next_action = nlhe_state::INVALID_ACTION; // reset before perform_action to be safe
-
-                ENSURE(table_data.state != nullptr);
-
-                table_data.state = perform_action(action, *table_data.state, table_data.window, table_data.big_blind);
-
-                const auto post_action_wait = settings_->get_number("post-action-wait", 5.0);
-
-                BOOST_LOG_TRIVIAL(info) << QString("Waiting for %1 seconds before handling snapshot")
-                    .arg(post_action_wait).toStdString();
-
-                table_data.next_action_time = QDateTime::currentDateTime().addMSecs(static_cast<int>(post_action_wait
-                    * 1000.0));
-
-                return;
-            }
-            // don't return, pass directly to snapshot handling
-        }
-        else
-            return; // this should be the last "return" in snapshot processing
-    }
+    if (table_data.capture_state != table_data_t::IDLE && table_data.capture_state != table_data_t::SNAPSHOT)
+        return;
 
     // ignore out-of-turn snapshots
     if (autoplay_action_->isChecked() && !table.is_waiting())
@@ -491,11 +458,10 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
     visualizer_->set_stacks(tournament_id, snapshot.stack, -1);
     visualizer_->set_buttons(tournament_id, snapshot.buttons);
     visualizer_->set_all_in(tournament_id, snapshot.all_in[0], snapshot.all_in[1]);
-
-    holdem_state::game_round round = holdem_state::INVALID_ROUND;
-
     visualizer_->set_hole_cards(tournament_id, snapshot.hole);
     visualizer_->set_board_cards(tournament_id, snapshot.board);
+        
+    holdem_state::game_round round = holdem_state::INVALID_ROUND;
 
     if (snapshot.board[0] != -1 && snapshot.board[1] != -1 && snapshot.board[2] != -1)
     {
@@ -555,6 +521,21 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
     // wait until we see stack sizes (some sites hide stack size when player is sitting out)
     if (snapshot.stack == -1)
         return;
+
+    if (table_data.capture_state == table_data_t::IDLE)
+    {
+        transition_state(table_data, table_data_t::IDLE, table_data_t::PRE_SNAPSHOT);
+
+        const auto pre_snapshot_wait = settings_->get_number("pre-snapshot-wait", 1.0);
+
+        BOOST_LOG_TRIVIAL(info) << QString("Waiting %1 seconds pre-snapshot").arg(pre_snapshot_wait).toStdString();
+
+        QTimer::singleShot(static_cast<int>(pre_snapshot_wait * 1000), this, [this, &table_data]() {
+            transition_state(table_data, table_data_t::PRE_SNAPSHOT, table_data_t::SNAPSHOT);
+        });
+
+        return;
+    }
 
     // this will most likely fail if we can't read the cards
     ENSURE(round >= holdem_state::PREFLOP && round <= holdem_state::RIVER);
@@ -757,9 +738,7 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
 
     update_strategy_widget(*current_state, strategy, snapshot.hole, snapshot.board);
 
-    ENSURE(!table_data.next_action_time.isValid());
-
-    table_data.next_action = get_next_action(*current_state, strategy, snapshot);
+    const auto next_action = get_next_action(*current_state, strategy, snapshot);
 
     const auto to_call = snapshot.bet[1] - snapshot.bet[0];
     const auto invested = (snapshot.total_pot + to_call) / 2.0;
@@ -771,10 +750,13 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
     const auto max_delay = delay.second - (1 - delay_factor) * (delay.second - delay.first) * delay_window;
     const auto wait = get_normal_random(engine_, min_delay, max_delay);
 
+    transition_state(table_data, table_data_t::SNAPSHOT, table_data_t::ACTION);
+
     BOOST_LOG_TRIVIAL(info) << QString("Waiting for %1 [%2, %3] seconds before acting").arg(wait).arg(min_delay)
         .arg(max_delay).toStdString();
 
-    table_data.next_action_time = QDateTime::currentDateTime().addMSecs(static_cast<qint64>(wait * 1000));
+    QTimer::singleShot(static_cast<int>(wait * 1000), this, std::bind(&main_window::do_action, this,
+        std::ref(table_data), next_action));
 
     table_data.window = window;
     table_data.dealer = dealer;
@@ -1073,8 +1055,7 @@ void main_window::load_settings(const std::string& filename)
 
     title_filter_->setText(QString::fromStdString(settings_->get_string("title-filter", "")));
 
-    capture_timer_->setInterval(static_cast<int>(settings_->get_interval("capture",
-        site_settings::interval_t(1000, 1000)).first * 1000.0));
+    capture_timer_->setInterval(static_cast<int>(settings_->get_number("capture", 1.0) * 1000.0));
 
     if (const auto smtp_host = settings_->get_string("smtp-host"))
     {
@@ -1364,4 +1345,61 @@ table_manager::snapshot_t main_window::get_snapshot(const fake_window& window) c
     return window.is_valid()
         ? table_manager(*settings_, *input_manager_, window).get_snapshot()
         : table_manager::snapshot_t();
+}
+
+void main_window::do_action(table_data_t& table_data, const nlhe_state::holdem_action action)
+{
+    try
+    {
+        BOOST_LOG_SCOPED_THREAD_TAG("TournamentID", table_data.slot);
+
+        ENSURE(table_data.state != nullptr);
+
+        table_data.state = perform_action(action, *table_data.state, table_data.window, table_data.big_blind);
+
+        const auto post_action_wait = settings_->get_number("post-action-wait", 5.0);
+
+        transition_state(table_data, table_data_t::ACTION, table_data_t::POST_ACTION);
+
+        BOOST_LOG_TRIVIAL(info) << QString("Waiting %1 seconds post-action").arg(post_action_wait).toStdString();
+
+        QTimer::singleShot(static_cast<int>(post_action_wait * 1000), this, [this, &table_data]() {
+            transition_state(table_data, table_data_t::POST_ACTION, table_data_t::IDLE);
+        });
+    }
+    catch (const std::exception& e)
+    {
+        handle_error(e);
+    }
+}
+
+void main_window::transition_state(table_data_t& table_data, const table_data_t::state_t old,
+    const table_data_t::state_t neu)
+{
+    try
+    {
+        BOOST_LOG_SCOPED_THREAD_TAG("TournamentID", table_data.slot);
+        BOOST_LOG_TRIVIAL(info) << QString("Capture state transition: %1 -> %2")
+            .arg(table_data_t::to_string(old).c_str()).arg(table_data_t::to_string(neu).c_str()).toStdString();
+
+        ENSURE(table_data.capture_state == old);
+        table_data.capture_state = neu;
+    }
+    catch (const std::exception& e)
+    {
+        handle_error(e);
+    }
+}
+
+std::string main_window::table_data_t::to_string(const state_t& state)
+{
+    switch (state)
+    {
+    case main_window::table_data_t::IDLE: return "IDLE";
+    case main_window::table_data_t::PRE_SNAPSHOT: return "PRE_SNAPSHOT";
+    case main_window::table_data_t::SNAPSHOT: return "SNAPSHOT";
+    case main_window::table_data_t::ACTION: return "ACTION"; break;
+    case main_window::table_data_t::POST_ACTION: return "POST_ACTION";
+    default: return "N/A";
+    }
 }

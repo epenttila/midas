@@ -56,16 +56,19 @@ public slots:
 private:
     struct table_data_t
     {
-        table_data_t() : dealer(-1), big_blind(-1), stack_size(-1), state(nullptr),
-            next_action(nlhe_state::INVALID_ACTION) {}
+        enum state_t { IDLE, PRE_SNAPSHOT, SNAPSHOT, ACTION, POST_ACTION };
+
+        table_data_t() : dealer(-1), big_blind(-1), stack_size(-1), state(nullptr), capture_state(IDLE), slot(-1) {}
+
+        static std::string to_string(const state_t& state);
 
         int dealer;
         double big_blind;
         int stack_size;
         fake_window window;
         const nlhe_state* state;
-        QDateTime next_action_time;
-        nlhe_state::holdem_action next_action;
+        state_t capture_state;
+        int slot;
     };
 
     void process_snapshot(int slot, const fake_window& window);
@@ -90,6 +93,8 @@ private:
     double get_big_blind(const table_data_t& table_data, const table_manager::snapshot_t& snapshot, bool new_game,
         int dealer) const;
     table_manager::snapshot_t get_snapshot(const fake_window& window) const;
+    void do_action(table_data_t& table_data, nlhe_state::holdem_action action);
+    void transition_state(table_data_t& table_data, const table_data_t::state_t old, const table_data_t::state_t neu);
 
     table_widget* visualizer_;
     std::map<int, std::unique_ptr<nlhe_strategy>> strategies_;
