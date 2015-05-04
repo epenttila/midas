@@ -1350,6 +1350,7 @@ void main_window::do_action(table_data_t& table_data, const nlhe_state::holdem_a
     }
     catch (const std::exception& e)
     {
+        reset_state(table_data);
         handle_error(e);
     }
 }
@@ -1383,4 +1384,16 @@ std::string main_window::table_data_t::to_string(const state_t& state)
     case main_window::table_data_t::POST_ACTION: return "POST_ACTION";
     default: return "N/A";
     }
+}
+
+void main_window::reset_state(table_data_t& table_data)
+{
+    const auto& old = table_data.capture_state;
+    const auto& neu = table_data_t::IDLE;
+
+    BOOST_LOG_SCOPED_THREAD_TAG("TournamentID", table_data.slot);
+    BOOST_LOG_TRIVIAL(info) << QString("Resetting state: %1 -> %2")
+        .arg(table_data_t::to_string(old).c_str()).arg(table_data_t::to_string(neu).c_str()).toStdString();
+
+    table_data.capture_state = neu;
 }
