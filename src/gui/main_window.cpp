@@ -437,7 +437,7 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
     const auto& snapshot = table.get_snapshot();
     const auto& prev_snapshot = get_snapshot(table_data.window);
 
-    table_update_time_.start();
+    table_update_time_ = now;
 
     holdem_state::game_round round = holdem_state::INVALID_ROUND;
 
@@ -1251,20 +1251,22 @@ void main_window::check_idle(const bool schedule_active)
 {
     if (schedule_active)
     {
+        const auto now = QDateTime::currentDateTime();
+
         if (table_update_time_.isNull())
-            table_update_time_.start();
+            table_update_time_ = now;
 
         const auto max_idle_time = settings_->get_number("max-idle-time");
 
-        if (max_idle_time && table_update_time_.elapsed() > *max_idle_time * 1000.0)
+        if (max_idle_time && table_update_time_.msecsTo(now) > *max_idle_time * 1000.0)
         {
             BOOST_LOG_TRIVIAL(warning) << "We are idle";
-            table_update_time_ = QTime();
+            table_update_time_ = QDateTime();
             send_email("idle");
         }
     }
     else
-        table_update_time_ = QTime();
+        table_update_time_ = QDateTime();
 }
 
 void main_window::handle_error(const std::exception& e)

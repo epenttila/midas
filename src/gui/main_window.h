@@ -121,7 +121,7 @@ private:
     std::unique_ptr<captcha_manager> captcha_manager_;
     std::unique_ptr<window_manager> window_manager_;
     double error_allowance_;
-    QTime table_update_time_;
+    QDateTime table_update_time_;
     table_vector_t table_windows_;
     QDateTime error_time_;
     double max_error_count_;
