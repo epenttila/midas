@@ -1022,6 +1022,8 @@ void main_window::load_settings(const std::string& filename)
     if (filename.empty())
         return;
 
+    sitename_ = QFileInfo(filename.c_str()).baseName().toStdString();
+
     settings_->load(filename);
 
     BOOST_LOG_TRIVIAL(info) << "gui " << util::GIT_VERSION;
@@ -1244,7 +1246,7 @@ void main_window::send_email(const std::string& subject, const std::string& mess
         return;
 
     smtp_->send(settings_->get_string("smtp-from")->c_str(), settings_->get_string("smtp-to")->c_str(),
-        QString("[midas] [%1] %2").arg(QHostInfo::localHostName()).arg(subject.c_str()), message.c_str());
+        QString("[midas] [%1] %2").arg(sitename_.c_str()).arg(subject.c_str()), message.c_str());
 }
 
 void main_window::check_idle(const bool schedule_active)

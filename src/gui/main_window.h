@@ -125,4 +125,5 @@ private:
     table_vector_t table_windows_;
     QDateTime error_time_;
     double max_error_count_;
+    std::string sitename_;
 };
