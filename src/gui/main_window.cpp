@@ -1117,6 +1117,16 @@ bool main_window::is_new_game(const table_data_t& table_data, const table_manage
 {
     const auto& prev_snapshot = get_snapshot(table_data.window);
 
+    // new games always start with zero board cards
+    if (snapshot.board[0] != -1
+        || snapshot.board[1] != -1
+        || snapshot.board[2] != -1
+        || snapshot.board[3] != -1
+        || snapshot.board[4] != -1)
+    {
+        return false;
+    }
+
     // dealer button is not bugged and it has changed between snapshots -> new game
     // (dealer button status can change mid game on buggy clients)
     if (snapshot.dealer[0] != snapshot.dealer[1] &&
