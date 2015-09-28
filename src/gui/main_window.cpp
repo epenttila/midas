@@ -1143,7 +1143,7 @@ bool main_window::is_new_game(const table_data_t& table_data, const table_manage
     }
 
     // we know the previous hand ended due to our terminal action (fold, call allin or river, raise allin)
-    if (table_data.state && table_data.state->is_terminal())
+    if (table_data.state && (table_data.state->is_terminal() || table_data.state->get_action() == nlhe_state::RAISE_A))
     {
         BOOST_LOG_TRIVIAL(info) << "New game (previous state was terminal)";
         return true;
