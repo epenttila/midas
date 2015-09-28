@@ -1265,6 +1265,7 @@ void main_window::check_idle(const bool schedule_active)
             BOOST_LOG_TRIVIAL(warning) << "We are idle";
             table_update_time_ = QDateTime();
             send_email("idle");
+            save_snapshot();
         }
     }
     else
