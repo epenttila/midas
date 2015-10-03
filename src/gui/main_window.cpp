@@ -1127,6 +1127,12 @@ bool main_window::is_new_game(const table_data_t& table_data, const table_manage
         return false;
     }
 
+    // when we are the dealer, the opponent will always have a bet equal to or less than the big blind in new games
+    if (snapshot.dealer[0] != snapshot.dealer[1] && snapshot.dealer[0] && snapshot.bet[1] > 2.0 * snapshot.bet[0])
+        return false;
+
+    // TODO: consider case where opponent is dealer and we misclick all-in and they all-in instead (see above)
+
     // dealer button is not bugged and it has changed between snapshots -> new game
     // (dealer button status can change mid game on buggy clients)
     if (snapshot.dealer[0] != snapshot.dealer[1] &&
