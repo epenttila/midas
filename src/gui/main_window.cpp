@@ -466,7 +466,10 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
 
     // do not manipulate state when autoplay is off
     if (!autoplay_action_->isChecked())
+    {
+        log_snapshot(snapshot);
         return;
+    }
 
     if (snapshot.captcha)
     {
@@ -524,11 +527,7 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
     ENSURE(snapshot.bet[1] >= 0);
     ENSURE(snapshot.dealer[0] || snapshot.dealer[1]);
 
-    BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
-    BOOST_LOG_TRIVIAL(info) << "Snapshot:";
-
-    for (const auto& str : QString(table_manager::snapshot_t::to_string(snapshot).c_str()).trimmed().split('\n'))
-        BOOST_LOG_TRIVIAL(info) << "- " << str.toStdString();
+    log_snapshot(snapshot);
 
     // check if our previous action failed for some reason (buggy clients leave buttons depressed)
     if (snapshot.hole == prev_snapshot.hole
@@ -1417,4 +1416,13 @@ void main_window::reset_state(table_data_t& table_data)
         .arg(table_data_t::to_string(old).c_str()).arg(table_data_t::to_string(neu).c_str()).toStdString();
 
     table_data.capture_state = neu;
+}
+
+void main_window::log_snapshot(const table_manager::snapshot_t& snapshot) const
+{
+    BOOST_LOG_TRIVIAL(info) << "*** SNAPSHOT ***";
+    BOOST_LOG_TRIVIAL(info) << "Snapshot:";
+
+    for (const auto& str : QString(table_manager::snapshot_t::to_string(snapshot).c_str()).trimmed().split('\n'))
+        BOOST_LOG_TRIVIAL(info) << "- " << str.toStdString();
 }

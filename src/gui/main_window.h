@@ -95,6 +95,7 @@ private:
     void do_action(table_data_t& table_data, nlhe_state::holdem_action action);
     void transition_state(table_data_t& table_data, const table_data_t::state_t old, const table_data_t::state_t neu);
     void reset_state(table_data_t& table_data);
+    void log_snapshot(const table_manager::snapshot_t& snapshot) const;
 
     std::map<int, std::unique_ptr<nlhe_strategy>> strategies_;
     QTimer* capture_timer_;
