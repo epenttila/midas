@@ -60,8 +60,6 @@
 
 namespace
 {
-    typedef std::map<QDate, std::vector<std::pair<QDateTime, QDateTime>>> spans_t;
-
     template<class T>
     typename T::const_iterator find_nearest(const T& map, const typename T::key_type& value)
     {
@@ -85,7 +83,7 @@ namespace
         return QString("%1:%2:%3").arg(hours).arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 10, QChar('0'));
     }
 
-    bool is_schedule_active(const spans_t& daily_spans, QDateTime* time)
+    bool is_schedule_active(const main_window::spans_t& daily_spans, QDateTime* time)
     {
         const auto now = QDateTime::currentDateTime();
         const auto spans = daily_spans.lower_bound(now.date());
@@ -130,14 +128,14 @@ namespace
             .arg(next_activity.toString(Qt::ISODate));
     }
 
-    spans_t read_schedule_file(const std::string& filename)
+    main_window::spans_t read_schedule_file(const std::string& filename)
     {
         QFile file(filename.c_str());
 
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
-            return spans_t();
+            return main_window::spans_t();
 
-        spans_t activity_spans;
+        main_window::spans_t activity_spans;
         QXmlStreamReader reader(&file);
 
         while (reader.readNextStartElement())
@@ -920,9 +918,22 @@ void main_window::handle_schedule()
     if (!schedule_action_->isChecked())
         return;
 
-    const auto schedule_path = settings_->get_string("schedule");
-    const auto spans = schedule_path ? read_schedule_file(*schedule_path) : spans_t();
-    const auto active = is_schedule_active(spans, &next_activity_date_);
+    bool changed = false;
+
+    if (const auto schedule_path = settings_->get_string("schedule"))
+    {
+        const auto modified = QFileInfo(schedule_path->c_str()).lastModified();
+
+        if (modified != spans_modified_)
+        {
+            BOOST_LOG_TRIVIAL(info) << "Schedule changed";
+            changed = true;
+            spans_modified_ = modified;
+            spans_ = read_schedule_file(*schedule_path);
+        }
+    }
+
+    const auto active = is_schedule_active(spans_, &next_activity_date_);
 
     if (active != schedule_active_)
     {
@@ -933,8 +944,11 @@ void main_window::handle_schedule()
         else
             BOOST_LOG_TRIVIAL(info) << "Disabling scheduled registration";
 
-        BOOST_LOG_TRIVIAL(info) << make_schedule_string(schedule_active_, next_activity_date_).toStdString();
+        changed = true;
     }
+
+    if (changed)
+        BOOST_LOG_TRIVIAL(info) << make_schedule_string(schedule_active_, next_activity_date_).toStdString();
 }
 
 void main_window::modify_state_changed()

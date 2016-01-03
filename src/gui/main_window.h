@@ -38,6 +38,7 @@ class main_window : public QMainWindow
 public:
     typedef int tid_t;
     typedef std::vector<std::unique_ptr<fake_window>> table_vector_t;
+    typedef std::map<QDate, std::vector<std::pair<QDateTime, QDateTime>>> spans_t;
 
     main_window(const std::string& settings_path);
     ~main_window();
@@ -127,4 +128,6 @@ private:
     QDateTime error_time_;
     double max_error_count_;
     std::string sitename_;
+    QDateTime spans_modified_;
+    spans_t spans_;
 };
