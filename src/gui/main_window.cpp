@@ -616,6 +616,7 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
     ENSURE(current_state != nullptr);
     ENSURE(!current_state->is_terminal());
 
+    // TODO: this will fail if multiple actions failed previously
     // if our previous all-in bet didn't succeed due to client bugs, assume we bet the minimum instead
     if (current_state->get_parent() && current_state->get_action() == nlhe_state::RAISE_A)
     {
@@ -1130,6 +1131,7 @@ bool main_window::is_new_game(const table_data_t& table_data, const table_manage
 {
     const auto& prev_snapshot = get_snapshot(table_data.window);
 
+    // TODO: this function should detect cases where the new game doesn't start pre-flop due to lag and bugs
     // new games always start with zero board cards
     if (snapshot.board[0] != -1
         || snapshot.board[1] != -1

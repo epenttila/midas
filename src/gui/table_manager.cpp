@@ -47,6 +47,7 @@ namespace
         if (!image)
             return -1;
 
+        // TODO improve this check using multiple pixels
         if (!is_card(window, *image, label, card_pixel))
             return -1;
 
