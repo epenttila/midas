@@ -597,11 +597,13 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
             {
                 if (const auto child = current_state->get_action_child(nlhe_state::holdem_action(i))) // fast-forward call below handles null
                 {
-                    current_state = current_state->get_action_child(action);
+                    current_state = child;
                     break;
                 }
             }
         }
+
+        ENSURE(current_state != nullptr); // this should never happen
 
         BOOST_LOG_TRIVIAL(info) << QString("State adjusted: %1 -> %2").arg(table_data.state->to_string().c_str())
             .arg(current_state->to_string().c_str()).toStdString();
