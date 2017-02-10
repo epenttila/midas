@@ -30,6 +30,7 @@ class smtp;
 class site_settings;
 class captcha_manager;
 class window_manager;
+class QTcpServer;
 
 class main_window : public QMainWindow
 {
@@ -52,6 +53,7 @@ public slots:
     void state_widget_board_changed(const QString& board);
     void schedule_changed(bool checked);
     void state_widget_state_changed();
+    void new_connection();
 
 private:
     struct table_data_t
@@ -130,4 +132,5 @@ private:
     std::string sitename_;
     QDateTime spans_modified_;
     spans_t spans_;
+    QTcpServer* server_;
 };

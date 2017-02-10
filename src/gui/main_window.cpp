@@ -36,6 +36,8 @@
 #include <QMessageBox>
 #include <QHostInfo>
 #include <QXmlStreamReader>
+#include <QTcpServer>
+#include <QAbstractSocket>
 #pragma warning(pop)
 
 #include "gamelib/nlhe_state.h"
@@ -280,6 +282,13 @@ main_window::main_window(const std::string& settings_path)
     boost::log::register_simple_formatter_factory<boost::log::trivial::severity_level, char>("Severity");
 
     load_settings(settings_path);
+
+    server_ = new QTcpServer(this);
+
+    if (!server_->listen(QHostAddress::Any, static_cast<std::uint16_t>(settings_->get_number("netclick-port", 12345))))
+        BOOST_LOG_TRIVIAL(error) << "Netclick: " << server_->errorString().toStdString();
+
+    connect(server_, &QTcpServer::newConnection, this, &main_window::new_connection);
 
     BOOST_LOG_TRIVIAL(info) << "Starting capture";
 
@@ -1443,4 +1452,41 @@ void main_window::log_snapshot(const table_manager::snapshot_t& snapshot) const
 
     for (const auto& str : QString(table_manager::snapshot_t::to_string(snapshot).c_str()).trimmed().split('\n'))
         BOOST_LOG_TRIVIAL(info) << "- " << str.toStdString();
+}
+
+void main_window::new_connection()
+{
+    auto socket = server_->nextPendingConnection();
+
+    try
+    {
+        connect(socket, &QAbstractSocket::disconnected, socket, &QObject::deleteLater);
+
+        if (socket->waitForReadyRead())
+        {
+            short x = 0;
+            short y = 0;
+            short width = 0;
+            short height = 0;
+
+            QDataStream stream(socket);
+            stream.setByteOrder(QDataStream::LittleEndian);
+            stream >> x >> y >> width >> height;
+
+            ENSURE(stream.status() == QDataStream::Ok);
+            ENSURE(stream.atEnd());
+
+            BOOST_LOG_TRIVIAL(info) << "Netclick: " << x << "," << y << "," << width << "," << height;
+
+            input_manager_->move_click(x, y, width, height, false);
+        }
+        else
+            BOOST_LOG_TRIVIAL(error) << "Netclick: no data";
+    }
+    catch (const std::exception& e)
+    {
+        handle_error(e);
+    }
+
+    socket->disconnectFromHost();
 }
