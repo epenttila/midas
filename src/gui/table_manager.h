@@ -23,11 +23,12 @@ public:
 
     struct snapshot_t
     {
-        snapshot_t() : stack(-1), total_pot(-1), buttons(0), captcha(false)
+        snapshot_t() : total_pot(-1), buttons(0), captcha(false)
         {
             board.fill(-1);
             hole.fill(-1);
             dealer.fill(false);
+            stack.fill(-1);
             bet.fill(-1);
             all_in.fill(false);
             sit_out.fill(false);
@@ -39,7 +40,7 @@ public:
         std::array<int, 5> board;
         std::array<int, 2> hole;
         std::array<bool, 2> dealer;
-        double stack;
+        std::array<double, 2> stack;
         std::array<double, 2> bet;
         double total_pot;
         std::array<bool, 2> all_in;
