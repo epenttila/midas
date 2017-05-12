@@ -195,7 +195,6 @@ namespace
 fake_window::fake_window()
     : icon_(false)
     , window_manager_(nullptr)
-    , resizable_(false)
     , title_button_(nullptr)
 {
 }
@@ -206,7 +205,6 @@ fake_window::fake_window(const site_settings::window_t& window, const site_setti
     , icon_(window.icon)
     , window_manager_(&wm)
     , margins_(window.margins)
-    , resizable_(window.resizable)
     , title_button_(settings.get_button(window.title))
 {
 }
@@ -241,7 +239,7 @@ bool fake_window::update()
 
     window_rect_ = QRect(rect_.left(), rect_.top(), width, height);
 
-    if (resizable_ && window_rect_ != rect_)
+    if (window_rect_ != rect_)
     {
         BOOST_LOG_TRIVIAL(warning) << QString("Window has been resized (%1,%2,%3,%4) != (%5,%6,%7,%8)")
             .arg(window_rect_.x())
@@ -334,7 +332,7 @@ bool fake_window::is_mouse_inside(const input_manager& input, const QRect& rect)
 
 QRect fake_window::get_scaled_rect(const QRect& r) const
 {
-    if (rect_.isNull() || !resizable_)
+    if (rect_.isNull())
         return r;
 
     const auto x_scale = static_cast<double>(window_rect_.width()) / rect_.width();

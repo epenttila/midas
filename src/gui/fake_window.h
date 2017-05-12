@@ -37,6 +37,5 @@ private:
     bool icon_;
     const window_manager* window_manager_;
     QMargins margins_;
-    bool resizable_;
     const site_settings::button_t* title_button_;
 };

@@ -133,7 +133,6 @@ namespace
                 reader.attributes().value("margin-top").toInt(),
                 reader.attributes().value("margin-right").toInt(),
                 reader.attributes().value("margin-bottom").toInt()),
-            reader.attributes().value("resizable").toInt() ? true : false,
             reader.attributes().value("title").toString().toStdString(),
             reader.attributes().value("title-text").toString().toStdString(),
         };
