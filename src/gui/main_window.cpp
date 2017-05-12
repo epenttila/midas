@@ -1086,7 +1086,7 @@ void main_window::load_settings(const std::string& filename)
     table_windows_.clear();
 
     for (const auto& w : settings_->get_windows("table"))
-        table_windows_.push_back(std::unique_ptr<fake_window>(new fake_window(*w.second, *settings_, *window_manager_)));
+        table_windows_.push_back(std::unique_ptr<fake_window>(new fake_window(*w.second, *window_manager_)));
 
     strategies_.clear();
 

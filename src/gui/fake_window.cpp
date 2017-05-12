@@ -11,16 +11,7 @@
 
 namespace
 {
-    static const int WINDOW_BUTTONS_WIDTH = 50; // worst case: min, max, close
     static const int TITLE_HEIGHT = 19;
-    static const int ICON_BORDER_X = 2;
-    static const int ICON_BORDER_Y = 1;
-    static const int ICON_WIDTH = 16;
-    static const int ICON_HEIGHT = 16;
-    static const int TITLE_TEXT_LEFT_OFFSET = 0;
-    static const int TITLE_TEXT_TOP_OFFSET = 2;
-    static const int TITLE_TEXT_RIGHT_OFFSET = 0;
-    static const int TITLE_TEXT_BOTTOM_OFFSET = -4;
     static const int CORNER_SIZE = 3;
 
     bool is_top_left_corner(const QImage& image, const int x, const int y)
@@ -193,19 +184,13 @@ namespace
 }
 
 fake_window::fake_window()
-    : icon_(false)
-    , window_manager_(nullptr)
-    , title_button_(nullptr)
+    : window_manager_(nullptr)
 {
 }
 
-fake_window::fake_window(const site_settings::window_t& window, const site_settings& settings,
-    const window_manager& wm)
+fake_window::fake_window(const site_settings::window_t& window, const window_manager& wm)
     : rect_(window.rect)
-    , icon_(window.icon)
     , window_manager_(&wm)
-    , margins_(window.margins)
-    , title_button_(settings.get_button(window.title))
 {
 }
 
@@ -216,7 +201,7 @@ bool fake_window::update()
     window_image_ = QImage();
     client_image_ = QImage();
 
-    const auto image = window_manager_ ? window_manager_->get_image().copy(rect_ + margins_) : QImage();
+    const auto image = window_manager_ ? window_manager_->get_image().copy(rect_) : QImage();
 
     if (image.isNull())
         return true; // no capture
@@ -252,20 +237,7 @@ bool fake_window::update()
             .arg(rect_.height()).toStdString();
     }
 
-    if (title_button_)
-    {
-        title_rect_ = get_scaled_rect(title_button_->unscaled_rect);
-    }
-    else
-    {
-        title_rect_ = QRect(window_rect_.left() + border, window_rect_.top() + border,
-            window_rect_.width() - 2 * border - WINDOW_BUTTONS_WIDTH, TITLE_HEIGHT);
-
-        if (icon_)
-            title_rect_.adjust(ICON_WIDTH + 2 * ICON_BORDER_X, 0, 0, 0);
-    }
-
-    client_rect_ = window_rect_.adjusted(border, border + title_rect_.height(), -border, -border);
+    client_rect_ = window_rect_.adjusted(border, border + TITLE_HEIGHT, -border, -border);
 
     window_image_ = image.copy(window_rect_.translated(-window_rect_.topLeft()));
     client_image_ = image.copy(client_rect_.translated(-window_rect_.topLeft()));
