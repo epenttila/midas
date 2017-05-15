@@ -61,6 +61,8 @@ public:
     struct window_t
     {
         QRect rect;
+        bool nonclient;
+        QRgb border_color;
     };
 
     typedef std::unordered_multimap<std::string, std::unique_ptr<window_t>> window_map;

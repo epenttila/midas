@@ -127,6 +127,8 @@ namespace
                 reader.attributes().value("y").toInt(),
                 reader.attributes().value("width").toInt(),
                 reader.attributes().value("height").toInt()),
+            reader.attributes().value("nonclient").toInt() ? true : false,
+            QColor(reader.attributes().value("border-color").toString()).rgb(),
         };
 
         reader.skipCurrentElement();

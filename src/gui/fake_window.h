@@ -34,4 +34,6 @@ private:
     QImage window_image_;
     QImage client_image_;
     const window_manager* window_manager_;
+    bool nonclient_;
+    QRgb border_color_;
 };

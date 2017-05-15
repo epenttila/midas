@@ -185,12 +185,16 @@ namespace
 
 fake_window::fake_window()
     : window_manager_(nullptr)
+    , nonclient_(false)
+    , border_color_(0)
 {
 }
 
 fake_window::fake_window(const site_settings::window_t& window, const window_manager& wm)
     : rect_(window.rect)
     , window_manager_(&wm)
+    , nonclient_(window.nonclient)
+    , border_color_(window.border_color)
 {
 }
 
@@ -206,23 +210,35 @@ bool fake_window::update()
     if (image.isNull())
         return true; // no capture
 
-    // top left
-    int border = -1;
-    int width = -1;
-    int height = -1;
-
-    try_top_left(image, &border, &width, &height);
-
-    if (border == -1)
-        return true; // no window
-
-    if (width == -1 || height == -1)
+    if (nonclient_)
     {
-        BOOST_LOG_TRIVIAL(warning) << "Unable to determine window size";
-        return false;
-    }
+        // top left
+        int border = -1;
+        int width = -1;
+        int height = -1;
 
-    window_rect_ = QRect(rect_.left(), rect_.top(), width, height);
+        try_top_left(image, &border, &width, &height);
+
+        if (border == -1)
+            return true; // no window
+
+        if (width == -1 || height == -1)
+        {
+            BOOST_LOG_TRIVIAL(warning) << "Unable to determine window size";
+            return false;
+        }
+
+        window_rect_ = QRect(rect_.left(), rect_.top(), width, height);
+        client_rect_ = window_rect_.adjusted(border, border + TITLE_HEIGHT, -border, -border);
+    }
+    else
+    {
+        if (image.pixel(0, 0) != border_color_)
+            return true;
+
+        window_rect_ = rect_;
+        client_rect_ = window_rect_;
+    }
 
     if (window_rect_ != rect_)
     {
@@ -236,8 +252,6 @@ bool fake_window::update()
             .arg(rect_.width())
             .arg(rect_.height()).toStdString();
     }
-
-    client_rect_ = window_rect_.adjusted(border, border + TITLE_HEIGHT, -border, -border);
 
     window_image_ = image.copy(window_rect_.translated(-window_rect_.topLeft()));
     client_image_ = image.copy(client_rect_.translated(-window_rect_.topLeft()));
