@@ -735,7 +735,7 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
     const auto delay_window = settings_->get_number("action-delay-window", 0.5);
     const auto min_delay = delay.first + delay_factor * (delay.second - delay.first) * delay_window;
     const auto max_delay = delay.second - (1 - delay_factor) * (delay.second - delay.first) * delay_window;
-    const auto wait = get_normal_random(engine_, min_delay, max_delay);
+    const auto wait = std::max(0.0, get_normal_random(engine_, min_delay, max_delay));
 
     transition_state(table_data, table_data_t::SNAPSHOT, table_data_t::ACTION);
 
