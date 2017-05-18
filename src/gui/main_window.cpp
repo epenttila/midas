@@ -507,7 +507,7 @@ void main_window::process_snapshot(const int slot, const fake_window& window)
         return;
 
     // wait until we see stack sizes (some sites hide stack size when player is sitting out)
-    if (snapshot.stack[0] == -1)
+    if (snapshot.stack == -1)
         return;
 
     if (table_data.capture_state == table_data_t::IDLE)
@@ -847,7 +847,7 @@ const nlhe_state* main_window::perform_action(const nlhe_state::holdem_action ac
             const auto to_call = snapshot.bet[1] - snapshot.bet[0];
 
             // maximum bet is our remaining stack plus our bet (total raise to maxbet)
-            const auto maxbet = snapshot.stack[0] + snapshot.bet[0];
+            const auto maxbet = snapshot.stack + snapshot.bet[0];
 
             ENSURE(maxbet > 0);
 
@@ -878,7 +878,7 @@ const nlhe_state* main_window::perform_action(const nlhe_state::holdem_action ac
             if (new_action_name != current_state->get_action_name(nlhe_state::RAISE_A))
             {
                 const auto opp_maxbet =
-                    *settings_->get_number("total-chips") - (snapshot.stack[0] + snapshot.total_pot - snapshot.bet[1]);
+                    *settings_->get_number("total-chips") - (snapshot.stack + snapshot.total_pot - snapshot.bet[1]);
 
                 ENSURE(opp_maxbet > 0);
 
@@ -1121,11 +1121,11 @@ int main_window::get_effective_stack(const table_manager::snapshot_t& snapshot, 
     // figure out the effective stack size
 
     // our stack size should always be visible
-    ENSURE(snapshot.stack[0] > 0);
+    ENSURE(snapshot.stack > 0);
 
     std::array<double, 2> stacks;
 
-    stacks[0] = snapshot.stack[0] + (snapshot.total_pot - snapshot.bet[0] - snapshot.bet[1]) / 2.0 + snapshot.bet[0];
+    stacks[0] = snapshot.stack + (snapshot.total_pot - snapshot.bet[0] - snapshot.bet[1]) / 2.0 + snapshot.bet[0];
     stacks[1] = *settings_->get_number("total-chips") - stacks[0];
 
     // both stacks sizes should be known by now
@@ -1178,7 +1178,7 @@ bool main_window::is_new_game(const table_data_t& table_data, const table_manage
 
     // stack size can never increase during a game between snapshots, so a new game must have started
     // only check if stack data is valid (not sitting out or all in)
-    if (snapshot.stack[0] > 0 && prev_snapshot.stack[0] > 0 && snapshot.stack[0] > prev_snapshot.stack[0])
+    if (snapshot.stack > 0 && prev_snapshot.stack > 0 && snapshot.stack > prev_snapshot.stack)
     {
         BOOST_LOG_TRIVIAL(info) << "New game (stack increased)";
         return true;

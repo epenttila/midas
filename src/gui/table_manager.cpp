@@ -156,8 +156,7 @@ table_manager::snapshot_t table_manager::get_snapshot() const
 
     s.dealer[0] = is_dealer(0);
     s.dealer[1] = is_dealer(1);
-    s.stack[0] = get_stack(0);
-    s.stack[1] = get_stack(1);
+    s.stack = get_stack(0);
     s.bet[0] = get_bet(0);
     s.bet[1] = get_bet(1);
     s.all_in[0] = is_all_in(0);
@@ -498,7 +497,7 @@ std::string table_manager::snapshot_t::to_string(const snapshot_t& snapshot)
 
     ss << "hole: [" << get_card_string(snapshot.hole[0]) << ", " << get_card_string(snapshot.hole[1]) << "]\n";
     ss << "dealer: [" << snapshot.dealer[0] << ", " << snapshot.dealer[1] << "]\n";
-    ss << "stack: [" << snapshot.stack[0] << ", " << snapshot.stack[1] << "]\n";
+    ss << "stack: " << snapshot.stack << "\n";
     ss << "bet: [" << snapshot.bet[0] << ", " << snapshot.bet[1] << "]\n";
     ss << "total_pot: " << snapshot.total_pot << "\n";
     ss << "all_in: [" << static_cast<int>(snapshot.all_in[0]) << ", "
