@@ -5,6 +5,7 @@
 #include <cmath>
 
 #ifdef _MSC_VER
+#include <intrin.h>
 #pragma warning(push, 1)
 #endif
 

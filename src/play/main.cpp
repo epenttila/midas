@@ -157,7 +157,6 @@ int main(int argc, char* argv[])
         for (;;)
         {
             std::string buf;
-            boost::system::error_code error;
 
             boost::asio::read_until(socket, b, "\r\n", error);
 

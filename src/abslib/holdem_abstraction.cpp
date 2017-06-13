@@ -68,8 +68,8 @@ namespace
                                 if (b4 == c0 || b4 == c1)
                                     continue;
 
-                                const std::array<int, 7> cards = {{c0, c1, b0, b1, b2, b3, b4}};
-                                const auto hs = river_lut.get(cards);
+                                const std::array<int, 7> int_cards = {{c0, c1, b0, b1, b2, b3, b4}};
+                                const auto hs = river_lut.get(int_cards);
                                 const auto bin = std::min(std::size_t(hs * p.size()), p.size() - 1);
                                 ++data_points[i][bin];
                             }
@@ -127,8 +127,8 @@ namespace
                     if (b4 == c0 || b4 == c1 || b4 == b0 || b4 == b1 || b4 == b2)
                         continue;
 
-                    const std::array<int, 7> cards = {{c0, c1, b0, b1, b2, b3, b4}};
-                    const auto hs = river_lut.get(cards);
+                    const std::array<int, 7> int_cards = {{c0, c1, b0, b1, b2, b3, b4}};
+                    const auto hs = river_lut.get(int_cards);
                     const auto bin = std::min(std::size_t(hs * p.size()), p.size() - 1);
                     ++data_points[i][bin];
                 }
@@ -179,8 +179,8 @@ namespace
                 if (b4 == c0 || b4 == c1 || b4 == b0 || b4 == b1 || b4 == b2 || b4 == b3)
                     continue;
 
-                const std::array<int, 7> cards = {{c0, c1, b0, b1, b2, b3, b4}};
-                const auto hs = river_lut.get(cards);
+                const std::array<int, 7> int_cards = {{c0, c1, b0, b1, b2, b3, b4}};
+                const auto hs = river_lut.get(int_cards);
                 const auto bin = std::min(std::size_t(hs * p.size()), p.size() - 1);
                 ++data_points[i][bin];
             }

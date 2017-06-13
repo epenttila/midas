@@ -292,7 +292,6 @@ const nlhe_state* nlhe_state::raise(double fraction) const
         if (p && i > CALL)
         {
             // don't use get_raise_factor here as we want to know the actual fractions wrt state::pot
-            const auto player = get_player();
             const auto to_call = p->get_pot()[player] - p->get_pot()[1 - player];
             const auto in_pot = 2 * p->get_pot()[1 - player];
             pot_sizes[i] = static_cast<double>(to_call) / in_pot;
