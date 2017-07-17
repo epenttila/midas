@@ -10,6 +10,7 @@ import midas.util
 from PIL import Image
 from pygamelib import NLHEState
 from pycfrlib import NLHEStrategy
+from pyabslib import HoldemAbstractionBase
 
 
 class Actor:
@@ -341,29 +342,29 @@ class Actor:
         snapshot = self.table_data.snapshot
 
         if action == NLHEState.FOLD:
-            next_action = Table.ButtonsFlag.FOLD_BUTTON
+            next_action = Table.FOLD_BUTTON
         elif action == NLHEState.CALL:
             # ensure the hand really terminates if our abstraction says so and we would just call
             if current_state.round < NLHEState.RIVER and current_state.call().terminal:
                 logging.info('Translating pre-river call to all-in to ensure hand terminates')
-                next_action = Table.ButtonsFlag.RAISE_BUTTON
+                next_action = Table.RAISE_BUTTON
                 raise_fraction = NLHEState.get_raise_factor(NLHEState.RAISE_A)
                 new_action_name = current_state.get_action_name(NLHEState.RAISE_A)
             else:
-                next_action = Table.ButtonsFlag.CALL_BUTTON
+                next_action = Table.CALL_BUTTON
         else:
-            next_action = Table.ButtonsFlag.RAISE_BUTTON
+            next_action = Table.RAISE_BUTTON
             raise_fraction = NLHEState.get_raise_factor(action)
 
         max_action_wait = self.settings.get_number('max-action-wait', 10.0)
 
-        if next_action == Table.ButtonsFlag.FOLD_BUTTON:
+        if next_action == Table.FOLD_BUTTON:
             logging.info('Folding')
             await self.table_data.table.fold(max_action_wait)
-        elif next_action == Table.ButtonsFlag.CALL_BUTTON:
+        elif next_action == Table.CALL_BUTTON:
             logging.info('Calling')
             await self.table_data.table.call(max_action_wait)
-        elif next_action == Table.ButtonsFlag.RAISE_BUTTON:
+        elif next_action == Table.RAISE_BUTTON:
             # we have to call opponent bet minus our bet
             to_call = snapshot.bet[1] - snapshot.bet[0]
 
@@ -430,19 +431,19 @@ class Actor:
 
 
 class Table:
-    class ButtonsFlag(enum.IntFlag):
-        FOLD_BUTTON = 0x1
-        CALL_BUTTON = 0x2
-        RAISE_BUTTON = 0x4
-        INPUT_BUTTON = 0x8
+    # class ButtonsFlag(enum.IntFlag):
+    FOLD_BUTTON = 0x1
+    CALL_BUTTON = 0x2
+    RAISE_BUTTON = 0x4
+    INPUT_BUTTON = 0x8
 
-    class DealerFlag(enum.IntFlag):
-        PLAYER = 0x1
-        OPPONENT = 0x2
+    # class DealerFlag(enum.IntFlag):
+    PLAYER = 0x1
+    OPPONENT = 0x2
 
-    class MethodEnum(enum.IntEnum):
-        DOUBLE_CLICK_INPUT = 0
-        CLICK_TABLE = 1
+    # class MethodEnum(enum.IntEnum):
+    DOUBLE_CLICK_INPUT = 0
+    CLICK_TABLE = 1
 
     class Snapshot:
         def __init__(self):
@@ -504,7 +505,7 @@ class Table:
             buttons |= i
 
         if midas.util.is_any_button(self.window, self.settings.buttons['input']):
-            buttons |= Table.ButtonsFlag.INPUT_BUTTON
+            buttons |= Table.INPUT_BUTTON
 
         return buttons
 
@@ -541,11 +542,11 @@ class Table:
 
             for s in p.split(','):
                 if s.startswith('f'):
-                    m[i] = Table.ButtonsFlag.FOLD_BUTTON
+                    m[i] = Table.FOLD_BUTTON
                 elif s.startswith('c'):
-                    m[i] = Table.ButtonsFlag.CALL_BUTTON
+                    m[i] = Table.CALL_BUTTON
                 elif s.startswith('r'):
-                    m[i] = Table.ButtonsFlag.RAISE_BUTTON
+                    m[i] = Table.RAISE_BUTTON
 
                 i += 1
 
@@ -604,22 +605,22 @@ class Table:
 
     def is_dealer(self, position):
         if position == 0:
-            return (self.get_dealer_mask() & Table.DealerFlag.PLAYER) == Table.DealerFlag.PLAYER
+            return (self.get_dealer_mask() & Table.PLAYER) == Table.PLAYER
         elif position == 1:
-            return (self.get_dealer_mask() & Table.DealerFlag.OPPONENT) == Table.DealerFlag.OPPONENT
+            return (self.get_dealer_mask() & Table.OPPONENT) == Table.OPPONENT
 
         return False
 
     def get_dealer_mask(self):
-        dealer = Table.DealerFlag(0)
+        dealer = 0
 
         for p in self.settings.pixels['dealer-0']:
             if self.window.is_pixel(p):
-                dealer |= Table.DealerFlag.PLAYER
+                dealer |= Table.PLAYER
 
         for p in self.settings.pixels['dealer-1']:
             if self.window.is_pixel(p):
-                dealer |= Table.DealerFlag.OPPONENT
+                dealer |= Table.OPPONENT
 
         return dealer
 
@@ -702,13 +703,13 @@ class Table:
         return board
 
     async def fold(self, max_wait):
-        await self.click_button(self.get_action_button(Table.ButtonsFlag.FOLD_BUTTON), max_wait)
+        await self.click_button(self.get_action_button(Table.FOLD_BUTTON), max_wait)
 
     async def call(self, max_wait):
-        await self.click_button(self.get_action_button(Table.ButtonsFlag.CALL_BUTTON), max_wait)
+        await self.click_button(self.get_action_button(Table.CALL_BUTTON), max_wait)
 
     async def bet(self, action, amount, minbet, max_wait, method):
-        if (self.get_buttons() & self.ButtonsFlag.RAISE_BUTTON) != self.ButtonsFlag.RAISE_BUTTON:
+        if (self.get_buttons() & self.RAISE_BUTTON) != self.RAISE_BUTTON:
             # TODO move this out of here?
             logging.info('No raise button, calling instead')
             await self.call(max_wait)
@@ -735,7 +736,7 @@ class Table:
 
             focus_button = self.settings.get_button('focus')
 
-            if method == self.MethodEnum.CLICK_TABLE and focus_button.rect is not None:
+            if method == self.CLICK_TABLE and focus_button.rect is not None:
                 focused = await self.window.click_button(focus_button)
 
             if not focused:
@@ -752,7 +753,7 @@ class Table:
             elif action != "RAISE_A":
                 raise RuntimeError('Unable to specify pot size')
 
-        await self.click_button(self.get_action_button(Table.ButtonsFlag.RAISE_BUTTON), max_wait)
+        await self.click_button(self.get_action_button(Table.RAISE_BUTTON), max_wait)
 
     def get_action_button(self, action):
         try:
