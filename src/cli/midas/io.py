@@ -40,15 +40,18 @@ class System:
         return self.cursor
 
     def set_cursor_pos(self, x, y):
+        logging.debug('set_cursor_pos(%s,%s)', x, y)
         pos = (round(x), round(y))
         self.cursor = pos
         self.factory.connection.pointerEvent(max(0, min(pos[0], 0xFFFF)), max(0, min(pos[1], 0xFFFF)))
 
     def button_down(self):
+        logging.debug('button_down()')
         pos = self.get_cursor_pos()
         self.factory.connection.pointerEvent(pos[0], pos[1], 1)
 
     def button_up(self):
+        logging.debug('button_up()')
         pos = self.get_cursor_pos()
         self.factory.connection.pointerEvent(pos[0], pos[1], 0)
 
