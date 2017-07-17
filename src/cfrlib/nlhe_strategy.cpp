@@ -4,7 +4,6 @@
 #endif
 #include <boost/regex.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/log/trivial.hpp>
 #ifdef MSC_VER_
 #pragma warning(pop)
 #endif
@@ -14,8 +13,6 @@
 
 nlhe_strategy::nlhe_strategy(const std::string& filepath, bool read_only)
 {
-    BOOST_LOG_TRIVIAL(info) << "Opening strategy file: " << filepath;
-
     const std::string filename = boost::filesystem::path(filepath).filename().string();
 
     boost::regex r("([^_]+)_([^_]+)(_.*)?\\.str");
@@ -26,8 +23,6 @@ nlhe_strategy::nlhe_strategy(const std::string& filepath, bool read_only)
 
     root_state_ = nlhe_state::create(m[1].str());
     stack_size_ = root_state_->get_stack_size();
-
-    BOOST_LOG_TRIVIAL(info) << "Stack size: " << stack_size_;
 
     const auto state_count = nlhe_state::get_state_vector(*root_state_).size();
 

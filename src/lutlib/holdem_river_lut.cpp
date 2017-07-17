@@ -5,7 +5,6 @@
 #include <omp.h>
 #include <iostream>
 #include <boost/format.hpp>
-#include <boost/log/trivial.hpp>
 #include <cstring>
 #ifdef _MSC_VER
 #pragma warning(pop)
@@ -68,8 +67,6 @@ holdem_river_lut::holdem_river_lut()
 holdem_river_lut::holdem_river_lut(const std::string& filename)
     : indexer_(create())
 {
-    BOOST_LOG_TRIVIAL(info) << "Loading river lut from: " << filename;
-
     data_.resize(indexer_->get_size(indexer_->get_rounds() - 1));
 
     auto file = binary_open(filename, "rb");

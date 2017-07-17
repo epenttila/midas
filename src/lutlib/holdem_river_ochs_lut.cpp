@@ -7,7 +7,6 @@
 #include <numeric>
 #include <boost/format.hpp>
 #include <boost/assign.hpp>
-#include <boost/log/trivial.hpp>
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
@@ -99,8 +98,6 @@ holdem_river_ochs_lut::holdem_river_ochs_lut()
 holdem_river_ochs_lut::holdem_river_ochs_lut(const std::string& filename)
     : indexer_(create())
 {
-    BOOST_LOG_TRIVIAL(info) << "Loading river OCHS lut from: " << filename;
-
     data_.resize(indexer_->get_size(indexer_->get_rounds() - 1));
 
     auto file = binary_open(filename, "rb");

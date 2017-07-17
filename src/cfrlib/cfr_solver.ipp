@@ -1,5 +1,4 @@
 #include <omp.h>
-#include <boost/log/trivial.hpp>
 #include "util/binary_io.h"
 
 #ifdef _MSC_VER

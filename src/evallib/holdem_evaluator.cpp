@@ -1,17 +1,8 @@
 #include "holdem_evaluator.h"
-#ifdef _MSC_VER
-#pragma warning(push, 1)
-#endif
-#include <boost/log/trivial.hpp>
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 #include "util/binary_io.h"
 
 holdem_evaluator::holdem_evaluator(const std::string& filename)
 {
-    BOOST_LOG_TRIVIAL(info) << "Loading ranks from: " << filename;
-
     auto f = binary_open(filename, "rb");
     
     if (!f)
