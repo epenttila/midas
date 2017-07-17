@@ -61,6 +61,11 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 
 find_package(Git)
 
+find_package(PythonLibs 3.6 REQUIRED)
+
+include_directories(${PYTHON_INCLUDE_DIRS})
+include_directories(${PROJECT_SOURCE_DIR}/ext/pybind/include)
+
 add_subdirectory(src)
 
 if(BUILD_TEST)
