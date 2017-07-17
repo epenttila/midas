@@ -136,8 +136,7 @@ class Application:
             return
 
         method = midas.util.get_weighted_int(self.settings.get_number_list('idle-move-probabilities'))
-        if method in System.MoveEnum:
-            await self.system.move_random(method)
+        await self.system.move_random(method)
 
         refresh_key = self.settings.get_number('refresh-regs-key', None)
         if refresh_key is not None:

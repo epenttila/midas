@@ -72,7 +72,7 @@ def read_label(image, settings, label):
     if label.regex is not None:
         m = re.match(label.regex, s)
         if m is not None:
-            return m[1]
+            return m.group(1)
         return ''
 
     return s

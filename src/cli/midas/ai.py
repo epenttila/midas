@@ -838,8 +838,8 @@ def _get_next_action(state, strategy, snapshot):
 
     midas.util.ensure(bucket != -1)
 
-    if snapshot.sit_out[1] and current_state.get_child(NLHEState.CALL + 1):
-        index = NLHEState.CALL + 1
+    if snapshot.sit_out[1] and current_state.get_child(int(NLHEState.CALL) + 1):
+        index = int(NLHEState.CALL) + 1
     else:
         index = strategy.strategy.get_random_child(current_state, bucket)
     action = current_state.get_child(index).action

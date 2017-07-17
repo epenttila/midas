@@ -42,7 +42,7 @@ class System:
     def set_cursor_pos(self, x, y):
         pos = (round(x), round(y))
         self.cursor = pos
-        self.factory.connection.pointerEvent(max(0, min(pos[0], 0xFF)), max(0, min(pos[1], 0xFF)))
+        self.factory.connection.pointerEvent(max(0, min(pos[0], 0xFFFF)), max(0, min(pos[1], 0xFFFF)))
 
     def button_down(self):
         pos = self.get_cursor_pos()
