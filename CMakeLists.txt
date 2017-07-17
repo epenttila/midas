@@ -11,10 +11,11 @@ endif()
 project(midas)
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Werror -pedantic -Wall -Wextra -Wno-missing-field-initializers")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Werror -pedantic -Wall -Wextra -Wno-missing-field-initializers")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -march=native")
 
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     add_definitions(-DBOOST_ALL_DYN_LINK)
 elseif(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /WX /wd4503 /wd4251 /wd4714 /bigobj /DNOMINMAX")
@@ -61,7 +62,7 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 
 find_package(Git)
 
-find_package(PythonLibs 3.6 REQUIRED)
+find_package(PythonLibs 3.5 REQUIRED)
 
 include_directories(${PYTHON_INCLUDE_DIRS})
 include_directories(${PROJECT_SOURCE_DIR}/ext/pybind/include)

@@ -541,7 +541,6 @@ private:
         distance_t first_max_move_distance = distance_t();
         distance_t second_max_move_distance = distance_t();
         cluster_idx_t first_max_move_distance_idx = static_cast<cluster_idx_t>(-1);
-        cluster_idx_t second_max_move_distance_idx = static_cast<cluster_idx_t>(-1);
 
         for (cluster_idx_t i = 0; i < static_cast<cluster_idx_t>(cluster_move_distances.size()); ++i)
         {
@@ -549,7 +548,6 @@ private:
 
             if (distance > first_max_move_distance)
             {
-                second_max_move_distance_idx = first_max_move_distance_idx;
                 second_max_move_distance = first_max_move_distance;
 
                 first_max_move_distance_idx = i;
@@ -557,7 +555,6 @@ private:
             }
             else if (distance > second_max_move_distance)
             {
-                second_max_move_distance_idx = i;
                 second_max_move_distance = distance;
             }
         }

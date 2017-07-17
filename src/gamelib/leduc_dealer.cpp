@@ -4,16 +4,6 @@
 #include "util/choose.h"
 #include "util/sort.h"
 
-namespace
-{
-    int get_hole_index(int c0, int c1)
-    {
-        assert(c0 != c1);
-        sort(c0, c1);
-        return choose(c1, 2) + choose(c0, 1);
-    }
-}
-
 leduc_dealer::leduc_dealer(const evaluator_t& evaluator, const abstraction_t& abstraction, std::int64_t seed)
     : engine_(static_cast<unsigned long>(seed))
     , evaluator_(evaluator)
