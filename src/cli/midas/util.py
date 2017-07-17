@@ -497,4 +497,8 @@ class Card:
 
 
 def find_nearest(data, value):
-    return data.get(value) or data[min(data.keys(), key=lambda k: abs(k - value))]
+    for i in sorted(data.keys()):
+        if i < value:
+            continue
+        return data[i]
+    return data[max(data.keys())]
