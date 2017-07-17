@@ -806,13 +806,10 @@ def _is_new_game(table_data, snapshot):
         logging.info('New game (stack increased)')
         return True
 
-    # we know the previous hand ended due to our terminal action (fold, call allin or river, raise allin)
-    if table_data.state and (table_data.state.terminal or table_data.state.action == NLHEState.RAISE_A):
-        logging.info('New game (previous state was terminal)')
+    # total pot can only decrease between games
+    if snapshot.total_pot < prev_snapshot.total_pot:
+        logging.info('New game (total pot decreased)')
         return True
-
-    # opponent was all-in but isn't anymore -> should be handled by check above as all our actions are terminal
-    midas.util.ensure(not (not snapshot.all_in[1] and prev_snapshot.all_in[1]))
 
     # TODO: a false negatives can be possible in some corner cases
     return False
