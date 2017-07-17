@@ -5,6 +5,7 @@ import collections
 import datetime
 import enum
 import re
+import copy
 import midas.io
 import midas.util
 from PIL import Image
@@ -113,9 +114,9 @@ class Actor:
                 and snapshot.stack == self.table_data.snapshot.stack \
                 and snapshot.bet == self.table_data.snapshot.bet:
             logging.warning('Identical snapshots; previous action not fulfilled; reverting state')
-            self.table_data = self.old_table_data
+            self.table_data = copy.copy(self.old_table_data)
 
-        self.old_table_data = self.table_data
+        self.old_table_data = copy.copy(self.table_data)
 
         new_game = _is_new_game(self.table_data, snapshot)
 
