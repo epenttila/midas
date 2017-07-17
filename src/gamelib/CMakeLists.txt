@@ -28,3 +28,6 @@ if(MSVC)
         STATIC_LIBRARY_FLAGS_RELEASE "/LTCG"
         STATIC_LIBRARY_FLAGS_RELWITHDEBINFO "/LTCG")
 endif()
+
+add_library(py${PROJECT_NAME} SHARED py.cpp)
+target_link_libraries(py${PROJECT_NAME} ${PROJECT_NAME} ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})
