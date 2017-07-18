@@ -162,24 +162,28 @@ class Schedule:
         self.active = False
         self.next_time = None
         self.spans = defaultdict(list)
-        p = xml.etree.ElementTree.parse(filename)
 
-        for child in p.getroot():
-            if child.tag == 'span':
-                day = datetime.strptime(child.attrib['id'], '%Y-%m-%d').date()
+        try:
+            p = xml.etree.ElementTree.parse(filename)
 
-                for i in str(child.attrib['value']).split(','):
-                    if i == '0':
-                        continue
+            for child in p.getroot():
+                if child.tag == 'span':
+                    day = datetime.strptime(child.attrib['id'], '%Y-%m-%d').date()
 
-                    j = str(i).split('-')
+                    for i in str(child.attrib['value']).split(','):
+                        if i == '0':
+                            continue
 
-                    if len(j) != 2:
-                        raise RuntimeError('Invalid activity span settings')
+                        j = str(i).split('-')
 
-                    self.spans[day].append(
-                        (datetime.combine(day, datetime.strptime(j[0], '%H:%M:%S').time()),
-                         datetime.combine(day, datetime.strptime(j[1], '%H:%M:%S').time())))
+                        if len(j) != 2:
+                            raise RuntimeError('Invalid activity span settings')
+
+                        self.spans[day].append(
+                            (datetime.combine(day, datetime.strptime(j[0], '%H:%M:%S').time()),
+                             datetime.combine(day, datetime.strptime(j[1], '%H:%M:%S').time())))
+        except FileNotFoundError:
+            pass
 
     def update(self):
         now = datetime.now()

@@ -114,7 +114,10 @@ class Application:
         schedule_path = self.settings.get_string('schedule')
 
         if schedule_path:
-            modified = pathlib.Path(schedule_path).stat().st_mtime
+            try:
+                modified = pathlib.Path(schedule_path).stat().st_mtime
+            except FileNotFoundError:
+                modified = None
 
             if modified != self.spans_modified:
                 logging.info('%s changed', schedule_path)
