@@ -285,17 +285,19 @@ class Actor:
         max_delay = delay[1] - (1 - delay_factor) * (delay[1] - delay[0]) * delay_window
         wait = max(0.0, midas.util.get_normal_random(min_delay, max_delay))
 
+        new_table_data = self.TableData()
+        new_table_data.dealer = dealer
+        new_table_data.big_blind = big_blind
+        new_table_data.stack_size = stack_size
+        new_table_data.state = current_state
+        new_table_data.snapshot = snapshot
+        new_table_data.table = table
+
         logging.info('Waiting for %s [%s, %s] seconds before acting', wait, min_delay, max_delay)
         await midas.util.sleep(wait)
-        await self.act(next_action)
+        await self.act(next_action, new_table_data)
 
-        self.table_data.window = window
-        self.table_data.dealer = dealer
-        self.table_data.big_blind = big_blind
-        self.table_data.stack_size = stack_size
-        self.table_data.state = current_state
-        self.table_data.snapshot = snapshot
-        self.table_data.table = table
+        self.table_data = new_table_data
         return True
 
     def get_big_blind(self, table_data, snapshot, new_game, dealer):
@@ -333,14 +335,14 @@ class Actor:
 
         return stack_size
 
-    async def act(self, action):
-        midas.util.ensure(self.table_data.state is not None)
+    async def act(self, action, table_data):
+        midas.util.ensure(table_data.state is not None)
 
         next_action = -1
         raise_fraction = -1
         new_action_name = NLHEState.get_action_name(action)
-        current_state = self.table_data.state
-        snapshot = self.table_data.snapshot
+        current_state = table_data.state
+        snapshot = table_data.snapshot
 
         if action == NLHEState.FOLD:
             next_action = Table.FOLD_BUTTON
@@ -361,10 +363,10 @@ class Actor:
 
         if next_action == Table.FOLD_BUTTON:
             logging.info('Folding')
-            await self.table_data.table.fold(max_action_wait)
+            await table_data.table.fold(max_action_wait)
         elif next_action == Table.CALL_BUTTON:
             logging.info('Calling')
-            await self.table_data.table.call(max_action_wait)
+            await table_data.table.call(max_action_wait)
         elif next_action == Table.RAISE_BUTTON:
             # we have to call opponent bet minus our bet
             to_call = snapshot.bet[1] - snapshot.bet[0]
@@ -376,7 +378,7 @@ class Actor:
 
             # minimum bet is opponent bet plus the amount we have to call (or big blind whichever is larger)
             # restrict minbet to always be less than or equal to maxbet (we can't bet more than stack)
-            minbet = min(snapshot.bet[1] + max(self.table_data.big_blind, to_call), maxbet)
+            minbet = min(snapshot.bet[1] + max(table_data.big_blind, to_call), maxbet)
 
             midas.util.ensure(minbet <= maxbet)
 
@@ -417,14 +419,14 @@ class Actor:
 
             logging.info('Raising to %s [%s, %s] (%s times pot) (method %s)', amount, minbet, maxbet, raise_fraction, method)
 
-            await self.table_data.table.bet(new_action_name, amount, minbet, max_action_wait, method)
+            await table_data.table.bet(new_action_name, amount, minbet, max_action_wait, method)
 
         # update state pointer last after the table_manager input functions
         # this makes it possible to recover in case the buttons are stuck but become normal again as the state pointer
         # won't be in an invalid (terminal) state
         current_state = current_state.get_action_child(action)
         midas.util.ensure(current_state is not None)
-        self.table_data.state = current_state
+        table_data.state = current_state
 
         post_action_wait = self.settings.get_number('post-action-wait', 5.0)
         logging.info('Waiting %s seconds post-action', post_action_wait)
