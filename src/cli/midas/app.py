@@ -91,7 +91,7 @@ class Application:
 
             self.check_idle()
             self.system.update()
-        except RuntimeError as e:
+        except Exception as e:
             await self.system.move_random(System.MoveEnum.IDLE_MOVE_DESKTOP)
             self.handle_error(e)
 
