@@ -285,6 +285,10 @@ class Actor:
         max_delay = delay[1] - (1 - delay_factor) * (delay[1] - delay[0]) * delay_window
         wait = max(0.0, midas.util.get_normal_random(min_delay, max_delay))
 
+        logging.info('Waiting for %s [%s, %s] seconds before acting', wait, min_delay, max_delay)
+        await midas.util.sleep(wait)
+        await self.act(next_action)
+
         self.table_data.window = window
         self.table_data.dealer = dealer
         self.table_data.big_blind = big_blind
@@ -292,10 +296,6 @@ class Actor:
         self.table_data.state = current_state
         self.table_data.snapshot = snapshot
         self.table_data.table = table
-
-        logging.info('Waiting for %s [%s, %s] seconds before acting', wait, min_delay, max_delay)
-        await midas.util.sleep(wait)
-        await self.act(next_action)
         return True
 
     def get_big_blind(self, table_data, snapshot, new_game, dealer):
