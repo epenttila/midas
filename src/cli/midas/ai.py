@@ -205,7 +205,7 @@ class Actor:
 
             child = None
 
-            for i in range(current_state.parent.get_child_count()):
+            for i in range(current_state.parent.child_count):
                 p = current_state.parent.get_child(i)
 
                 if p is not None and p.action == NLHEState.CALL:
