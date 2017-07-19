@@ -21,6 +21,7 @@ class Application:
         self.settings = Settings(filename)
 
         logging.config.dictConfig(self.settings.log)
+        logging.captureWarnings(True)
         logging.info('cli %s', datetime.datetime.fromtimestamp(pathlib.Path(__file__).stat().st_mtime).isoformat())
         PythonLoggingObserver().start()
 
