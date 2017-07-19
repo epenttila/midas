@@ -211,7 +211,7 @@ class Actor:
                 if p is not None and p.action == NLHEState.CALL:
                     child = current_state.parent.get_child(i + 1)  # minimum bet
 
-                    if child is not None or child.action == NLHEState.RAISE_A:
+                    if child is None or child.action == NLHEState.RAISE_A:
                         logging.warning('Falling back to treating our failed all-in bet as a call')
                         child = p
                     break
