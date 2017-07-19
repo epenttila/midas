@@ -12,3 +12,7 @@ add_custom_target(
 
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/ DESTINATION . FILES_MATCHING PATTERN "*.py")
 install(FILES $<TARGET_FILE:pyabslib> $<TARGET_FILE:pycfrlib> $<TARGET_FILE:pygamelib> DESTINATION .)
+
+add_custom_target(check-${PROJECT_NAME} python3 -m pytest)
+
+add_dependencies(check check-${PROJECT_NAME})

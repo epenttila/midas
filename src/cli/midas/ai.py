@@ -40,7 +40,7 @@ class Actor:
                 Actor.strategies[strategy.stack_size] = strategy
                 logging.info('Loaded strategy: %s', s)
 
-    async def process_snapshot(self, window):
+    async def process_snapshot(self, window, force_action=None):
         table = Table(self.settings, self.system, window)
 
         # handle sit-out as the absolute first step and react accordingly
@@ -273,7 +273,7 @@ class Actor:
         # we should never reach terminal states when we have a pending action
         midas.util.ensure(not current_state.terminal)
 
-        next_action = _get_next_action(current_state, strategy, snapshot)
+        next_action = force_action if force_action is not None else _get_next_action(current_state, strategy, snapshot)
 
         to_call = snapshot.bet[1] - snapshot.bet[0]
         invested = (snapshot.total_pot + to_call) / 2.0

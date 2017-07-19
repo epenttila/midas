@@ -67,6 +67,8 @@ find_package(PythonLibs 3.5 REQUIRED)
 include_directories(${PYTHON_INCLUDE_DIRS})
 include_directories(${PROJECT_SOURCE_DIR}/ext/pybind/include)
 
+add_custom_target(check)
+
 add_subdirectory(src)
 
 if(BUILD_TEST)

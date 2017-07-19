@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+    <!-- GENERAL -->
+
+    <number id="smtp-port" value="25"/>
+    <number id="mark" value="3600.0"/>
+    <number id="total-chips" value="1000"/>
+    <number id="tooltip-move-time" value="5.0"/>
+    <number id="max-idle-time" value="3600.0"/>
+    <number id="default-dealer" value="-1"/>
+    <number id="allin-threshold" value="0.7"/>
+    <number id="refresh-regs-key" value="65481"/> <!-- VK_F12 -->
+    <number id="bet-rounding" value="5"/>
+    <number id="auto-sit-in" value="1"/>
+    <number id="max-error-count" value="5"/>
+    <number id="max-error-interval" value="60.0"/>
+    <number id="max-action-wait" value="10"/>
+    <number id="post-action-wait" value="1.0"/>
+    <number id="action-delay-window" value="0.5"/>
+    <number id="save-snapshots" value="1"/>
+    <number id="default-big-blind" value="20"/>
+    <number id="capture" value="1.0"/>
+    <number id="pre-snapshot-wait" value="1.0"/>
+    <number id="netclick-port" value="16008"/>
+    <number id="poker-port" value="6008"/>
+    <string id="smtp-host" value="neodymium.baabeli.com"/>
+    <string id="smtp-from" value="midas@baabeli.com"/>
+    <string id="smtp-to" value="eliasp@iki.fi"/>
+    <string id="poker-host" value="ziggurat"/>
+    <string id="schedule" value="schedule.xml"/>
+    <interval id="action-delay" min="-1.0" max="3.0"/>
+    <interval id="input-delay" min="0.06956" max="0.19255"/>
+    <interval id="mouse-speed" min="1.5" max="2.5"/>
+    <interval id="double-click-delay" min="0.07803" max="0.19654"/>
+    <number-list id="bet-method-probabilities" value="1.0, 0.0"/> <!-- click table to focus bet input doesn't work -->
+    <number-list id="idle-move-probabilities" value="0.05, 0.1, 1.0"/>
+
+    <log>
+        <version>1</version>
+        <formatters>
+            <default>
+                <format>[%(asctime)s] [%(levelname)s] %(message)s</format>
+            </default>
+        </formatters>
+        <handlers>
+            <console>
+                <class>logging.StreamHandler</class>
+                <formatter>default</formatter>
+                <stream>ext://sys.stdout</stream>
+            </console>
+            <file>
+                <class>logging.handlers.TimedRotatingFileHandler</class>
+                <formatter>default</formatter>
+                <filename>midas.log</filename>
+                <when>midnight</when>
+            </file>
+        </handlers>
+        <root>
+            <level>INFO</level>
+            <handlers>console,file</handlers>
+        </root>
+    </log>
+
+    <!-- STRATEGY -->
+
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-2_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-4_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-6_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-8_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-10_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-12_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-14_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-16_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-18_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-20_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-22_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-24_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-26_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-28_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-30_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-32_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-34_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-36_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-38_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-40_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-42_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-44_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-46_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-48_ir-169-5000-5000-5000_20000000000.str"/>
+    <string id="strategy" value="/mnt/public/midas/strategies/nlhe-fcohqpwda_ir-169-5000-5000-5000/20000000000/nlhe-fcohqpwda-50_ir-169-5000-5000-5000_20000000000.str"/>
+
+    <!-- WINDOWS -->
+
+    <window id="table" x="1010" y="23" width="775" height="558" border-color="#484848"/>
+    <window id="table" x="1010" y="608" width="775" height="558" border-color="#484848"/>
+
+    <!-- CAPTURE -->
+
+    <pixel id="dealer-0" x="347" y="379" color="#FFFFFF" tolerance="50"/>
+    <pixel id="dealer-1" x="340" y="145" color="#FFFFFF" tolerance="50"/>
+    <pixel id="sitout-0" x="498" y="497" color="#FFFFFF" tolerance="50"/>
+    <pixel id="sitout-1" x="338" y="113" color="#FFE88B" tolerance="50"/>
+    <!--<pixel id="allin-1" x="661" y="349" color="#FFFFFF" tolerance="0"/>-->
+
+    <label id="total-pot" font="pot" x="342" y="184" width="100" height="10" color="#FFFFFF" pattern="^Pot: ?(\d+)$" tolerance="0.1" shift="2"/>
+    <label id="bet-0" font="bet" x="260" y="358" width="252" height="10" color="#FFFFFF" pattern="^(\d+)$" tolerance="0.1" shift="2"/>
+    <label id="bet-1" font="bet" x="260" y="169" width="252" height="10" color="#FFFFFF" pattern="^(\d+)$" tolerance="0.1" shift="14"/> <!-- at least 164-173 (3px per chip) -->
+    <label id="stack-0" font="stack" x="367" y="456" width="84" height="10" color="#FFFFFF" pattern="^(\d+)$" tolerance="0.1" shift="2"/>
+    <label id="stack-1" font="stack" x="323" y="113" width="84" height="10" color="#FFFFFF" pattern="^(\d+)$" tolerance="0.1" shift="2"/>
+
+    <label id="hole-0" font="rank" x="362" y="373" width="15" height="16" color="#000000"/>
+    <label id="hole-1" font="rank" x="411" y="373" width="15" height="16" color="#000000"/>
+    <label id="board-0" font="rank" x="263" y="214" width="15" height="16" color="#000000"/>
+    <label id="board-1" font="rank" x="314" y="214" width="15" height="16" color="#000000"/>
+    <label id="board-2" font="rank" x="365" y="214" width="15" height="16" color="#000000"/>
+    <label id="board-3" font="rank" x="416" y="214" width="15" height="16" color="#000000"/>
+    <label id="board-4" font="rank" x="467" y="214" width="15" height="16" color="#000000"/>
+
+    <pixel id="hole-0" x="362" y="388" width="15" height="14"/>
+    <pixel id="hole-1" x="411" y="388" width="15" height="14"/>
+    <pixel id="board-0" x="261" y="229" width="15" height="14"/>
+    <pixel id="board-1" x="312" y="229" width="15" height="14"/>
+    <pixel id="board-2" x="363" y="229" width="15" height="14"/>
+    <pixel id="board-3" x="414" y="229" width="15" height="14"/>
+    <pixel id="board-4" x="465" y="229" width="15" height="14"/>
+
+    <pixel id="card" color="#FFFFFF" tolerance="100"/>
+    <pixel id="club" color="#108510" tolerance="100"/>
+    <pixel id="diamond" color="#1D35FF" tolerance="100"/>
+    <pixel id="heart" color="#B92E2D" tolerance="100"/> 
+    <pixel id="spade" color="#232323" tolerance="100"/>
+
+    <!--<button id="bad" x="3" y="50" width="39" height="28"/>-->
+
+    <!-- AUTOPLAY -->
+
+    <string id="button-layout-1" value=",,"/>
+    <string id="button-layout-3" value="fold,call,"/>
+    <string id="button-layout-6" value=",call,raise"/>
+    <string id="button-layout-7" value="fold,call,raise"/>
+
+    <button id="button-0" x="474" y="479" width="98" height="43" color-x="475" color-y="480" color="#DCDFE2" tolerance="50"/> <!-- normal -->
+    <button id="button-1" x="574" y="479" width="98" height="43" color-x="575" color-y="480" color="#DCDFE2" tolerance="50"/> <!-- normal -->
+    <button id="button-2" x="674" y="479" width="98" height="43" color-x="675" color-y="480" color="#DCDFE2" tolerance="50"/> <!-- normal -->
+    <button id="input" x="714" y="525" width="56" height="13" color-x="714" color-y="525" color="#FFFFFF" tolerance="50"/>
+    <button id="focus" x="193" y="185" width="398" height="126" color-x="193" color-y="185" color="#141414" tolerance="50"/>
+    <button id="sit-in" x="474" y="479" width="98" height="43" color-x="475" color-y="480" color="#DCDFE2" tolerance="50"/>
+    <button id="RAISE_A" x="714" y="540" width="59" height="16" color-x="714" color-y="540" color="#5F8CBD" tolerance="50"/> <!-- normal -->
+
+    <!-- FONTS -->
+
+    <font id="rank" max-width="13">
+        <glyph mask="0x1000,0x1802,0x1402,0x1202,0x1182,0x10c4,0x1038" value="2"/>
+        <glyph mask="0x1806,0x1042,0x10c2,0x10c2,0x18e6,0xfbc,0x700" value="3"/>
+        <glyph mask="0x300,0x3c0,0x260,0x238,0x20c,0x1ffe,0x1ffe,0x200,0x200" value="4"/>
+        <glyph mask="0x1878,0x107e,0x1042,0x1042,0x18c2,0xf82,0x702" value="5"/>
+        <glyph mask="0x7e0,0xcd8,0x184c,0x1024,0x1022,0x1862,0xcc2,0x780" value="6"/>
+        <glyph mask="0x2,0x1002,0x1c02,0x702,0xc2,0x32,0xe,0x2" value="7"/>
+        <glyph mask="0xf00,0x8bc,0x1062,0x1042,0x1042,0x10e2,0xfbc,0x700" value="8"/>
+        <glyph mask="0x7c,0x10ce,0x1182,0x1982,0xc82,0x686,0x3fc,0x70" value="9"/>
+        <glyph mask="0x1008,0x100c,0x1ffe,0x1000,0x1000,0x1e0,0xffc,0x806,0x1002,0x1002,0x1002,0xc0c,0x3f8" value="T"/>
+        <glyph mask="0x1000,0x1000,0x1002,0x1002,0xffe,0x7fe" value="J"/>
+        <glyph mask="0x60,0x3fc,0x70e,0xc02,0x803,0x801,0x1801,0x7803,0x4c02,0xc60e,0xc3fc,0xe0" value="Q"/>
+        <glyph mask="0x1ffe,0xc0,0xe0,0x1f0,0x318,0xe0c,0x1c06,0x1802" value="K"/>
+        <glyph mask="0x1800,0xf00,0x1e0,0x13c,0x103,0x107,0x138,0x3c0,0xe00,0x1000" value="A"/>
+    </font>
+
+    <font id="bet" max-width="7">
+        <glyph mask="0x3e,0x77,0x41,0x63,0x3e,0x1c" value="0"/>
+        <glyph mask="0x42,0x42,0x7f,0x7f,0x40" value="1"/>
+        <glyph mask="0x43,0x61,0x71,0x5f,0x4e,0x40" value="2"/>
+        <glyph mask="0x43,0x49,0x49,0x6f,0x77" value="3"/>
+        <glyph mask="0x10,0x18,0x14,0x13,0x7f,0x7f,0x10" value="4"/>
+        <glyph mask="0x67,0x47,0x45,0x6d,0x3d,0x10" value="5"/>
+        <glyph mask="0x3e,0x7f,0x49,0x49,0x79,0x30" value="6"/>
+        <glyph mask="0x41,0x61,0x39,0x1f,0x7,0x1" value="7"/>
+        <glyph mask="0x76,0x6f,0x49,0x4d,0x7f,0x30" value="8"/>
+        <glyph mask="0x4f,0x49,0x49,0x7b,0x3e" value="9"/>
+    </font>
+
+    <font id="pot" max-width="7">
+        <glyph mask="0xff,0xff,0x11,0x11,0x1f,0xe" value="P"/>
+        <glyph mask="0x30,0x78,0xcc,0x84,0xcc,0xfc,0x30" value="o"/>
+        <glyph mask="0x4,0x7f,0xff,0x84,0x84,0x84" value="t"/>
+        <glyph mask="0xcc,0xcc" value=":"/>
+        <glyph mask="0x7e,0xff,0x81,0xc3,0x7e,0x3c" value="0"/>
+        <glyph mask="0x82,0x82,0xff,0xff,0x80" value="1"/>
+        <glyph mask="0xc3,0xe1,0xf1,0xbf,0x9f,0x80" value="2"/>
+        <glyph mask="0xc3,0x89,0x89,0xdf,0x77,0x20" value="3"/>
+        <glyph mask="0x20,0x38,0x2c,0x27,0xff,0xff,0x20" value="4"/>
+        <glyph mask="0xcf,0x8f,0x89,0xd9,0x79,0x20" value="5"/>
+        <glyph mask="0x7e,0xff,0x89,0xc9,0xf9,0x30" value="6"/>
+        <glyph mask="0x81,0xe1,0x79,0x1f,0x7,0x1" value="7"/>
+        <glyph mask="0xfe,0xdf,0x99,0x9b,0xff,0x62" value="8"/>
+        <glyph mask="0x4,0x9e,0x9b,0x91,0xf3,0x7e,0x18" value="9"/>
+    </font>
+
+    <font id="stack" max-width="8">
+        <glyph mask="0xfe,0x1ff,0x101,0x101,0x1ff,0xfe,0x38" value="0"/>
+        <glyph mask="0x102,0x102,0x1ff,0x1ff,0x100,0x100" value="1"/>
+        <glyph mask="0x103,0x181,0x1c1,0x171,0x13f,0x11e,0x100" value="2"/>
+        <glyph mask="0x183,0x101,0x111,0x111,0x1ff,0xee" value="3"/>
+        <glyph mask="0x20,0x30,0x2c,0x26,0x27,0x1ff,0x1ff,0x20" value="4"/>
+        <glyph mask="0x18f,0x10f,0x109,0x109,0x1f9,0xf1" value="5"/>
+        <glyph mask="0xfc,0x1fe,0x10b,0x109,0x1f9,0x1f9,0x60" value="6"/>
+        <glyph mask="0x101,0x1c1,0x1f1,0x7d,0x1f,0x7,0x1" value="7"/>
+        <glyph mask="0xee,0x1ff,0x111,0x111,0x1ff,0xfe,0x40" value="8"/>
+        <glyph mask="0x11e,0x13f,0x121,0x1a1,0xff,0x7e" value="9"/>
+    </font>
+
+</settings>
