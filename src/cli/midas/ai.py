@@ -47,7 +47,7 @@ class Actor:
         if table.is_sitting_out():
             if self.settings.get_number('auto-sit-in', False):
                 logging.info('Sitting in')
-                table.sit_in(self.settings.get_interval('action-delay', (0, 0))[1])
+                await table.sit_in(self.settings.get_interval('action-delay', (0, 0))[1])
             raise RuntimeError('We are sitting out')
 
         # ignore out-of-turn snapshots
