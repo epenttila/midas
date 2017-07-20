@@ -286,7 +286,7 @@ class Window:
 
         rect = button.rect
         p = self.client_to_screen(rect.x, rect.y)
-        await self.system.move_click(p[0], p[1], rect.width, rect.height, double_click)
+        await self.system.click(p[0], p[1], rect.width, rect.height, double_click)
 
         return True
 
