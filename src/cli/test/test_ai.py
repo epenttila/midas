@@ -103,3 +103,11 @@ class ActorTestCase(unittest.TestCase):
 
         assert str(excinfo.value) == 'We are sitting out'
         assert clicked
+
+    @inlineCallbacks
+    def test_process_snapshot(self):
+        self.loadSettings('wpn.xml')
+        a = Actor(self.system, self.settings)
+        self.loadImage('failed-allin-0.png')
+        yield ensureDeferred(a.process_snapshot(self.windows[1]))
+        assert a.table_data.state.parent.action == NLHEState.CALL
