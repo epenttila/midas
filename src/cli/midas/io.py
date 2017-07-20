@@ -337,6 +337,8 @@ class _Factory(ext.rfb.RFBFactory):
 
     def clientConnectionFailed(self, connector, reason):
         logging.fatal('connection failed (%s)', reason)
+        connector.connect()
 
     def clientConnectionLost(self, connector, reason):
         logging.fatal('connection lost (%s)', reason)
+        connector.connect()
