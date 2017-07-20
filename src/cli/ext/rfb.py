@@ -260,8 +260,6 @@ class RFBClient(Protocol):
                 self.expect(self._handleDecodeCORRE, 4 + self.bypp, x, y, width, height)
             elif encoding == RRE_ENCODING:
                 self.expect(self._handleDecodeRRE, 4 + self.bypp, x, y, width, height)
-            #~ elif encoding == ZRLE_ENCODING:
-                #~ self.expect(self._handleDecodeZRLE, )
             elif encoding == PSEUDO_CURSOR_ENCODING:
                 length = width * height * self.bypp
                 length += int(math.floor((width + 7.0) / 8)) * height
@@ -441,12 +439,6 @@ class RFBClient(Protocol):
             self.fillRectangle(tx + sx, ty + sy, sw, sh, color)
             pos += 2
         self._doNextHextileSubrect(bg, color, x, y, width, height, tx, ty)
-
-
-    # ---  ZRLE Encoding
-
-    def _handleDecodeZRLE(self, block):
-        raise NotImplementedError
 
     # --- Pseudo Cursor Encoding
     def _handleDecodePsuedoCursor(self, block, x, y, width, height):

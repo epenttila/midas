@@ -1,9 +1,6 @@
-import random
 import math
 import logging
-import collections
 import datetime
-import enum
 import re
 import copy
 import midas.io
@@ -11,7 +8,7 @@ import midas.util
 from PIL import Image
 from pygamelib import NLHEState
 from pycfrlib import NLHEStrategy
-from pyabslib import HoldemAbstractionBase
+from pyabslib import HoldemAbstractionBase  # pylint: disable=unused-import
 
 
 class Actor:

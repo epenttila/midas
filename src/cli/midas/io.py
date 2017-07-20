@@ -272,7 +272,7 @@ class _Client(ext.rfb.RFBClient):
     def connectionMade(self):
         super().connectionMade()
         self.transport.setTcpNoDelay(True)
-        self.factory.connection = self
+        self.factory.connection = self  # pylint: disable=no-member
 
     def vncConnectionMade(self):
         self.setPixelFormat()
@@ -280,7 +280,7 @@ class _Client(ext.rfb.RFBClient):
 
     def updateRectangle(self, x, y, width, height, data):
         update = Image.frombytes('RGB', (width, height), data, 'raw', 'RGBX')
-        screen = self.factory.screen
+        screen = self.factory.screen  # pylint: disable=no-member
         if not screen:
             screen = update
         elif screen.size[0] < (x+width) or screen.size[1] < (y+height):
@@ -291,7 +291,7 @@ class _Client(ext.rfb.RFBClient):
             screen = new_screen
         else:
             screen.paste(update, (x, y))
-        self.factory.screen = screen
+        self.factory.screen = screen  # pylint: disable=no-member
 
 
 class _Factory(ext.rfb.RFBFactory):

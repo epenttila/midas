@@ -74,7 +74,7 @@ class Application:
         else:
             logging.info('Disabling auto-registration')
 
-    def run(self):
+    def run(self):  # pylint: disable=no-self-use
         return reactor.run()
 
     async def capture(self):
@@ -92,7 +92,7 @@ class Application:
 
             self.check_idle()
             self.system.update()
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             await self.system.move_random(System.MoveEnum.IDLE_MOVE_DESKTOP)
             self.handle_error(e)
 
