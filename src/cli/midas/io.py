@@ -5,6 +5,7 @@ import logging
 import ext.rfb
 from PIL import Image
 from twisted.internet import reactor
+from twisted.internet.defer import DeferredLock
 import midas.util
 
 
@@ -19,6 +20,7 @@ class System:
         self.input_delay = input_delay
         self.cursor = (0, 0)
         self.factory = _Factory()
+        self.lock = DeferredLock()
         Image.preinit()
         Image.init()
         reactor.connectTCP(host, port, self.factory)
@@ -39,37 +41,33 @@ class System:
     def get_cursor_pos(self):
         return self.cursor
 
-    def set_cursor_pos(self, x, y):
-        logging.debug('set_cursor_pos(%s,%s)', x, y)
+    def _set_cursor_pos_event(self, x, y):
+        logging.debug('_set_cursor_pos_event(%s,%s)', x, y)
         pos = (round(x), round(y))
         self.cursor = pos
-        self.factory.connection.pointerEvent(max(0, min(pos[0], 0xFFFF)), max(0, min(pos[1], 0xFFFF)))
+        if self.factory.connection:
+            self.factory.connection.pointerEvent(max(0, min(pos[0], 0xFFFF)), max(0, min(pos[1], 0xFFFF)))
 
-    def button_down(self):
-        logging.debug('button_down()')
+    def _button_down_event(self):
+        logging.debug('_button_down_event()')
         pos = self.get_cursor_pos()
-        self.factory.connection.pointerEvent(pos[0], pos[1], 1)
+        if self.factory.connection:
+            self.factory.connection.pointerEvent(pos[0], pos[1], 1)
 
-    def button_up(self):
-        logging.debug('button_up()')
+    def _button_up_event(self):
+        logging.debug('_button_up_event()')
         pos = self.get_cursor_pos()
-        self.factory.connection.pointerEvent(pos[0], pos[1], 0)
+        if self.factory.connection:
+            self.factory.connection.pointerEvent(pos[0], pos[1], 0)
 
-    async def move_mouse(self, x, y, w=1, h=1):
-        logging.debug('move_mouse(%s,%s,%s,%s)', x, y, w, h)
-
-        if not self.factory.connection:
-            return
-
+    async def _move_mouse(self, x, y, w=1, h=1):
+        logging.debug('_move_mouse(%s,%s,%s,%s)', x, y, w, h)
         pt = self.get_cursor_pos()
-
         new_x = midas.util.get_normal_random(x, x + w - 1)
         new_y = midas.util.get_normal_random(y, y + h - 1)
         new_x = max(0, min(new_x, self.get_screen_size()[0] - 1))
         new_y = max(0, min(new_y, self.get_screen_size()[1] - 1))
-
         speed = random.uniform(self.mouse_speed[0], self.mouse_speed[1])
-
         await self._wind_mouse_impl(pt[0], pt[1], new_x, new_y, 9, 3, 5.0 / speed, 10.0 / speed, 10.0 * speed, 8.0 * speed)
 
     async def _wind_mouse_impl(self, xs, ys, xe, ye, gravity, wind, min_wait, max_wait, max_step, target_area):
@@ -118,46 +116,46 @@ class System:
 
             await midas.util.sleep(wait_time / 1000.0)
 
-            self.set_cursor_pos(new_x, new_y)
+            self._set_cursor_pos_event(new_x, new_y)
 
             xs = new_x
             ys = new_y
 
-        self.set_cursor_pos(xe, ye)
+        self._set_cursor_pos_event(xe, ye)
 
-    async def send_keypress(self, key):
-        logging.debug('send_keypress(%s)', key)
-
-        if self.factory.connection is None:
-            return
+    async def _send_keypress(self, key):
+        logging.debug('_send_keypress(%s)', key)
 
         try:
             key = ord(key)
         except TypeError:
             pass
 
-        self.factory.connection.keyEvent(key, 1)
-        await self.random_sleep()
-        self.factory.connection.keyEvent(key, 0)
+        self._key_down_event(key)
+        await self._random_sleep()
+        self._key_up_event(key)
 
-    async def move_click(self, x, y, width, height, double_click):
-        logging.debug('move_click(%s,%s,%s,%s,%s)', x, y, width, height, double_click)
+    async def click(self, x, y, width, height, double_click):
+        await self.lock.acquire()
+        logging.debug('click(%s,%s,%s,%s,%s)', x, y, width, height, double_click)
 
-        await self.move_mouse(x, y, width, height)
-        await self.random_sleep()
+        await self._move_mouse(x, y, width, height)
+        await self._random_sleep()
 
         if double_click:
-            await self.left_double_click(x, y, width, height)
+            await self._left_double_click(x, y, width, height)
         else:
-            await self.left_click(x, y, width, height)
+            await self._left_click(x, y, width, height)
 
-    async def left_click(self, x, y, width, height):
-        logging.debug('left_click(%s,%s,%s,%s)', x, y, width, height)
+        self.lock.release()
+
+    async def _left_click(self, x, y, width, height):
+        logging.debug('_left_click(%s,%s,%s,%s)', x, y, width, height)
 
         CLICK_SIZE = 1  # Windows constant
 
-        self.button_down()
-        await self.random_sleep()
+        self._button_down_event()
+        await self._random_sleep()
 
         angle = random.uniform(0, 2 * math.pi)
         sin_angle = math.sin(angle)
@@ -175,30 +173,35 @@ class System:
         if y != -1 and height != -1:
             new_y = max(y, min(new_y, y + height - 1))
 
-        self.set_cursor_pos(new_x, new_y)
-        self.button_up()
+        self._set_cursor_pos_event(new_x, new_y)
+        self._button_up_event()
 
-    async def left_double_click(self, x, y, width, height):
-        logging.debug('left_double_click(%s,%s,%s,%s)', x, y, width, height)
-        await self.left_click(x, y, width, height)
+    async def _left_double_click(self, x, y, width, height):
+        logging.debug('_left_double_click(%s,%s,%s,%s)', x, y, width, height)
+        await self._left_click(x, y, width, height)
         val = midas.util.get_normal_random(self.double_click_delay[0], self.double_click_delay[1])
         await midas.util.sleep(val)
-        await self.left_click(x, y, width, height)
+        await self._left_click(x, y, width, height)
 
-    async def random_sleep(self):
+    async def _random_sleep(self):
+        logging.debug('_random_sleep()')
         delay = midas.util.get_normal_random(self.input_delay[0], self.input_delay[1])
         await midas.util.sleep(delay)
 
     async def send_string(self, s):
+        await self.lock.acquire()
         logging.debug('send_string(%s)', s)
         for c in s:
-            await self.send_keypress(c)
-            await self.random_sleep()
+            await self._send_keypress(c)
+            await self._random_sleep()
+        self.lock.release()
 
     async def move_random(self, method):
+        await self.lock.acquire()
         logging.debug('move_random(%s)', method)
+
         if method == self.MoveEnum.IDLE_MOVE_DESKTOP:
-            await self.move_mouse(0, 0, self.get_screen_size()[0], self.get_screen_size()[1])
+            await self._move_mouse(0, 0, self.get_screen_size()[0], self.get_screen_size()[1])
         elif method == self.MoveEnum.IDLE_MOVE_OFFSET:
             angle = random.uniform(0, 2 * math.pi)
             sin_angle = math.sin(angle)
@@ -210,7 +213,37 @@ class System:
             new_x = round(pt[0] + cos_angle * dist)
             new_y = round(pt[1] + sin_angle * dist)
 
-            await self.move_mouse(new_x, new_y)
+            await self._move_mouse(new_x, new_y)
+
+        self.lock.release()
+
+    async def send_keypress(self, key):
+        await self.lock.acquire()
+        logging.debug('send_keypress(%s)', key)
+        await self._send_keypress(key)
+        self.lock.release()
+
+    async def move_mouse(self, x, y, w=1, h=1):
+        await self.lock.acquire()
+        logging.debug('move_mouse(%s,%s,%s,%s)', x, y, w, h)
+        await self._move_mouse(x, y, w, h)
+        self.lock.release()
+
+    def _key_down_event(self, key):
+        logging.debug('_key_down_event(%s)', key)
+        if self.factory.connection:
+            self.factory.connection.keyEvent(key, 1)
+
+    def _key_up_event(self, key):
+        logging.debug('_key_up_event(%s)', key)
+        if self.factory.connection:
+            self.factory.connection.keyEvent(key, 0)
+
+    async def random_sleep(self):
+        await self.lock.acquire()
+        logging.debug('random_sleep()')
+        await self._random_sleep()
+        self.lock.release()
 
 
 class Window:

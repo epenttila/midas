@@ -44,7 +44,7 @@ class Application:
             self.settings.get_interval('input-delay'))
         self.netclick = NetclickServer(
             int(self.settings.get_number('netclick-port')),
-            lambda x, y, w, h: ensureDeferred(self.system.move_click(x, y, w, h, False)))
+            lambda x, y, w, h: ensureDeferred(self.system.click(x, y, w, h, False)))
 
         for w in self.settings.windows['table']:
             self.windows.append(Window(self.system, w.rect, w.border_color))
