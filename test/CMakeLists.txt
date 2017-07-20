@@ -15,7 +15,7 @@ list(APPEND test_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/config.cpp")
 
 add_executable(testrunner EXCLUDE_FROM_ALL ${test_SOURCES})
 target_link_libraries(testrunner ${Boost_LIBRARIES} gtest gtest_main cfrlib)
-add_custom_target(check-${PROJECT_NAME} testrunner)
+add_custom_target(check-${PROJECT_NAME} testrunner DEPENDS testrunner)
 add_dependencies(check check-${PROJECT_NAME})
 
 add_test(AllTests testrunner --gtest_output=xml)
