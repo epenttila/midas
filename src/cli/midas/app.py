@@ -14,6 +14,7 @@ from midas.io import System, Window
 from midas.ai import Actor
 from midas.netclick import NetclickServer
 import midas.util
+from pyutil import GIT_VERSION
 
 
 class Application:
@@ -22,7 +23,7 @@ class Application:
 
         logging.config.dictConfig(self.settings.log)
         logging.captureWarnings(True)
-        logging.info('cli %s', datetime.datetime.fromtimestamp(pathlib.Path(__file__).stat().st_mtime).isoformat())
+        logging.info('cli %s', GIT_VERSION)
         PythonLoggingObserver().start()
 
         self.error_allowance = None

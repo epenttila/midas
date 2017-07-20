@@ -28,3 +28,7 @@ add_custom_command(
     DEPENDS fake-gen-version)
 
 add_library(util ${util_SOURCES})
+
+add_library(py${PROJECT_NAME} SHARED py.cpp)
+target_link_libraries(py${PROJECT_NAME} ${PROJECT_NAME} ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})
+set_target_properties(py${PROJECT_NAME} PROPERTIES PREFIX "")
