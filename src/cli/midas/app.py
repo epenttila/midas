@@ -80,6 +80,8 @@ class Application:
 
     async def capture(self):
         try:
+            self.system.screenshot()
+
             for w in self.windows:
                 w.update()
                 _check_cursor_position(self.settings, w)

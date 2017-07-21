@@ -21,6 +21,7 @@ class System:
         self.cursor = (0, 0)
         self.factory = _Factory()
         self.lock = DeferredLock()
+        self.image = None
         Image.preinit()
         Image.init()
         reactor.connectTCP(host, port, self.factory)
@@ -29,8 +30,11 @@ class System:
         if self.factory.connection:
             self.factory.connection.framebufferUpdateRequest()
 
+    def screenshot(self):
+        self.image = self.factory.screen
+
     def get_image(self):
-        return self.factory.screen
+        return self.image
 
     def get_screen_size(self):
         if self.factory.screen is None:
