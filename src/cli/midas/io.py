@@ -31,7 +31,10 @@ class System:
             self.factory.connection.framebufferUpdateRequest()
 
     def screenshot(self):
-        self.image = self.factory.screen.copy()
+        if self.factory.screen is None:
+            self.image = None
+        else:
+            self.image = self.factory.screen.copy()
 
     def get_image(self):
         return self.image
