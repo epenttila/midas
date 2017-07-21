@@ -25,7 +25,7 @@ class MockSystem:
     def get_image(self):
         return self.image
 
-    async def move_click(self, *args):
+    async def click(self, *args):
         pass
 
     async def random_sleep(self, *args):
@@ -96,7 +96,7 @@ class ActorTestCase(unittest.TestCase):
             nonlocal clicked
             clicked = True
 
-        self.system.move_click = check_click
+        self.system.click = check_click
 
         with pytest.raises(RuntimeError) as excinfo:
             yield ensureDeferred(a.process_snapshot(self.windows[1]))
