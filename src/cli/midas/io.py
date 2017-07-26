@@ -6,6 +6,7 @@ import ext.rfb
 from PIL import Image
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredLock
+from twisted.internet.protocol import ReconnectingClientFactory
 import midas.util
 
 
@@ -334,18 +335,28 @@ class _Client(ext.rfb.RFBClient):
         self.factory.screen = screen  # pylint: disable=no-member
 
 
-class _Factory(ext.rfb.RFBFactory):
+class _Factory(ReconnectingClientFactory):
     protocol = _Client
 
     def __init__(self):
-        super().__init__(password=None, shared=True)
+        self.password = None
+        self.shared = True
         self.screen = None
         self.connection = None
 
+    def startedConnecting(self, connector):
+        logging.info('Connecting')
+        ReconnectingClientFactory.startedConnecting(self, connector)
+
+    def buildProtocol(self, addr):
+        logging.info('Connected (%s)', addr)
+        self.resetDelay()
+        return ReconnectingClientFactory.buildProtocol(self, addr)
+
     def clientConnectionFailed(self, connector, reason):
-        logging.fatal('connection failed (%s)', reason)
-        connector.connect()
+        logging.fatal('Connection failed (%s)', reason)
+        ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
     def clientConnectionLost(self, connector, reason):
-        logging.fatal('connection lost (%s)', reason)
-        connector.connect()
+        logging.fatal('Connection lost (%s)', reason)
+        ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
