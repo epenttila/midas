@@ -520,11 +520,14 @@ class Table:
     def is_highlight(self, position):
         ids = ['active-0', 'active-1']
 
+        if ids[position] not in self.settings.pixels:
+            return None
+
         for p in self.settings.pixels[ids[position]]:
             if self.window.is_pixel(p):
                 return True
 
-        return None
+        return False
 
     def get_button_map(self):
         layout = 0
