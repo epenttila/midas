@@ -111,3 +111,11 @@ class ActorTestCase(unittest.TestCase):
         self.loadImage('failed-allin-0.png')
         yield ensureDeferred(a.process_snapshot(self.windows[1]))
         assert a.table_data.state.parent.action == NLHEState.CALL
+
+    @inlineCallbacks
+    def test_new_game_postflop(self):
+        self.loadSettings('partypoker.xml')
+        a = Actor(self.system, self.settings)
+        self.loadImage('new-game-postflop.png')
+        yield ensureDeferred(a.process_snapshot(self.windows[0], NLHEState.CALL))
+        assert str(a.table_data.state).endswith(':cCCcC')

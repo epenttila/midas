@@ -126,7 +126,7 @@ class Actor:
         new_game = _is_new_game(self.table_data, snapshot)
 
         # new games should always start with sb and bb bets
-        midas.util.ensure(not new_game or (snapshot.bet[0] > 0 and (snapshot.bet[1] > 0 or snapshot.all_in[1])))
+        midas.util.ensure(not new_game or game_round != NLHEState.PREFLOP or (snapshot.bet[0] > 0 and (snapshot.bet[1] > 0 or snapshot.all_in[1])))
 
         # figure out the dealer (sometimes buggy clients display two dealer buttons)
         dealer = -1
@@ -150,7 +150,7 @@ class Actor:
         midas.util.ensure(dealer == 0 or dealer == 1)
         midas.util.ensure(new_game or self.table_data.dealer == dealer)
 
-        big_blind = self.get_big_blind(self.table_data, snapshot, new_game, dealer)
+        big_blind = self.get_big_blind(self.table_data, snapshot, new_game, dealer, game_round)
 
         logging.info('BB: %s', big_blind)
 
@@ -305,12 +305,16 @@ class Actor:
         self.table_data = new_table_data
         return True
 
-    def get_big_blind(self, table_data, snapshot, new_game, dealer):
+    def get_big_blind(self, table_data, snapshot, new_game, dealer, game_round):
         if new_game:
-            if dealer == 0:
-                big_blind = 2.0 * snapshot.bet[0]
+            if game_round == NLHEState.PREFLOP:
+                if dealer == 0:
+                    big_blind = 2.0 * snapshot.bet[0]
+                else:
+                    big_blind = 1.0 * snapshot.bet[0]
             else:
-                big_blind = 1.0 * snapshot.bet[0]
+                logging.warning('Assuming big blind is half of pot in new game starting post-flop')
+                big_blind = snapshot.total_pot / 2.0
         else:
             big_blind = table_data.big_blind
 
