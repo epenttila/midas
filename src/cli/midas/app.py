@@ -18,7 +18,7 @@ from pyutil import GIT_VERSION
 
 
 class Application:
-    def __init__(self, filename):
+    def __init__(self, filename, test):
         self.settings = Settings(filename)
 
         logging.config.dictConfig(self.settings.log)
@@ -36,6 +36,7 @@ class Application:
         self.table_update_time = None
         self.schedule = None
         self.actors = []
+        self.test = test
 
         self.system = System(
             self.settings.get_string('poker-host'),
@@ -90,7 +91,7 @@ class Application:
                 if not self.windows[i].is_valid():
                     continue
 
-                if await self.actors[i].process_snapshot(self.windows[i]):
+                if await self.actors[i].process_snapshot(self.windows[i], test=self.test):
                     self.table_update_time = datetime.datetime.now()
 
             self.check_idle()

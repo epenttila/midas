@@ -37,8 +37,16 @@ class Actor:
                 Actor.strategies[strategy.stack_size] = strategy
                 logging.info('Loaded strategy: %s', s)
 
-    async def process_snapshot(self, window, force_action=None):
+    async def process_snapshot(self, window, force_action=None, test=False):
         table = Table(self.settings, self.system, window)
+
+        if test:
+            logging.info('*** TEST SNAPSHOT ***')
+            logging.info('Snapshot:')
+            for line in str(table.get_snapshot()).split('\n'):
+                if line:
+                    logging.info('- ' + line)
+            return False
 
         # handle sit-out as the absolute first step and react accordingly
         if table.is_sitting_out():
