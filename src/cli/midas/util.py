@@ -251,15 +251,19 @@ def read_card(image, mono, settings, card_id):
     avg = get_average_color(image, pixel.rect, card_pixel.color, card_pixel.tolerance)
 
     suit = None
+    distances = {}
 
     for i, value in enumerate(suits):
-        if get_color_distance(avg, value.color) <= value.tolerance:
+        distances[Card.Suit(i)] = get_color_distance(avg, value.color)
+        if distances[Card.Suit(i)] <= value.tolerance:
             if suit is not None:
+                logging.info('Suit color distances: %s', distances)
                 raise RuntimeError('Ambiguous suit color (0x{}); was {}, could be {}'.format(avg, suit, i))
 
             suit = i
 
     if suit is None:
+        logging.info('Suit color distances: %s', distances)
         raise RuntimeError('Unknown suit color (0x{})'.format(avg))
 
     return Card(rank=Card.STRING_TO_RANK[s], suit=suit)
