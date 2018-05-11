@@ -53,6 +53,7 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 
 find_package(Git)
 
+find_package(PythonInterp 3.5 REQUIRED)
 find_package(PythonLibs 3.5 REQUIRED)
 
 include_directories(${PYTHON_INCLUDE_DIRS})
