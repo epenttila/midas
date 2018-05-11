@@ -770,8 +770,7 @@ class Table:
                 await self.system.random_sleep()
 
             if not ok and buttons:
-                # TODO: throw?
-                logging.warning('Unable to press bet size button')
+                raise RuntimeError('Unable to press bet size button')
 
         # type bet size manually
         if not ok:
@@ -793,7 +792,7 @@ class Table:
                 amount = math.trunc(max(minbet, min(amount, maxbet)))
                 await self.system.send_string(str(amount))
                 await self.system.random_sleep()
-            elif action != "RAISE_A":
+            else:
                 raise RuntimeError('Unable to specify pot size')
 
         await self.click_button(self.get_action_button(Table.RAISE_BUTTON), max_wait)
