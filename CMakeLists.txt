@@ -35,7 +35,6 @@ elseif(MSVC)
     add_definitions(-DBOOST_ALL_NO_LIB -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_VARIADIC_MAX=10 -D_WIN32_WINNT=0x0601)
 endif()
 
-option(BUILD_GUI "Build gui" ON)
 option(BUILD_TEST "Build test" ON)
 set(TEST_DATA_PATH data CACHE PATH "Test data location")
 
@@ -50,14 +49,6 @@ endif()
 find_package(Boost 1.54.0 COMPONENTS program_options timer system chrono filesystem log_setup log thread iostreams regex REQUIRED)
 
 include_directories(${Boost_INCLUDE_DIRS})
-
-if(BUILD_GUI)
-    set (CMAKE_PREFIX_PATH "C:\\Program Files (x86)\\Windows Kits\\8.0\\Lib\\win8\\um\\x64")
-
-    find_package(Qt5Widgets)
-    find_package(Qt5Network)
-endif()
-
 include_directories(${PROJECT_SOURCE_DIR}/src)
 
 find_package(Git)
