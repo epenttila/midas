@@ -27,10 +27,6 @@ class System:
         Image.init()
         reactor.connectTCP(host, port, self.factory)
 
-    def update(self):
-        if self.factory.connection:
-            self.factory.connection.framebufferUpdateRequest()
-
     def screenshot(self):
         if self.factory.screen is None:
             self.image = None
@@ -326,8 +322,10 @@ class _Client(ext.rfb.RFBClient):
     def vncConnectionMade(self):
         self.setPixelFormat()
         self.setEncodings([ext.rfb.RAW_ENCODING])
+        self.framebufferUpdateRequest()
 
     def updateRectangle(self, x, y, width, height, data):
+        logging.debug('Updating rectangle (%s, %s, %s, %s)', x, y, width, height)
         update = Image.frombytes('RGB', (width, height), data, 'raw', 'RGBX')
         screen = self.factory.screen  # pylint: disable=no-member
         if not screen:
@@ -341,6 +339,9 @@ class _Client(ext.rfb.RFBClient):
         else:
             screen.paste(update, (x, y))
         self.factory.screen = screen  # pylint: disable=no-member
+
+    def commitUpdate(self, rectangles=None):
+        self.framebufferUpdateRequest(incremental=1)
 
 
 class _Factory(ReconnectingClientFactory):

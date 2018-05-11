@@ -107,9 +107,6 @@ class Application:
             await self.system.move_random(System.MoveEnum.IDLE_MOVE_DESKTOP)
             self.handle_error(e)
 
-        # always request vnc framebuffer update in case we are getting erroneous images
-        self.system.update()
-
     async def register(self):
         if self.force_stop_autoregister and pathlib.Path('enable.txt').exists():
             logging.info('enable.txt found')
