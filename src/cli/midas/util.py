@@ -253,7 +253,7 @@ def read_card(image, mono, settings, card_id):
 
     if suit is None:
         logging.info('Suit color distances: %s', distances)
-        raise RuntimeError('Unknown suit color (0x{})'.format(avg))
+        raise RuntimeError('Unknown suit color (0x{}, s="{}")'.format(avg, s))
 
     return Card(rank=Card.STRING_TO_RANK[s], suit=suit)
 
