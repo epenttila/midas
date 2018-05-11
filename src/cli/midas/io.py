@@ -254,11 +254,19 @@ class System:
         self.lock.release()
 
 
+def _is_pixel(image, pixel):
+    rect = pixel.rect
+    avg = midas.util.get_average_color(image, rect)
+    dist = midas.util.get_color_distance(avg, pixel.color)
+    logging.debug('_is_pixel(%s): %s (%s)', pixel, dist <= pixel.tolerance, dist)
+    return image is not None and dist <= pixel.tolerance
+
+
 class Window:
-    def __init__(self, system, rect, border_color):
+    def __init__(self, system, rect, pixel):
         self.system = system
         self.rect = rect
-        self.border_color = border_color
+        self.pixel = pixel
         self.image = None
 
     def update(self):
@@ -270,7 +278,7 @@ class Window:
         image = self.system.get_image().crop(self.rect)
 
         try:
-            if image.getpixel((0, 0)) == self.border_color:
+            if _is_pixel(self.system.get_image(), self.pixel):
                 self.image = image
         except IndexError:
             pass
@@ -283,9 +291,7 @@ class Window:
         return self.image is not None
 
     def is_pixel(self, pixel):
-        rect = pixel.rect
-        avg = midas.util.get_average_color(self.image, rect)
-        return self.image is not None and midas.util.get_color_distance(avg, pixel.color) <= pixel.tolerance
+        return _is_pixel(self.image, pixel)
 
     async def click_button(self, button, double_click=False):
         # check if button is there

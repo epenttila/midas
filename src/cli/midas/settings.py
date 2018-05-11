@@ -68,7 +68,6 @@ class Settings:
     Glyph = namedtuple('Glyph', 'columns ch popcnt width')
     Font = namedtuple('Font', 'max_width height masks')
     Label = namedtuple('Label', 'font rect color tolerance regex shift')
-    Window = namedtuple('Window', 'rect border_color')
 
     def __init__(self, filename):
         self.numbers = defaultdict(list)
@@ -76,7 +75,6 @@ class Settings:
         self.strings = defaultdict(list)
         self.number_lists = defaultdict(list)
         self.buttons = defaultdict(list)
-        self.windows = defaultdict(list)
         self.pixels = defaultdict(list)
         self.regexes = defaultdict(list)
         self.labels = defaultdict(list)
@@ -106,9 +104,6 @@ class Settings:
                                                    int(attrs.get('color-height', '1'))),
                                          color=_parse_color(attrs.get('color', '#000000')),
                                          tolerance=float(attrs.get('tolerance', '0')))))
-            elif name == 'window':
-                self.windows[attrs['id']].append(Settings.Window(rect=_parse_rect(attrs),
-                                                                 border_color=_parse_color(attrs.get('border-color', '#000000'))))
             elif name == 'pixel':
                 self.pixels[attrs['id']].append(Settings.Pixel(rect=_parse_rect(attrs),
                                                                color=_parse_color(attrs.get('color', '#000000')),
@@ -141,9 +136,6 @@ class Settings:
 
     def get_button(self, id_, default=None):
         return _get(self.buttons, id_, default)
-
-    def get_window(self, id_, default=None):
-        return _get(self.windows, id_, default)
 
     def get_pixel(self, id_, default=None):
         return _get(self.pixels, id_, default)

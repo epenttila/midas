@@ -53,8 +53,8 @@ class Application:
             int(self.settings.get_number('netclick-port')),
             lambda x, y, w, h: ensureDeferred(self.system.click(x, y, w, h, False)))
 
-        for w in self.settings.windows['table']:
-            self.windows.append(Window(self.system, w.rect, w.border_color))
+        for w in self.settings.buttons['table']:
+            self.windows.append(Window(self.system, w.rect, w.pixel))
             self.actors.append(Actor(self.system, self.settings))
 
         interval = self.settings.get_number('capture')

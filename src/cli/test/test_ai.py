@@ -44,8 +44,8 @@ class ActorTestCase(unittest.TestCase):
         self.settings.numbers['post-action-wait'] = [0]
         self.settings.numbers['pre-snapshot-wait'] = [0]
         self.settings.intervals['action-delay'] = [(0, 0)]
-        for w in self.settings.windows['table']:
-            self.windows.append(Window(self.system, w.rect, w.border_color))
+        for w in self.settings.buttons['table']:
+            self.windows.append(Window(self.system, w.rect, w.pixel))
 
     def loadImage(self, filename):
         self.system.image = Image.open(str(pathlib.PurePath(ROOT_PATH, 'images', filename)))

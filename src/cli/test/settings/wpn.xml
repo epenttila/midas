@@ -91,8 +91,8 @@
 
     <!-- WINDOWS -->
 
-    <window id="table" x="1010" y="23" width="775" height="558" border-color="#484848"/>
-    <window id="table" x="1010" y="608" width="775" height="558" border-color="#484848"/>
+    <button id="table" x="1010" y="23" width="775" height="558" color="#484848"/>
+    <button id="table" x="1010" y="608" width="775" height="558" color="#484848"/>
 
     <!-- CAPTURE -->
 
