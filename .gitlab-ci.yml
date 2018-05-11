@@ -4,5 +4,5 @@ build:
     - rm -rf build
     - mkdir build
     - cd build
-    - cmake -DTEST_DATA_PATH=/mnt/public/poker/data/ ..
-    - make all check
+    - cmake -DTEST_DATA_PATH=/mnt/public/poker/data/ -DCMAKE_INSTALL_PREFIX=/mnt/public/poker/cli ..
+    - make all check install
