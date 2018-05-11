@@ -268,18 +268,20 @@ class Window:
         self.rect = rect
         self.pixel = pixel
         self.image = None
+        self.mono_image = None
 
     def update(self):
         self.image = None
+        self.mono_image = None
 
         if self.system.get_image() is None:
             return
 
-        image = self.system.get_image().crop(self.rect)
-
         try:
-            if _is_pixel(self.system.get_image(), self.pixel):
-                self.image = image
+            if _is_pixel(self.system.get_image().load(), self.pixel):
+                image = self.system.get_image().crop(self.rect)
+                self.image = image.load()
+                self.mono_image = image.convert('1', dither=Image.NONE).load()
         except IndexError:
             pass
 

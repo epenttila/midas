@@ -6,7 +6,6 @@ import copy
 import functools
 import midas.io
 import midas.util
-from PIL import Image
 from pygamelib import NLHEState
 from pycfrlib import NLHEStrategy
 from pyabslib import HoldemAbstractionBase  # noqa pylint: disable=unused-import
@@ -494,7 +493,7 @@ class Table:
         self.system = system
         self.window = window
         self.image = self.window.image
-        self.mono_image = self.image.convert('1', dither=Image.NONE)
+        self.mono_image = self.window.mono_image
 
     @functools.lru_cache(maxsize=128)
     def is_sitting_out(self):

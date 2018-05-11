@@ -36,7 +36,7 @@ def get_average_color(image, rect, background=(0, 0, 0), tolerance=0.0):
 
     for y in range(rect.top, rect.bottom):
         for x in range(rect.left, rect.right):
-            val = image.getpixel((x, y))
+            val = image[x, y]
 
             if background != (0, 0, 0) and get_color_distance(val, background) <= tolerance:
                 continue
@@ -148,7 +148,7 @@ def calculate_mask(image, x, top, height, color):
 
     for y in range(top, top + height):
         bit = 0
-        if image.getpixel((x, y)) == color[0]:
+        if image[x, y] == color[0]:
             bit = 1
         bitmap |= bit << (y - top)
 
@@ -208,7 +208,7 @@ def is_card(image, label, card_pixel):
 
     for y in range(rect.top, rect.bottom):
         for x in range(rect.left, rect.right):
-            if get_color_distance(image.getpixel((x, y)), card_pixel.color) <= card_pixel.tolerance:
+            if get_color_distance(image[x, y], card_pixel.color) <= card_pixel.tolerance:
                 return True
 
     return False
