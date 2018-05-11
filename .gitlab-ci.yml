@@ -1,0 +1,6 @@
+build:
+  script:
+    - mkdir build
+    - cd build
+    - cmake -DTEST_DATA_PATH=/mnt/public/poker/data/ ..
+    - make all check
