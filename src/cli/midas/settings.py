@@ -97,10 +97,11 @@ class Settings:
             elif name == 'number-list':
                 self.number_lists[attrs['id']].append([float(x) for x in str(attrs['value']).split(',')])
             elif name == 'button':
+                rect = _parse_rect(attrs)
                 self.buttons[attrs['id']].append(Settings.Button(
-                    rect=_parse_rect(attrs),
-                    pixel=Settings.Pixel(rect=Rect(int(attrs.get('color-x', '0')),
-                                                   int(attrs.get('color-y', '0')),
+                    rect=rect,
+                    pixel=Settings.Pixel(rect=Rect(int(attrs.get('color-x', rect.x)),
+                                                   int(attrs.get('color-y', rect.y)),
                                                    int(attrs.get('color-width', '1')),
                                                    int(attrs.get('color-height', '1'))),
                                          color=_parse_color(attrs.get('color', '#000000')),
