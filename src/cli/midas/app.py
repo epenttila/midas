@@ -221,7 +221,7 @@ class Application:
 
         if max_idle_time is not None and (now - self.table_update_time).total_seconds() > max_idle_time:
             self.table_update_time = None
-            raise RuntimeError('We are idle')
+            self.send_email('idle', 'We are idle')
 
 
 def _check_cursor_position(settings, window):
