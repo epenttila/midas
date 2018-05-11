@@ -15,7 +15,6 @@ disable=
     too-many-statements,
     too-many-public-methods,
     too-many-return-statements,
-    fixme,
     locally-disabled,
     file-ignored
 

@@ -229,7 +229,6 @@ def read_card(image, mono, settings, card_id):
     if image is None:
         return None
 
-    # TODO improve this check using multiple pixels
     if not is_card(image, label, card_pixel):
         return None
 

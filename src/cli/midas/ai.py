@@ -204,7 +204,6 @@ class Actor:
         midas.util.ensure(current_state is not None)
         midas.util.ensure(not current_state.terminal)
 
-        # TODO: this will fail if multiple actions failed previously
         # if our previous all-in bet didn't succeed due to client bugs, assume we bet the minimum instead
         if current_state.parent and current_state.action == NLHEState.RAISE_A:
             logging.warning('Readjusting state after unsuccessful all-in bet')
@@ -753,7 +752,6 @@ class Table:
         logging.info('Raising (%s) to %s [%s, %s] (method %s)', action, amount, minbet, maxbet, method)
 
         if (self.get_buttons() & self.RAISE_BUTTON) != self.RAISE_BUTTON:
-            # TODO move this out of here?
             logging.info('No raise button, calling instead')
             await self.call(max_wait)
             return
@@ -786,9 +784,6 @@ class Table:
 
             if focused:
                 await self.system.random_sleep()
-
-                # TODO make sure we have focus
-                # TODO support decimal point
                 amount = math.trunc(max(minbet, min(amount, maxbet)))
                 await self.system.send_string(str(amount))
                 await self.system.random_sleep()
@@ -824,8 +819,6 @@ def _is_new_game(table_data, snapshot):
     if snapshot.dealer[0] != snapshot.dealer[1] and snapshot.dealer[0] and snapshot.bet[1] > 2.0 * snapshot.bet[0]:
         return False
 
-    # TODO: consider case where opponent is dealer and we misclick all-in and they all-in instead (see above)
-
     for i in range(len(prev_snapshot.board)):
         if prev_snapshot.board[i] is not None and prev_snapshot.board[i] != snapshot.board[i]:
             logging.info('New game (board cards changed)')
@@ -853,7 +846,6 @@ def _is_new_game(table_data, snapshot):
         logging.info('New game (total pot decreased)')
         return True
 
-    # TODO: a false negatives can be possible in some corner cases
     return False
 
 
