@@ -18,11 +18,16 @@ from pyutil import GIT_VERSION
 
 
 class Application:
-    def __init__(self, filename, test):
+    def __init__(self, filename, test, loglevel):
         self.settings = Settings(filename)
 
         logging.config.dictConfig(self.settings.log)
         logging.captureWarnings(True)
+
+        if loglevel is not None:
+            logging.info('Overriding log level: %s', loglevel)
+            logging.getLogger().setLevel(loglevel)
+
         logging.info('cli %s', GIT_VERSION)
         PythonLoggingObserver().start()
 
