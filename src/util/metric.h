@@ -62,3 +62,17 @@ struct get_l2_cost
         return distance;
     }
 };
+
+std::uint32_t get_hamming_distance(const std::uint32_t x, const std::uint32_t y)
+{
+    std::uint32_t dist = 0;
+    auto val = x ^ y;
+
+    while (val)
+    {
+        ++dist;
+        val &= val - 1;
+    }
+
+    return dist;
+}

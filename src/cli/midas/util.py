@@ -5,6 +5,7 @@ import logging
 from enum import IntEnum
 from twisted.internet import task
 from twisted.internet import reactor
+from pyutil import get_hamming_distance
 
 
 def get_normal_random(a, b):
@@ -154,17 +155,6 @@ def calculate_mask(image, x, top, height, color):
     return bitmap
 
 
-def get_hamming_distance(x, y):
-    dist = 0
-    val = x ^ y
-
-    while val:
-        dist += 1
-        val &= val - 1
-
-    return dist
-
-
 def read_exact_glyph(image, rect, color, font):
     match = None
     error = None
@@ -292,7 +282,7 @@ def read_shape(image, rect, color, font):
                 columns.append(mask)
 
             for x in range(rect.left, rect.right - glyph.width + 1):
-                mid_dist = 0
+                mid_dist = 0.0
                 xx = rect.left
 
                 # left
