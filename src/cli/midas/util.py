@@ -188,14 +188,19 @@ def read_fuzzy_glyph(image, rect, color, font, tolerance):
         popcnt = glyph.popcnt
         dist = 0
         error = 0.0
+        ok = True
 
         for i in range(len(glyph.columns)):
             mask = columns[i] if i < len(columns) else 0
             dist += get_hamming_distance(mask, glyph.columns[i])
             error = dist / popcnt
 
-        # minimize error and maximize popcnt
-        if error <= tolerance and (error < glyph_error or (error == glyph_error and popcnt > max_popcnt)):
+            # minimize error and maximize popcnt
+            if not (error <= tolerance and (error < glyph_error or (error == glyph_error and popcnt > max_popcnt))):
+                ok = False
+                break
+
+        if ok:
             match = glyph
             glyph_error = error
             max_popcnt = popcnt
