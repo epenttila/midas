@@ -467,6 +467,17 @@ class Table:
             self.highlight = [None, None]
 
         def __repr__(self):
+            buttons = []
+
+            if self.buttons & Table.FOLD_BUTTON:
+                buttons.append('FOLD')
+            if self.buttons & Table.CALL_BUTTON:
+                buttons.append('CALL')
+            if self.buttons & Table.RAISE_BUTTON:
+                buttons.append('RAISE')
+            if self.buttons & Table.INPUT_BUTTON:
+                buttons.append('INPUT')
+
             s = 'board: [{}, {}, {}, {}, {}]\n'.format(self.board[0], self.board[1], self.board[2], self.board[3], self.board[4])
             s += 'hole: [{}, {}]\n'.format(self.hole[0], self.hole[1])
             s += 'dealer: [{}, {}]\n'.format(self.dealer[0], self.dealer[1])
@@ -474,7 +485,7 @@ class Table:
             s += 'bet: [{}, {}]\n'.format(self.bet[0], self.bet[1])
             s += 'total_pot: {}\n'.format(self.total_pot)
             s += 'all_in: [{}, {}]\n'.format(self.all_in[0], self.all_in[1])
-            s += 'buttons: {}\n'.format(self.buttons)
+            s += 'buttons: {} ({})\n'.format(self.buttons, ', '.join(buttons))
             s += 'sit_out: [{}, {}]\n'.format(self.sit_out[0], self.sit_out[1])
             s += 'highlight: [{}, {}]\n'.format(self.highlight[0], self.highlight[1])
             return s
