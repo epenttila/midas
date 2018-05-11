@@ -1,13 +1,11 @@
 import os
-import asyncio
 import logging
 import pathlib
 import pytest
-from twisted.internet import task
 from twisted.trial import unittest
 from twisted.internet.defer import inlineCallbacks, ensureDeferred
 from PIL import Image
-from midas.ai import Table, Actor
+from midas.ai import Actor
 from midas.settings import Settings
 from midas.io import Window
 from pygamelib import NLHEState
@@ -92,7 +90,7 @@ class ActorTestCase(unittest.TestCase):
 
         clicked = False
 
-        async def check_click(*args):
+        async def check_click(*args):  # pylint: disable=unused-argument
             nonlocal clicked
             clicked = True
 

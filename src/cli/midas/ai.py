@@ -8,7 +8,7 @@ import midas.util
 from PIL import Image
 from pygamelib import NLHEState
 from pycfrlib import NLHEStrategy
-from pyabslib import HoldemAbstractionBase  # pylint: disable=unused-import
+from pyabslib import HoldemAbstractionBase  # noqa pylint: disable=unused-import
 
 
 class Actor:
@@ -178,7 +178,7 @@ class Actor:
                 actions.append(state.action)
                 state = state.parent
 
-            actions = reversed(actions)
+            actions = reversed(actions)  # pylint: disable=redefined-variable-type
 
             current_state = strategy.root_state
 

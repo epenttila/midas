@@ -197,7 +197,7 @@ def read_fuzzy_glyph(image, rect, color, font, tolerance):
     for glyph in font.masks.values():
         popcnt = glyph.popcnt
         dist = 0
-        error = 0
+        error = 0.0
 
         for i in range(len(glyph.columns)):
             mask = columns[i] if i < len(columns) else 0

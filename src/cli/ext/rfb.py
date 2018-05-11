@@ -1,3 +1,5 @@
+#pylint: skip-file
+
 """
 RFB protocol implementattion, client side.
 
