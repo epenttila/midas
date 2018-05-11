@@ -3,6 +3,7 @@ import logging
 import datetime
 import re
 import copy
+import functools
 import midas.io
 import midas.util
 from PIL import Image
@@ -490,9 +491,11 @@ class Table:
         self.image = self.window.image
         self.mono_image = self.image.convert('1', dither=Image.NONE)
 
+    @functools.lru_cache(maxsize=128)
     def is_sitting_out(self):
         return self.is_sit_out(0)
 
+    @functools.lru_cache(maxsize=128)
     def is_sit_out(self, position):
         ids = ['sitout-0', 'sitout-1']
 
@@ -507,9 +510,11 @@ class Table:
 
         return False
 
+    @functools.lru_cache(maxsize=128)
     def is_waiting(self):
         return self.get_buttons() and self.is_highlight(0) is not False
 
+    @functools.lru_cache(maxsize=128)
     def get_buttons(self):
         buttons = 0
 
@@ -521,6 +526,7 @@ class Table:
 
         return buttons
 
+    @functools.lru_cache(maxsize=128)
     def is_highlight(self, position):
         ids = ['active-0', 'active-1']
 
@@ -533,6 +539,7 @@ class Table:
 
         return False
 
+    @functools.lru_cache(maxsize=128)
     def get_button_map(self):
         layout = 0
 
@@ -567,6 +574,7 @@ class Table:
 
         return m
 
+    @functools.lru_cache(maxsize=128)
     def get_total_pot(self):
         total = 0
 
@@ -581,11 +589,13 @@ class Table:
 
         return self.get_bet(0) + self.get_bet(1) + self.get_pot()
 
+    @functools.lru_cache(maxsize=128)
     def get_bet(self, position):
         ids = ['bet-0', 'bet-1']
         s = midas.util.read_label(self.mono_image, self.settings, self.settings.get_label(ids[position]))
         return float(s) if s else 0
 
+    @functools.lru_cache(maxsize=128)
     def get_snapshot(self):
         s = Table.Snapshot()
         s.total_pot = self.get_total_pot()
@@ -618,6 +628,7 @@ class Table:
 
         return s
 
+    @functools.lru_cache(maxsize=128)
     def is_dealer(self, position):
         if position == 0:
             return (self.get_dealer_mask() & Table.PLAYER) == Table.PLAYER
@@ -626,6 +637,7 @@ class Table:
 
         return False
 
+    @functools.lru_cache(maxsize=128)
     def get_dealer_mask(self):
         dealer = 0
 
@@ -639,6 +651,7 @@ class Table:
 
         return dealer
 
+    @functools.lru_cache(maxsize=128)
     def get_stack(self, position):
         stack_allin = self.settings.get_regex('stack-allin')
         stack_sitout = self.settings.get_regex('stack-sitout')
@@ -652,6 +665,7 @@ class Table:
 
         return float(s)
 
+    @functools.lru_cache(maxsize=128)
     def get_stack_text(self, position):
         stack_ids = ['stack-0', 'stack-1']
         active_stack_ids = ['active-stack-0', 'active-stack-1']
@@ -665,6 +679,7 @@ class Table:
 
         return midas.util.read_label(self.mono_image, self.settings, label)
 
+    @functools.lru_cache(maxsize=128)
     def get_pot(self):
         p = self.settings.get_label('pot')
 
@@ -674,6 +689,7 @@ class Table:
 
         return 0
 
+    @functools.lru_cache(maxsize=128)
     def is_all_in(self, position):
         if self.get_stack(position) == 0 and self.get_bet(position) > 0:
             return True
@@ -693,6 +709,7 @@ class Table:
 
         return False
 
+    @functools.lru_cache(maxsize=128)
     def get_hole_cards(self):
         ids = ['hole-0', 'hole-1']
         hole = [None, None]
@@ -705,6 +722,7 @@ class Table:
 
         return hole
 
+    @functools.lru_cache(maxsize=128)
     def get_board_cards(self):
         ids = ['board-0', 'board-1', 'board-2', 'board-3', 'board-4']
         board = [None, None, None, None, None]
@@ -770,6 +788,7 @@ class Table:
 
         await self.click_button(self.get_action_button(Table.RAISE_BUTTON), max_wait)
 
+    @functools.lru_cache(maxsize=128)
     def get_action_button(self, action):
         try:
             i = self.get_button_map().index(action)
