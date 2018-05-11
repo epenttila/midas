@@ -51,10 +51,10 @@ class System:
 
     def _set_cursor_pos_event(self, x, y):
         logging.debug('_set_cursor_pos_event(%s,%s)', x, y)
-        pos = (round(x), round(y))
+        pos = (max(0, min(round(x), 0xFFFF)), max(0, min(round(y), 0xFFFF)))
         self.cursor = pos
         if self.factory.connection:
-            self.factory.connection.pointerEvent(max(0, min(pos[0], 0xFFFF)), max(0, min(pos[1], 0xFFFF)))
+            self.factory.connection.pointerEvent(pos[0], pos[1])
 
     def _button_down_event(self):
         logging.debug('_button_down_event()')
