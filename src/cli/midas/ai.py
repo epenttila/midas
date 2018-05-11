@@ -372,10 +372,8 @@ class Actor:
         max_action_wait = self.settings.get_number('max-action-wait', 10.0)
 
         if next_action == Table.FOLD_BUTTON:
-            logging.info('Folding')
             await table_data.table.fold(max_action_wait)
         elif next_action == Table.CALL_BUTTON:
-            logging.info('Calling')
             await table_data.table.call(max_action_wait)
         elif next_action == Table.RAISE_BUTTON:
             # we have to call opponent bet minus our bet
@@ -426,10 +424,7 @@ class Actor:
                     new_action_name = current_state.get_action_name(NLHEState.RAISE_A)
 
             method = midas.util.get_weighted_int(self.settings.get_number_list('bet-method-probabilities'))
-
-            logging.info('Raising to %s [%s, %s] (%s times pot) (method %s)', amount, minbet, maxbet, raise_fraction, method)
-
-            await table_data.table.bet(new_action_name, amount, minbet, max_action_wait, method)
+            await table_data.table.bet(new_action_name, amount, minbet, maxbet, max_action_wait, method)
 
         # update state pointer last after the table_manager input functions
         # this makes it possible to recover in case the buttons are stuck but become normal again as the state pointer
@@ -736,12 +731,16 @@ class Table:
         return board
 
     async def fold(self, max_wait):
+        logging.info('Folding')
         await self.click_button(self.get_action_button(Table.FOLD_BUTTON), max_wait)
 
     async def call(self, max_wait):
+        logging.info('Calling')
         await self.click_button(self.get_action_button(Table.CALL_BUTTON), max_wait)
 
-    async def bet(self, action, amount, minbet, max_wait, method):
+    async def bet(self, action, amount, minbet, maxbet, max_wait, method):
+        logging.info('Raising (%s) to %s [%s, %s] (method %s)', action, amount, minbet, maxbet, method)
+
         if (self.get_buttons() & self.RAISE_BUTTON) != self.RAISE_BUTTON:
             # TODO move this out of here?
             logging.info('No raise button, calling instead')
@@ -780,7 +779,7 @@ class Table:
 
                 # TODO make sure we have focus
                 # TODO support decimal point
-                amount = math.trunc(max(0, min(amount, 1000000)))
+                amount = math.trunc(max(minbet, min(amount, maxbet)))
                 await self.system.send_string(str(amount))
                 await self.system.random_sleep()
             elif action != "RAISE_A":
