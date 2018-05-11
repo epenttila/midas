@@ -100,6 +100,10 @@ class Application:
                     self.table_update_time = datetime.datetime.now()
 
             self.check_idle()
+
+            method = midas.util.get_weighted_int(self.settings.get_number_list('idle-move-probabilities'))
+            await self.system.move_random(method)
+
             self.system.update()
         except Exception as e:  # pylint: disable=broad-except
             await self.system.move_random(System.MoveEnum.IDLE_MOVE_DESKTOP)
@@ -147,9 +151,6 @@ class Application:
 
         if not self.autoregister:
             return
-
-        method = midas.util.get_weighted_int(self.settings.get_number_list('idle-move-probabilities'))
-        await self.system.move_random(method)
 
         refresh_key = self.settings.get_number('refresh-regs-key', None)
         if refresh_key is not None:
