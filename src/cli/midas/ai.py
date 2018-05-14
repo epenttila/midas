@@ -183,9 +183,9 @@ class Actor:
             current_state = strategy.root_state
 
             for action in actions:
-                i = action
-                while i >= 0 and i != NLHEState.FOLD:  # assume action sizes are ascending
-                    child = current_state.get_action_child(i)  # fast-forward call below handles null
+                i = int(action)
+                while i >= 0 and i != int(NLHEState.FOLD):  # assume action sizes are ascending
+                    child = current_state.get_action_child(NLHEState.HoldemAction(i))  # fast-forward call below handles null
                     if child is not None:
                         current_state = child
                         break
